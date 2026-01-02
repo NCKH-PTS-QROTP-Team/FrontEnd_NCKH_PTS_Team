@@ -1,12 +1,24 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../../constants/colors';
 import AppHeader from '../../components/AppHeader';
 import StatsCard from '../../components/StatsCard';
 import Card from '../../components/Card';
+import AppLayout from '../../components/AppLayout';
+import { isDesktop, isTablet } from '../../constants/responsive';
 
 export default function AdminDashboard() {
+  const menuItems = [
+    { icon: '⌂', label: 'Dashboard', route: '/admin/dashboard' },
+    { icon: 'U', label: 'Người dùng', route: '/admin/users' },
+    { icon: 'C', label: 'Lớp học', route: '/admin/classes' },
+    { icon: 'S', label: 'Môn học', route: '/admin/subjects' },
+    { icon: 'L', label: 'Lịch học', route: '/admin/schedules' },
+    { icon: 'M', label: 'Giám sát', route: '/admin/sessions' },
+    { icon: 'R', label: 'Báo cáo', route: '/admin/reports' },
+    { icon: '⚙', label: 'Cài đặt', route: '/admin/settings' },
+  ];
   const stats = [
     { label: 'Tổng người dùng', value: '1,234', icon: <Text style={{ fontSize: 20, color: Colors.primary }}>U</Text>, color: Colors.primary },
     { label: 'Tổng lớp học', value: '45', icon: <Text style={{ fontSize: 20, color: Colors.success }}>C</Text>, color: Colors.success },
@@ -30,12 +42,18 @@ export default function AdminDashboard() {
     { title: 'Cài đặt', subtitle: 'Cấu hình hệ thống', route: '/admin/settings', icon: 'S' },
   ];
 
-  return (
+  // Responsive column widths
+  const statsWidth = isDesktop ? 'w-1/4' : isTablet ? 'w-1/2' : 'w-1/2';
+  const actionWidth = isDesktop ? 'w-1/3' : isTablet ? 'w-1/2' : 'w-full';
+  const isWeb = Platform.OS === 'web';
+
+ 
+  const content = (
     <View className="flex-1 bg-white">
-      <AppHeader title="Admin Dashboard" showBack={false} />
+      <AppHeader title="Dashboard" showBack={false} showLogout={!isWeb} />
       
       <ScrollView className="flex-1">
-        <View className="p-4" style={{ maxWidth: 1200, width: '100%', alignSelf: 'center' }}>
+        <View className="p-4" style={{ maxWidth: 1400, width: '100%', alignSelf: 'center' }}>
           
           {/* Welcome Section */}
           <Card className="mb-6" style={{ backgroundColor: Colors.primary }}>
@@ -54,7 +72,7 @@ export default function AdminDashboard() {
             </Text>
             <View className="flex-row flex-wrap -mx-2">
               {stats.map((stat, index) => (
-                <View key={index} className="w-1/2 px-2 mb-3">
+                <View key={index} className={`${statsWidth} px-2 mb-3`}>
                   <StatsCard {...stat} />
                 </View>
               ))}
@@ -89,7 +107,7 @@ export default function AdminDashboard() {
             </Text>
             <View className="flex-row flex-wrap -mx-2">
               {quickActions.map((action, index) => (
-                <View key={index} className="w-1/2 px-2 mb-3">
+                <View key={index} className={`${actionWidth} px-2 mb-3`}>
                   <Card onPress={() => router.push(action.route as any)}>
                     <View className="flex-row items-center mb-2">
                       <View 
@@ -143,6 +161,16 @@ export default function AdminDashboard() {
         </View>
       </ScrollView>
     </View>
+  );
+
+  return (
+    <AppLayout
+      menuItems={menuItems}
+      userRole="admin"
+      userName="Admin Hệ thống"
+    >
+      {content}
+    </AppLayout>
   );
 }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/colors';
 
@@ -7,14 +7,31 @@ interface AppHeaderProps {
   title: string;
   showBack?: boolean;
   rightAction?: React.ReactNode;
+  showLogout?: boolean;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({ 
   title, 
   showBack = false,
-  rightAction 
+  rightAction,
+  showLogout = false
 }) => {
   const router = useRouter();
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Đăng xuất',
+      'Bạn có chắc muốn đăng xuất?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        { 
+          text: 'Đăng xuất', 
+          style: 'destructive',
+          onPress: () => router.replace('/auth/login')
+        }
+      ]
+    );
+  };
 
   return (
     <View 
@@ -46,6 +63,17 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             {title}
           </Text>
         </View>
+        {showLogout && (
+          <TouchableOpacity
+            onPress={handleLogout}
+            className="bg-red-50 rounded-lg px-4 py-2"
+            activeOpacity={0.7}
+          >
+            <Text className="font-semibold" style={{ color: Colors.error }}>
+              Đăng xuất
+            </Text>
+          </TouchableOpacity>
+        )}
         {rightAction && (
           <View>
             {rightAction}

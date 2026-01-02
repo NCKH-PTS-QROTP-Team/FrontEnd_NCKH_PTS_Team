@@ -1,24 +1,39 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
 import { StatsCard } from '@/components/StatsCard';
 import { mockStats } from '@/constants/mockData';
+import AppLayout from '@/components/AppLayout';
+import { isDesktop, isTablet } from '@/constants/responsive';
 
 export default function TeacherDashboardScreen() {
   const router = useRouter();
+  const isWeb = Platform.OS === 'web';
 
-  return (
+  const menuItems = [
+    { icon: '⌂', label: 'Dashboard', route: '/teacher/dashboard' },
+    { icon: 'C', label: 'Danh sách lớp', route: '/teacher/class-list' },
+    { icon: 'O', label: 'Tạo OTP', route: '/teacher/generate-otp' },
+    { icon: 'Q', label: 'Tạo QR', route: '/teacher/generate-qr' },
+    { icon: 'A', label: 'Lớp chủ nhiệm', route: '/teacher/advisee-class' },
+    { icon: 'R', label: 'Báo cáo', route: '/teacher/reports' },
+  ];
+
+  const statsWidth = isDesktop ? 'w-1/4' : isTablet ? 'w-1/2' : 'w-1/2';
+
+ 
+  const content = (
     <View className="flex-1 bg-gray-50">
       <StatusBar style="dark" />
-      <AppHeader title="Dashboard Giảng viên" />
+      <AppHeader title="Dashboard" showLogout={!isWeb} />
       
       <ScrollView
         contentContainerStyle={{ padding: 20 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ maxWidth: 900, width: '100%', alignSelf: 'center' }}>
+        <View style={{ maxWidth: 1200, width: '100%', alignSelf: 'center' }}>
           {/* Welcome */}
           <View className="bg-primary rounded-2xl p-6 mb-6"
             style={{
@@ -171,5 +186,15 @@ export default function TeacherDashboardScreen() {
         </View>
       </ScrollView>
     </View>
+  );
+
+  return (
+    <AppLayout
+      menuItems={menuItems}
+      userRole="teacher"
+      userName="Giảng viên"
+    >
+      {content}
+    </AppLayout>
   );
 }

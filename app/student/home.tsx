@@ -14,7 +14,7 @@ export default function StudentHomeScreen() {
   return (
     <View className="flex-1 bg-white">
       <StatusBar style="dark" />
-      <AppHeader title="Trang chủ" />
+      <AppHeader title="Trang chủ" showLogout={true} />
       
       <ScrollView
         contentContainerStyle={{ padding: 20 }}

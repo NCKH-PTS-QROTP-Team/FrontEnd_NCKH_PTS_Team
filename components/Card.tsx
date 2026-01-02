@@ -10,7 +10,7 @@ interface CardProps {
 }
 
 export default function Card({ children, onPress, className = '', style }: CardProps) {
-  const Container = onPress ? TouchableOpacity : View;
+  const Container = (onPress ? TouchableOpacity : View) as any;
   
   // Flatten style array to object for web compatibility
   const flatStyle = style ? StyleSheet.flatten(style) : {};
