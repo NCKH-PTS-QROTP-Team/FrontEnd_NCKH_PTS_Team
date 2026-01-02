@@ -18,7 +18,7 @@ export default function ClassManagement() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Quản lý lớp học" />
+      <AppHeader title="Quản lý lớp học" showLogout={true} />
       
       <ScrollView className="flex-1">
         <View className="p-4" style={{ maxWidth: 1200, width: '100%', alignSelf: 'center' }}>

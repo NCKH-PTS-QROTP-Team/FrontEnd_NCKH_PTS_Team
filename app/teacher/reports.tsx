@@ -7,7 +7,7 @@ export default function ReportsScreen() {
   return (
     <View className="flex-1 bg-gray-50">
       <StatusBar style="dark" />
-      <AppHeader title="Báo cáo & Thống kê" showBack />
+      <AppHeader title="Báo cáo & Thống kê" showBack showLogout={true} />
       
       <ScrollView
         contentContainerStyle={{ padding: 20 }}

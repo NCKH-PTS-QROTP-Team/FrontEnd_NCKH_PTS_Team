@@ -17,7 +17,7 @@ export default function HistoryScreen() {
   return (
     <View className="flex-1 bg-gray-50">
       <StatusBar style="dark" />
-      <AppHeader title="Lịch sử điểm danh" showBack />
+      <AppHeader title="Lịch sử điểm danh" showBack showLogout={true} />
       
       <ScrollView
         contentContainerStyle={{ padding: 20 }}

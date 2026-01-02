@@ -23,7 +23,7 @@ export default function AdviseeClass() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Lớp chủ nhiệm" />
+      <AppHeader title="Lớp chủ nhiệm" showLogout={true} />
       
       <Tabs
         tabs={[

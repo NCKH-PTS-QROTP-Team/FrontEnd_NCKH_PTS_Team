@@ -14,7 +14,7 @@ export default function ClassListScreen() {
   return (
     <View className="flex-1 bg-gray-50">
       <StatusBar style="dark" />
-      <AppHeader title="Danh sách lớp" showBack />
+      <AppHeader title="Danh sách lớp" showBack showLogout={true} />
       
       <ScrollView
         contentContainerStyle={{ padding: 20 }}

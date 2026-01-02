@@ -13,8 +13,9 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, onPress }) =>
   
   return (
     <Container
-      className="bg-white rounded-xl border border-gray-200 p-4"
+      className="bg-white rounded-xl border border-gray-200"
       style={{
+        padding: 16,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
@@ -26,14 +27,14 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, onPress }) =>
     >
       <View className="flex-row items-center justify-between">
         <View className="flex-1">
-          <Text className="text-base font-semibold text-gray-900 mb-1">
+          <Text className="text-base font-semibold text-gray-900" style={{ lineHeight: 24, marginBottom: 4 }}>
             {student.name}
           </Text>
-          <Text className="text-sm text-gray-500">
+          <Text className="text-sm text-gray-600" style={{ lineHeight: 21 }}>
             {student.studentId}
           </Text>
           {student.checkInTime && (
-            <Text className="text-xs text-gray-400 mt-1">
+            <Text className="text-xs text-gray-500" style={{ lineHeight: 18, marginTop: 4 }}>
               Điểm danh lúc: {student.checkInTime}
             </Text>
           )}

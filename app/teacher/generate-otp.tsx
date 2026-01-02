@@ -37,7 +37,7 @@ export default function GenerateOTPScreen() {
   return (
     <View className="flex-1 bg-gray-50">
       <StatusBar style="dark" />
-      <AppHeader title="Tạo mã OTP" showBack />
+      <AppHeader title="Tạo mã OTP" showBack showLogout={true} />
       
       <ScrollView
         contentContainerStyle={{ padding: 20 }}

@@ -9,7 +9,7 @@ export default function ScheduleScreen() {
   return (
     <View className="flex-1 bg-white">
       <StatusBar style="dark" />
-      <AppHeader title="Lịch học" showBack />
+      <AppHeader title="Lịch học" showBack showLogout={true} />
       
       <ScrollView
         contentContainerStyle={{ padding: 20 }}

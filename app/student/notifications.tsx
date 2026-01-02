@@ -101,7 +101,7 @@ export default function Notifications() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Thông báo" />
+      <AppHeader title="Thông báo" showLogout={true} />
       
       <ScrollView className="flex-1">
         <View className="p-4" style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>

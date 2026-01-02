@@ -36,7 +36,7 @@ export default function CreateClass() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Tạo lớp học mới" />
+      <AppHeader title="Tạo lớp học mới" showLogout={true} />
       
       <ScrollView className="flex-1">
         <View className="p-4" style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>

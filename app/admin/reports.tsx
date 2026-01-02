@@ -11,7 +11,7 @@ export default function Reports() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Báo cáo & Thống kê" />
+      <AppHeader title="Báo cáo & Thống kê" showLogout={true} />
       
       <Tabs
         tabs={[

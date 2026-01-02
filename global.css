@@ -2,5 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-
-// Updated: 2026-01-02 13:16:03
+@layer base {
+  body {
+    @apply text-base leading-relaxed text-gray-900;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+  
+  p {
+    @apply leading-relaxed;
+  }
+}

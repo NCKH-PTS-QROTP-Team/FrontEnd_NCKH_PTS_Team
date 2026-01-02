@@ -17,8 +17,9 @@ export default function Card({ children, onPress, className = '', style }: CardP
   
   return (
     <Container
-      className={`bg-white rounded-xl p-4 ${className}`}
+      className={`bg-white rounded-xl ${className}`}
       style={{
+        padding: 16,
         shadowColor: Colors.gray900,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.06,

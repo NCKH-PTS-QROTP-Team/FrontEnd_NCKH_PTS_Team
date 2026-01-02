@@ -43,7 +43,7 @@ export default function ClassDetail() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title={classData.code} />
+      <AppHeader title={classData.code} showLogout={true} />
       
       <Tabs
         tabs={[

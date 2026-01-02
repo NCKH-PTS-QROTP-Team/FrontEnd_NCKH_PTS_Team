@@ -46,7 +46,7 @@ export default function CreateUser() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Thêm người dùng mới" />
+      <AppHeader title="Thêm người dùng mới" showLogout={true} />
       
       <ScrollView className="flex-1">
         <View className="p-4" style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>

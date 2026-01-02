@@ -59,7 +59,7 @@ export default function OTPAttendanceScreen() {
   return (
     <View className="flex-1 bg-white">
       <StatusBar style="dark" />
-      <AppHeader title="Điểm danh bằng OTP" showBack />
+      <AppHeader title="Điểm danh bằng OTP" showBack showLogout={true} />
       
       <ScrollView
         contentContainerStyle={{ padding: 20 }}

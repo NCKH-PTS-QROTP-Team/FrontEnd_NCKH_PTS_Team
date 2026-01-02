@@ -57,7 +57,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             </TouchableOpacity>
           )}
           <Text 
-            className="text-xl font-semibold text-gray-900"
+            className="text-2xl font-semibold text-gray-900"
+            style={{ lineHeight: 36, letterSpacing: -0.01 }}
             numberOfLines={1}
           >
             {title}
@@ -69,7 +70,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             className="bg-red-50 rounded-lg px-4 py-2"
             activeOpacity={0.7}
           >
-            <Text className="font-semibold" style={{ color: Colors.error }}>
+            <Text className="text-sm" style={{ color: Colors.error, lineHeight: 21 }}>
               Đăng xuất
             </Text>
           </TouchableOpacity>

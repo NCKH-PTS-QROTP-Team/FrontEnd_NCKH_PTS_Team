@@ -72,6 +72,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
             text-base
             font-semibold
           `}
+          style={{ lineHeight: 24 }}
         >
           {title}
         </Text>

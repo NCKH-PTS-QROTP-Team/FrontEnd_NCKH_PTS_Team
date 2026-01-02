@@ -63,7 +63,7 @@ export default function UserDetail() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Chi tiết người dùng" />
+      <AppHeader title="Chi tiết người dùng" showLogout={true} />
       
       <ScrollView className="flex-1">
         <View className="p-4" style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>

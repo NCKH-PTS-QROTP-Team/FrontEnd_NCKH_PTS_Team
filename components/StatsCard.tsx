@@ -33,19 +33,19 @@ export const StatsCard: React.FC<StatsCardProps> = ({
       }}
     >
       {icon && (
-        <View className="mb-3">
+        <View style={{ marginBottom: 12 }}>
           {icon}
         </View>
       )}
-      <Text className="text-sm text-gray-500 mb-1">{displayTitle}</Text>
+      <Text className="text-sm text-gray-600" style={{ lineHeight: 21, marginBottom: 4 }}>{displayTitle}</Text>
       <Text
-        className="text-2xl font-bold"
-        style={{ color }}
+        className="text-3xl font-semibold"
+        style={{ color, lineHeight: 48, letterSpacing: -0.02 }}
       >
         {value}
       </Text>
       {subtitle && (
-        <Text className="text-xs text-gray-400 mt-1">{subtitle}</Text>
+        <Text className="text-xs text-gray-500" style={{ lineHeight: 18, marginTop: 4 }}>{subtitle}</Text>
       )}
     </View>
   );

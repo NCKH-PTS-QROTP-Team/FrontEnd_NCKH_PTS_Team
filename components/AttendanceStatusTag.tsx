@@ -49,11 +49,11 @@ export const AttendanceStatusTag: React.FC<AttendanceStatusTagProps> = ({
   const getSizeConfig = () => {
     switch (size) {
       case 'sm':
-        return { padding: 4, fontSize: 10, borderRadius: 4 };
+        return { padding: 4, fontSize: 12, lineHeight: 18, borderRadius: 4 };
       case 'lg':
-        return { padding: 8, fontSize: 14, borderRadius: 8 };
+        return { padding: 8, fontSize: 14, lineHeight: 21, borderRadius: 8 };
       default:
-        return { padding: 6, fontSize: 12, borderRadius: 6 };
+        return { padding: 6, fontSize: 12, lineHeight: 18, borderRadius: 6 };
     }
   };
 

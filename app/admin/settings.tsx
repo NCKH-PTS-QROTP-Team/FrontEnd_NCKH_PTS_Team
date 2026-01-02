@@ -16,7 +16,7 @@ export default function Settings() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Cài đặt hệ thống" />
+      <AppHeader title="Cài đặt hệ thống" showLogout={true} />
       
       <ScrollView className="flex-1">
         <View className="p-4" style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>

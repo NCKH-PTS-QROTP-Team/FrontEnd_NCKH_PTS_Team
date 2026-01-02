@@ -1,20 +1,32 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
 import { StatsCard } from '@/components/StatsCard';
 import { ScheduleCard } from '@/components/ScheduleCard';
 import { mockSchedules } from '@/constants/mockData';
+import AppLayout from '@/components/AppLayout';
+import { isDesktop, isTablet } from '@/constants/responsive';
 
 export default function StudentHomeScreen() {
   const router = useRouter();
   const todaySchedules = mockSchedules.filter(s => s.status !== 'completed');
+  const isWeb = Platform.OS === 'web';
 
-  return (
+  const menuItems = [
+    { icon: '⌂', label: 'Trang chủ', route: '/student/home' },
+    { icon: 'L', label: 'Lịch học', route: '/student/schedule' },
+    { icon: 'Q', label: 'Điểm danh QR', route: '/student/qr-attendance' },
+    { icon: 'O', label: 'Điểm danh OTP', route: '/student/otp-attendance' },
+    { icon: 'H', label: 'Lịch sử', route: '/student/history' },
+    { icon: '✉', label: 'Thông báo', route: '/student/notifications' },
+  ];
+
+  const content = (
     <View className="flex-1 bg-white">
       <StatusBar style="dark" />
-      <AppHeader title="Trang chủ" showLogout={true} />
+      <AppHeader title="Trang chủ" showLogout={!isWeb} />
       
       <ScrollView
         contentContainerStyle={{ padding: 20 }}
@@ -200,6 +212,14 @@ export default function StudentHomeScreen() {
       </ScrollView>
     </View>
   );
-}
 
-// Updated: 2026-01-02 13:16:08
+  return (
+    <AppLayout
+      menuItems={menuItems}
+      userRole="student"
+      userName="Sinh viên"
+    >
+      {content}
+    </AppLayout>
+  );
+}

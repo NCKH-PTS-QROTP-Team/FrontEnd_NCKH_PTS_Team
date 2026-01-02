@@ -30,7 +30,7 @@ export default function UserManagement() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Quản lý người dùng" />
+      <AppHeader title="Quản lý người dùng" showLogout={true} />
       
       <ScrollView className="flex-1">
         <View className="p-4" style={{ maxWidth: 1200, width: '100%', alignSelf: 'center' }}>

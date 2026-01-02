@@ -11,7 +11,7 @@ export default function GenerateQRScreen() {
   return (
     <View className="flex-1 bg-gray-50">
       <StatusBar style="dark" />
-      <AppHeader title="Tạo QR Code" showBack />
+      <AppHeader title="Tạo QR Code" showBack showLogout={true} />
       
       <ScrollView
         contentContainerStyle={{ padding: 20 }}

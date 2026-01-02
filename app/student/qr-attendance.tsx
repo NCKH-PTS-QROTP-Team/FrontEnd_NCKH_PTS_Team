@@ -26,7 +26,7 @@ export default function QRAttendanceScreen() {
   return (
     <View className="flex-1 bg-gray-50">
       <StatusBar style="dark" />
-      <AppHeader title="Điểm danh bằng QR Code" showBack />
+      <AppHeader title="Điểm danh bằng QR Code" showBack showLogout={true} />
       
       <ScrollView
         contentContainerStyle={{ padding: 20 }}

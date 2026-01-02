@@ -76,25 +76,27 @@ export default function LoginScreen() {
           style={{ maxWidth: 400, width: '100%', alignSelf: 'center' }}
         >
           {/* Logo Section */}
-          <View className="items-center mb-12">
+          <View className="items-center" style={{ marginBottom: 48 }}>
             <View
-              className="bg-primary rounded-3xl items-center justify-center mb-6"
-              style={{ width: 80, height: 80 }}
+              className="bg-primary rounded-3xl items-center justify-center"
+              style={{ width: 80, height: 80, marginBottom: 24 }}
             >
-              <Text className="text-white text-4xl font-bold">✓</Text>
+              <Text className="text-white text-4xl">✓</Text>
             </View>
-            <Text className="text-3xl font-bold text-gray-900 mb-2">
+            <Text className="text-4xl font-semibold text-gray-900" style={{ lineHeight: 56, letterSpacing: -0.02, marginBottom: 8 }}>
               Điểm Danh
             </Text>
-            <Text className="text-base text-gray-500 text-center">
+            <Text className="text-base text-gray-600 text-center" style={{ lineHeight: 24 }}>
               Đăng nhập để tiếp tục
             </Text>
           </View>
 
           {/* Login Card */}
           <View
-            className="bg-white rounded-2xl p-6 mb-6"
+            className="bg-white rounded-2xl"
             style={{
+              padding: 24,
+              marginBottom: 24,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
@@ -102,16 +104,18 @@ export default function LoginScreen() {
               elevation: 3,
             }}
           >
-            <View className="mb-4">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
+            <View style={{ marginBottom: 16 }}>
+              <Text className="text-sm text-gray-700" style={{ lineHeight: 21, marginBottom: 8 }}>
                 Tên đăng nhập
               </Text>
               <TextInput
                 value={username}
                 onChangeText={setUsername}
                 placeholder="admin, GV001, SV001"
-                className="border-2 rounded-xl px-4 py-3.5 text-base text-gray-900 bg-gray-50"
+                className="border-2 rounded-xl px-4 text-base text-gray-900 bg-gray-50"
                 style={{
+                  paddingVertical: 14,
+                  lineHeight: 24,
                   borderColor: username ? Colors.primary : Colors.gray200,
                   ...Platform.select({
                     web: { outlineStyle: 'none' },
@@ -124,8 +128,8 @@ export default function LoginScreen() {
               />
             </View>
 
-            <View className="mb-6">
-              <Text className="text-sm font-semibold text-gray-700 mb-2">
+            <View style={{ marginBottom: 24 }}>
+              <Text className="text-sm text-gray-700" style={{ lineHeight: 21, marginBottom: 8 }}>
                 Mật khẩu
               </Text>
               <TextInput
@@ -133,8 +137,10 @@ export default function LoginScreen() {
                 onChangeText={setPassword}
                 placeholder="Nhập mật khẩu"
                 secureTextEntry
-                className="border-2 rounded-xl px-4 py-3.5 text-base text-gray-900 bg-gray-50"
+                className="border-2 rounded-xl px-4 text-base text-gray-900 bg-gray-50"
                 style={{
+                  paddingVertical: 14,
+                  lineHeight: 24,
                   borderColor: password ? Colors.primary : Colors.gray200,
                   ...Platform.select({
                     web: { outlineStyle: 'none' },
@@ -158,20 +164,20 @@ export default function LoginScreen() {
 
           {/* Demo Accounts */}
           <View className="items-center">
-            <View className="flex-row items-center mb-3">
+            <View className="flex-row items-center" style={{ marginBottom: 12 }}>
               <View className="flex-1 h-px bg-gray-200" />
-              <Text className="mx-4 text-sm text-gray-400">Tài khoản demo</Text>
+              <Text className="text-sm text-gray-500" style={{ marginHorizontal: 16, lineHeight: 21 }}>Tài khoản demo</Text>
               <View className="flex-1 h-px bg-gray-200" />
             </View>
-            <View className="bg-gray-50 rounded-xl p-4" style={{ width: '100%' }}>
-              <Text className="text-xs text-gray-600 mb-2">
-                <Text className="font-bold">Admin:</Text> admin / admin123
+            <View className="bg-gray-50 rounded-xl" style={{ width: '100%', padding: 16 }}>
+              <Text className="text-sm text-gray-600" style={{ lineHeight: 21, marginBottom: 8 }}>
+                <Text className="font-semibold">Admin:</Text> admin / admin123
               </Text>
-              <Text className="text-xs text-gray-600 mb-2">
-                <Text className="font-bold">Giảng viên:</Text> GV001 / teacher123
+              <Text className="text-sm text-gray-600" style={{ lineHeight: 21, marginBottom: 8 }}>
+                <Text className="font-semibold">Giảng viên:</Text> GV001 / teacher123
               </Text>
-              <Text className="text-xs text-gray-600">
-                <Text className="font-bold">Sinh viên:</Text> SV001 / student123
+              <Text className="text-sm text-gray-600" style={{ lineHeight: 21 }}>
+                <Text className="font-semibold">Sinh viên:</Text> SV001 / student123
               </Text>
             </View>
           </View>
