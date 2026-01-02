@@ -1,22 +1,44 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Platform, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Platform, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/colors';
+import Breadcrumbs from './Breadcrumbs';
+
+interface BreadcrumbItem {
+  label: string;
+  route?: string;
+}
 
 interface AppHeaderProps {
   title: string;
   showBack?: boolean;
   rightAction?: React.ReactNode;
   showLogout?: boolean;
+  breadcrumbs?: BreadcrumbItem[];
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({ 
   title, 
   showBack = false,
   rightAction,
-  showLogout = false
+  showLogout = false,
+  breadcrumbs
 }) => {
   const router = useRouter();
+  const [isBackHovered, setIsBackHovered] = useState(false);
+  const [isLogoutHovered, setIsLogoutHovered] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const handleScroll = () => {
+        setIsScrolled(window.scrollY > 10);
+      };
+
+      window.addEventListener('scroll', handleScroll);
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
 
   const handleLogout = () => {
     Alert.alert(
@@ -40,18 +62,49 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         paddingTop: Platform.OS === 'web' ? 0 : 40,
         paddingBottom: 16,
         paddingHorizontal: 20,
+        ...(Platform.OS === 'web' && {
+          position: 'sticky' as any,
+          top: 0,
+          zIndex: 100,
+          backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.9)' : '#FFFFFF',
+          backdropFilter: isScrolled ? 'blur(10px)' : 'none',
+          WebkitBackdropFilter: isScrolled ? 'blur(10px)' : 'none',
+          transition: 'all 0.2s ease',
+          boxShadow: isScrolled ? '0 1px 3px rgba(0, 0, 0, 0.05)' : 'none',
+        } as any),
       }}
     >
       <View 
-        className="flex-row items-center justify-between"
+        className="flex-col"
         style={{ maxWidth: 900, width: '100%', alignSelf: 'center' }}
       >
+        {/* Breadcrumbs */}
+        {breadcrumbs && breadcrumbs.length > 0 && (
+          <Breadcrumbs items={breadcrumbs} />
+        )}
+        
+        {/* Header Content */}
+        <View className="flex-row items-center justify-between">
         <View className="flex-row items-center flex-1">
           {showBack && (
             <TouchableOpacity
               onPress={() => router.back()}
-              className="mr-4"
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{
+                marginRight: 16,
+                minWidth: 44,
+                minHeight: 44,
+                justifyContent: 'center',
+                alignItems: 'center',
+                transform: isBackHovered ? [{ scale: 1.1 }] : [{ scale: 1 }],
+                ...(Platform.OS === 'web' && {
+                  transition: 'all 0.2s ease',
+                } as any),
+              }}
+              activeOpacity={0.6}
+              {...(Platform.OS === 'web' && {
+                onMouseEnter: () => setIsBackHovered(true),
+                onMouseLeave: () => setIsBackHovered(false),
+              } as any)}
             >
               <Text className="text-xl text-primary">←</Text>
             </TouchableOpacity>
@@ -67,8 +120,23 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         {showLogout && (
           <TouchableOpacity
             onPress={handleLogout}
-            className="bg-red-50 rounded-lg px-4 py-2"
-            activeOpacity={0.7}
+            className="bg-red-50 px-4"
+            style={{
+              borderRadius: 8,
+              minHeight: 44,
+              paddingVertical: 10,
+              transform: isLogoutHovered ? [{ scale: 1.03 }] : [{ scale: 1 }],
+              backgroundColor: isLogoutHovered ? '#FEE2E2' : '#FEF2F2',
+              ...(Platform.OS === 'web' && {
+                transition: 'all 0.2s ease',
+                cursor: 'pointer',
+              } as any),
+            }}
+            activeOpacity={0.8}
+            {...(Platform.OS === 'web' && {
+              onMouseEnter: () => setIsLogoutHovered(true),
+              onMouseLeave: () => setIsLogoutHovered(false),
+            } as any)}
           >
             <Text className="text-sm" style={{ color: Colors.error, lineHeight: 21 }}>
               Đăng xuất
@@ -80,6 +148,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             {rightAction}
           </View>
         )}
+      </View>
       </View>
     </View>
   );

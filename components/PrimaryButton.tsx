@@ -1,5 +1,5 @@
-import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, ViewStyle } from 'react-native';
+import React, { useState } from 'react';
+import { TouchableOpacity, Text, ActivityIndicator, ViewStyle, Platform, Animated } from 'react-native';
 import { Colors } from '@/constants/colors';
 
 interface PrimaryButtonProps {
@@ -21,6 +21,8 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   style,
   className,
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
   const isDisabled = disabled || loading;
 
   const getButtonStyle = () => {
@@ -43,22 +45,60 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
     return 'text-white';
   };
 
+  const getHoverStyle = () => {
+    if (!isHovered || isDisabled) return {};
+    
+    return {
+      transform: [{ scale: 1.02 }],
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
+      elevation: 4,
+    };
+  };
+
+  const getPressedStyle = () => {
+    if (!isPressed || isDisabled) return {};
+    
+    return {
+      transform: [{ scale: 0.95 }],
+    };
+  };
+
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={isDisabled}
       className={`
         ${getButtonStyle()}
-        rounded-xl
-        py-4
         px-6
         items-center
         justify-center
         ${isDisabled ? 'opacity-50' : ''}
         ${className || ''}
       `}
-      style={style}
-      activeOpacity={0.7}
+      style={[
+        { 
+          borderRadius: 8,
+          minHeight: 44,
+          paddingVertical: 12,
+        },
+        Platform.OS === 'web' && {
+          transition: 'all 0.2s ease',
+          cursor: isDisabled ? 'not-allowed' : 'pointer',
+        } as any,
+        getHoverStyle(),
+        getPressedStyle(),
+        style,
+      ]}
+      activeOpacity={0.8}
+      onPressIn={() => setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
+      {...(Platform.OS === 'web' && {
+        onMouseEnter: () => setIsHovered(true),
+        onMouseLeave: () => setIsHovered(false),
+      } as any)}
     >
       {loading ? (
         <ActivityIndicator 

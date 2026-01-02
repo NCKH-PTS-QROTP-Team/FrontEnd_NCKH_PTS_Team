@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { Colors } from '@/constants/colors';
 import { Schedule } from '@/constants/mockData';
+import { isDesktop } from '@/constants/responsive';
 
 interface ScheduleCardProps {
   schedule: Schedule;
@@ -12,17 +13,27 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
   schedule,
   onPress,
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const cardPadding = isDesktop ? 24 : 16;
+  
   const CardContent = (
     <View
-      className="bg-white rounded-xl border border-gray-200"
-      style={{
-        padding: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
-      }}
+      className="bg-white border border-gray-200"
+      style={[
+        {
+          borderRadius: 8,
+          padding: cardPadding,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: isHovered && onPress ? 0.08 : 0.03,
+          shadowRadius: isHovered && onPress ? 6 : 3,
+          elevation: isHovered && onPress ? 3 : 1,
+          transform: isHovered && onPress && Platform.OS === 'web' ? [{ scale: 1.015 }] : [],
+        },
+        Platform.OS === 'web' && {
+          transition: 'all 0.2s ease',
+        } as any,
+      ]}
     >
       <View className="flex-row items-start justify-between" style={{ marginBottom: 12 }}>
         <View className="flex-1">
@@ -31,7 +42,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
             style={{ lineHeight: 28, marginBottom: 4 }}
             numberOfLines={2}
           >
-            {schedule.subject}
+            {schedule.courseName}
           </Text>
           <Text className="text-sm text-gray-600" style={{ lineHeight: 21 }}>
             {schedule.teacher}
@@ -57,7 +68,11 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
     return (
       <TouchableOpacity
         onPress={onPress}
-        activeOpacity={0.7}
+        activeOpacity={0.9}
+        {...(Platform.OS === 'web' && {
+          onMouseEnter: () => setIsHovered(true),
+          onMouseLeave: () => setIsHovered(false),
+        } as any)}
       >
         {CardContent}
       </TouchableOpacity>

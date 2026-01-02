@@ -7,18 +7,19 @@ import { StatsCard } from '@/components/StatsCard';
 import { mockStats } from '@/constants/mockData';
 import AppLayout from '@/components/AppLayout';
 import { isDesktop, isTablet } from '@/constants/responsive';
+import { HomeIcon, ClipboardIcon, HashIcon, QrCodeIcon, GraduationIcon, ChartIcon } from '@/components/Icons';
 
 export default function TeacherDashboardScreen() {
   const router = useRouter();
   const isWeb = Platform.OS === 'web';
 
   const menuItems = [
-    { icon: '⌂', label: 'Dashboard', route: '/teacher/dashboard' },
-    { icon: 'C', label: 'Danh sách lớp', route: '/teacher/class-list' },
-    { icon: 'O', label: 'Tạo OTP', route: '/teacher/generate-otp' },
-    { icon: 'Q', label: 'Tạo QR', route: '/teacher/generate-qr' },
-    { icon: 'A', label: 'Lớp chủ nhiệm', route: '/teacher/advisee-class' },
-    { icon: 'R', label: 'Báo cáo', route: '/teacher/reports' },
+    { icon: <HomeIcon size={20} color="#3FA9F5" />, label: 'Dashboard', route: '/teacher/dashboard' },
+    { icon: <ClipboardIcon size={20} color="#3FA9F5" />, label: 'Danh sách lớp', route: '/teacher/class-list' },
+    { icon: <HashIcon size={20} color="#3FA9F5" />, label: 'Tạo OTP', route: '/teacher/generate-otp' },
+    { icon: <QrCodeIcon size={20} color="#3FA9F5" />, label: 'Tạo QR', route: '/teacher/generate-qr' },
+    { icon: <GraduationIcon size={20} color="#3FA9F5" />, label: 'Lớp chủ nhiệm', route: '/teacher/advisee-class' },
+    { icon: <ChartIcon size={20} color="#3FA9F5" />, label: 'Báo cáo', route: '/teacher/reports' },
   ];
 
   const statsWidth = isDesktop ? 'w-1/4' : isTablet ? 'w-1/2' : 'w-1/2';

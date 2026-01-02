@@ -16,8 +16,9 @@ export default function Input({ label, error, ...props }: InputProps) {
         </Text>
       )}
       <TextInput
-        className="border rounded-xl px-4 py-3 text-base"
+        className="border px-4 py-3 text-base"
         style={{
+          borderRadius: 8,
           borderColor: error ? Colors.error : Colors.border,
           color: Colors.text,
         }}

@@ -8,6 +8,7 @@ import { ScheduleCard } from '@/components/ScheduleCard';
 import { mockSchedules } from '@/constants/mockData';
 import AppLayout from '@/components/AppLayout';
 import { isDesktop, isTablet } from '@/constants/responsive';
+import { HomeIcon, CalendarIcon, QrCodeIcon, HashIcon, ScrollIcon, BellIcon } from '@/components/Icons';
 
 export default function StudentHomeScreen() {
   const router = useRouter();
@@ -15,12 +16,12 @@ export default function StudentHomeScreen() {
   const isWeb = Platform.OS === 'web';
 
   const menuItems = [
-    { icon: '⌂', label: 'Trang chủ', route: '/student/home' },
-    { icon: 'L', label: 'Lịch học', route: '/student/schedule' },
-    { icon: 'Q', label: 'Điểm danh QR', route: '/student/qr-attendance' },
-    { icon: 'O', label: 'Điểm danh OTP', route: '/student/otp-attendance' },
-    { icon: 'H', label: 'Lịch sử', route: '/student/history' },
-    { icon: '✉', label: 'Thông báo', route: '/student/notifications' },
+    { icon: <HomeIcon size={20} color="#3FA9F5" />, label: 'Trang chủ', route: '/student/home' },
+    { icon: <CalendarIcon size={20} color="#3FA9F5" />, label: 'Lịch học', route: '/student/schedule' },
+    { icon: <QrCodeIcon size={20} color="#3FA9F5" />, label: 'Điểm danh QR', route: '/student/qr-attendance' },
+    { icon: <HashIcon size={20} color="#3FA9F5" />, label: 'Điểm danh OTP', route: '/student/otp-attendance' },
+    { icon: <ScrollIcon size={20} color="#3FA9F5" />, label: 'Lịch sử', route: '/student/history' },
+    { icon: <BellIcon size={20} color="#3FA9F5" />, label: 'Thông báo', route: '/student/notifications' },
   ];
 
   const content = (

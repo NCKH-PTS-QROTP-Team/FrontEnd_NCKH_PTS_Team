@@ -24,14 +24,15 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
         }}
       >
         <View
-          className="bg-white rounded-xl p-6 items-center"
+          className="bg-white p-6 items-center"
           style={{
+            borderRadius: 8,
             minWidth: 120,
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.25,
-            shadowRadius: 8,
-            elevation: 8,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 6,
+            elevation: 4,
           }}
         >
           <ActivityIndicator size="large" color={Colors.primary} />

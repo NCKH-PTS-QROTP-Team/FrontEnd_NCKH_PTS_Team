@@ -57,7 +57,6 @@ export const OTPInput: React.FC<OTPInputProps> = ({
             h-14
             border-2
             border-gray-300
-            rounded-xl
             text-center
             text-3xl
             font-semibold
@@ -65,6 +64,7 @@ export const OTPInput: React.FC<OTPInputProps> = ({
             bg-white
           "
           style={{
+            borderRadius: 8,
             borderColor: otp[index] ? Colors.primary : Colors.gray300,
             lineHeight: 48,
             ...Platform.select({

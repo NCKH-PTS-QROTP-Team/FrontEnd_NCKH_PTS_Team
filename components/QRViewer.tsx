@@ -17,8 +17,9 @@ export const QRViewer: React.FC<QRViewerProps> = ({
   return (
     <View className="items-center" style={{ gap: 16 }}>
       <View
-        className="bg-white border-2 border-gray-200 rounded-xl items-center justify-center"
+        className="bg-white border-2 border-gray-200 items-center justify-center"
         style={{
+          borderRadius: 8,
           width: size,
           height: size,
           padding: 20,

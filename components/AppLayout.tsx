@@ -3,7 +3,7 @@ import { View, Platform } from 'react-native';
 import Sidebar from './Sidebar';
 
 interface MenuItem {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   route: string;
   badge?: number;

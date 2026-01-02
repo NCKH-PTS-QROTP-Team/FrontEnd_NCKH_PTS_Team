@@ -24,8 +24,8 @@ export default function Modal({ visible, onClose, title, children, width = 500 }
         style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
       >
         <Pressable 
-          className="bg-white rounded-2xl p-6 shadow-lg"
-          style={{ width: '100%', maxWidth: width }}
+          className="bg-white border border-gray-100 p-6 shadow-lg"
+          style={{ borderRadius: 8, width: '100%', maxWidth: width }}
           onPress={(e) => e.stopPropagation()}
         >
           {title && (

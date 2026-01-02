@@ -15,6 +15,12 @@ export default function UserDetail() {
   const [isActive, setIsActive] = useState(user?.isActive || false);
   const [isEditing, setIsEditing] = useState(false);
 
+  const breadcrumbs = [
+    { label: 'Dashboard', route: '/admin/dashboard' },
+    { label: 'Người dùng', route: '/admin/users' },
+    { label: user?.name || 'Chi tiết' },
+  ];
+
   if (!user) {
     return (
       <View className="flex-1 bg-white items-center justify-center">
@@ -63,7 +69,7 @@ export default function UserDetail() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Chi tiết người dùng" showLogout={true} />
+      <AppHeader title="Chi tiết người dùng" showLogout={true} breadcrumbs={breadcrumbs} />
       
       <ScrollView className="flex-1">
         <View className="p-4" style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>

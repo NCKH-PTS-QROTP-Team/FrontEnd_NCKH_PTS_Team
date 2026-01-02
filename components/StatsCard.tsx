@@ -22,13 +22,15 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   const displayTitle = title || label || '';
   return (
     <View
-      className="bg-white rounded-xl border border-gray-200 p-4"
+      className="bg-white border border-gray-200"
       style={{
+        borderRadius: 8,
+        padding: 16,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.03,
+        shadowRadius: 3,
+        elevation: 1,
         flex: 1,
       }}
     >

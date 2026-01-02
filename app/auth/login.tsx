@@ -93,15 +93,16 @@ export default function LoginScreen() {
 
           {/* Login Card */}
           <View
-            className="bg-white rounded-2xl"
+            className="bg-white border border-gray-100"
             style={{
+              borderRadius: 8,
               padding: 24,
               marginBottom: 24,
               shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 3,
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+              elevation: 2,
             }}
           >
             <View style={{ marginBottom: 16 }}>
@@ -112,8 +113,9 @@ export default function LoginScreen() {
                 value={username}
                 onChangeText={setUsername}
                 placeholder="admin, GV001, SV001"
-                className="border-2 rounded-xl px-4 text-base text-gray-900 bg-gray-50"
+                className="border-2 px-4 text-base text-gray-900 bg-gray-50"
                 style={{
+                  borderRadius: 8,
                   paddingVertical: 14,
                   lineHeight: 24,
                   borderColor: username ? Colors.primary : Colors.gray200,
@@ -137,8 +139,9 @@ export default function LoginScreen() {
                 onChangeText={setPassword}
                 placeholder="Nhập mật khẩu"
                 secureTextEntry
-                className="border-2 rounded-xl px-4 text-base text-gray-900 bg-gray-50"
+                className="border-2 px-4 text-base text-gray-900 bg-gray-50"
                 style={{
+                  borderRadius: 8,
                   paddingVertical: 14,
                   lineHeight: 24,
                   borderColor: password ? Colors.primary : Colors.gray200,
@@ -169,7 +172,7 @@ export default function LoginScreen() {
               <Text className="text-sm text-gray-500" style={{ marginHorizontal: 16, lineHeight: 21 }}>Tài khoản demo</Text>
               <View className="flex-1 h-px bg-gray-200" />
             </View>
-            <View className="bg-gray-50 rounded-xl" style={{ width: '100%', padding: 16 }}>
+            <View className="bg-gray-50 border border-gray-100" style={{ width: '100%', padding: 16, borderRadius: 8 }}>
               <Text className="text-sm text-gray-600" style={{ lineHeight: 21, marginBottom: 8 }}>
                 <Text className="font-semibold">Admin:</Text> admin / admin123
               </Text>

@@ -18,7 +18,7 @@ interface TableProps {
 export default function Table({ columns, data, onRowPress }: TableProps) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      <View className="border rounded-xl overflow-hidden" style={{ borderColor: Colors.border }}>
+      <View className="border overflow-hidden" style={{ borderRadius: 8, borderColor: Colors.border }}>
         {/* Header */}
         <View className="flex-row bg-gray-50" style={{ backgroundColor: Colors.gray50 }}>
           {columns.map((col) => (

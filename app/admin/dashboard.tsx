@@ -7,17 +7,18 @@ import StatsCard from '../../components/StatsCard';
 import Card from '../../components/Card';
 import AppLayout from '../../components/AppLayout';
 import { isDesktop, isTablet } from '../../constants/responsive';
+import { HomeIcon, UsersIcon, SchoolIcon, BookIcon, CalendarIcon, EyeIcon, ChartIcon, SettingsIcon } from '../../components/Icons';
 
 export default function AdminDashboard() {
   const menuItems = [
-    { icon: '⌂', label: 'Dashboard', route: '/admin/dashboard' },
-    { icon: 'U', label: 'Người dùng', route: '/admin/users' },
-    { icon: 'C', label: 'Lớp học', route: '/admin/classes' },
-    { icon: 'S', label: 'Môn học', route: '/admin/subjects' },
-    { icon: 'L', label: 'Lịch học', route: '/admin/schedules' },
-    { icon: 'M', label: 'Giám sát', route: '/admin/sessions' },
-    { icon: 'R', label: 'Báo cáo', route: '/admin/reports' },
-    { icon: '⚙', label: 'Cài đặt', route: '/admin/settings' },
+    { icon: <HomeIcon size={20} color={Colors.primary} />, label: 'Dashboard', route: '/admin/dashboard' },
+    { icon: <UsersIcon size={20} color={Colors.primary} />, label: 'Người dùng', route: '/admin/users' },
+    { icon: <SchoolIcon size={20} color={Colors.primary} />, label: 'Lớp học', route: '/admin/classes' },
+    { icon: <BookIcon size={20} color={Colors.primary} />, label: 'Môn học', route: '/admin/subjects' },
+    { icon: <CalendarIcon size={20} color={Colors.primary} />, label: 'Lịch học', route: '/admin/schedules' },
+    { icon: <EyeIcon size={20} color={Colors.primary} />, label: 'Giám sát', route: '/admin/sessions' },
+    { icon: <ChartIcon size={20} color={Colors.primary} />, label: 'Báo cáo', route: '/admin/reports' },
+    { icon: <SettingsIcon size={20} color={Colors.primary} />, label: 'Cài đặt', route: '/admin/settings' },
   ];
   const stats = [
     { label: 'Tổng người dùng', value: '1,234', icon: <Text style={{ fontSize: 20, color: Colors.primary }}>U</Text>, color: Colors.primary },
