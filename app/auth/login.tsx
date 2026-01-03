@@ -12,6 +12,8 @@ import {
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import Input from '@/components/Input';
+import Toast, { useToast } from '@/components/Toast';
 import { Colors } from '@/constants/colors';
 import { mockUsers } from '@/constants/mockData';
 
@@ -20,10 +22,21 @@ export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const { toast, showToast, hideToast } = useToast();
 
   const handleLogin = async () => {
-    if (!username.trim() || !password.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin');
+    setUsernameError('');
+    setPasswordError('');
+
+    if (!username.trim()) {
+      setUsernameError('Vui lòng nhập tên đăng nhập');
+      return;
+    }
+
+    if (!password.trim()) {
+      setPasswordError('Vui lòng nhập mật khẩu');
       return;
     }
 
@@ -36,22 +49,26 @@ export default function LoginScreen() {
       );
 
       if (user) {
-        // Navigate based on role
-        switch (user.role) {
-          case 'admin':
-            router.replace('/admin/dashboard');
-            break;
-          case 'teacher':
-            router.replace('/teacher/dashboard');
-            break;
-          case 'student':
-            router.replace('/student/home');
-            break;
-          default:
-            Alert.alert('Lỗi', 'Vai trò không hợp lệ');
-        }
+        showToast('Đăng nhập thành công!', 'success');
+        // Navigate based on role after a brief delay
+        setTimeout(() => {
+          switch (user.role) {
+            case 'admin':
+              router.replace('/admin/dashboard');
+              break;
+            case 'teacher':
+              router.replace('/teacher/dashboard');
+              break;
+            case 'student':
+              router.replace('/student/home');
+              break;
+            default:
+              showToast('Vai trò không hợp lệ', 'error');
+          }
+        }, 500);
       } else {
-        Alert.alert('Đăng nhập thất bại', 'Tài khoản hoặc mật khẩu không đúng');
+        showToast('Tài khoản hoặc mật khẩu không đúng', 'error');
+        setPasswordError('Tài khoản hoặc mật khẩu không đúng');
       }
       
       setLoading(false);
@@ -105,57 +122,37 @@ export default function LoginScreen() {
               elevation: 2,
             }}
           >
-            <View style={{ marginBottom: 16 }}>
-              <Text className="text-sm text-gray-700" style={{ lineHeight: 21, marginBottom: 8 }}>
-                Tên đăng nhập
-              </Text>
-              <TextInput
-                value={username}
-                onChangeText={setUsername}
-                placeholder="admin, GV001, SV001"
-                className="border-2 px-4 text-base text-gray-900 bg-gray-50"
-                style={{
-                  borderRadius: 8,
-                  paddingVertical: 14,
-                  lineHeight: 24,
-                  borderColor: username ? Colors.primary : Colors.gray200,
-                  ...Platform.select({
-                    web: { outlineStyle: 'none' },
-                  }),
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="next"
-                placeholderTextColor={Colors.gray400}
-              />
-            </View>
+            <Input
+              label="Tên đăng nhập"
+              value={username}
+              onChangeText={(text) => {
+                setUsername(text);
+                setUsernameError('');
+              }}
+              placeholder="admin, GV001, SV001"
+              error={usernameError}
+              success={username.trim().length > 0 && !usernameError}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="next"
+            />
 
-            <View style={{ marginBottom: 24 }}>
-              <Text className="text-sm text-gray-700" style={{ lineHeight: 21, marginBottom: 8 }}>
-                Mật khẩu
-              </Text>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Nhập mật khẩu"
-                secureTextEntry
-                className="border-2 px-4 text-base text-gray-900 bg-gray-50"
-                style={{
-                  borderRadius: 8,
-                  paddingVertical: 14,
-                  lineHeight: 24,
-                  borderColor: password ? Colors.primary : Colors.gray200,
-                  ...Platform.select({
-                    web: { outlineStyle: 'none' },
-                  }),
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="done"
-                onSubmitEditing={handleLogin}
-                placeholderTextColor={Colors.gray400}
-              />
-            </View>
+            <Input
+              label="Mật khẩu"
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                setPasswordError('');
+              }}
+              placeholder="Nhập mật khẩu"
+              error={passwordError}
+              success={password.trim().length > 0 && !passwordError}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
+            />
 
             <PrimaryButton
               title="Đăng nhập"
@@ -186,6 +183,14 @@ export default function LoginScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Toast Notification */}
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+      />
     </KeyboardAvoidingView>
   );
 }

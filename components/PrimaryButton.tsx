@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, ViewStyle, Platform, Animated } from 'react-native';
+import { TouchableOpacity, Text, ActivityIndicator, ViewStyle, Platform } from 'react-native';
 import { Colors } from '@/constants/colors';
 
 interface PrimaryButtonProps {
@@ -23,33 +23,61 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const isDisabled = disabled || loading;
 
   const getButtonStyle = () => {
     if (variant === 'outline') {
-      return 'bg-white border-2 border-primary';
+      return 'bg-white border-2';
     }
     if (variant === 'ghost') {
       return 'bg-transparent';
     }
-    return 'bg-primary';
+    return '';
   };
 
-  const getTextStyle = () => {
+  const getBackgroundColor = () => {
+    if (isDisabled) {
+      return variant === 'outline' ? Colors.white : Colors.gray300;
+    }
+    if (variant === 'outline' || variant === 'ghost') {
+      return variant === 'outline' ? Colors.white : 'transparent';
+    }
+    if (isPressed) return Colors.primaryDark;
+    if (isHovered) return Colors.primaryHover;
+    return Colors.primary;
+  };
+
+  const getBorderColor = () => {
     if (variant === 'outline') {
-      return 'text-primary';
+      return isDisabled ? Colors.gray300 : Colors.primary;
     }
-    if (variant === 'ghost') {
-      return 'text-primary';
+    return 'transparent';
+  };
+
+  const getTextColor = () => {
+    if (isDisabled && variant !== 'outline') {
+      return Colors.gray500;
     }
-    return 'text-white';
+    if (variant === 'outline' || variant === 'ghost') {
+      return isDisabled ? Colors.gray400 : Colors.primary;
+    }
+    return Colors.white;
+  };
+
+  const getFocusStyle = () => {
+    if (!isFocused || isDisabled) return {};
+    
+    return Platform.OS === 'web' ? {
+      outline: `3px solid ${Colors.focusRing}`,
+      outlineOffset: '2px',
+    } : {};
   };
 
   const getHoverStyle = () => {
     if (!isHovered || isDisabled) return {};
     
     return {
-      transform: [{ scale: 1.02 }],
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.15,
@@ -62,7 +90,12 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
     if (!isPressed || isDisabled) return {};
     
     return {
-      transform: [{ scale: 0.95 }],
+      transform: [{ scale: 0.96 }],
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 1,
     };
   };
 
@@ -70,24 +103,31 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
     <TouchableOpacity
       onPress={onPress}
       disabled={isDisabled}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: isDisabled }}
       className={`
         ${getButtonStyle()}
         px-6
         items-center
         justify-center
-        ${isDisabled ? 'opacity-50' : ''}
         ${className || ''}
       `}
       style={[
         { 
           borderRadius: 8,
-          minHeight: 44,
+          minHeight: 44, // Minimum touch target
           paddingVertical: 12,
+          backgroundColor: getBackgroundColor(),
+          borderColor: getBorderColor(),
+          borderWidth: variant === 'outline' ? 2 : 0,
         },
         Platform.OS === 'web' && {
           transition: 'all 0.2s ease',
           cursor: isDisabled ? 'not-allowed' : 'pointer',
         } as any,
+        getFocusStyle(),
         getHoverStyle(),
         getPressedStyle(),
         style,
@@ -98,6 +138,27 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       {...(Platform.OS === 'web' && {
         onMouseEnter: () => setIsHovered(true),
         onMouseLeave: () => setIsHovered(false),
+        onFocus: () => setIsFocused(true),
+        onBlur: () => setIsFocused(false),
+      } as any)}
+    >
+      {loading ? (
+        <ActivityIndicator color={getTextColor()} />
+      ) : (
+        <Text
+          style={{
+            color: getTextColor(),
+            fontSize: 16,
+            fontWeight: '600',
+            letterSpacing: -0.01,
+          }}
+        >
+          {title}
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
+};
       } as any)}
     >
       {loading ? (

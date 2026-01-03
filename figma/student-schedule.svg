@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.1"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1440" height="900" fill="#FFFFFF"/>
+  
+  <!-- Header -->
+  <rect x="0" y="0" width="1440" height="80" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="20" y="50" font-family="Arial, sans-serif" font-size="20" fill="#3FA9F5">←</text>
+  <text x="60" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="600" fill="#111827">Lịch học</text>
+  
+  <!-- Content -->
+  <g transform="translate(320, 100)">
+    <!-- Date Header -->
+    <rect x="0" y="0" width="800" height="100" rx="16" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="24" y="40" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Hôm nay</text>
+    <text x="24" y="70" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#111827">Thứ Năm, 02/01/2026</text>
+    
+    <!-- Schedule List Title -->
+    <text x="0" y="140" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#111827">Lịch học trong ngày</text>
+    
+    <!-- Schedule Card 1 -->
+    <rect x="0" y="160" width="800" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="24" y="190" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#111827">Lập trình cơ bản</text>
+    <text x="24" y="215" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">TS. Nguyễn Văn A</text>
+    <rect x="24" y="230" width="2" height="24" fill="#3FA9F5" rx="1"/>
+    <text x="36" y="248" font-family="Arial, sans-serif" font-size="16" fill="#111827">08:00 - 10:00</text>
+    <text x="36" y="268" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Phòng: A102</text>
+    
+    <!-- Schedule Card 2 -->
+    <rect x="0" y="300" width="800" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="24" y="330" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#111827">Cấu trúc dữ liệu</text>
+    <text x="24" y="355" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">TS. Trần Thị B</text>
+    <rect x="24" y="370" width="2" height="24" fill="#3FA9F5" rx="1"/>
+    <text x="36" y="388" font-family="Arial, sans-serif" font-size="16" fill="#111827">10:15 - 12:15</text>
+    <text x="36" y="408" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Phòng: B205</text>
+    
+    <!-- Schedule Card 3 -->
+    <rect x="0" y="440" width="800" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="24" y="470" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#111827">Hệ điều hành</text>
+    <text x="24" y="495" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">PGS. Lê Văn C</text>
+    <rect x="24" y="510" width="2" height="24" fill="#3FA9F5" rx="1"/>
+    <text x="36" y="528" font-family="Arial, sans-serif" font-size="16" fill="#111827">13:30 - 15:30</text>
+    <text x="36" y="548" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Phòng: C301</text>
+  </g>
+</svg>
+

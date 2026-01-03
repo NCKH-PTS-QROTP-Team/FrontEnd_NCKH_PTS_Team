@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3FA9F5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2B8FD9;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.1"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1440" height="1200" fill="#FFFFFF"/>
+  
+  <!-- Sidebar (simplified) -->
+  <rect x="0" y="0" width="260" height="1200" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  
+  <!-- Header -->
+  <rect x="260" y="0" width="1180" height="80" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="280" y="30" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Dashboard / Người dùng /</text>
+  <text x="280" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="600" fill="#111827">Chi tiết người dùng</text>
+  
+  <!-- Content -->
+  <g transform="translate(420, 100)">
+    <!-- Avatar Card -->
+    <rect x="0" y="0" width="600" height="200" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <circle cx="300" cy="80" r="48" fill="url(#primaryGrad)"/>
+    <text x="300" y="100" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#FFFFFF" text-anchor="middle">N</text>
+    <text x="300" y="150" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#111827" text-anchor="middle">Nguyễn Văn An</text>
+    <rect x="250" y="160" width="100" height="24" rx="12" fill="#D1FAE5"/>
+    <text x="300" y="177" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#059669" text-anchor="middle">Sinh viên</text>
+    <text x="300" y="195" font-family="Arial, sans-serif" font-size="12" fill="#6B7280" text-anchor="middle">Tham gia: 01/02/2025</text>
+    
+    <!-- Info Card -->
+    <rect x="0" y="220" width="600" height="300" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="24" y="260" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#111827">Thông tin chi tiết</text>
+    
+    <text x="24" y="300" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Email</text>
+    <text x="24" y="325" font-family="Arial, sans-serif" font-size="16" font-weight="500" fill="#111827">nva@student.edu.vn</text>
+    
+    <text x="24" y="365" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Mã sinh viên</text>
+    <text x="24" y="390" font-family="Arial, sans-serif" font-size="16" font-weight="500" fill="#111827">SV001</text>
+    
+    <text x="24" y="430" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">ID</text>
+    <text x="24" y="455" font-family="Arial, sans-serif" font-size="16" font-weight="500" fill="#111827">4</text>
+    
+    <line x1="24" y1="480" x2="576" y2="480" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="24" y="510" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#111827">Trạng thái tài khoản</text>
+    <rect x="520" y="495" width="48" height="28" rx="14" fill="#3FA9F5"/>
+    <circle cx="544" cy="509" r="12" fill="#FFFFFF"/>
+    
+    <!-- Actions Card -->
+    <rect x="0" y="540" width="600" height="200" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <rect x="24" y="560" width="552" height="48" rx="8" fill="#FFFFFF" stroke="#3FA9F5" stroke-width="2"/>
+    <text x="300" y="588" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#3FA9F5" text-anchor="middle">Reset mật khẩu</text>
+    
+    <rect x="24" y="620" width="552" height="48" rx="8" fill="#FFFFFF" stroke="#EF4444" stroke-width="2"/>
+    <text x="300" y="648" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#EF4444" text-anchor="middle">Xóa người dùng</text>
+  </g>
+</svg>
+

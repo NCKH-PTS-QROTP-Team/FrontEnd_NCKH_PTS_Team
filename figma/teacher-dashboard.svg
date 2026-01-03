@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3FA9F5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2B8FD9;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.1"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1440" height="900" fill="#F9FAFB"/>
+  
+  <!-- Sidebar -->
+  <g>
+    <rect x="0" y="0" width="260" height="900" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+    
+    <!-- User Info -->
+    <g transform="translate(24, 24)">
+      <circle cx="28" cy="28" r="28" fill="#10B981" stroke="#FFFFFF" stroke-width="3"/>
+      <text x="28" y="38" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#FFFFFF" text-anchor="middle">G</text>
+      <text x="0" y="80" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Giảng viên</text>
+      <text x="0" y="100" font-family="Arial, sans-serif" font-size="13" fill="#6B7280">Giảng viên</text>
+    </g>
+    
+    <!-- Menu Items -->
+    <g transform="translate(12, 140)">
+      <rect x="8" y="0" width="236" height="48" rx="8" fill="#E0F2FE"/>
+      <rect x="8" y="0" width="3" height="48" fill="#3FA9F5"/>
+      <rect x="20" y="8" width="32" height="32" rx="8" fill="#3FA9F5"/>
+      <text x="60" y="30" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#3FA9F5">Dashboard</text>
+      
+      <rect x="8" y="52" width="236" height="48" rx="8" fill="transparent"/>
+      <rect x="20" y="60" width="32" height="32" rx="8" fill="#F3F4F6"/>
+      <text x="60" y="82" font-family="Arial, sans-serif" font-size="14" fill="#111827">Danh sách lớp</text>
+      
+      <rect x="8" y="104" width="236" height="48" rx="8" fill="transparent"/>
+      <rect x="20" y="112" width="32" height="32" rx="8" fill="#F3F4F6"/>
+      <text x="60" y="134" font-family="Arial, sans-serif" font-size="14" fill="#111827">Tạo OTP</text>
+      
+      <rect x="8" y="156" width="236" height="48" rx="8" fill="transparent"/>
+      <rect x="20" y="164" width="32" height="32" rx="8" fill="#F3F4F6"/>
+      <text x="60" y="186" font-family="Arial, sans-serif" font-size="14" fill="#111827">Tạo QR</text>
+      
+      <rect x="8" y="208" width="236" height="48" rx="8" fill="transparent"/>
+      <rect x="20" y="216" width="32" height="32" rx="8" fill="#F3F4F6"/>
+      <text x="60" y="238" font-family="Arial, sans-serif" font-size="14" fill="#111827">Lớp chủ nhiệm</text>
+      
+      <rect x="8" y="260" width="236" height="48" rx="8" fill="transparent"/>
+      <rect x="20" y="268" width="32" height="32" rx="8" fill="#F3F4F6"/>
+      <text x="60" y="290" font-family="Arial, sans-serif" font-size="14" fill="#111827">Báo cáo</text>
+    </g>
+    
+    <!-- Logout -->
+    <g transform="translate(16, 820)">
+      <rect x="0" y="0" width="228" height="48" rx="8" fill="#FEE2E2" stroke="#FECACA" stroke-width="1"/>
+      <text x="114" y="30" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#EF4444" text-anchor="middle">Đăng xuất</text>
+    </g>
+  </g>
+  
+  <!-- Main Content -->
+  <g transform="translate(260, 0)">
+    <!-- Header -->
+    <rect x="0" y="0" width="1180" height="80" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="20" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="600" fill="#111827">Dashboard</text>
+    
+    <!-- Content -->
+    <g transform="translate(20, 100)">
+      <!-- Welcome Card -->
+      <rect x="0" y="0" width="1140" height="120" rx="16" fill="url(#primaryGrad)" filter="url(#shadow)"/>
+      <text x="24" y="40" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#FFFFFF">Chào mừng Giảng viên!</text>
+      <text x="24" y="70" font-family="Arial, sans-serif" font-size="16" fill="#DBEAFE">Quản lý điểm danh lớp học của bạn</text>
+      
+      <!-- Quick Actions -->
+      <text x="0" y="180" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#111827">Tạo phiên điểm danh</text>
+      
+      <!-- OTP Card -->
+      <g transform="translate(0, 200)">
+        <rect x="0" y="0" width="554" height="200" rx="16" fill="#FFFFFF" stroke="#DBEAFE" stroke-width="2" filter="url(#shadow)"/>
+        <rect x="24" y="24" width="56" height="56" rx="12" fill="#DBEAFE"/>
+        <text x="52" y="58" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#3FA9F5" text-anchor="middle">123</text>
+        <text x="24" y="110" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#111827">Tạo mã OTP</text>
+        <text x="24" y="135" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Sinh mã số cho sinh viên điểm danh</text>
+      </g>
+      
+      <!-- QR Card -->
+      <g transform="translate(586, 200)">
+        <rect x="0" y="0" width="554" height="200" rx="16" fill="#FFFFFF" stroke="#D1FAE5" stroke-width="2" filter="url(#shadow)"/>
+        <rect x="24" y="24" width="56" height="56" rx="12" fill="#D1FAE5"/>
+        <text x="52" y="58" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#10B981" text-anchor="middle">QR</text>
+        <text x="24" y="110" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#111827">Tạo QR Code</text>
+        <text x="24" y="135" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Hiển thị mã QR trên lớp</text>
+      </g>
+      
+      <!-- Stats -->
+      <text x="0" y="460" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#111827">Thống kê hôm nay</text>
+      
+      <!-- Stats Row 1 -->
+      <g transform="translate(0, 480)">
+        <rect x="0" y="0" width="270" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+        <text x="16" y="30" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Tổng SV</text>
+        <text x="16" y="70" font-family="Arial, sans-serif" font-size="36" font-weight="600" fill="#3FA9F5">45</text>
+        
+        <rect x="290" y="0" width="270" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+        <text x="306" y="30" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Có mặt</text>
+        <text x="306" y="70" font-family="Arial, sans-serif" font-size="36" font-weight="600" fill="#10B981">38</text>
+      </g>
+      
+      <!-- Stats Row 2 -->
+      <g transform="translate(0, 620)">
+        <rect x="0" y="0" width="270" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+        <text x="16" y="30" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Vắng</text>
+        <text x="16" y="70" font-family="Arial, sans-serif" font-size="36" font-weight="600" fill="#EF4444">7</text>
+        
+        <rect x="290" y="0" width="270" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+        <text x="306" y="30" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Tỷ lệ</text>
+        <text x="306" y="70" font-family="Arial, sans-serif" font-size="36" font-weight="600" fill="#3FA9F5">84%</text>
+      </g>
+      
+      <!-- Management Links -->
+      <g transform="translate(0, 780)">
+        <rect x="0" y="0" width="1140" height="64" rx="16" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+        <rect x="16" y="12" width="48" height="40" rx="12" fill="#DBEAFE"/>
+        <text x="40" y="37" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#3FA9F5" text-anchor="middle">≡</text>
+        <text x="76" y="40" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Danh sách lớp học</text>
+        <text x="1124" y="40" font-family="Arial, sans-serif" font-size="20" fill="#9CA3AF" text-anchor="end">→</text>
+      </g>
+    </g>
+  </g>
+</svg>
+

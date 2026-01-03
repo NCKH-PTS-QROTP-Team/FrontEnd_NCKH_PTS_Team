@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3FA9F5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2B8FD9;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.1"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1440" height="1200" fill="#FFFFFF"/>
+  
+  <!-- Header -->
+  <rect x="0" y="0" width="1440" height="80" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="20" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="600" fill="#111827">Thông báo</text>
+  
+  <!-- Content -->
+  <g transform="translate(320, 100)">
+    <!-- Filters -->
+    <rect x="0" y="0" width="120" height="36" rx="18" fill="url(#primaryGrad)"/>
+    <text x="60" y="24" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#FFFFFF" text-anchor="middle">Tất cả (5)</text>
+    
+    <rect x="140" y="0" width="140" height="36" rx="18" fill="#F3F4F6"/>
+    <text x="210" y="24" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#374151" text-anchor="middle">Chưa đọc (2)</text>
+    
+    <text x="700" y="24" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#3FA9F5" text-anchor="end">Đánh dấu đã đọc</text>
+    
+    <!-- Notification 1 (unread) -->
+    <rect x="0" y="60" width="800" height="120" rx="8" fill="#E0F2FE" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <circle cx="60" cy="120" r="20" fill="#FEF3C7"/>
+    <text x="60" y="128" font-family="Arial, sans-serif" font-size="20" fill="#F59E0B" text-anchor="middle">⚠</text>
+    <text x="100" y="105" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">OTP sắp hết hạn</text>
+    <circle cx="780" cy="105" r="4" fill="#3FA9F5"/>
+    <text x="100" y="130" font-family="Arial, sans-serif" font-size="14" fill="#111827">OTP cho buổi học Lập trình cơ bản sẽ hết hạn trong 30 giây</text>
+    <text x="100" y="155" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">2 phút trước</text>
+    
+    <!-- Notification 2 (unread) -->
+    <rect x="0" y="200" width="800" height="120" rx="8" fill="#E0F2FE" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <circle cx="60" cy="260" r="20" fill="#D1FAE5"/>
+    <text x="60" y="268" font-family="Arial, sans-serif" font-size="20" fill="#10B981" text-anchor="middle">✓</text>
+    <text x="100" y="245" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Điểm danh thành công</text>
+    <circle cx="780" cy="245" r="4" fill="#3FA9F5"/>
+    <text x="100" y="270" font-family="Arial, sans-serif" font-size="14" fill="#111827">Bạn đã điểm danh thành công cho môn Cơ sở dữ liệu</text>
+    <text x="100" y="295" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">1 giờ trước</text>
+    
+    <!-- Notification 3 (read) -->
+    <rect x="0" y="340" width="800" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <circle cx="60" cy="400" r="20" fill="#FEE2E2"/>
+    <text x="60" y="408" font-family="Arial, sans-serif" font-size="20" fill="#EF4444" text-anchor="middle">✕</text>
+    <text x="100" y="385" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Điểm danh thất bại</text>
+    <text x="100" y="410" font-family="Arial, sans-serif" font-size="14" fill="#111827">OTP không hợp lệ. Vui lòng thử lại</text>
+    <text x="100" y="435" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">2 giờ trước</text>
+    
+    <!-- Notification 4 (read) -->
+    <rect x="0" y="480" width="800" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <circle cx="60" cy="540" r="20" fill="#DBEAFE"/>
+    <text x="60" y="548" font-family="Arial, sans-serif" font-size="20" fill="#3FA9F5" text-anchor="middle">ℹ</text>
+    <text x="100" y="525" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Buổi học sắp bắt đầu</text>
+    <text x="100" y="550" font-family="Arial, sans-serif" font-size="14" fill="#111827">Lập trình cơ bản sẽ bắt đầu trong 15 phút tại phòng A102</text>
+    <text x="100" y="575" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">3 giờ trước</text>
+    
+    <!-- Notification 5 (read) -->
+    <rect x="0" y="620" width="800" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <circle cx="60" cy="680" r="20" fill="#FEF3C7"/>
+    <text x="60" y="688" font-family="Arial, sans-serif" font-size="20" fill="#F59E0B" text-anchor="middle">⚠</text>
+    <text x="100" y="665" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Cảnh báo vắng học</text>
+    <text x="100" y="690" font-family="Arial, sans-serif" font-size="14" fill="#111827">Bạn đã vắng 3/15 buổi học môn Hệ điều hành</text>
+    <text x="100" y="715" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">1 ngày trước</text>
+  </g>
+</svg>
+

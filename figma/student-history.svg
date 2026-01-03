@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.1"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1440" height="1200" fill="#F9FAFB"/>
+  
+  <!-- Header -->
+  <rect x="0" y="0" width="1440" height="80" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="20" y="50" font-family="Arial, sans-serif" font-size="20" fill="#3FA9F5">←</text>
+  <text x="60" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="600" fill="#111827">Lịch sử điểm danh</text>
+  
+  <!-- Content -->
+  <g transform="translate(320, 100)">
+    <!-- Stats Summary -->
+    <rect x="0" y="0" width="800" height="120" rx="16" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="24" y="40" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Tổng quan</text>
+    
+    <text x="200" y="80" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#10B981" text-anchor="middle">75%</text>
+    <text x="200" y="105" font-family="Arial, sans-serif" font-size="14" fill="#6B7280" text-anchor="middle">Có mặt</text>
+    
+    <line x1="400" y1="60" x2="400" y2="120" stroke="#E5E7EB" stroke-width="1"/>
+    
+    <text x="600" y="80" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#F59E0B" text-anchor="middle">10%</text>
+    <text x="600" y="105" font-family="Arial, sans-serif" font-size="14" fill="#6B7280" text-anchor="middle">Đi muộn</text>
+    
+    <line x1="800" y1="60" x2="800" y2="120" stroke="#E5E7EB" stroke-width="1"/>
+    
+    <text x="1000" y="80" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#EF4444" text-anchor="middle">15%</text>
+    <text x="1000" y="105" font-family="Arial, sans-serif" font-size="14" fill="#6B7280" text-anchor="middle">Vắng</text>
+    
+    <!-- History List Title -->
+    <text x="0" y="180" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#111827">Lịch sử chi tiết</text>
+    
+    <!-- History Card 1 -->
+    <rect x="0" y="200" width="800" height="120" rx="16" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="24" y="230" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#111827">Lập trình cơ bản</text>
+    <text x="24" y="255" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">CS101</text>
+    <rect x="700" y="210" width="60" height="24" rx="12" fill="#D1FAE5"/>
+    <text x="730" y="227" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#059669" text-anchor="middle">Có mặt</text>
+    <line x1="24" y1="280" x2="776" y2="280" stroke="#F3F4F6" stroke-width="1"/>
+    <text x="24" y="305" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">2026-01-02</text>
+    <text x="200" y="305" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">08:00</text>
+    <text x="700" y="305" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#374151" text-anchor="end">QR</text>
+    <text x="730" y="305" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">qr</text>
+    
+    <!-- History Card 2 -->
+    <rect x="0" y="340" width="800" height="120" rx="16" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="24" y="370" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#111827">Cơ sở dữ liệu</text>
+    <text x="24" y="395" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">CS102</text>
+    <rect x="700" y="350" width="60" height="24" rx="12" fill="#FEF3C7"/>
+    <text x="730" y="367" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#D97706" text-anchor="middle">Đi muộn</text>
+    <line x1="24" y1="420" x2="776" y2="420" stroke="#F3F4F6" stroke-width="1"/>
+    <text x="24" y="445" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">2026-01-01</text>
+    <text x="200" y="445" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">10:15</text>
+    <text x="700" y="445" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#374151" text-anchor="end">123</text>
+    <text x="730" y="445" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">otp</text>
+    
+    <!-- History Card 3 -->
+    <rect x="0" y="480" width="800" height="120" rx="16" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="24" y="510" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#111827">Hệ điều hành</text>
+    <text x="24" y="535" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">CS103</text>
+    <rect x="700" y="490" width="60" height="24" rx="12" fill="#FEE2E2"/>
+    <text x="730" y="507" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#DC2626" text-anchor="middle">Vắng</text>
+    <line x1="24" y1="560" x2="776" y2="560" stroke="#F3F4F6" stroke-width="1"/>
+    <text x="24" y="585" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">2025-12-30</text>
+    <text x="200" y="585" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">13:30</text>
+    <text x="700" y="585" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#374151" text-anchor="end">-</text>
+    <text x="730" y="585" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">none</text>
+  </g>
+</svg>
+

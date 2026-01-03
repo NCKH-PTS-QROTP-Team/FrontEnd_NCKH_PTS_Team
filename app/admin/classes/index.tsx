@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../../../constants/colors';
 import { mockClasses } from '../../../constants/mockData';
 import AppHeader from '../../../components/AppHeader';
 import Card from '../../../components/Card';
 import PrimaryButton from '../../../components/PrimaryButton';
+import { EmptySearchIcon, EmptyListIcon } from '../../../components/EmptyStateIllustration';
 
 export default function ClassManagement() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,19 +31,29 @@ export default function ClassManagement() {
           />
 
           <TextInput
-            className="border rounded-xl px-4 py-3 mb-4"
-            style={{ borderColor: Colors.border, color: Colors.text }}
+            className="border-2 rounded-lg px-4 mb-4"
+            style={{
+              height: 48,
+              borderColor: Colors.gray200,
+              color: Colors.text,
+              lineHeight: 24,
+              ...Platform.select({
+                web: { outlineStyle: 'none' as any },
+              }),
+            }}
             placeholder="Tìm kiếm lớp học..."
             placeholderTextColor={Colors.gray400}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
 
-          <Text className="text-sm mb-3" style={{ color: Colors.textSecondary }}>
-            {filteredClasses.length} lớp học
-          </Text>
+          {filteredClasses.length > 0 ? (
+            <>
+              <Text className="text-sm mb-3" style={{ color: Colors.textSecondary }}>
+                {filteredClasses.length} lớp học
+              </Text>
 
-          {filteredClasses.map((cls) => (
+              {filteredClasses.map((cls) => (
             <Card key={cls.id} onPress={() => router.push(`/admin/classes/${cls.id}` as any)} className="mb-3">
               <View className="flex-row items-start">
                 <View
@@ -97,6 +108,57 @@ export default function ClassManagement() {
               </View>
             </Card>
           ))}
+            </>
+          ) : (
+            <View 
+              className="bg-white border rounded-lg"
+              style={{ 
+                borderColor: Colors.gray200,
+                padding: 48,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 24,
+              }}
+            >
+              {searchQuery ? (
+                <>
+                  <EmptySearchIcon size={80} color={Colors.gray300} />
+                  <Text 
+                    className="text-xl font-semibold mb-2 mt-4" 
+                    style={{ color: Colors.text, lineHeight: 32, textAlign: 'center' }}
+                  >
+                    Không tìm thấy kết quả
+                  </Text>
+                  <Text 
+                    className="text-base" 
+                    style={{ color: Colors.textSecondary, lineHeight: 24, textAlign: 'center', maxWidth: 400 }}
+                  >
+                    Không tìm thấy lớp học nào phù hợp với "{searchQuery}". Thử tìm kiếm với từ khóa khác.
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <EmptyListIcon size={80} color={Colors.gray300} />
+                  <Text 
+                    className="text-xl font-semibold mb-2 mt-4" 
+                    style={{ color: Colors.text, lineHeight: 32, textAlign: 'center' }}
+                  >
+                    Chưa có lớp học
+                  </Text>
+                  <Text 
+                    className="text-base mb-4" 
+                    style={{ color: Colors.textSecondary, lineHeight: 24, textAlign: 'center', maxWidth: 400 }}
+                  >
+                    Bắt đầu bằng cách tạo lớp học mới cho học kỳ.
+                  </Text>
+                  <PrimaryButton
+                    title="+ Tạo lớp học mới"
+                    onPress={() => router.push('/admin/classes/create' as any)}
+                  />
+                </>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>

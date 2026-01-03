@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3FA9F5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2B8FD9;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.1"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1440" height="1200" fill="#FFFFFF"/>
+  
+  <!-- Sidebar (simplified) -->
+  <rect x="0" y="0" width="260" height="1200" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  
+  <!-- Header -->
+  <rect x="260" y="0" width="1180" height="80" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="280" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="600" fill="#111827">Thêm người dùng mới</text>
+  
+  <!-- Content -->
+  <g transform="translate(420, 100)">
+    <rect x="0" y="0" width="600" height="900" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    
+    <text x="24" y="40" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#111827">Thông tin cơ bản</text>
+    
+    <!-- Name Input -->
+    <text x="24" y="90" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#374151">Họ và tên *</text>
+    <rect x="24" y="100" width="552" height="48" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="32" y="128" font-family="Arial, sans-serif" font-size="16" fill="#9CA3AF">Nhập họ tên đầy đủ</text>
+    
+    <!-- Email Input -->
+    <text x="24" y="190" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#374151">Email *</text>
+    <rect x="24" y="200" width="552" height="48" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="32" y="228" font-family="Arial, sans-serif" font-size="16" fill="#9CA3AF">email@edu.vn</text>
+    
+    <!-- Password Input -->
+    <text x="24" y="290" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#374151">Mật khẩu *</text>
+    <rect x="24" y="300" width="552" height="48" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="32" y="328" font-family="Arial, sans-serif" font-size="16" fill="#9CA3AF">••••••••</text>
+    
+    <!-- Role Selection -->
+    <text x="24" y="390" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#374151">Vai trò *</text>
+    <rect x="24" y="410" width="180" height="48" rx="8" fill="#F3F4F6" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="114" y="438" font-family="Arial, sans-serif" font-size="16" font-weight="500" fill="#374151" text-anchor="middle">Admin</text>
+    
+    <rect x="212" y="410" width="180" height="48" rx="8" fill="#F3F4F6" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="302" y="438" font-family="Arial, sans-serif" font-size="16" font-weight="500" fill="#374151" text-anchor="middle">Giảng viên</text>
+    
+    <rect x="400" y="410" width="176" height="48" rx="8" fill="url(#primaryGrad)"/>
+    <text x="488" y="438" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#FFFFFF" text-anchor="middle">Sinh viên</text>
+    
+    <!-- Student ID Input -->
+    <text x="24" y="510" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#374151">Mã sinh viên *</text>
+    <rect x="24" y="520" width="552" height="48" rx="8" fill="#F9FAFB" stroke="#3FA9F5" stroke-width="2"/>
+    <text x="32" y="548" font-family="Arial, sans-serif" font-size="16" fill="#111827">SV001</text>
+    
+    <!-- Active Toggle -->
+    <line x1="24" y1="620" x2="576" y2="620" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="24" y="650" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#111827">Kích hoạt tài khoản</text>
+    <rect x="520" y="630" width="48" height="28" rx="14" fill="#3FA9F5"/>
+    <circle cx="544" cy="644" r="12" fill="#FFFFFF"/>
+    
+    <!-- Action Buttons -->
+    <rect x="24" y="700" width="270" height="48" rx="8" fill="#FFFFFF" stroke="#3FA9F5" stroke-width="2"/>
+    <text x="159" y="728" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#3FA9F5" text-anchor="middle">Hủy</text>
+    
+    <rect x="306" y="700" width="270" height="48" rx="8" fill="url(#primaryGrad)"/>
+    <text x="441" y="728" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#FFFFFF" text-anchor="middle">Tạo người dùng</text>
+  </g>
+</svg>
+

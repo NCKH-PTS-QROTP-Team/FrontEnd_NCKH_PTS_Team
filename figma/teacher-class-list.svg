@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.1"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1440" height="1200" fill="#F9FAFB"/>
+  
+  <!-- Header -->
+  <rect x="0" y="0" width="1440" height="80" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="20" y="50" font-family="Arial, sans-serif" font-size="20" fill="#3FA9F5">←</text>
+  <text x="60" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="600" fill="#111827">Danh sách lớp</text>
+  
+  <!-- Content -->
+  <g transform="translate(320, 100)">
+    <!-- Class Info -->
+    <rect x="0" y="0" width="800" height="120" rx="16" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="24" y="40" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Lập trình cơ bản - CS101</text>
+    
+    <circle cx="100" cy="80" r="16" fill="#D1FAE5"/>
+    <text x="100" y="87" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#059669" text-anchor="middle">3</text>
+    <text x="130" y="87" font-family="Arial, sans-serif" font-size="14" fill="#4B5563">Có mặt</text>
+    
+    <circle cx="250" cy="80" r="16" fill="#FEF3C7"/>
+    <text x="250" y="87" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#D97706" text-anchor="middle">1</text>
+    <text x="280" y="87" font-family="Arial, sans-serif" font-size="14" fill="#4B5563">Muộn</text>
+    
+    <circle cx="380" cy="80" r="16" fill="#FEE2E2"/>
+    <text x="380" y="87" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#DC2626" text-anchor="middle">1</text>
+    <text x="410" y="87" font-family="Arial, sans-serif" font-size="14" fill="#4B5563">Vắng</text>
+    
+    <!-- Student List Title -->
+    <text x="0" y="180" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#111827">Danh sách sinh viên (5)</text>
+    
+    <!-- Student Card 1 -->
+    <rect x="0" y="200" width="800" height="80" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <circle cx="56" cy="240" r="24" fill="#D1FAE5"/>
+    <text x="56" y="250" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#059669" text-anchor="middle">N</text>
+    <text x="96" y="230" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Nguyễn Văn An</text>
+    <text x="96" y="255" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">SV001</text>
+    <rect x="700" y="220" width="60" height="24" rx="12" fill="#D1FAE5"/>
+    <text x="730" y="237" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#059669" text-anchor="middle">Có mặt</text>
+    <text x="700" y="260" font-family="Arial, sans-serif" font-size="12" fill="#6B7280" text-anchor="end">08:05</text>
+    
+    <!-- Student Card 2 -->
+    <rect x="0" y="300" width="800" height="80" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <circle cx="56" cy="340" r="24" fill="#FEF3C7"/>
+    <text x="56" y="350" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#D97706" text-anchor="middle">T</text>
+    <text x="96" y="330" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Trần Thị Bình</text>
+    <text x="96" y="355" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">SV002</text>
+    <rect x="700" y="320" width="60" height="24" rx="12" fill="#FEF3C7"/>
+    <text x="730" y="337" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#D97706" text-anchor="middle">Muộn</text>
+    <text x="700" y="360" font-family="Arial, sans-serif" font-size="12" fill="#6B7280" text-anchor="end">08:20</text>
+    
+    <!-- Student Card 3 -->
+    <rect x="0" y="400" width="800" height="80" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <circle cx="56" cy="440" r="24" fill="#F3F4F6"/>
+    <text x="56" y="450" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#6B7280" text-anchor="middle">L</text>
+    <text x="96" y="430" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Lê Hoàng Cường</text>
+    <text x="96" y="455" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">SV003</text>
+    <rect x="700" y="420" width="60" height="24" rx="12" fill="#FEE2E2"/>
+    <text x="730" y="437" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#DC2626" text-anchor="middle">Vắng</text>
+    <text x="700" y="460" font-family="Arial, sans-serif" font-size="12" fill="#9CA3AF" text-anchor="end">-</text>
+    
+    <!-- Student Card 4 -->
+    <rect x="0" y="500" width="800" height="80" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <circle cx="56" cy="540" r="24" fill="#D1FAE5"/>
+    <text x="56" y="550" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#059669" text-anchor="middle">P</text>
+    <text x="96" y="530" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Phạm Thị Dung</text>
+    <text x="96" y="555" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">SV004</text>
+    <rect x="700" y="520" width="60" height="24" rx="12" fill="#D1FAE5"/>
+    <text x="730" y="537" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#059669" text-anchor="middle">Có mặt</text>
+    <text x="700" y="560" font-family="Arial, sans-serif" font-size="12" fill="#6B7280" text-anchor="end">08:02</text>
+    
+    <!-- Student Card 5 -->
+    <rect x="0" y="600" width="800" height="80" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <circle cx="56" cy="640" r="24" fill="#D1FAE5"/>
+    <text x="56" y="650" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#059669" text-anchor="middle">H</text>
+    <text x="96" y="630" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Hoàng Văn Em</text>
+    <text x="96" y="655" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">SV005</text>
+    <rect x="700" y="620" width="60" height="24" rx="12" fill="#D1FAE5"/>
+    <text x="730" y="637" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#059669" text-anchor="middle">Có mặt</text>
+    <text x="700" y="660" font-family="Arial, sans-serif" font-size="12" fill="#6B7280" text-anchor="end">08:01</text>
+  </g>
+</svg>
+

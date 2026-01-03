@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3FA9F5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2B8FD9;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.1"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1440" height="1200" fill="#FFFFFF"/>
+  
+  <!-- Sidebar -->
+  <rect x="0" y="0" width="260" height="1200" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  
+  <!-- Header -->
+  <rect x="260" y="0" width="1180" height="80" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="280" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="600" fill="#111827">Báo cáo &amp; Thống kê</text>
+  
+  <!-- Tabs -->
+  <rect x="260" y="80" width="1180" height="60" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+  <rect x="280" y="100" width="120" height="40" rx="20" fill="url(#primaryGrad)"/>
+  <text x="340" y="125" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#FFFFFF" text-anchor="middle">Tổng quan</text>
+  <text x="440" y="125" font-family="Arial, sans-serif" font-size="14" fill="#6B7280" text-anchor="middle">Theo lớp</text>
+  <text x="540" y="125" font-family="Arial, sans-serif" font-size="14" fill="#6B7280" text-anchor="middle">Theo GV</text>
+  <text x="640" y="125" font-family="Arial, sans-serif" font-size="14" fill="#6B7280" text-anchor="middle">Theo SV</text>
+  
+  <!-- Content -->
+  <g transform="translate(276, 180)">
+    <!-- Summary Stats -->
+    <rect x="0" y="0" width="560" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="280" y="50" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#3FA9F5" text-anchor="middle">1,234</text>
+    <text x="280" y="80" font-family="Arial, sans-serif" font-size="12" fill="#6B7280" text-anchor="middle">Tổng buổi học</text>
+    
+    <rect x="580" y="0" width="560" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="860" y="50" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#10B981" text-anchor="middle">5,678</text>
+    <text x="860" y="80" font-family="Arial, sans-serif" font-size="12" fill="#6B7280" text-anchor="middle">Tổng sinh viên</text>
+    
+    <rect x="0" y="140" width="560" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="280" y="190" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#F59E0B" text-anchor="middle">87%</text>
+    <text x="280" y="220" font-family="Arial, sans-serif" font-size="12" fill="#6B7280" text-anchor="middle">Tỷ lệ điểm danh TB</text>
+    
+    <rect x="580" y="140" width="560" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="860" y="190" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#3FA9F5" text-anchor="middle">45</text>
+    <text x="860" y="220" font-family="Arial, sans-serif" font-size="12" fill="#6B7280" text-anchor="middle">Số lớp hoạt động</text>
+    
+    <!-- Chart -->
+    <rect x="0" y="280" width="1160" height="250" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="24" y="320" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Biểu đồ điểm danh theo thời gian</text>
+    <rect x="24" y="340" width="1112" height="200" rx="12" fill="#F3F4F6"/>
+    <text x="580" y="450" font-family="Arial, sans-serif" font-size="16" fill="#6B7280" text-anchor="middle">📊 Chart Placeholder</text>
+    
+    <!-- Faculty Stats -->
+    <rect x="0" y="550" width="1160" height="300" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="24" y="590" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Thống kê toàn trường</text>
+    
+    <g transform="translate(24, 620)">
+      <text x="0" y="0" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#111827">Khoa CNTT</text>
+      <text x="1000" y="0" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#3FA9F5" text-anchor="end">89%</text>
+      <text x="0" y="30" font-family="Arial, sans-serif" font-size="12" fill="#10B981">✓ 456</text>
+      <text x="200" y="30" font-family="Arial, sans-serif" font-size="12" fill="#F59E0B">⏱ 34</text>
+      <text x="400" y="30" font-family="Arial, sans-serif" font-size="12" fill="#EF4444">✕ 23</text>
+      <text x="600" y="30" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Σ 513</text>
+      <line x1="0" y1="50" x2="1112" y2="50" stroke="#E5E7EB" stroke-width="1"/>
+    </g>
+    
+    <!-- Export Section -->
+    <rect x="0" y="870" width="1160" height="200" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    <text x="24" y="910" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Xuất báo cáo</text>
+    
+    <rect x="24" y="940" width="360" height="48" rx="8" fill="#FFFFFF" stroke="#3FA9F5" stroke-width="2"/>
+    <text x="204" y="968" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#3FA9F5" text-anchor="middle">Excel</text>
+    
+    <rect x="400" y="940" width="360" height="48" rx="8" fill="#FFFFFF" stroke="#3FA9F5" stroke-width="2"/>
+    <text x="580" y="968" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#3FA9F5" text-anchor="middle">PDF</text>
+    
+    <rect x="776" y="940" width="360" height="48" rx="8" fill="#FFFFFF" stroke="#3FA9F5" stroke-width="2"/>
+    <text x="956" y="968" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#3FA9F5" text-anchor="middle">CSV</text>
+  </g>
+</svg>
+

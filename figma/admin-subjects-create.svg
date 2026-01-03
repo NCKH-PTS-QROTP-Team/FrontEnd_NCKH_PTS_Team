@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3FA9F5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2B8FD9;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.1"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1440" height="1200" fill="#FFFFFF"/>
+  
+  <!-- Sidebar -->
+  <rect x="0" y="0" width="260" height="1200" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  
+  <!-- Header -->
+  <rect x="260" y="0" width="1180" height="80" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="280" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="600" fill="#111827">Tạo môn học mới</text>
+  
+  <!-- Content -->
+  <g transform="translate(420, 100)">
+    <rect x="0" y="0" width="600" height="600" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+    
+    <text x="24" y="40" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#111827">Thông tin môn học</text>
+    
+    <!-- Subject Code -->
+    <text x="24" y="90" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#374151">Mã môn học *</text>
+    <rect x="24" y="100" width="552" height="48" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="32" y="128" font-family="Arial, sans-serif" font-size="16" fill="#9CA3AF">CS101</text>
+    
+    <!-- Subject Name -->
+    <text x="24" y="190" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#374151">Tên môn học *</text>
+    <rect x="24" y="200" width="552" height="48" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="32" y="228" font-family="Arial, sans-serif" font-size="16" fill="#9CA3AF">Lập trình cơ bản</text>
+    
+    <!-- Credits -->
+    <text x="24" y="290" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#374151">Số tín chỉ *</text>
+    <rect x="24" y="300" width="552" height="48" rx="8" fill="#F9FAFB" stroke="#3FA9F5" stroke-width="2"/>
+    <text x="32" y="328" font-family="Arial, sans-serif" font-size="16" fill="#111827">3</text>
+    
+    <!-- Teacher ID -->
+    <text x="24" y="390" font-family="Arial, sans-serif" font-size="14" font-weight="500" fill="#374151">Mã giảng viên (tùy chọn)</text>
+    <rect x="24" y="400" width="552" height="48" rx="8" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="32" y="428" font-family="Arial, sans-serif" font-size="16" fill="#9CA3AF">GV001</text>
+    <text x="24" y="470" font-family="Arial, sans-serif" font-size="12" fill="#6B7280">Có thể phân công giảng viên sau</text>
+    
+    <!-- Action Buttons -->
+    <rect x="24" y="520" width="270" height="48" rx="8" fill="#FFFFFF" stroke="#3FA9F5" stroke-width="2"/>
+    <text x="159" y="548" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#3FA9F5" text-anchor="middle">Hủy</text>
+    
+    <rect x="306" y="520" width="270" height="48" rx="8" fill="url(#primaryGrad)"/>
+    <text x="441" y="548" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#FFFFFF" text-anchor="middle">Tạo môn học</text>
+  </g>
+</svg>
+

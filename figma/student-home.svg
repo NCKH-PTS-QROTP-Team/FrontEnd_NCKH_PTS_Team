@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3FA9F5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2B8FD9;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="0" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.1"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1440" height="900" fill="#FFFFFF"/>
+  
+  <!-- Sidebar -->
+  <g>
+    <rect x="0" y="0" width="260" height="900" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+    
+    <!-- User Info Section -->
+    <g transform="translate(24, 24)">
+      <circle cx="28" cy="28" r="28" fill="#F59E0B" stroke="#FFFFFF" stroke-width="3"/>
+      <text x="28" y="38" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#FFFFFF" text-anchor="middle">S</text>
+      <text x="0" y="80" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Sinh viên</text>
+      <text x="0" y="100" font-family="Arial, sans-serif" font-size="13" fill="#6B7280">Sinh viên</text>
+    </g>
+    
+    <!-- Menu Items -->
+    <g transform="translate(12, 140)">
+      <!-- Trang chủ (active) -->
+      <rect x="8" y="0" width="236" height="48" rx="8" fill="#E0F2FE"/>
+      <rect x="8" y="0" width="3" height="48" fill="#3FA9F5"/>
+      <rect x="20" y="8" width="32" height="32" rx="8" fill="#3FA9F5"/>
+      <text x="60" y="30" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#3FA9F5">Trang chủ</text>
+      
+      <!-- Lịch học -->
+      <rect x="8" y="52" width="236" height="48" rx="8" fill="transparent"/>
+      <rect x="20" y="60" width="32" height="32" rx="8" fill="#F3F4F6"/>
+      <text x="60" y="82" font-family="Arial, sans-serif" font-size="14" fill="#111827">Lịch học</text>
+      
+      <!-- Điểm danh QR -->
+      <rect x="8" y="104" width="236" height="48" rx="8" fill="transparent"/>
+      <rect x="20" y="112" width="32" height="32" rx="8" fill="#F3F4F6"/>
+      <text x="60" y="134" font-family="Arial, sans-serif" font-size="14" fill="#111827">Điểm danh QR</text>
+      
+      <!-- Điểm danh OTP -->
+      <rect x="8" y="156" width="236" height="48" rx="8" fill="transparent"/>
+      <rect x="20" y="164" width="32" height="32" rx="8" fill="#F3F4F6"/>
+      <text x="60" y="186" font-family="Arial, sans-serif" font-size="14" fill="#111827">Điểm danh OTP</text>
+      
+      <!-- Lịch sử -->
+      <rect x="8" y="208" width="236" height="48" rx="8" fill="transparent"/>
+      <rect x="20" y="216" width="32" height="32" rx="8" fill="#F3F4F6"/>
+      <text x="60" y="238" font-family="Arial, sans-serif" font-size="14" fill="#111827">Lịch sử</text>
+      
+      <!-- Thông báo -->
+      <rect x="8" y="260" width="236" height="48" rx="8" fill="transparent"/>
+      <rect x="20" y="268" width="32" height="32" rx="8" fill="#F3F4F6"/>
+      <text x="60" y="290" font-family="Arial, sans-serif" font-size="14" fill="#111827">Thông báo</text>
+    </g>
+    
+    <!-- Logout Button -->
+    <g transform="translate(16, 820)">
+      <rect x="0" y="0" width="228" height="48" rx="8" fill="#FEE2E2" stroke="#FECACA" stroke-width="1"/>
+      <text x="114" y="30" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#EF4444" text-anchor="middle">Đăng xuất</text>
+    </g>
+  </g>
+  
+  <!-- Main Content Area -->
+  <g transform="translate(260, 0)">
+    <!-- Header -->
+    <rect x="0" y="0" width="1180" height="80" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+    <text x="20" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="600" fill="#111827">Trang chủ</text>
+    
+    <!-- Content (centered, max-width 800) -->
+    <g transform="translate(190, 100)">
+      
+      <!-- Welcome Card -->
+      <rect x="0" y="0" width="800" height="160" rx="16" fill="#3FA9F5" filter="url(#shadow)"/>
+      <text x="24" y="40" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#FFFFFF">Xin chào!</text>
+      <text x="24" y="70" font-family="Arial, sans-serif" font-size="16" fill="#DBEAFE">Hôm nay bạn có 3 buổi học</text>
+      <rect x="24" y="100" width="140" height="40" rx="12" fill="#FFFFFF"/>
+      <text x="94" y="125" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#3FA9F5" text-anchor="middle">Xem lịch học →</text>
+      
+      <!-- Quick Actions -->
+      <text x="0" y="220" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#111827">Điểm danh nhanh</text>
+      
+      <!-- OTP Card -->
+      <g transform="translate(0, 240)">
+        <rect x="0" y="0" width="384" height="160" rx="16" fill="#FFFFFF" stroke="#DBEAFE" stroke-width="2" filter="url(#shadow)"/>
+        <rect x="20" y="20" width="48" height="48" rx="12" fill="#DBEAFE"/>
+        <text x="44" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#3FA9F5" text-anchor="middle">OTP</text>
+        <text x="20" y="90" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#111827">Mã OTP</text>
+        <text x="20" y="110" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Nhập mã từ giảng viên</text>
+      </g>
+      
+      <!-- QR Card -->
+      <g transform="translate(416, 240)">
+        <rect x="0" y="0" width="384" height="160" rx="16" fill="#FFFFFF" stroke="#D1FAE5" stroke-width="2" filter="url(#shadow)"/>
+        <rect x="20" y="20" width="48" height="48" rx="12" fill="#D1FAE5"/>
+        <text x="44" y="50" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#10B981" text-anchor="middle">QR</text>
+        <text x="20" y="90" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#111827">QR Code</text>
+        <text x="20" y="110" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Quét mã trên lớp</text>
+      </g>
+      
+      <!-- Stats Section -->
+      <text x="0" y="460" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#111827">Thống kê tuần này</text>
+      
+      <!-- Stats Cards -->
+      <g transform="translate(0, 480)">
+        <!-- Tổng buổi -->
+        <rect x="0" y="0" width="256" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+        <text x="16" y="30" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Tổng buổi</text>
+        <text x="16" y="70" font-family="Arial, sans-serif" font-size="36" font-weight="600" fill="#3FA9F5">12</text>
+        
+        <!-- Có mặt -->
+        <rect x="272" y="0" width="256" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+        <text x="288" y="30" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Có mặt</text>
+        <text x="288" y="70" font-family="Arial, sans-serif" font-size="36" font-weight="600" fill="#10B981">10</text>
+        
+        <!-- Đi muộn -->
+        <rect x="544" y="0" width="256" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+        <text x="560" y="30" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Đi muộn</text>
+        <text x="560" y="70" font-family="Arial, sans-serif" font-size="36" font-weight="600" fill="#F59E0B">2</text>
+      </g>
+      
+      <!-- Today's Schedule -->
+      <g transform="translate(0, 640)">
+        <text x="0" y="0" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#111827">Lịch học hôm nay</text>
+        <text x="680" y="0" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#3FA9F5" text-anchor="end">Xem tất cả</text>
+        
+        <!-- Schedule Card 1 -->
+        <rect x="0" y="30" width="800" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+        <text x="24" y="60" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#111827">Lập trình cơ bản</text>
+        <text x="24" y="85" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">TS. Nguyễn Văn A</text>
+        <rect x="24" y="100" width="2" height="24" fill="#3FA9F5" rx="1"/>
+        <text x="36" y="118" font-family="Arial, sans-serif" font-size="16" fill="#111827">08:00 - 10:00</text>
+        <text x="36" y="138" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Phòng: A102</text>
+        
+        <!-- Schedule Card 2 -->
+        <rect x="0" y="160" width="800" height="120" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+        <text x="24" y="190" font-family="Arial, sans-serif" font-size="18" font-weight="600" fill="#111827">Cấu trúc dữ liệu</text>
+        <text x="24" y="215" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">TS. Trần Thị B</text>
+        <rect x="24" y="230" width="2" height="24" fill="#3FA9F5" rx="1"/>
+        <text x="36" y="248" font-family="Arial, sans-serif" font-size="16" fill="#111827">10:15 - 12:15</text>
+        <text x="36" y="268" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Phòng: B205</text>
+      </g>
+      
+      <!-- History Link -->
+      <rect x="0" y="820" width="800" height="64" rx="16" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" filter="url(#shadow)"/>
+      <rect x="16" y="832" width="40" height="40" rx="12" fill="#F3F4F6"/>
+      <text x="36" y="857" font-family="Arial, sans-serif" font-size="18" fill="#6B7280" text-anchor="middle">☰</text>
+      <text x="68" y="860" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#111827">Lịch sử điểm danh</text>
+      <text x="780" y="860" font-family="Arial, sans-serif" font-size="20" fill="#9CA3AF" text-anchor="end">→</text>
+      
+    </g>
+  </g>
+</svg>
+
