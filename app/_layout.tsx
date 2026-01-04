@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
-import '../global.css';
+// Temporarily disabled to fix web text node errors
+// import '../global.css';
 
 export default function RootLayout() {
   return (

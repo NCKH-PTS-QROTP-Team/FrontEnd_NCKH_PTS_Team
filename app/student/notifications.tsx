@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { router } from 'expo-router';
-import { Colors } from '../../constants/colors';
-import AppHeader from '../../components/AppHeader';
-import Card from '../../components/Card';
-import Badge from '../../components/Badge';
+import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { AppHeader } from '@/components/AppHeader';
+import { Card } from '@/components/Card';
+import { Colors } from '@/constants/colors';
 
 interface Notification {
   id: string;
@@ -99,31 +98,44 @@ export default function Notifications() {
     return colors[type as keyof typeof colors] || Colors.primary;
   };
 
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+
+  const contentMaxWidth = isDesktop ? 800 : '100%';
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+
   return (
-    <View className="flex-1 bg-white">
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <StatusBar style="dark" />
       <AppHeader title="Thông báo" showLogout={true} />
       
-      <ScrollView className="flex-1">
-        <View className="p-4" style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
+      <ScrollView style={{ flex: 1 }}>
+        <View style={{ paddingHorizontal, paddingVertical: 24, maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
           
           {/* Header Actions */}
-          <View className="flex-row justify-between items-center mb-4">
-            <View className="flex-row">
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row' }}>
               {[
                 { key: 'all', label: `Tất cả (${notifications.length})` },
                 { key: 'unread', label: `Chưa đọc (${unreadCount})` },
               ].map((item) => (
                 <TouchableOpacity
                   key={item.key}
-                  className="px-4 py-2 rounded-full mr-2"
                   style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 18,
+                    marginRight: 8,
                     backgroundColor: filter === item.key ? Colors.primary : Colors.gray100,
                   }}
                   onPress={() => setFilter(item.key as any)}
                 >
                   <Text
-                    className="font-medium text-sm"
                     style={{
+                      fontWeight: '500',
+                      fontSize: 14,
+                      lineHeight: 20,
                       color: filter === item.key ? Colors.white : Colors.gray700,
                     }}
                   >
@@ -135,7 +147,7 @@ export default function Notifications() {
 
             {unreadCount > 0 && (
               <TouchableOpacity onPress={markAllAsRead}>
-                <Text className="text-sm font-medium" style={{ color: Colors.primary }}>
+                <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '500', color: Colors.primary }}>
                   Đánh dấu đã đọc
                 </Text>
               </TouchableOpacity>
@@ -144,12 +156,12 @@ export default function Notifications() {
 
           {/* Notifications List */}
           {filteredNotifications.length === 0 ? (
-            <Card className="items-center py-8">
-              <Text className="text-4xl mb-3">📭</Text>
-              <Text className="text-base font-medium mb-1" style={{ color: Colors.text }}>
+            <Card style={{ alignItems: 'center', paddingVertical: 32 }}>
+              <Text style={{ fontSize: 36, lineHeight: 44, marginBottom: 12 }}>📭</Text>
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '500', marginBottom: 4, color: Colors.text }}>
                 Không có thông báo
               </Text>
-              <Text className="text-sm" style={{ color: Colors.textSecondary }}>
+              <Text style={{ fontSize: 14, lineHeight: 20, color: Colors.textSecondary }}>
                 {filter === 'unread' ? 'Bạn đã đọc hết thông báo' : 'Chưa có thông báo nào'}
               </Text>
             </Card>
@@ -158,40 +170,59 @@ export default function Notifications() {
               <Card
                 key={notification.id}
                 onPress={() => markAsRead(notification.id)}
-                className="mb-3"
                 style={{
-                  backgroundColor: notification.isRead ? Colors.white : Colors.infoLight,
-                  opacity: notification.isRead ? 1 : 1,
+                  marginBottom: 12,
+                  backgroundColor: notification.isRead ? Colors.white : '#E0F2FE',
+                  borderWidth: 1,
+                  borderColor: '#E5E7EB',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 2,
                 }}
               >
-                <View className="flex-row">
+                <View style={{ flexDirection: 'row' }}>
                   <View
-                    className="w-10 h-10 rounded-full items-center justify-center mr-3"
-                    style={{ backgroundColor: getNotificationColor(notification.type) + '20' }}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 12,
+                      backgroundColor: getNotificationColor(notification.type) === Colors.success ? '#D1FAE5' :
+                                     getNotificationColor(notification.type) === Colors.warning ? '#FEF3C7' :
+                                     getNotificationColor(notification.type) === Colors.error ? '#FEE2E2' : '#DBEAFE'
+                    }}
                   >
-                    <Text style={{ fontSize: 20, color: getNotificationColor(notification.type) }}>
+                    <Text style={{ fontSize: 20, lineHeight: 24, color: getNotificationColor(notification.type) }}>
                       {getNotificationIcon(notification.type)}
                     </Text>
                   </View>
 
-                  <View className="flex-1">
-                    <View className="flex-row items-center justify-between mb-1">
-                      <Text className="font-semibold" style={{ color: Colors.text }}>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={{ fontWeight: '600', fontSize: 16, lineHeight: 24, color: Colors.text }}>
                         {notification.title}
                       </Text>
                       {!notification.isRead && (
                         <View
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: Colors.primary }}
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: 4,
+                            backgroundColor: Colors.primary
+                          }}
                         />
                       )}
                     </View>
 
-                    <Text className="text-sm mb-2" style={{ color: Colors.text }}>
+                    <Text style={{ fontSize: 14, lineHeight: 20, marginBottom: 8, color: Colors.text }}>
                       {notification.message}
                     </Text>
 
-                    <Text className="text-xs" style={{ color: Colors.textSecondary }}>
+                    <Text style={{ fontSize: 12, lineHeight: 16, color: Colors.textSecondary }}>
                       {notification.time}
                     </Text>
                   </View>

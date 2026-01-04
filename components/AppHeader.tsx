@@ -60,8 +60,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       className="bg-white border-b border-gray-200"
       style={{
         paddingTop: Platform.OS === 'web' ? 0 : 40,
-        paddingBottom: 16,
-        paddingHorizontal: 20,
+        paddingBottom: Platform.OS === 'web' ? 0 : 16,
+        paddingHorizontal: Platform.OS === 'web' ? 20 : 20,
+        height: Platform.OS === 'web' ? 80 : undefined,
+        justifyContent: 'center',
         ...(Platform.OS === 'web' && {
           position: 'sticky' as any,
           top: 0,
@@ -111,7 +113,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           )}
           <Text 
             className="text-2xl font-semibold text-gray-900"
-            style={{ lineHeight: 36, letterSpacing: -0.01 }}
+            style={{ fontSize: 24, fontWeight: '600', color: '#111827', lineHeight: 36, letterSpacing: -0.01 }}
             numberOfLines={1}
           >
             {title}

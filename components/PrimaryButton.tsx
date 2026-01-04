@@ -159,27 +159,5 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
     </TouchableOpacity>
   );
 };
-      } as any)}
-    >
-      {loading ? (
-        <ActivityIndicator 
-          color={variant === 'primary' ? Colors.white : Colors.primary} 
-          size="small"
-        />
-      ) : (
-        <Text 
-          className={`
-            ${getTextStyle()}
-            text-base
-            font-semibold
-          `}
-          style={{ lineHeight: 24 }}
-        >
-          {title}
-        </Text>
-      )}
-    </TouchableOpacity>
-  );
-};
 
 export default PrimaryButton;

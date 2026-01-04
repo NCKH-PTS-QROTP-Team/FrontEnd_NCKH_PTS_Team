@@ -27,11 +27,10 @@ export default function Input({ label, error, success, helperText, ...props }: I
   };
 
   return (
-    <View className="mb-4">
+    <View style={{ marginBottom: 16 }}>
       {label && (
         <Text 
-          className="text-sm font-medium" 
-          style={{ color: Colors.textHeading, marginBottom: 8, lineHeight: 21 }}
+          style={{ fontSize: 14, fontWeight: '500', color: Colors.textHeading, marginBottom: 8, lineHeight: 21 }}
         >
           {label}
         </Text>
@@ -43,12 +42,13 @@ export default function Input({ label, error, success, helperText, ...props }: I
           accessibilityState={{ 
             disabled: props.editable === false,
           }}
-          className="border-2 px-4 text-base"
           style={[
             {
               borderRadius: 8,
               height: 48, // Touch-friendly 48px height
+              borderWidth: 2,
               borderColor: getBorderColor(),
+              paddingHorizontal: 16,
               color: Colors.text,
               backgroundColor: Colors.white,
               lineHeight: 24,
@@ -129,14 +129,14 @@ export default function Input({ label, error, success, helperText, ...props }: I
       {/* Error Message */}
       {error && (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
-          <Text className="text-sm" style={{ color: Colors.error, lineHeight: 21 }}>
+          <Text style={{ fontSize: 14, color: Colors.error, lineHeight: 21 }}>
             {error}
           </Text>
         </View>
       )}
       {/* Helper Text */}
       {helperText && !error && (
-        <Text className="text-sm" style={{ color: Colors.textSecondary, marginTop: 6, lineHeight: 21 }}>
+        <Text style={{ fontSize: 14, color: Colors.textSecondary, marginTop: 6, lineHeight: 21 }}>
           {helperText}
         </Text>
       )}

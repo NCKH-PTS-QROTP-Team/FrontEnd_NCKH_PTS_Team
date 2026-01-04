@@ -63,7 +63,7 @@ export default function VerifyOTPScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white"
+      style={{ flex: 1, backgroundColor: Colors.white }}
     >
       <StatusBar style="dark" />
       <ScrollView
@@ -74,29 +74,40 @@ export default function VerifyOTPScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View
-          className="flex-1 justify-center"
-          style={{ maxWidth: 400, width: '100%', alignSelf: 'center' }}
+          style={{ flex: 1, justifyContent: 'center', maxWidth: 400, width: '100%', alignSelf: 'center' }}
         >
           {/* Header */}
-          <View className="items-center mb-12">
+          <View style={{ alignItems: 'center', marginBottom: 48 }}>
             <View
-              className="bg-blue-100 rounded-3xl items-center justify-center mb-6"
-              style={{ width: 80, height: 80 }}
+              style={{
+                width: 80,
+                height: 80,
+                backgroundColor: '#DBEAFE',
+                borderRadius: 24,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 24
+              }}
             >
-              <Text className="text-primary text-4xl font-bold">#</Text>
+              <Text style={{ color: Colors.primary, fontSize: 36, fontWeight: 'bold' }}>#</Text>
             </View>
-            <Text className="text-3xl font-bold text-gray-900 mb-2">
+            <Text style={{ fontSize: 28, fontWeight: 'bold', color: Colors.textHeading, marginBottom: 8 }}>
               Xác thực OTP
             </Text>
-            <Text className="text-base text-gray-500 text-center px-8">
+            <Text style={{ fontSize: 16, color: Colors.textSecondary, textAlign: 'center', paddingHorizontal: 32 }}>
               Mã OTP đã được gửi đến điện thoại của bạn
             </Text>
           </View>
 
           {/* OTP Card */}
           <View
-            className="bg-white rounded-2xl p-6 mb-6"
             style={{
+              backgroundColor: Colors.white,
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              borderWidth: 1,
+              borderColor: Colors.border,
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
@@ -105,11 +116,11 @@ export default function VerifyOTPScreen() {
             }}
           >
             {/* OTP Input */}
-            <View className="mb-6">
-              <Text className="text-sm font-semibold text-gray-700 mb-4 text-center">
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.textSecondary, marginBottom: 16, textAlign: 'center' }}>
                 Nhập mã OTP
               </Text>
-              <View className="flex-row justify-between mb-4">
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24, paddingHorizontal: 25 }}>
                 {otp.map((digit, index) => (
                   <TextInput
                     key={index}
@@ -119,11 +130,17 @@ export default function VerifyOTPScreen() {
                     onKeyPress={(e) => handleKeyPress(e, index)}
                     maxLength={1}
                     keyboardType="number-pad"
-                    className="border-2 rounded-xl text-center text-2xl font-bold text-gray-900 bg-gray-50"
                     style={{
                       width: 50,
                       height: 56,
-                      borderColor: digit ? Colors.primary : Colors.gray200,
+                      borderRadius: 12,
+                      borderWidth: 2,
+                      borderColor: digit ? Colors.primary : Colors.border,
+                      backgroundColor: Colors.surface,
+                      textAlign: 'center',
+                      fontSize: 24,
+                      fontWeight: 'bold',
+                      color: Colors.textHeading,
                       ...Platform.select({
                         web: { outlineStyle: 'none' },
                       }),
@@ -133,11 +150,11 @@ export default function VerifyOTPScreen() {
               </View>
 
               {/* Countdown */}
-              <View className="items-center mb-4">
-                <Text className="text-sm text-gray-500">
+              <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                <Text style={{ fontSize: 14, color: Colors.textSecondary, marginBottom: 8 }}>
                   Mã có hiệu lực trong
                 </Text>
-                <Text className="text-2xl font-bold text-primary mt-1">
+                <Text style={{ fontSize: 24, fontWeight: 'bold', color: Colors.primary }}>
                   {formatTime(countdown)}
                 </Text>
               </View>
@@ -152,8 +169,8 @@ export default function VerifyOTPScreen() {
           </View>
 
           {/* Resend */}
-          <View className="items-center">
-            <Text className="text-sm text-gray-500 mb-2">
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ fontSize: 14, color: Colors.textSecondary, marginBottom: 8 }}>
               Không nhận được mã?
             </Text>
             <TouchableOpacity
@@ -162,9 +179,11 @@ export default function VerifyOTPScreen() {
               activeOpacity={0.7}
             >
               <Text
-                className={`text-base font-semibold ${
-                  countdown > 0 ? 'text-gray-400' : 'text-primary'
-                }`}
+                style={{
+                  fontSize: 16,
+                  fontWeight: '600',
+                  color: countdown > 0 ? Colors.textSecondary : Colors.primary
+                }}
               >
                 Gửi lại mã
               </Text>

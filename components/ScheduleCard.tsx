@@ -18,47 +18,61 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
   
   const CardContent = (
     <View
-      className="bg-white border border-gray-200"
       style={[
         {
+          width: isDesktop ? 800 : '100%',
+          height: 120,
+          backgroundColor: '#FFFFFF',
           borderRadius: 8,
-          padding: cardPadding,
+          padding: 24,
+          borderWidth: 1,
+          borderColor: '#E5E7EB',
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isHovered && onPress ? 0.08 : 0.03,
-          shadowRadius: isHovered && onPress ? 6 : 3,
-          elevation: isHovered && onPress ? 3 : 1,
-          transform: isHovered && onPress && Platform.OS === 'web' ? [{ scale: 1.015 }] : [],
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 2,
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
         },
         Platform.OS === 'web' && {
           transition: 'all 0.2s ease',
         } as any,
       ]}
     >
-      <View className="flex-row items-start justify-between" style={{ marginBottom: 12 }}>
-        <View className="flex-1">
-          <Text 
-            className="text-lg font-semibold text-gray-900"
-            style={{ lineHeight: 28, marginBottom: 4 }}
-            numberOfLines={2}
-          >
-            {schedule.courseName}
-          </Text>
-          <Text className="text-sm text-gray-600" style={{ lineHeight: 21 }}>
-            {schedule.teacher}
-          </Text>
-        </View>
-      </View>
-
-      <View className="flex-row items-center" style={{ marginBottom: 8 }}>
-        <View className="w-1 h-6 bg-primary rounded-full" style={{ marginRight: 12 }} />
-        <View className="flex-1">
-          <Text className="text-base text-gray-900" style={{ lineHeight: 24 }}>
-            {schedule.time}
-          </Text>
-          <Text className="text-sm text-gray-600" style={{ lineHeight: 21, marginTop: 4 }}>
-            Phòng: {schedule.room}
-          </Text>
+      <View style={{ flex: 1 }}>
+        <Text 
+          style={{ 
+            fontSize: 18, 
+            fontWeight: '600', 
+            color: '#111827', 
+            marginBottom: 4,
+            lineHeight: 28,
+          }}
+          numberOfLines={1}
+        >
+          {schedule.courseName}
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 12 }}>
+          {schedule.teacher}
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ 
+            width: 2, 
+            height: 24, 
+            backgroundColor: '#3FA9F5', 
+            borderRadius: 1,
+            marginRight: 12,
+          }} />
+          <View>
+            <Text style={{ fontSize: 16, color: '#111827', lineHeight: 24 }}>
+              {schedule.time}
+            </Text>
+            <Text style={{ fontSize: 14, color: '#6B7280', lineHeight: 21 }}>
+              Phòng: {schedule.room}
+            </Text>
+          </View>
         </View>
       </View>
     </View>

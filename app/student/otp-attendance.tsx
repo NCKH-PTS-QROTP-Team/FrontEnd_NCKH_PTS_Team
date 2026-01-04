@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
@@ -55,21 +55,33 @@ export default function OTPAttendanceScreen() {
   };
 
   const isExpired = countdown === 0;
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+
+  const contentMaxWidth = isDesktop ? 500 : '100%';
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+  const otpInputSpacing = isDesktop ? 50 : isTablet ? 30 : 20;
 
   return (
-    <View className="flex-1 bg-white">
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <StatusBar style="dark" />
       <AppHeader title="Điểm danh bằng OTP" showBack showLogout={true} />
       
       <ScrollView
-        contentContainerStyle={{ padding: 20 }}
+        contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ maxWidth: 500, width: '100%', alignSelf: 'center' }}>
-          {/* Countdown Card */}
+        <View style={{ maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
+          {/* Main Card */}
           <View
-            className="bg-white rounded-2xl p-6 mb-6"
             style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              borderWidth: 1,
+              borderColor: '#E5E7EB',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
@@ -77,38 +89,39 @@ export default function OTPAttendanceScreen() {
               elevation: 3,
             }}
           >
-            <View className="items-center mb-6">
-              <Text className="text-6xl mb-3">⏱️</Text>
-              <Text className="text-sm text-gray-500 mb-2">
+            {/* Countdown Section */}
+            <View style={{ alignItems: 'center', marginBottom: 24 }}>
+              <Text style={{ fontSize: 48, lineHeight: 56, marginBottom: 12 }}>⏱️</Text>
+              <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280', marginBottom: 8 }}>
                 Thời gian còn lại
               </Text>
-              <Text className={`text-4xl font-bold ${isExpired ? 'text-red-500' : 'text-primary'}`}>
+              <Text style={{ fontSize: 36, lineHeight: 44, fontWeight: 'bold', color: isExpired ? '#EF4444' : '#3FA9F5' }}>
                 {formatTime(countdown)}
               </Text>
               {isExpired && (
-                <Text className="text-sm text-red-500 mt-2">
+                <Text style={{ fontSize: 14, lineHeight: 20, color: '#EF4444', marginTop: 8 }}>
                   Hết thời gian điểm danh
                 </Text>
               )}
             </View>
 
             {/* Course Info */}
-            <View className="bg-blue-50 rounded-xl p-4 mb-6">
-              <Text className="text-sm text-gray-500 mb-1">Môn học</Text>
-              <Text className="text-lg font-bold text-gray-900">
+            <View style={{ backgroundColor: '#E0F2FE', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+              <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280', marginBottom: 4 }}>Môn học</Text>
+              <Text style={{ fontSize: 18, lineHeight: 28, fontWeight: 'bold', color: '#111827', marginBottom: 4 }}>
                 Lập trình cơ bản
               </Text>
-              <Text className="text-sm text-gray-600 mt-1">
+              <Text style={{ fontSize: 14, lineHeight: 20, color: '#4B5563' }}>
                 CS101 • Phòng A102
               </Text>
             </View>
 
             {/* OTP Input */}
-            <View className="mb-6">
-              <Text className="text-base font-semibold text-gray-900 mb-4 text-center">
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: '#111827', marginBottom: 16, textAlign: 'center' }}>
                 Nhập mã OTP từ giảng viên
               </Text>
-              <View className="flex-row justify-between">
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: otpInputSpacing }}>
                 {otp.map((digit, index) => (
                   <TextInput
                     key={index}
@@ -119,12 +132,17 @@ export default function OTPAttendanceScreen() {
                     maxLength={1}
                     keyboardType="number-pad"
                     editable={!isExpired}
-                    className="border-2 rounded-xl text-center text-2xl font-bold bg-gray-50"
                     style={{
                       width: 50,
                       height: 56,
-                      borderColor: digit ? Colors.primary : Colors.gray200,
-                      color: Colors.gray900,
+                      borderRadius: 12,
+                      borderWidth: 2,
+                      borderColor: digit ? Colors.primary : Colors.border,
+                      backgroundColor: '#F9FAFB',
+                      textAlign: 'center',
+                      fontSize: 24,
+                      fontWeight: 'bold',
+                      color: Colors.textHeading,
                       ...Platform.select({
                         web: { outlineStyle: 'none' },
                       }),
@@ -143,10 +161,12 @@ export default function OTPAttendanceScreen() {
           </View>
 
           {/* Help Text */}
-          <View className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <Text className="text-sm text-amber-800">
-              <Text className="font-semibold">Hướng dẫn:</Text>
-              {'\n'}Nhập mã OTP 6 số mà giảng viên hiển thị trên lớp để hoàn tất điểm danh.
+          <View style={{ backgroundColor: '#FEF3C7', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#FDE68A' }}>
+            <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: '#92400E', marginBottom: 8 }}>
+              Hướng dẫn:
+            </Text>
+            <Text style={{ fontSize: 14, lineHeight: 20, color: '#78350F' }}>
+              Nhập mã OTP 6 số mà giảng viên hiển thị trên lớp để hoàn tất điểm danh.
             </Text>
           </View>
         </View>

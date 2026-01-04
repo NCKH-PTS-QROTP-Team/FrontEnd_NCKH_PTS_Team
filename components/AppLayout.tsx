@@ -31,9 +31,9 @@ export default function AppLayout({
   }
 
   return (
-    <View style={{ flex: 1, flexDirection: 'row' }}>
+    <View style={{ flex: 1, flexDirection: 'row', position: 'relative' }}>
       <Sidebar menuItems={menuItems} userRole={userRole} userName={userName} />
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, marginLeft: 260 }}>
         {children}
       </View>
     </View>

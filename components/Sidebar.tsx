@@ -27,9 +27,9 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
   }
 
   const roleColors = {
-    admin: Colors.primary,
-    teacher: Colors.success,
-    student: Colors.warning,
+    admin: '#3FA9F5', // Primary blue
+    teacher: '#10B981', // Success green
+    student: '#F59E0B', // Warning amber
   };
 
   const roleLabels = {
@@ -44,7 +44,7 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
         width: 260,
         backgroundColor: Colors.white,
         borderRightWidth: 1,
-        borderRightColor: Colors.gray200,
+        borderRightColor: '#E5E7EB',
         height: '100%',
         position: 'absolute' as any,
         top: 0,
@@ -52,9 +52,9 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
         left: 0,
       }}
     >
-      <ScrollView style={{ flex: 1 }}>
-        {/* Logo & User Info */}
-        <View style={{ padding: 24, borderBottomWidth: 1, borderBottomColor: Colors.gray200 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
+        {/* Logo & User Info - Match Figma exactly */}
+        <View style={{ padding: 24 }}>
           <View
             style={{
               width: 56,
@@ -66,27 +66,22 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
               marginBottom: 12,
               borderWidth: 3,
               borderColor: Colors.white,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-              elevation: 3,
             }}
           >
             <Text style={{ color: Colors.white, fontSize: 22, fontWeight: 'bold' }}>
               {roleLabels[userRole][0]}
             </Text>
           </View>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: Colors.text, marginBottom: 4 }}>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 4 }}>
             {userName || roleLabels[userRole]}
           </Text>
-          <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
+          <Text style={{ fontSize: 13, color: '#6B7280' }}>
             {roleLabels[userRole]}
           </Text>
         </View>
 
-        {/* Menu Items */}
-        <View style={{ paddingVertical: 16 }}>
+        {/* Menu Items - Match Figma exactly: padding 12px, item height 48px */}
+        <View style={{ paddingHorizontal: 12, paddingTop: 0 }}>
           {menuItems.map((item, index) => {
             const isActive = pathname === item.route || pathname?.startsWith(item.route + '/');
             const [isHovered, setIsHovered] = React.useState(false);
@@ -99,14 +94,14 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
                   {
                     flexDirection: 'row',
                     alignItems: 'center',
-                    paddingHorizontal: 20,
-                    paddingVertical: 14,
-                    marginHorizontal: 12,
+                    paddingHorizontal: 8,
+                    paddingVertical: 0,
                     marginBottom: 4,
                     borderRadius: 8,
-                    backgroundColor: isActive ? Colors.infoLight : (isHovered ? '#F9FAFB' : 'transparent'),
+                    height: 48,
+                    backgroundColor: isActive ? '#E0F2FE' : 'transparent',
                     borderLeftWidth: isActive ? 3 : 0,
-                    borderLeftColor: isActive ? Colors.primary : 'transparent',
+                    borderLeftColor: isActive ? '#3FA9F5' : 'transparent',
                   },
                   {
                     transition: 'all 0.2s ease',
@@ -125,9 +120,10 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
                       width: 32,
                       height: 32,
                       borderRadius: 8,
-                      backgroundColor: isActive ? Colors.primary : (isHovered ? '#E5E7EB' : Colors.gray100),
+                      backgroundColor: isActive ? '#3FA9F5' : '#F3F4F6',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      marginLeft: 12,
                       marginRight: 12,
                     },
                     {
@@ -142,7 +138,7 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
                     flex: 1,
                     fontSize: 14,
                     fontWeight: isActive ? '600' : '400',
-                    color: isActive ? Colors.primary : Colors.text,
+                    color: isActive ? '#3FA9F5' : '#111827',
                   }}
                 >
                   {item.label}
@@ -150,12 +146,13 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
                 {item.badge && item.badge > 0 && (
                   <View
                     style={{
-                      backgroundColor: Colors.error,
+                      backgroundColor: '#EF4444',
                       borderRadius: 10,
                       paddingHorizontal: 8,
                       paddingVertical: 2,
                       minWidth: 20,
                       alignItems: 'center',
+                      marginRight: 12,
                     }}
                   >
                     <Text style={{ color: Colors.white, fontSize: 11, fontWeight: '600' }}>
@@ -169,8 +166,15 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
         </View>
       </ScrollView>
 
-      {/* Logout Button */}
-      <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: Colors.gray200 }}>
+      {/* Logout Button - Match Figma: positioned at bottom, padding 16px, height 48px */}
+      <View style={{ 
+        padding: 16, 
+        position: 'absolute' as any,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: Colors.white,
+      }}>
         <TouchableOpacity
           onPress={() => router.replace('/auth/login')}
           style={[
@@ -178,10 +182,11 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
-              paddingHorizontal: 16,
-              paddingVertical: 12,
+              paddingHorizontal: 0,
+              paddingVertical: 0,
               borderRadius: 8,
-              backgroundColor: Colors.errorLight,
+              height: 48,
+              backgroundColor: '#FEE2E2',
               borderWidth: 1,
               borderColor: '#FECACA',
             },
@@ -192,10 +197,7 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
           ]}
           activeOpacity={0.8}
         >
-          <View style={{ marginRight: 8 }}>
-            <LogoutIcon size={18} color={Colors.error} />
-          </View>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.error }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: '#EF4444' }}>
             Đăng xuất
           </Text>
         </TouchableOpacity>

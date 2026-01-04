@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
 import { AttendanceStatusTag } from '@/components/AttendanceStatusTag';
@@ -14,47 +14,60 @@ export default function HistoryScreen() {
     }
   };
 
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+
+  const contentMaxWidth = isDesktop ? 800 : '100%';
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+
   return (
-    <View className="flex-1 bg-gray-50">
+    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <StatusBar style="dark" />
       <AppHeader title="Lịch sử điểm danh" showBack showLogout={true} />
       
       <ScrollView
-        contentContainerStyle={{ padding: 20 }}
+        contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
+        <View style={{ maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
           {/* Stats Summary */}
-          <View className="bg-white rounded-2xl p-5 mb-6" style={{
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 16,
+            padding: 24,
+            marginBottom: 24,
+            borderWidth: 1,
+            borderColor: '#E5E7EB',
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
+            shadowOpacity: 0.1,
             shadowRadius: 4,
             elevation: 2,
           }}>
-            <Text className="text-base font-semibold text-gray-900 mb-4">
+            <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: '#111827', marginBottom: 16 }}>
               Tổng quan
             </Text>
-            <View className="flex-row justify-around">
-              <View className="items-center">
-                <Text className="text-2xl font-bold text-green-600">75%</Text>
-                <Text className="text-sm text-gray-500 mt-1">Có mặt</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ fontSize: 24, lineHeight: 32, fontWeight: 'bold', color: '#10B981' }}>75%</Text>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280', marginTop: 4 }}>Có mặt</Text>
               </View>
-              <View className="w-px bg-gray-200" />
-              <View className="items-center">
-                <Text className="text-2xl font-bold text-amber-600">10%</Text>
-                <Text className="text-sm text-gray-500 mt-1">Đi muộn</Text>
+              <View style={{ width: 1, backgroundColor: '#E5E7EB' }} />
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ fontSize: 24, lineHeight: 32, fontWeight: 'bold', color: '#F59E0B' }}>10%</Text>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280', marginTop: 4 }}>Đi muộn</Text>
               </View>
-              <View className="w-px bg-gray-200" />
-              <View className="items-center">
-                <Text className="text-2xl font-bold text-red-600">15%</Text>
-                <Text className="text-sm text-gray-500 mt-1">Vắng</Text>
+              <View style={{ width: 1, backgroundColor: '#E5E7EB' }} />
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ fontSize: 24, lineHeight: 32, fontWeight: 'bold', color: '#EF4444' }}>15%</Text>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280', marginTop: 4 }}>Vắng</Text>
               </View>
             </View>
           </View>
 
           {/* History List */}
-          <Text className="text-lg font-bold text-gray-900 mb-4">
+          <Text style={{ fontSize: 18, lineHeight: 28, fontWeight: 'bold', color: '#111827', marginBottom: 16 }}>
             Lịch sử chi tiết
           </Text>
           
@@ -62,39 +75,46 @@ export default function HistoryScreen() {
             {mockAttendanceHistory.map((record) => (
               <View
                 key={record.id}
-                className="bg-white rounded-2xl p-4"
                 style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: 16,
+                  padding: 16,
+                  marginBottom: 16,
+                  borderWidth: 1,
+                  borderColor: '#E5E7EB',
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.05,
+                  shadowOpacity: 0.1,
                   shadowRadius: 4,
                   elevation: 2,
                 }}
               >
-                <View className="flex-row items-start justify-between mb-3">
-                  <View className="flex-1">
-                    <Text className="text-base font-bold text-gray-900 mb-1">
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: 'bold', color: '#111827', marginBottom: 4 }}>
                       {record.courseName}
                     </Text>
-                    <Text className="text-sm text-gray-500">
+                    <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280' }}>
                       {record.courseCode}
                     </Text>
                   </View>
                   <AttendanceStatusTag status={record.status} size="sm" />
                 </View>
                 
-                <View className="flex-row items-center justify-between pt-3 border-t border-gray-100">
-                  <View className="flex-row items-center">
-                    <Text className="text-sm text-gray-500">
+                <View style={{ height: 1, backgroundColor: '#F3F4F6', marginVertical: 12 }} />
+                
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                    <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280' }}>
                       {record.date}
                     </Text>
-                    <Text className="text-sm text-gray-500">
+                    <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280' }}>
                       {record.time}
                     </Text>
                   </View>
-                  <View className="flex-row items-center">
-                    <Text className="text-sm font-semibold text-gray-700">{getMethodIcon(record.method)}</Text>
-                    <Text className="text-sm text-gray-500 capitalize">
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: '#374151' }}>{getMethodIcon(record.method)}</Text>
+                    <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280', textTransform: 'lowercase' }}>
                       {record.method}
                     </Text>
                   </View>

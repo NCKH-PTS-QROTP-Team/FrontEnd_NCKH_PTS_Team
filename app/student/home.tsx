@@ -1,19 +1,22 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
-import { StatsCard } from '@/components/StatsCard';
-import { ScheduleCard } from '@/components/ScheduleCard';
 import { mockSchedules } from '@/constants/mockData';
 import AppLayout from '@/components/AppLayout';
-import { isDesktop, isTablet } from '@/constants/responsive';
 import { HomeIcon, CalendarIcon, QrCodeIcon, HashIcon, ScrollIcon, BellIcon } from '@/components/Icons';
 
 export default function StudentHomeScreen() {
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
   const todaySchedules = mockSchedules.filter(s => s.status !== 'completed');
   const isWeb = Platform.OS === 'web';
+
+  // Responsive breakpoints - Dynamic based on window size
+  const isDesktop = windowWidth >= 1024;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
+  const isMobile = windowWidth < 768;
 
   const menuItems = [
     { icon: <HomeIcon size={20} color="#3FA9F5" />, label: 'Trang chủ', route: '/student/home' },
@@ -24,57 +27,113 @@ export default function StudentHomeScreen() {
     { icon: <BellIcon size={20} color="#3FA9F5" />, label: 'Thông báo', route: '/student/notifications' },
   ];
 
+  // Responsive values - Match Figma exactly
+  const contentMaxWidth = isDesktop ? 800 : windowWidth - 40;
+  const padding = isMobile ? 20 : isTablet ? 20 : 0;
+  
+  // Quick action cards: Desktop 384px each with 32px gap
+  const quickActionWidth = isDesktop ? 384 : '100%';
+  const quickActionGap = isDesktop ? 32 : 16;
+  
+  // Stats cards: Desktop 256px each with 16px gap
+  const statsWidth = isDesktop ? 256 : isTablet ? (contentMaxWidth - 16) / 2 : '100%';
+  const statsGap = isDesktop ? 16 : 12;
+
   const content = (
-    <View className="flex-1 bg-white">
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <StatusBar style="dark" />
       <AppHeader title="Trang chủ" showLogout={!isWeb} />
       
       <ScrollView
-        contentContainerStyle={{ padding: 20 }}
+        contentContainerStyle={{ 
+          paddingHorizontal: padding,
+          paddingTop: isDesktop ? 20 : 20,
+          paddingBottom: 40,
+        }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
-          {/* Welcome Card */}
+        <View style={{ 
+          maxWidth: contentMaxWidth, 
+          width: '100%', 
+          alignSelf: 'center',
+        }}>
+          {/* Welcome Card - Figma: 800x160px, borderRadius 16, padding 24 */}
           <View
             style={{
+              width: '100%',
+              minHeight: 160,
               backgroundColor: '#3FA9F5',
               borderRadius: 16,
               padding: 24,
               marginBottom: 24,
-              shadowColor: '#3FA9F5',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 5,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 2,
             }}
           >
-            <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: 'bold', marginBottom: 8 }}>
+            <Text style={{ 
+              color: '#FFFFFF', 
+              fontSize: 24, 
+              fontWeight: 'bold', 
+              lineHeight: 32,
+              marginBottom: 8 
+            }}>
               Xin chào!
             </Text>
-            <Text style={{ color: '#DBEAFE', fontSize: 16, marginBottom: 16 }}>
+            <Text style={{ 
+              color: '#DBEAFE', 
+              fontSize: 16,
+              lineHeight: 24,
+              marginBottom: 16 
+            }}>
               Hôm nay bạn có {todaySchedules.length} buổi học
             </Text>
             <TouchableOpacity
               onPress={() => router.push('/student/schedule')}
-              className="bg-white rounded-xl py-3 px-4 self-start"
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: 12,
+                width: 140,
+                height: 40,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
               activeOpacity={0.8}
             >
-              <Text className="text-primary font-semibold">
+              <Text style={{ 
+                fontSize: 14, 
+                fontWeight: '600', 
+                color: '#3FA9F5',
+                lineHeight: 21 
+              }}>
                 Xem lịch học →
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Quick Actions */}
-          <View style={{ marginBottom: 24 }}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#111827', marginBottom: 12 }}>
+          {/* Quick Actions - Figma: Title + 2 cards (384x160 each, gap 32) */}
+          <View style={{ marginBottom: 40 }}>
+            <Text style={{ 
+              fontSize: 18, 
+              fontWeight: 'bold', 
+              color: '#111827',
+              lineHeight: 28,
+              marginBottom: 16 
+            }}>
               Điểm danh nhanh
             </Text>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ 
+              flexDirection: isDesktop ? 'row' : 'column',
+              gap: quickActionGap,
+            }}>
+              {/* OTP Card */}
               <TouchableOpacity
                 onPress={() => router.push('/student/otp-attendance')}
                 style={{
-                  flex: 1,
+                  width: quickActionWidth,
+                  minHeight: 160,
                   backgroundColor: '#FFFFFF',
                   borderRadius: 16,
                   padding: 20,
@@ -82,27 +141,52 @@ export default function StudentHomeScreen() {
                   borderColor: '#DBEAFE',
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.05,
+                  shadowOpacity: 0.1,
                   shadowRadius: 4,
                   elevation: 2,
                 }}
                 activeOpacity={0.7}
               >
-                <View style={{ backgroundColor: '#DBEAFE', borderRadius: 12, width: 48, height: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-                  <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#3FA9F5' }}>OTP</Text>
+                <View style={{ 
+                  backgroundColor: '#DBEAFE', 
+                  borderRadius: 12, 
+                  width: 48, 
+                  height: 48, 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  marginBottom: 12 
+                }}>
+                  <Text style={{ 
+                    fontSize: 24, 
+                    fontWeight: 'bold', 
+                    color: '#3FA9F5',
+                    lineHeight: 32 
+                  }}>OTP</Text>
                 </View>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#111827', marginBottom: 4 }}>
+                <Text style={{ 
+                  fontSize: 16, 
+                  fontWeight: 'bold', 
+                  color: '#111827',
+                  lineHeight: 24,
+                  marginBottom: 4 
+                }}>
                   Mã OTP
                 </Text>
-                <Text style={{ fontSize: 14, color: '#6B7280' }}>
+                <Text style={{ 
+                  fontSize: 14, 
+                  color: '#6B7280',
+                  lineHeight: 21 
+                }}>
                   Nhập mã từ giảng viên
                 </Text>
               </TouchableOpacity>
 
+              {/* QR Card */}
               <TouchableOpacity
                 onPress={() => router.push('/student/qr-attendance')}
                 style={{
-                  flex: 1,
+                  width: quickActionWidth,
+                  minHeight: 160,
                   backgroundColor: '#FFFFFF',
                   borderRadius: 16,
                   padding: 20,
@@ -110,104 +194,320 @@ export default function StudentHomeScreen() {
                   borderColor: '#D1FAE5',
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.05,
+                  shadowOpacity: 0.1,
                   shadowRadius: 4,
                   elevation: 2,
                 }}
                 activeOpacity={0.7}
               >
-                <View style={{ backgroundColor: '#D1FAE5', borderRadius: 12, width: 48, height: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-                  <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#10B981' }}>QR</Text>
+                <View style={{ 
+                  backgroundColor: '#D1FAE5', 
+                  borderRadius: 12, 
+                  width: 48, 
+                  height: 48, 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  marginBottom: 12 
+                }}>
+                  <Text style={{ 
+                    fontSize: 22, 
+                    fontWeight: 'bold', 
+                    color: '#10B981',
+                    lineHeight: 28 
+                  }}>QR</Text>
                 </View>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#111827', marginBottom: 4 }}>
+                <Text style={{ 
+                  fontSize: 16, 
+                  fontWeight: 'bold', 
+                  color: '#111827',
+                  lineHeight: 24,
+                  marginBottom: 4 
+                }}>
                   QR Code
                 </Text>
-                <Text style={{ fontSize: 14, color: '#6B7280' }}>
+                <Text style={{ 
+                  fontSize: 14, 
+                  color: '#6B7280',
+                  lineHeight: 21 
+                }}>
                   Quét mã trên lớp
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Stats */}
-          <View className="mb-6">
-            <Text className="text-lg font-bold text-gray-900 mb-3">
+          {/* Stats - Figma: Title + 3 cards (256x120 each, gap 16) */}
+          <View style={{ marginBottom: 40 }}>
+            <Text style={{ 
+              fontSize: 18, 
+              fontWeight: 'bold', 
+              color: '#111827',
+              lineHeight: 28,
+              marginBottom: 16 
+            }}>
               Thống kê tuần này
             </Text>
-            <View className="flex-row -mx-1.5">
-              <StatsCard
-                title="Tổng buổi"
-                value="12"
-                color="#3FA9F5"
-              />
-              <StatsCard
-                title="Có mặt"
-                value="10"
-                color="#10B981"
-              />
-              <StatsCard
-                title="Đi muộn"
-                value="2"
-                color="#F59E0B"
-              />
+            <View style={{ 
+              flexDirection: isDesktop ? 'row' : isTablet ? 'row' : 'column',
+              flexWrap: isTablet && !isDesktop ? 'wrap' : 'nowrap',
+              gap: statsGap,
+            }}>
+              {/* Tổng buổi */}
+              <View style={{
+                width: statsWidth,
+                height: 120,
+                backgroundColor: '#FFFFFF',
+                borderRadius: 8,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: '#E5E7EB',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 2,
+              }}>
+                <Text style={{ 
+                  fontSize: 14, 
+                  color: '#6B7280',
+                  lineHeight: 21,
+                  marginBottom: 8 
+                }}>Tổng buổi</Text>
+                <Text style={{ 
+                  fontSize: 36, 
+                  fontWeight: '600', 
+                  color: '#3FA9F5',
+                  lineHeight: 40 
+                }}>12</Text>
+              </View>
+              
+              {/* Có mặt */}
+              <View style={{
+                width: statsWidth,
+                height: 120,
+                backgroundColor: '#FFFFFF',
+                borderRadius: 8,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: '#E5E7EB',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 2,
+              }}>
+                <Text style={{ 
+                  fontSize: 14, 
+                  color: '#6B7280',
+                  lineHeight: 21,
+                  marginBottom: 8 
+                }}>Có mặt</Text>
+                <Text style={{ 
+                  fontSize: 36, 
+                  fontWeight: '600', 
+                  color: '#10B981',
+                  lineHeight: 40 
+                }}>10</Text>
+              </View>
+              
+              {/* Đi muộn */}
+              <View style={{
+                width: statsWidth,
+                height: 120,
+                backgroundColor: '#FFFFFF',
+                borderRadius: 8,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: '#E5E7EB',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 2,
+              }}>
+                <Text style={{ 
+                  fontSize: 14, 
+                  color: '#6B7280',
+                  lineHeight: 21,
+                  marginBottom: 8 
+                }}>Đi muộn</Text>
+                <Text style={{ 
+                  fontSize: 36, 
+                  fontWeight: '600', 
+                  color: '#F59E0B',
+                  lineHeight: 40 
+                }}>2</Text>
+              </View>
             </View>
           </View>
 
-          {/* Today's Schedule */}
-          <View className="mb-6">
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-lg font-bold text-gray-900">
+          {/* Today's Schedule - Figma: Title + View All + Cards (800x120 each) */}
+          <View style={{ marginBottom: 24 }}>
+            <View style={{ 
+              flexDirection: 'row', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              marginBottom: 16 
+            }}>
+              <Text style={{ 
+                fontSize: 18, 
+                fontWeight: 'bold', 
+                color: '#111827',
+                lineHeight: 28 
+              }}>
                 Lịch học hôm nay
               </Text>
               <TouchableOpacity onPress={() => router.push('/student/schedule')}>
-                <Text className="text-primary font-semibold">Xem tất cả</Text>
+                <Text style={{ 
+                  fontSize: 14, 
+                  fontWeight: '600', 
+                  color: '#3FA9F5',
+                  lineHeight: 21 
+                }}>Xem tất cả</Text>
               </TouchableOpacity>
             </View>
 
             {todaySchedules.length > 0 ? (
-              <View>
-                {todaySchedules.map((schedule) => (
-                  <ScheduleCard
+              <View style={{ gap: 16 }}>
+                {todaySchedules.slice(0, 2).map((schedule) => (
+                  <TouchableOpacity
                     key={schedule.id}
-                    schedule={schedule}
                     onPress={() => router.push('/student/otp-attendance')}
-                  />
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: 8,
+                      padding: 24,
+                      borderWidth: 1,
+                      borderColor: '#E5E7EB',
+                      minHeight: 120,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                      elevation: 2,
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ 
+                      fontSize: 18, 
+                      fontWeight: '600', 
+                      color: '#111827',
+                      lineHeight: 28,
+                      marginBottom: 4 
+                    }}>
+                      {schedule.courseName}
+                    </Text>
+                    <Text style={{ 
+                      fontSize: 14, 
+                      color: '#6B7280',
+                      lineHeight: 21,
+                      marginBottom: 12 
+                    }}>
+                      {schedule.teacher}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{ 
+                        width: 2, 
+                        height: 24, 
+                        backgroundColor: '#3FA9F5',
+                        borderRadius: 1,
+                        marginRight: 12 
+                      }} />
+                      <View>
+                        <Text style={{ 
+                          fontSize: 16, 
+                          color: '#111827',
+                          lineHeight: 24,
+                          marginBottom: 4 
+                        }}>
+                          {schedule.time}
+                        </Text>
+                        <Text style={{ 
+                          fontSize: 14, 
+                          color: '#6B7280',
+                          lineHeight: 21 
+                        }}>
+                          Phòng: {schedule.room}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             ) : (
-              <View className="bg-white rounded-2xl p-8 items-center">
-                <View style={{ width: 60, height: 60, backgroundColor: '#F3F4F6', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+              <View style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: 16,
+                padding: 32,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: '#E5E7EB',
+              }}>
+                <View style={{ 
+                  width: 60, 
+                  height: 60, 
+                  backgroundColor: '#F3F4F6', 
+                  borderRadius: 12, 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  marginBottom: 12 
+                }}>
                   <Text style={{ fontSize: 28, color: '#6B7280' }}>☰</Text>
                 </View>
-                <Text className="text-gray-500">
+                <Text style={{ 
+                  fontSize: 14, 
+                  color: '#6B7280',
+                  lineHeight: 21 
+                }}>
                   Không có lịch học hôm nay
                 </Text>
               </View>
             )}
           </View>
 
-          {/* History Link */}
+          {/* History Link - Figma: 800x64 card */}
           <TouchableOpacity
             onPress={() => router.push('/student/history')}
-            className="bg-white rounded-2xl p-4 flex-row items-center justify-between"
             style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: 16,
+              padding: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              height: 64,
+              borderWidth: 1,
+              borderColor: '#E5E7EB',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
+              shadowOpacity: 0.1,
               shadowRadius: 4,
               elevation: 2,
             }}
             activeOpacity={0.7}
           >
-            <View className="flex-row items-center">
-              <View className="bg-gray-100 rounded-xl w-10 h-10 items-center justify-center mr-3">
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ 
+                width: 40, 
+                height: 40, 
+                backgroundColor: '#F3F4F6', 
+                borderRadius: 12, 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                marginRight: 12 
+              }}>
                 <Text style={{ fontSize: 18, color: '#6B7280' }}>☰</Text>
               </View>
-              <Text className="text-base font-semibold text-gray-900">
+              <Text style={{ 
+                fontSize: 16, 
+                fontWeight: '600', 
+                color: '#111827',
+                lineHeight: 24 
+              }}>
                 Lịch sử điểm danh
               </Text>
             </View>
-            <Text className="text-gray-400">→</Text>
+            <Text style={{ fontSize: 20, color: '#9CA3AF' }}>→</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

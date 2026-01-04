@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
@@ -23,20 +23,32 @@ export default function QRAttendanceScreen() {
     }, 2000);
   };
 
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+
+  const contentMaxWidth = isDesktop ? 500 : '100%';
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+
   return (
-    <View className="flex-1 bg-gray-50">
+    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <StatusBar style="dark" />
       <AppHeader title="Điểm danh bằng QR Code" showBack showLogout={true} />
       
       <ScrollView
-        contentContainerStyle={{ padding: 20 }}
+        contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ maxWidth: 500, width: '100%', alignSelf: 'center' }}>
+        <View style={{ maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
           {/* Course Info */}
           <View
-            className="bg-white rounded-2xl p-5 mb-6"
             style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 24,
+              borderWidth: 1,
+              borderColor: '#E5E7EB',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
@@ -44,12 +56,12 @@ export default function QRAttendanceScreen() {
               elevation: 3,
             }}
           >
-            <View className="bg-green-50 rounded-xl p-4">
-              <Text className="text-sm text-gray-500 mb-1">Môn học</Text>
-              <Text className="text-lg font-bold text-gray-900">
+            <View style={{ backgroundColor: '#D1FAE5', borderRadius: 12, padding: 16 }}>
+              <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280', marginBottom: 4 }}>Môn học</Text>
+              <Text style={{ fontSize: 18, lineHeight: 28, fontWeight: 'bold', color: '#111827', marginBottom: 4 }}>
                 Lập trình cơ bản
               </Text>
-              <Text className="text-sm text-gray-600 mt-1">
+              <Text style={{ fontSize: 14, lineHeight: 20, color: '#4B5563' }}>
                 CS101 • Phòng A102 • 08:00 - 10:00
               </Text>
             </View>
@@ -57,8 +69,13 @@ export default function QRAttendanceScreen() {
 
           {/* Scanner Card */}
           <View
-            className="bg-white rounded-2xl p-6 mb-6"
             style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              borderWidth: 1,
+              borderColor: '#E5E7EB',
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
@@ -68,49 +85,54 @@ export default function QRAttendanceScreen() {
           >
             {/* Scanner Area */}
             <View
-              className="bg-gray-50 rounded-2xl items-center justify-center mb-6"
               style={{
+                backgroundColor: '#F9FAFB',
+                borderRadius: 16,
                 aspectRatio: 1,
                 borderWidth: 3,
                 borderColor: scanning ? '#3FA9F5' : '#E5E7EB',
                 borderStyle: 'dashed',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 24,
+                padding: 24,
               }}
             >
               {!scanning && !scanned && (
-                <View className="items-center p-6">
+                <View style={{ alignItems: 'center' }}>
                   <View style={{ width: 80, height: 80, backgroundColor: '#F3F4F6', borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                    <Text style={{ fontSize: 36, fontWeight: 'bold', color: '#6B7280' }}>QR</Text>
+                    <Text style={{ fontSize: 36, lineHeight: 44, fontWeight: 'bold', color: '#6B7280' }}>QR</Text>
                   </View>
-                  <Text className="text-base font-semibold text-gray-900 mb-2 text-center">
+                  <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: '#111827', marginBottom: 8, textAlign: 'center' }}>
                     Sẵn sàng quét
                   </Text>
-                  <Text className="text-sm text-gray-500 text-center">
-                    Nhấn nút bên dưới để bắt đầu quét QR code
+                  <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280', textAlign: 'center' }}>
+                    Nhấn nút bên dưới để bắt đầu
                   </Text>
                 </View>
               )}
               
               {scanning && (
-                <View className="items-center p-6">
+                <View style={{ alignItems: 'center' }}>
                   <View style={{ width: 80, height: 80, backgroundColor: '#DBEAFE', borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                    <Text style={{ fontSize: 36, fontWeight: 'bold', color: '#3FA9F5' }}>...</Text>
+                    <Text style={{ fontSize: 36, lineHeight: 44, fontWeight: 'bold', color: '#3FA9F5' }}>...</Text>
                   </View>
-                  <Text className="text-base font-semibold text-primary mb-2">
+                  <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: '#3FA9F5', marginBottom: 8 }}>
                     Đang quét...
                   </Text>
-                  <Text className="text-sm text-gray-500 text-center">
+                  <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280', textAlign: 'center' }}>
                     Hướng camera vào QR code
                   </Text>
                 </View>
               )}
 
               {scanned && (
-                <View className="items-center p-6">
-                  <Text className="text-7xl mb-4">✅</Text>
-                  <Text className="text-base font-semibold text-green-600 mb-2">
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={{ fontSize: 70, lineHeight: 80, marginBottom: 16 }}>✅</Text>
+                  <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: '#10B981', marginBottom: 8 }}>
                     Quét thành công!
                   </Text>
-                  <Text className="text-sm text-gray-500">
+                  <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280' }}>
                     Đang xử lý...
                   </Text>
                 </View>
@@ -126,10 +148,12 @@ export default function QRAttendanceScreen() {
           </View>
 
           {/* Help Text */}
-          <View className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <Text className="text-sm text-blue-800">
-              <Text className="font-semibold">Hướng dẫn:</Text>
-              {'\n'}Nhấn "Bắt đầu quét" và hướng camera vào QR code mà giảng viên hiển thị để hoàn tất điểm danh.
+          <View style={{ backgroundColor: '#E0F2FE', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#BFDBFE' }}>
+            <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: '#1E40AF', marginBottom: 8 }}>
+              Hướng dẫn:
+            </Text>
+            <Text style={{ fontSize: 14, lineHeight: 20, color: '#1E3A8A' }}>
+              Nhấn "Bắt đầu quét" và hướng camera vào QR code mà giảng viên hiển thị để hoàn tất điểm danh.
             </Text>
           </View>
         </View>

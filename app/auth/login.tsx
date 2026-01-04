@@ -78,7 +78,7 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white"
+      style={{ flex: 1, backgroundColor: Colors.white }}
     >
       <StatusBar style="dark" />
       <ScrollView
@@ -89,29 +89,37 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View 
-          className="flex-1 justify-center"
-          style={{ maxWidth: 400, width: '100%', alignSelf: 'center' }}
+          style={{ flex: 1, justifyContent: 'center', maxWidth: 400, width: '100%', alignSelf: 'center' }}
         >
           {/* Logo Section */}
-          <View className="items-center" style={{ marginBottom: 48 }}>
+          <View style={{ alignItems: 'center', marginBottom: 48 }}>
             <View
-              className="bg-primary rounded-3xl items-center justify-center"
-              style={{ width: 80, height: 80, marginBottom: 24 }}
+              style={{ 
+                width: 80, 
+                height: 80, 
+                marginBottom: 24,
+                backgroundColor: Colors.primary,
+                borderRadius: 40,
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
             >
-              <Text className="text-white text-4xl">✓</Text>
+              <Text style={{ color: Colors.white, fontSize: 32, fontWeight: 'bold' }}>✓</Text>
             </View>
-            <Text className="text-4xl font-semibold text-gray-900" style={{ lineHeight: 56, letterSpacing: -0.02, marginBottom: 8 }}>
+            <Text style={{ fontSize: 36, fontWeight: '600', color: Colors.textHeading, lineHeight: 44, letterSpacing: -0.5, marginBottom: 8 }}>
               Điểm Danh
             </Text>
-            <Text className="text-base text-gray-600 text-center" style={{ lineHeight: 24 }}>
+            <Text style={{ fontSize: 16, color: Colors.textSecondary, textAlign: 'center', lineHeight: 24 }}>
               Đăng nhập để tiếp tục
             </Text>
           </View>
 
           {/* Login Card */}
           <View
-            className="bg-white border border-gray-100"
             style={{
+              backgroundColor: Colors.white,
+              borderWidth: 1,
+              borderColor: Colors.border,
               borderRadius: 8,
               padding: 24,
               marginBottom: 24,
@@ -163,21 +171,21 @@ export default function LoginScreen() {
           </View>
 
           {/* Demo Accounts */}
-          <View className="items-center">
-            <View className="flex-row items-center" style={{ marginBottom: 12 }}>
-              <View className="flex-1 h-px bg-gray-200" />
-              <Text className="text-sm text-gray-500" style={{ marginHorizontal: 16, lineHeight: 21 }}>Tài khoản demo</Text>
-              <View className="flex-1 h-px bg-gray-200" />
+          <View style={{ alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: Colors.border }} />
+              <Text style={{ fontSize: 14, color: Colors.textSecondary, marginHorizontal: 16, lineHeight: 21 }}>Tài khoản demo</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: Colors.border }} />
             </View>
-            <View className="bg-gray-50 border border-gray-100" style={{ width: '100%', padding: 16, borderRadius: 8 }}>
-              <Text className="text-sm text-gray-600" style={{ lineHeight: 21, marginBottom: 8 }}>
-                <Text className="font-semibold">Admin:</Text> admin / admin123
+            <View style={{ width: '100%', padding: 16, borderRadius: 8, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border }}>
+              <Text style={{ fontSize: 14, color: Colors.textSecondary, lineHeight: 21, marginBottom: 8 }}>
+                <Text style={{ fontWeight: '600' }}>Admin:</Text> admin / admin123
               </Text>
-              <Text className="text-sm text-gray-600" style={{ lineHeight: 21, marginBottom: 8 }}>
-                <Text className="font-semibold">Giảng viên:</Text> GV001 / teacher123
+              <Text style={{ fontSize: 14, color: Colors.textSecondary, lineHeight: 21, marginBottom: 8 }}>
+                <Text style={{ fontWeight: '600' }}>Giảng viên:</Text> GV001 / teacher123
               </Text>
-              <Text className="text-sm text-gray-600" style={{ lineHeight: 21 }}>
-                <Text className="font-semibold">Sinh viên:</Text> SV001 / student123
+              <Text style={{ fontSize: 14, color: Colors.textSecondary, lineHeight: 21 }}>
+                <Text style={{ fontWeight: '600' }}>Sinh viên:</Text> SV001 / student123
               </Text>
             </View>
           </View>

@@ -12,6 +12,7 @@ module.exports = function(api) {
           },
         },
       ],
+      // Temporarily disabled NativeWind to fix web text node errors
       'nativewind/babel',
       'react-native-reanimated/plugin',
     ],
