@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
 import { StudentCard } from '@/components/StudentCard';
@@ -10,52 +10,62 @@ export default function ClassListScreen() {
   const presentCount = mockStudents.filter(s => s.status === 'present').length;
   const lateCount = mockStudents.filter(s => s.status === 'late').length;
   const absentCount = mockStudents.filter(s => s.status === 'absent').length;
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+
+  const contentMaxWidth = isDesktop ? 800 : '100%';
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <StatusBar style="dark" />
       <AppHeader title="Danh sách lớp" showBack showLogout={true} />
       
       <ScrollView
-        contentContainerStyle={{ padding: 20 }}
+        contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
+        <View style={{ maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
           {/* Class Info */}
-          <View className="bg-white rounded-2xl p-5 mb-6" style={{
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 24,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.1,
             shadowRadius: 8,
             elevation: 3,
           }}>
-            <Text className="text-base font-semibold text-gray-900 mb-3">
+            <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: '#111827', marginBottom: 12 }}>
               Lập trình cơ bản - CS101
             </Text>
-            <View className="flex-row items-center">
-              <View className="flex-row items-center">
-                <View className="bg-green-100 rounded-full w-8 h-8 items-center justify-center mr-2">
-                  <Text className="text-green-600 font-bold">{presentCount}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ backgroundColor: '#D1FAE5', borderRadius: 20, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
+                  <Text style={{ color: '#10B981', fontSize: 14, lineHeight: 20, fontWeight: 'bold' }}>{presentCount}</Text>
                 </View>
-                <Text className="text-sm text-gray-600">Có mặt</Text>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: '#4B5563' }}>Có mặt</Text>
               </View>
-              <View className="flex-row items-center">
-                <View className="bg-amber-100 rounded-full w-8 h-8 items-center justify-center mr-2">
-                  <Text className="text-amber-600 font-bold">{lateCount}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ backgroundColor: '#FEF3C7', borderRadius: 20, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
+                  <Text style={{ color: '#F59E0B', fontSize: 14, lineHeight: 20, fontWeight: 'bold' }}>{lateCount}</Text>
                 </View>
-                <Text className="text-sm text-gray-600">Muộn</Text>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: '#4B5563' }}>Muộn</Text>
               </View>
-              <View className="flex-row items-center">
-                <View className="bg-red-100 rounded-full w-8 h-8 items-center justify-center mr-2">
-                  <Text className="text-red-600 font-bold">{absentCount}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ backgroundColor: '#FEE2E2', borderRadius: 20, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
+                  <Text style={{ color: '#EF4444', fontSize: 14, lineHeight: 20, fontWeight: 'bold' }}>{absentCount}</Text>
                 </View>
-                <Text className="text-sm text-gray-600">Vắng</Text>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: '#4B5563' }}>Vắng</Text>
               </View>
             </View>
           </View>
 
           {/* Student List */}
-          <Text className="text-lg font-bold text-gray-900 mb-4">
+          <Text style={{ fontSize: 18, lineHeight: 28, fontWeight: 'bold', color: '#111827', marginBottom: 16 }}>
             Danh sách sinh viên ({mockStudents.length})
           </Text>
           

@@ -1,0 +1,126 @@
+<svg width="375" height="812" viewBox="0 0 375 812" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="375" height="812" fill="#FFFFFF"/>
+  
+  <!-- Status Bar -->
+  <text x="24" y="36" font-family="system-ui" font-size="14" font-weight="600" fill="#000000">9:41</text>
+  <rect x="294" y="26" width="24" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="322" y="26" width="16" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="342" y="26" width="25" height="12" rx="4" fill="#000000" opacity="0.3"/>
+  
+  <!-- Header -->
+  <rect x="0" y="54" width="375" height="64" fill="#FFFFFF"/>
+  <circle cx="40" cy="86" r="16" fill="#F3F4F6"/>
+  <text x="40" y="92" font-family="system-ui" font-size="16" fill="#6B7280" text-anchor="middle">←</text>
+  <text x="72" y="94" font-family="system-ui" font-size="20" font-weight="700" fill="#111827">Quản lý lịch học</text>
+  
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000000" flood-opacity="0.05"/>
+    </filter>
+  </defs>
+  
+  <!-- Action Buttons -->
+  <rect x="20" y="138" width="163.5" height="44" rx="12" fill="#3FA9F5"/>
+  <text x="101.75" y="165" font-family="system-ui" font-size="14" font-weight="600" fill="#FFFFFF" text-anchor="middle">+ Tạo lịch mới</text>
+  
+  <rect x="191.5" y="138" width="163.5" height="44" rx="12" fill="#FFFFFF" stroke="#3FA9F5" stroke-width="2"/>
+  <text x="273.25" y="165" font-family="system-ui" font-size="14" font-weight="600" fill="#3FA9F5" text-anchor="middle">📅 Xem lịch</text>
+  
+  <!-- Date Selector -->
+  <rect x="20" y="198" width="335" height="48" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="36" y="210" font-family="system-ui" font-size="11" fill="#6B7280">Ngày</text>
+  <text x="36" y="232" font-family="system-ui" font-size="14" font-weight="600" fill="#111827">Thứ Năm, 02/01/2026</text>
+  <rect x="313" y="210" width="24" height="24" rx="8" fill="#F3F4F6"/>
+  <text x="325" y="227" font-family="system-ui" font-size="14" fill="#6B7280" text-anchor="middle">📅</text>
+  
+  <!-- Filter -->
+  <g transform="translate(20, 262)">
+    <rect x="0" y="0" width="70" height="32" rx="16" fill="#3FA9F5"/>
+    <text x="35" y="20" font-family="system-ui" font-size="12" font-weight="600" fill="#FFFFFF" text-anchor="middle">Tất cả</text>
+  </g>
+  
+  <g transform="translate(98, 262)">
+    <rect x="0" y="0" width="80" height="32" rx="16" fill="#F3F4F6"/>
+    <text x="40" y="20" font-family="system-ui" font-size="12" font-weight="600" fill="#374151" text-anchor="middle">Sắp diễn ra</text>
+  </g>
+  
+  <g transform="translate(186, 262)">
+    <rect x="0" y="0" width="80" height="32" rx="16" fill="#F3F4F6"/>
+    <text x="40" y="20" font-family="system-ui" font-size="12" font-weight="600" fill="#374151" text-anchor="middle">Đang diễn ra</text>
+  </g>
+  
+  <!-- Count -->
+  <text x="20" y="326" font-family="system-ui" font-size="13" fill="#6B7280">8 buổi học</text>
+  
+  <!-- Schedule Card 1 -->
+  <rect x="20" y="342" width="335" height="100" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <rect x="20" y="342" width="4" height="100" rx="2" fill="#3FA9F5"/>
+  
+  <text x="40" y="368" font-family="system-ui" font-size="15" font-weight="700" fill="#111827">Lập trình cơ bản</text>
+  <text x="40" y="388" font-family="system-ui" font-size="12" fill="#6B7280">CS101 • Lớp CNTT18A</text>
+  <text x="40" y="406" font-family="system-ui" font-size="12" fill="#6B7280">GV: Nguyễn Văn A</text>
+  
+  <rect x="40" y="418" width="110" height="20" rx="6" fill="#F3F4F6"/>
+  <text x="46" y="432" font-family="system-ui" font-size="11" fill="#374151">📍 Phòng A102</text>
+  
+  <rect x="156" y="418" width="120" height="20" rx="6" fill="#F3F4F6"/>
+  <text x="162" y="432" font-family="system-ui" font-size="11" fill="#374151">⏰ 08:00 - 10:00</text>
+  
+  <rect x="271" y="352" width="64" height="24" rx="12" fill="#DBEAFE"/>
+  <text x="303" y="369" font-family="system-ui" font-size="11" font-weight="600" fill="#0369A1" text-anchor="middle">Sắp tới</text>
+  
+  <!-- Schedule Card 2 -->
+  <rect x="20" y="454" width="335" height="100" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <rect x="20" y="454" width="4" height="100" rx="2" fill="#10B981"/>
+  
+  <text x="40" y="480" font-family="system-ui" font-size="15" font-weight="700" fill="#111827">Cấu trúc dữ liệu</text>
+  <text x="40" y="500" font-family="system-ui" font-size="12" fill="#6B7280">CS102 • Lớp CNTT18B</text>
+  <text x="40" y="518" font-family="system-ui" font-size="12" fill="#6B7280">GV: Trần Thị B</text>
+  
+  <rect x="40" y="530" width="110" height="20" rx="6" fill="#F3F4F6"/>
+  <text x="46" y="544" font-family="system-ui" font-size="11" fill="#374151">📍 Phòng B204</text>
+  
+  <rect x="156" y="530" width="120" height="20" rx="6" fill="#F3F4F6"/>
+  <text x="162" y="544" font-family="system-ui" font-size="11" fill="#374151">⏰ 10:30 - 12:30</text>
+  
+  <rect x="271" y="464" width="64" height="24" rx="12" fill="#DBEAFE"/>
+  <text x="303" y="481" font-family="system-ui" font-size="11" font-weight="600" fill="#0369A1" text-anchor="middle">Sắp tới</text>
+  
+  <!-- Schedule Card 3 -->
+  <rect x="20" y="566" width="335" height="100" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <rect x="20" y="566" width="4" height="100" rx="2" fill="#F59E0B"/>
+  
+  <text x="40" y="592" font-family="system-ui" font-size="15" font-weight="700" fill="#111827">Cơ sở dữ liệu</text>
+  <text x="40" y="612" font-family="system-ui" font-size="12" fill="#6B7280">CS201 • Lớp CNTT18C</text>
+  <text x="40" y="630" font-family="system-ui" font-size="12" fill="#6B7280">GV: Lê Văn C</text>
+  
+  <rect x="40" y="642" width="110" height="20" rx="6" fill="#F3F4F6"/>
+  <text x="46" y="656" font-family="system-ui" font-size="11" fill="#374151">📍 Phòng C301</text>
+  
+  <rect x="156" y="642" width="120" height="20" rx="6" fill="#F3F4F6"/>
+  <text x="162" y="656" font-family="system-ui" font-size="11" fill="#374151">⏰ 13:00 - 15:00</text>
+  
+  <rect x="264" y="576" width="71" height="24" rx="12" fill="#FEF3C7"/>
+  <text x="299.5" y="593" font-family="system-ui" font-size="11" font-weight="600" fill="#92400E" text-anchor="middle">Đang diễn ra</text>
+  
+  <!-- Schedule Card 4 -->
+  <rect x="20" y="678" width="335" height="100" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <rect x="20" y="678" width="4" height="100" rx="2" fill="#9CA3AF"/>
+  
+  <text x="40" y="704" font-family="system-ui" font-size="15" font-weight="700" fill="#111827">Mạng máy tính</text>
+  <text x="40" y="724" font-family="system-ui" font-size="12" fill="#6B7280">CS301 • Lớp CNTT18D</text>
+  <text x="40" y="742" font-family="system-ui" font-size="12" fill="#6B7280">GV: Phạm Thị D</text>
+  
+  <rect x="40" y="754" width="110" height="20" rx="6" fill="#F3F4F6"/>
+  <text x="46" y="768" font-family="system-ui" font-size="11" fill="#374151">📍 Phòng D402</text>
+  
+  <rect x="156" y="754" width="120" height="20" rx="6" fill="#F3F4F6"/>
+  <text x="162" y="768" font-family="system-ui" font-size="11" fill="#374151">⏰ 15:30 - 17:30</text>
+  
+  <rect x="265" y="688" width="70" height="24" rx="12" fill="#F3F4F6"/>
+  <text x="300" y="705" font-family="system-ui" font-size="11" font-weight="600" fill="#6B7280" text-anchor="middle">Đã kết thúc</text>
+  
+  <!-- Home Indicator -->
+  <rect x="121" y="788" width="134" height="5" rx="2.5" fill="#000000" opacity="0.3"/>
+</svg>

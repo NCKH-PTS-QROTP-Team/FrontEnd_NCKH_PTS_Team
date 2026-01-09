@@ -1,0 +1,57 @@
+<svg width="375" height="812" viewBox="0 0 375 812" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="375" height="812" fill="#F9FAFB"/>
+  
+  <!-- Status Bar -->
+  <text x="24" y="36" font-family="system-ui" font-size="14" font-weight="600" fill="#000000">9:41</text>
+  <rect x="294" y="26" width="24" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="322" y="26" width="16" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="342" y="26" width="25" height="12" rx="4" fill="#000000" opacity="0.3"/>
+  
+  <!-- Header -->
+  <rect x="0" y="54" width="375" height="64" fill="#FFFFFF"/>
+  <circle cx="40" cy="86" r="16" fill="#F3F4F6"/>
+  <text x="40" y="92" font-family="system-ui" font-size="16" fill="#6B7280" text-anchor="middle">←</text>
+  <text x="72" y="94" font-family="system-ui" font-size="18" font-weight="700" fill="#111827">Điểm danh QR Code</text>
+  
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-color="#000000" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+  
+  <!-- Course Info Card -->
+  <rect x="20" y="138" width="335" height="96" rx="16" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="36" y="154" width="303" height="64" rx="12" fill="#D1FAE5"/>
+  
+  <text x="52" y="176" font-family="system-ui" font-size="12" fill="#6B7280">Môn học</text>
+  <text x="52" y="196" font-family="system-ui" font-size="17" font-weight="700" fill="#111827">Lập trình cơ bản</text>
+  <text x="52" y="212" font-family="system-ui" font-size="13" fill="#374151">CS101 • Phòng A102 • 08:00 - 10:00</text>
+  
+  <!-- Scanner Card -->
+  <rect x="20" y="254" width="335" height="420" rx="16" fill="#FFFFFF" filter="url(#shadow)"/>
+  
+  <!-- Scanner Area -->
+  <rect x="52" y="286" width="271" height="271" rx="16" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="3" stroke-dasharray="8,8"/>
+  
+  <!-- Scanner Icon -->
+  <rect x="123.5" y="357.5" width="128" height="128" rx="16" fill="#F3F4F6"/>
+  <text x="187.5" y="446" font-family="system-ui" font-size="48" font-weight="700" fill="#6B7280" text-anchor="middle">QR</text>
+  
+  <text x="187.5" y="589" font-family="system-ui" font-size="16" font-weight="600" fill="#111827" text-anchor="middle">Sẵn sàng quét</text>
+  <text x="187.5" y="611" font-family="system-ui" font-size="13" fill="#6B7280" text-anchor="middle">Nhấn nút bên dưới để</text>
+  <text x="187.5" y="629" font-family="system-ui" font-size="13" fill="#6B7280" text-anchor="middle">bắt đầu quét QR code</text>
+  
+  <!-- Scan Button -->
+  <rect x="52" y="704" width="271" height="48" rx="12" fill="#3FA9F5"/>
+  <text x="187.5" y="733" font-family="system-ui" font-size="16" font-weight="600" fill="#FFFFFF" text-anchor="middle">Bắt đầu quét</text>
+  
+  <!-- Instructions -->
+  <rect x="20" y="694" width="335" height="84" rx="12" fill="#E0F2FE"/>
+  <text x="187.5" y="724" font-family="system-ui" font-size="12" font-weight="600" fill="#0369A1" text-anchor="middle">💡 Hướng dẫn</text>
+  <text x="187.5" y="744" font-family="system-ui" font-size="11" fill="#0C4A6E" text-anchor="middle">Đưa camera đến mã QR hiển thị</text>
+  <text x="187.5" y="760" font-family="system-ui" font-size="11" fill="#0C4A6E" text-anchor="middle">trên màn hình giảng viên</text>
+  
+  <!-- Home Indicator -->
+  <rect x="121" y="788" width="134" height="5" rx="2.5" fill="#000000" opacity="0.3"/>
+</svg>

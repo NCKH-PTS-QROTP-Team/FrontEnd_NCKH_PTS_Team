@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
-import { Colors } from '../../constants/colors';
-import { mockSchedules } from '../../constants/mockData';
-import AppHeader from '../../components/AppHeader';
-import Card from '../../components/Card';
-import Badge from '../../components/Badge';
-import PrimaryButton from '../../components/PrimaryButton';
+import { StatusBar } from 'expo-status-bar';
+import { Colors } from '@/constants/colors';
+import { mockSchedules } from '@/constants/mockData';
+import { AppHeader } from '@/components/AppHeader';
+import { Card } from '@/components/Card';
+import { Badge } from '@/components/Badge';
+import { PrimaryButton } from '@/components/PrimaryButton';
 
 export default function ScheduleManagement() {
   const [selectedView, setSelectedView] = useState<'week' | 'month'>('week');
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+
+  const contentMaxWidth = isDesktop ? 1200 : '100%';
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
@@ -21,11 +28,12 @@ export default function ScheduleManagement() {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <StatusBar style="dark" />
       <AppHeader title="Quản lý lịch học" showLogout={true} />
       
-      <ScrollView className="flex-1">
-        <View className="p-4" style={{ maxWidth: 1200, width: '100%', alignSelf: 'center' }}>
+      <ScrollView style={{ flex: 1 }}>
+        <View style={{ paddingHorizontal, paddingVertical: 24, maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
           
           <PrimaryButton
             title="+ Tạo lịch học mới"

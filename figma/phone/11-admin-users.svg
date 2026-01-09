@@ -1,0 +1,135 @@
+<svg width="375" height="812" viewBox="0 0 375 812" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="375" height="812" fill="#FFFFFF"/>
+  
+  <!-- Status Bar -->
+  <text x="24" y="36" font-family="system-ui" font-size="14" font-weight="600" fill="#000000">9:41</text>
+  <rect x="294" y="26" width="24" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="322" y="26" width="16" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="342" y="26" width="25" height="12" rx="4" fill="#000000" opacity="0.3"/>
+  
+  <!-- Header -->
+  <rect x="0" y="54" width="375" height="64" fill="#FFFFFF"/>
+  <circle cx="40" cy="86" r="16" fill="#F3F4F6"/>
+  <text x="40" y="92" font-family="system-ui" font-size="16" fill="#6B7280" text-anchor="middle">←</text>
+  <text x="72" y="94" font-family="system-ui" font-size="20" font-weight="700" fill="#111827">Quản lý người dùng</text>
+  
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000000" flood-opacity="0.05"/>
+    </filter>
+  </defs>
+  
+  <!-- Action Buttons -->
+  <rect x="20" y="138" width="163.5" height="44" rx="12" fill="#3FA9F5"/>
+  <text x="101.75" y="165" font-family="system-ui" font-size="14" font-weight="600" fill="#FFFFFF" text-anchor="middle">+ Thêm người dùng</text>
+  
+  <rect x="191.5" y="138" width="163.5" height="44" rx="12" fill="#FFFFFF" stroke="#3FA9F5" stroke-width="2"/>
+  <text x="273.25" y="165" font-family="system-ui" font-size="14" font-weight="600" fill="#3FA9F5" text-anchor="middle">↑ Upload CSV</text>
+  
+  <!-- Search Bar -->
+  <rect x="20" y="198" width="335" height="44" rx="12" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="52" y="225" font-family="system-ui" font-size="14" fill="#9CA3AF">🔍 Tìm kiếm theo tên, email...</text>
+  
+  <!-- Filter Pills -->
+  <g transform="translate(20, 258)">
+    <rect x="0" y="0" width="70" height="32" rx="16" fill="#3FA9F5"/>
+    <text x="35" y="20" font-family="system-ui" font-size="12" font-weight="600" fill="#FFFFFF" text-anchor="middle">Tất cả</text>
+  </g>
+  
+  <g transform="translate(98, 258)">
+    <rect x="0" y="0" width="60" height="32" rx="16" fill="#F3F4F6"/>
+    <text x="30" y="20" font-family="system-ui" font-size="12" font-weight="600" fill="#374151" text-anchor="middle">Admin</text>
+  </g>
+  
+  <g transform="translate(166, 258)">
+    <rect x="0" y="0" width="90" height="32" rx="16" fill="#F3F4F6"/>
+    <text x="45" y="20" font-family="system-ui" font-size="12" font-weight="600" fill="#374151" text-anchor="middle">Giảng viên</text>
+  </g>
+  
+  <g transform="translate(264, 258)">
+    <rect x="0" y="0" width="80" height="32" rx="16" fill="#F3F4F6"/>
+    <text x="40" y="20" font-family="system-ui" font-size="12" font-weight="600" fill="#374151" text-anchor="middle">Sinh viên</text>
+  </g>
+  
+  <!-- Result Count -->
+  <text x="20" y="322" font-family="system-ui" font-size="13" fill="#6B7280">156 người dùng</text>
+  
+  <!-- User Card 1 -->
+  <rect x="20" y="338" width="335" height="80" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <circle cx="44" cy="378" r="20" fill="#DBEAFE"/>
+  <text x="44" y="384" font-family="system-ui" font-size="16" font-weight="600" fill="#3FA9F5" text-anchor="middle">NV</text>
+  
+  <text x="76" y="370" font-family="system-ui" font-size="15" font-weight="600" fill="#111827">Nguyễn Văn A</text>
+  <text x="76" y="388" font-family="system-ui" font-size="12" fill="#6B7280">nguyenvana@email.com</text>
+  <text x="76" y="404" font-family="system-ui" font-size="12" fill="#6B7280">ID: SV001</text>
+  
+  <rect x="271" y="358" width="64" height="22" rx="11" fill="#D1FAE5"/>
+  <text x="303" y="373" font-family="system-ui" font-size="11" font-weight="600" fill="#065F46" text-anchor="middle">Sinh viên</text>
+  
+  <circle cx="325" cy="398" r="16" fill="#F3F4F6"/>
+  <text x="325" y="403" font-family="system-ui" font-size="14" fill="#6B7280" text-anchor="middle">→</text>
+  
+  <!-- User Card 2 -->
+  <rect x="20" y="426" width="335" height="80" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <circle cx="44" cy="466" r="20" fill="#FEF3C7"/>
+  <text x="44" y="472" font-family="system-ui" font-size="16" font-weight="600" fill="#F59E0B" text-anchor="middle">TH</text>
+  
+  <text x="76" y="458" font-family="system-ui" font-size="15" font-weight="600" fill="#111827">Trần Thị B</text>
+  <text x="76" y="476" font-family="system-ui" font-size="12" fill="#6B7280">tranthib@email.com</text>
+  <text x="76" y="492" font-family="system-ui" font-size="12" fill="#6B7280">ID: GV001</text>
+  
+  <rect x="264" y="446" width="71" height="22" rx="11" fill="#DBEAFE"/>
+  <text x="299.5" y="461" font-family="system-ui" font-size="11" font-weight="600" fill="#0369A1" text-anchor="middle">Giảng viên</text>
+  
+  <circle cx="325" cy="486" r="16" fill="#F3F4F6"/>
+  <text x="325" y="491" font-family="system-ui" font-size="14" fill="#6B7280" text-anchor="middle">→</text>
+  
+  <!-- User Card 3 -->
+  <rect x="20" y="514" width="335" height="80" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <circle cx="44" cy="554" r="20" fill="#FEE2E2"/>
+  <text x="44" y="560" font-family="system-ui" font-size="16" font-weight="600" fill="#EF4444" text-anchor="middle">LM</text>
+  
+  <text x="76" y="546" font-family="system-ui" font-size="15" font-weight="600" fill="#111827">Lê Văn C</text>
+  <text x="76" y="564" font-family="system-ui" font-size="12" fill="#6B7280">levanc@email.com</text>
+  <text x="76" y="580" font-family="system-ui" font-size="12" fill="#6B7280">ID: AD001</text>
+  
+  <rect x="284" y="534" width="51" height="22" rx="11" fill="#FEE2E2"/>
+  <text x="309.5" y="549" font-family="system-ui" font-size="11" font-weight="600" fill="#991B1B" text-anchor="middle">Admin</text>
+  
+  <circle cx="325" cy="574" r="16" fill="#F3F4F6"/>
+  <text x="325" y="579" font-family="system-ui" font-size="14" fill="#6B7280" text-anchor="middle">→</text>
+  
+  <!-- User Card 4 -->
+  <rect x="20" y="602" width="335" height="80" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <circle cx="44" cy="642" r="20" fill="#DBEAFE"/>
+  <text x="44" y="648" font-family="system-ui" font-size="16" font-weight="600" fill="#3FA9F5" text-anchor="middle">PD</text>
+  
+  <text x="76" y="634" font-family="system-ui" font-size="15" font-weight="600" fill="#111827">Phạm Thị D</text>
+  <text x="76" y="652" font-family="system-ui" font-size="12" fill="#6B7280">phamthid@email.com</text>
+  <text x="76" y="668" font-family="system-ui" font-size="12" fill="#6B7280">ID: SV002</text>
+  
+  <rect x="271" y="622" width="64" height="22" rx="11" fill="#D1FAE5"/>
+  <text x="303" y="637" font-family="system-ui" font-size="11" font-weight="600" fill="#065F46" text-anchor="middle">Sinh viên</text>
+  
+  <circle cx="325" cy="662" r="16" fill="#F3F4F6"/>
+  <text x="325" y="667" font-family="system-ui" font-size="14" fill="#6B7280" text-anchor="middle">→</text>
+  
+  <!-- User Card 5 -->
+  <rect x="20" y="690" width="335" height="80" rx="12" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <circle cx="44" cy="730" r="20" fill="#DBEAFE"/>
+  <text x="44" y="736" font-family="system-ui" font-size="16" font-weight="600" fill="#3FA9F5" text-anchor="middle">HN</text>
+  
+  <text x="76" y="722" font-family="system-ui" font-size="15" font-weight="600" fill="#111827">Hoàng Văn E</text>
+  <text x="76" y="740" font-family="system-ui" font-size="12" fill="#6B7280">hoangvane@email.com</text>
+  <text x="76" y="756" font-family="system-ui" font-size="12" fill="#6B7280">ID: SV003</text>
+  
+  <rect x="271" y="710" width="64" height="22" rx="11" fill="#D1FAE5"/>
+  <text x="303" y="725" font-family="system-ui" font-size="11" font-weight="600" fill="#065F46" text-anchor="middle">Sinh viên</text>
+  
+  <circle cx="325" cy="750" r="16" fill="#F3F4F6"/>
+  <text x="325" y="755" font-family="system-ui" font-size="14" fill="#6B7280" text-anchor="middle">→</text>
+  
+  <!-- Home Indicator -->
+  <rect x="121" y="788" width="134" height="5" rx="2.5" fill="#000000" opacity="0.3"/>
+</svg>

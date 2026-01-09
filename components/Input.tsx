@@ -28,13 +28,13 @@ export default function Input({ label, error, success, helperText, ...props }: I
 
   return (
     <View style={{ marginBottom: 16 }}>
-      {label && (
+      {label ? (
         <Text 
           style={{ fontSize: 14, fontWeight: '500', color: Colors.textHeading, marginBottom: 8, lineHeight: 21 }}
         >
           {label}
         </Text>
-      )}
+      ) : null}
       <View style={{ position: 'relative' }}>
         <TextInput
           accessible={true}
@@ -74,7 +74,7 @@ export default function Input({ label, error, success, helperText, ...props }: I
           {...props}
         />
         {/* Success Icon */}
-        {success && !error && (
+        {success && !error ? (
           <View
             style={{
               position: 'absolute',
@@ -98,9 +98,9 @@ export default function Input({ label, error, success, helperText, ...props }: I
               <Text style={{ color: Colors.white, fontSize: 12, fontWeight: 'bold' }}>✓</Text>
             </View>
           </View>
-        )}
+        ) : null}
         {/* Error Icon */}
-        {error && (
+        {error ? (
           <View
             style={{
               position: 'absolute',
@@ -124,22 +124,22 @@ export default function Input({ label, error, success, helperText, ...props }: I
               <Text style={{ color: Colors.white, fontSize: 14, fontWeight: 'bold' }}>!</Text>
             </View>
           </View>
-        )}
+        ) : null}
       </View>
       {/* Error Message */}
-      {error && (
+      {error ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
           <Text style={{ fontSize: 14, color: Colors.error, lineHeight: 21 }}>
             {error}
           </Text>
         </View>
-      )}
+      ) : null}
       {/* Helper Text */}
-      {helperText && !error && (
+      {helperText && !error ? (
         <Text style={{ fontSize: 14, color: Colors.textSecondary, marginTop: 6, lineHeight: 21 }}>
           {helperText}
         </Text>
-      )}
+      ) : null}
     </View>
   );
 }

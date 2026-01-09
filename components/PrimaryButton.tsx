@@ -151,6 +151,8 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
             fontSize: 16,
             fontWeight: '600',
             letterSpacing: -0.01,
+            textAlign: 'center',
+            width: '100%',
           }}
         >
           {title}

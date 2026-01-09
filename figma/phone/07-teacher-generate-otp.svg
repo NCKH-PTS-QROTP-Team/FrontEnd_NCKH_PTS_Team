@@ -1,0 +1,83 @@
+<svg width="375" height="812" viewBox="0 0 375 812" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="375" height="812" fill="#F9FAFB"/>
+  
+  <!-- Status Bar -->
+  <text x="24" y="36" font-family="system-ui" font-size="14" font-weight="600" fill="#000000">9:41</text>
+  <rect x="294" y="26" width="24" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="322" y="26" width="16" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="342" y="26" width="25" height="12" rx="4" fill="#000000" opacity="0.3"/>
+  
+  <!-- Header -->
+  <rect x="0" y="54" width="375" height="64" fill="#FFFFFF"/>
+  <circle cx="40" cy="86" r="16" fill="#F3F4F6"/>
+  <text x="40" y="92" font-family="system-ui" font-size="16" fill="#6B7280" text-anchor="middle">←</text>
+  <text x="72" y="94" font-family="system-ui" font-size="20" font-weight="700" fill="#111827">Tạo mã OTP</text>
+  
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-color="#000000" flood-opacity="0.1"/>
+    </filter>
+    <filter id="shadow-primary">
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#3FA9F5" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Course Info Card -->
+  <rect x="20" y="138" width="335" height="84" rx="16" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="36" y="168" font-family="system-ui" font-size="12" fill="#6B7280">Môn học</text>
+  <text x="36" y="192" font-family="system-ui" font-size="18" font-weight="700" fill="#111827">Lập trình cơ bản</text>
+  <text x="36" y="212" font-family="system-ui" font-size="13" fill="#374151">CS101 • Phòng A102 • 08:00 - 10:00</text>
+  
+  <!-- OTP Display Card -->
+  <rect x="20" y="242" width="335" height="280" rx="16" fill="#FFFFFF" filter="url(#shadow-primary)"/>
+  
+  <!-- Icon -->
+  <rect x="155.5" y="274" width="64" height="64" rx="16" fill="#DBEAFE"/>
+  <text x="187.5" y="320" font-family="system-ui" font-size="32" font-weight="700" fill="#3FA9F5" text-anchor="middle">#</text>
+  
+  <text x="187.5" y="366" font-family="system-ui" font-size="13" fill="#6B7280" text-anchor="middle">Mã OTP cho sinh viên</text>
+  
+  <!-- OTP Code -->
+  <rect x="91.5" y="384" width="192" height="72" rx="16" fill="#3FA9F5"/>
+  <text x="187.5" y="434" font-family="system-ui" font-size="44" font-weight="700" fill="#FFFFFF" text-anchor="middle" letter-spacing="8">654321</text>
+  
+  <!-- Timer -->
+  <text x="187.5" y="482" font-family="system-ui" font-size="12" fill="#6B7280" text-anchor="middle">Thời gian còn lại</text>
+  <text x="187.5" y="510" font-family="system-ui" font-size="36" font-weight="700" fill="#3FA9F5" text-anchor="middle">4:35</text>
+  
+  <!-- Buttons -->
+  <rect x="20" y="542" width="163.5" height="48" rx="12" fill="#10B981"/>
+  <text x="101.75" y="571" font-family="system-ui" font-size="15" font-weight="600" fill="#FFFFFF" text-anchor="middle">Tạo mã mới</text>
+  
+  <rect x="191.5" y="542" width="163.5" height="48" rx="12" fill="#EF4444"/>
+  <text x="273.25" y="571" font-family="system-ui" font-size="15" font-weight="600" fill="#FFFFFF" text-anchor="middle">Kết thúc</text>
+  
+  <!-- Stats Card -->
+  <rect x="20" y="610" width="335" height="84" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="36" y="636" font-family="system-ui" font-size="13" font-weight="600" fill="#6B7280">Thống kê điểm danh</text>
+  
+  <g transform="translate(36, 648)">
+    <rect x="0" y="0" width="90" height="34" rx="8" fill="#D1FAE5"/>
+    <text x="10" y="22" font-family="system-ui" font-size="13" fill="#065F46">✓ Có mặt: 28</text>
+  </g>
+  
+  <g transform="translate(134, 648)">
+    <rect x="0" y="0" width="90" height="34" rx="8" fill="#FEF3C7"/>
+    <text x="10" y="22" font-family="system-ui" font-size="13" fill="#92400E">⏰ Muộn: 3</text>
+  </g>
+  
+  <g transform="translate(232, 648)">
+    <rect x="0" y="0" width="90" height="34" rx="8" fill="#FEE2E2"/>
+    <text x="10" y="22" font-family="system-ui" font-size="13" fill="#991B1B">✗ Vắng: 4</text>
+  </g>
+  
+  <!-- Instructions -->
+  <rect x="20" y="714" width="335" height="64" rx="12" fill="#E0F2FE"/>
+  <text x="187.5" y="738" font-family="system-ui" font-size="12" font-weight="600" fill="#0369A1" text-anchor="middle">💡 Hướng dẫn</text>
+  <text x="187.5" y="756" font-family="system-ui" font-size="11" fill="#0C4A6E" text-anchor="middle">Hiển thị mã OTP trên màn hình hoặc thông báo</text>
+  <text x="187.5" y="770" font-family="system-ui" font-size="11" fill="#0C4A6E" text-anchor="middle">cho sinh viên nhập vào ứng dụng của họ</text>
+  
+  <!-- Home Indicator -->
+  <rect x="121" y="788" width="134" height="5" rx="2.5" fill="#000000" opacity="0.3"/>
+</svg>

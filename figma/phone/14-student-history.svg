@@ -1,0 +1,118 @@
+<svg width="375" height="812" viewBox="0 0 375 812" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="375" height="812" fill="#F9FAFB"/>
+  
+  <!-- Status Bar -->
+  <text x="24" y="36" font-family="system-ui" font-size="14" font-weight="600" fill="#000000">9:41</text>
+  <rect x="294" y="26" width="24" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="322" y="26" width="16" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="342" y="26" width="25" height="12" rx="4" fill="#000000" opacity="0.3"/>
+  
+  <!-- Header -->
+  <rect x="0" y="54" width="375" height="64" fill="#FFFFFF"/>
+  <circle cx="40" cy="86" r="16" fill="#F3F4F6"/>
+  <text x="40" y="92" font-family="system-ui" font-size="16" fill="#6B7280" text-anchor="middle">←</text>
+  <text x="72" y="94" font-family="system-ui" font-size="20" font-weight="700" fill="#111827">Lịch sử điểm danh</text>
+  
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.05"/>
+    </filter>
+  </defs>
+  
+  <!-- Summary Card -->
+  <rect x="20" y="138" width="335" height="100" rx="16" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="36" y="164" font-family="system-ui" font-size="13" font-weight="600" fill="#6B7280">Tháng này</text>
+  
+  <g transform="translate(36, 178)">
+    <rect x="0" y="0" width="90" height="44" rx="8" fill="#D1FAE5"/>
+    <text x="10" y="18" font-family="system-ui" font-size="12" fill="#065F46">Có mặt</text>
+    <text x="10" y="36" font-family="system-ui" font-size="18" font-weight="700" fill="#10B981">28</text>
+  </g>
+  
+  <g transform="translate(136, 178)">
+    <rect x="0" y="0" width="90" height="44" rx="8" fill="#FEF3C7"/>
+    <text x="10" y="18" font-family="system-ui" font-size="12" fill="#92400E">Muộn</text>
+    <text x="10" y="36" font-family="system-ui" font-size="18" font-weight="700" fill="#F59E0B">3</text>
+  </g>
+  
+  <g transform="translate(236, 178)">
+    <rect x="0" y="0" width="90" height="44" rx="8" fill="#FEE2E2"/>
+    <text x="10" y="18" font-family="system-ui" font-size="12" fill="#991B1B">Vắng</text>
+    <text x="10" y="36" font-family="system-ui" font-size="18" font-weight="700" fill="#EF4444">2</text>
+  </g>
+  
+  <!-- Filter -->
+  <text x="20" y="270" font-family="system-ui" font-size="16" font-weight="700" fill="#111827">Lịch sử</text>
+  
+  <rect x="20" y="286" width="335" height="40" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="36" y="311" font-family="system-ui" font-size="13" fill="#6B7280">Tất cả môn học ▼</text>
+  
+  <!-- History Item 1 -->
+  <rect x="20" y="346" width="335" height="90" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="20" y="346" width="4" height="90" rx="2" fill="#10B981"/>
+  
+  <text x="40" y="372" font-family="system-ui" font-size="15" font-weight="600" fill="#111827">Lập trình cơ bản</text>
+  <text x="40" y="392" font-family="system-ui" font-size="12" fill="#6B7280">CS101 • Phòng A102</text>
+  <text x="40" y="410" font-family="system-ui" font-size="12" fill="#6B7280">⏰ 08:00 - 10:00 • 02/01/2026</text>
+  
+  <rect x="271" y="356" width="64" height="24" rx="12" fill="#D1FAE5"/>
+  <text x="303" y="373" font-family="system-ui" font-size="11" font-weight="600" fill="#065F46" text-anchor="middle">Có mặt</text>
+  
+  <!-- History Item 2 -->
+  <rect x="20" y="448" width="335" height="90" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="20" y="448" width="4" height="90" rx="2" fill="#10B981"/>
+  
+  <text x="40" y="474" font-family="system-ui" font-size="15" font-weight="600" fill="#111827">Cấu trúc dữ liệu</text>
+  <text x="40" y="494" font-family="system-ui" font-size="12" fill="#6B7280">CS102 • Phòng B204</text>
+  <text x="40" y="512" font-family="system-ui" font-size="12" fill="#6B7280">⏰ 13:00 - 15:00 • 02/01/2026</text>
+  
+  <rect x="271" y="458" width="64" height="24" rx="12" fill="#D1FAE5"/>
+  <text x="303" y="475" font-family="system-ui" font-size="11" font-weight="600" fill="#065F46" text-anchor="middle">Có mặt</text>
+  
+  <!-- History Item 3 -->
+  <rect x="20" y="550" width="335" height="90" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="20" y="550" width="4" height="90" rx="2" fill="#F59E0B"/>
+  
+  <text x="40" y="576" font-family="system-ui" font-size="15" font-weight="600" fill="#111827">Cơ sở dữ liệu</text>
+  <text x="40" y="596" font-family="system-ui" font-size="12" fill="#6B7280">CS201 • Phòng C301</text>
+  <text x="40" y="614" font-family="system-ui" font-size="12" fill="#6B7280">⏰ 15:30 - 17:30 • 01/01/2026</text>
+  
+  <rect x="281" y="560" width="54" height="24" rx="12" fill="#FEF3C7"/>
+  <text x="308" y="577" font-family="system-ui" font-size="11" font-weight="600" fill="#92400E" text-anchor="middle">Muộn</text>
+  
+  <!-- History Item 4 -->
+  <rect x="20" y="652" width="335" height="90" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="20" y="652" width="4" height="90" rx="2" fill="#EF4444"/>
+  
+  <text x="40" y="678" font-family="system-ui" font-size="15" font-weight="600" fill="#111827">Mạng máy tính</text>
+  <text x="40" y="698" font-family="system-ui" font-size="12" fill="#6B7280">CS301 • Phòng D402</text>
+  <text x="40" y="716" font-family="system-ui" font-size="12" fill="#6B7280">⏰ 08:00 - 10:00 • 30/12/2025</text>
+  
+  <rect x="285" y="662" width="50" height="24" rx="12" fill="#FEE2E2"/>
+  <text x="310" y="679" font-family="system-ui" font-size="11" font-weight="600" fill="#991B1B" text-anchor="middle">Vắng</text>
+  
+  <!-- Bottom Navigation -->
+  <rect x="0" y="748" width="375" height="64" fill="#FFFFFF"/>
+  <line x1="0" y1="748" x2="375" y2="748" stroke="#E5E7EB" stroke-width="1"/>
+  
+  <g transform="translate(37.5, 760)">
+    <text x="32" y="34" font-family="system-ui" font-size="20" fill="#9CA3AF" text-anchor="middle">🏠</text>
+  </g>
+  
+  <g transform="translate(131.25, 760)">
+    <text x="32" y="34" font-family="system-ui" font-size="20" fill="#9CA3AF" text-anchor="middle">📅</text>
+  </g>
+  
+  <g transform="translate(225, 760)">
+    <rect x="12" y="8" width="40" height="40" rx="12" fill="#3FA9F5" opacity="0.1"/>
+    <text x="32" y="34" font-family="system-ui" font-size="20" fill="#3FA9F5" text-anchor="middle">📜</text>
+  </g>
+  
+  <g transform="translate(318.75, 760)">
+    <text x="32" y="34" font-family="system-ui" font-size="20" fill="#9CA3AF" text-anchor="middle">🔔</text>
+  </g>
+  
+  <!-- Home Indicator -->
+  <rect x="121" y="788" width="134" height="5" rx="2.5" fill="#000000" opacity="0.3"/>
+</svg>

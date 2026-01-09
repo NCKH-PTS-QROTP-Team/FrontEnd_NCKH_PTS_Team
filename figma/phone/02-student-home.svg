@@ -1,0 +1,109 @@
+<svg width="375" height="812" viewBox="0 0 375 812" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="375" height="812" fill="#FFFFFF"/>
+  
+  <!-- Status Bar -->
+  <text x="24" y="36" font-family="system-ui" font-size="14" font-weight="600" fill="#000000">9:41</text>
+  <rect x="294" y="26" width="24" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="322" y="26" width="16" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="342" y="26" width="25" height="12" rx="4" fill="#000000" opacity="0.3"/>
+  
+  <!-- Header -->
+  <rect x="0" y="54" width="375" height="64" fill="#FFFFFF"/>
+  <text x="24" y="94" font-family="system-ui" font-size="20" font-weight="700" fill="#111827">Trang chủ</text>
+  <rect x="319" y="78" width="32" height="32" rx="16" fill="#F3F4F6"/>
+  <text x="335" y="99" font-family="system-ui" font-size="16" fill="#6B7280" text-anchor="middle">⋮</text>
+  
+  <!-- Welcome Card -->
+  <rect x="20" y="138" width="335" height="140" rx="16" fill="#3FA9F5"/>
+  <defs>
+    <filter id="shadow1">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#3FA9F5" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <rect x="20" y="138" width="335" height="140" rx="16" fill="#3FA9F5" filter="url(#shadow1)"/>
+  
+  <text x="36" y="174" font-family="system-ui" font-size="24" font-weight="700" fill="#FFFFFF">Xin chào!</text>
+  <text x="36" y="202" font-family="system-ui" font-size="15" fill="#DBEAFE">Hôm nay bạn có 3 buổi học</text>
+  
+  <rect x="36" y="226" width="140" height="36" rx="12" fill="#FFFFFF"/>
+  <text x="106" y="249" font-family="system-ui" font-size="14" font-weight="600" fill="#3FA9F5" text-anchor="middle">Xem lịch học →</text>
+  
+  <!-- Quick Actions Title -->
+  <text x="20" y="310" font-family="system-ui" font-size="18" font-weight="700" fill="#111827">Điểm danh nhanh</text>
+  
+  <!-- OTP Card -->
+  <rect x="20" y="326" width="165" height="140" rx="16" fill="#FFFFFF" stroke="#DBEAFE" stroke-width="2"/>
+  <defs>
+    <filter id="shadow2">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.05"/>
+    </filter>
+  </defs>
+  <rect x="20" y="326" width="165" height="140" rx="16" fill="#FFFFFF" stroke="#DBEAFE" stroke-width="2" filter="url(#shadow2)"/>
+  
+  <rect x="36" y="342" width="48" height="48" rx="12" fill="#DBEAFE"/>
+  <text x="60" y="373" font-family="system-ui" font-size="20" font-weight="700" fill="#3FA9F5" text-anchor="middle">OTP</text>
+  
+  <text x="36" y="410" font-family="system-ui" font-size="16" font-weight="700" fill="#111827">Mã OTP</text>
+  <text x="36" y="432" font-family="system-ui" font-size="13" fill="#6B7280">Nhập mã từ</text>
+  <text x="36" y="450" font-family="system-ui" font-size="13" fill="#6B7280">giảng viên</text>
+  
+  <!-- QR Card -->
+  <rect x="190" y="326" width="165" height="140" rx="16" fill="#FFFFFF" stroke="#D1FAE5" stroke-width="2" filter="url(#shadow2)"/>
+  
+  <rect x="206" y="342" width="48" height="48" rx="12" fill="#D1FAE5"/>
+  <text x="230" y="373" font-family="system-ui" font-size="18" font-weight="700" fill="#10B981" text-anchor="middle">QR</text>
+  
+  <text x="206" y="410" font-family="system-ui" font-size="16" font-weight="700" fill="#111827">Quét QR</text>
+  <text x="206" y="432" font-family="system-ui" font-size="13" fill="#6B7280">Quét mã từ</text>
+  <text x="206" y="450" font-family="system-ui" font-size="13" fill="#6B7280">màn hình</text>
+  
+  <!-- Today Schedule Title -->
+  <text x="20" y="502" font-family="system-ui" font-size="18" font-weight="700" fill="#111827">Lịch học hôm nay</text>
+  
+  <!-- Schedule Card 1 -->
+  <rect x="20" y="518" width="335" height="100" rx="12" fill="#FFFFFF" filter="url(#shadow2)"/>
+  <rect x="20" y="518" width="4" height="100" rx="2" fill="#3FA9F5"/>
+  
+  <text x="40" y="544" font-family="system-ui" font-size="15" font-weight="700" fill="#111827">Lập trình cơ bản</text>
+  <text x="40" y="566" font-family="system-ui" font-size="13" fill="#6B7280">CS101 • Phòng A102</text>
+  <text x="40" y="588" font-family="system-ui" font-size="13" fill="#6B7280">⏰ 08:00 - 10:00</text>
+  
+  <rect x="271" y="538" width="64" height="24" rx="12" fill="#DBEAFE"/>
+  <text x="303" y="555" font-family="system-ui" font-size="11" font-weight="600" fill="#3FA9F5" text-anchor="middle">Sắp tới</text>
+  
+  <!-- Schedule Card 2 -->
+  <rect x="20" y="630" width="335" height="100" rx="12" fill="#FFFFFF" filter="url(#shadow2)"/>
+  <rect x="20" y="630" width="4" height="100" rx="2" fill="#10B981"/>
+  
+  <text x="40" y="656" font-family="system-ui" font-size="15" font-weight="700" fill="#111827">Cấu trúc dữ liệu</text>
+  <text x="40" y="678" font-family="system-ui" font-size="13" fill="#6B7280">CS102 • Phòng B204</text>
+  <text x="40" y="700" font-family="system-ui" font-size="13" fill="#6B7280">⏰ 13:00 - 15:00</text>
+  
+  <rect x="271" y="650" width="64" height="24" rx="12" fill="#D1FAE5"/>
+  <text x="303" y="667" font-family="system-ui" font-size="11" font-weight="600" fill="#10B981" text-anchor="middle">Hôm nay</text>
+  
+  <!-- Bottom Navigation -->
+  <rect x="0" y="748" width="375" height="64" fill="#FFFFFF"/>
+  <line x1="0" y1="748" x2="375" y2="748" stroke="#E5E7EB" stroke-width="1"/>
+  
+  <g transform="translate(37.5, 760)">
+    <rect x="12" y="8" width="40" height="40" rx="12" fill="#3FA9F5" opacity="0.1"/>
+    <text x="32" y="34" font-family="system-ui" font-size="20" fill="#3FA9F5" text-anchor="middle">🏠</text>
+  </g>
+  
+  <g transform="translate(131.25, 760)">
+    <text x="32" y="34" font-family="system-ui" font-size="20" fill="#9CA3AF" text-anchor="middle">📅</text>
+  </g>
+  
+  <g transform="translate(225, 760)">
+    <text x="32" y="34" font-family="system-ui" font-size="20" fill="#9CA3AF" text-anchor="middle">📜</text>
+  </g>
+  
+  <g transform="translate(318.75, 760)">
+    <text x="32" y="34" font-family="system-ui" font-size="20" fill="#9CA3AF" text-anchor="middle">🔔</text>
+  </g>
+  
+  <!-- Home Indicator -->
+  <rect x="121" y="788" width="134" height="5" rx="2.5" fill="#000000" opacity="0.3"/>
+</svg>

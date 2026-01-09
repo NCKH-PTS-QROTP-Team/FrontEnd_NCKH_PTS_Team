@@ -1,0 +1,41 @@
+<svg width="375" height="812" viewBox="0 0 375 812" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="375" height="812" fill="#FFFFFF"/>
+  
+  <!-- Status Bar -->
+  <text x="24" y="36" font-family="system-ui" font-size="14" font-weight="600" fill="#000000">9:41</text>
+  <rect x="294" y="26" width="24" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="322" y="26" width="16" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="342" y="26" width="25" height="12" rx="4" fill="#000000" opacity="0.3"/>
+  
+  <!-- Logo Section -->
+  <rect x="147.5" y="200" width="80" height="80" rx="24" fill="#3FA9F5"/>
+  <text x="187.5" y="252" font-family="system-ui" font-size="36" font-weight="600" fill="#FFFFFF" text-anchor="middle">✓</text>
+  
+  <text x="187.5" y="312" font-family="system-ui" font-size="32" font-weight="600" fill="#111827" text-anchor="middle">Điểm Danh</text>
+  <text x="187.5" y="340" font-family="system-ui" font-size="14" fill="#6B7280" text-anchor="middle">Đăng nhập để tiếp tục</text>
+  
+  <!-- Login Form -->
+  <rect x="24" y="380" width="327" height="52" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="40" y="412" font-family="system-ui" font-size="14" fill="#9CA3AF">Tên đăng nhập</text>
+  
+  <rect x="24" y="444" width="327" height="52" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="40" y="476" font-family="system-ui" font-size="14" fill="#9CA3AF">Mật khẩu</text>
+  
+  <!-- Login Button -->
+  <rect x="24" y="520" width="327" height="48" rx="12" fill="#3FA9F5"/>
+  <text x="187.5" y="549" font-family="system-ui" font-size="16" font-weight="600" fill="#FFFFFF" text-anchor="middle">Đăng nhập</text>
+  
+  <!-- Help Text -->
+  <text x="187.5" y="596" font-family="system-ui" font-size="13" fill="#3FA9F5" text-anchor="middle">Quên mật khẩu?</text>
+  
+  <!-- Demo Accounts -->
+  <rect x="24" y="630" width="327" height="120" rx="12" fill="#F9FAFB"/>
+  <text x="40" y="658" font-family="system-ui" font-size="12" font-weight="600" fill="#6B7280">Tài khoản demo:</text>
+  <text x="40" y="682" font-family="system-ui" font-size="12" fill="#374151">Admin: admin / admin123</text>
+  <text x="40" y="704" font-family="system-ui" font-size="12" fill="#374151">GV: teacher / teacher123</text>
+  <text x="40" y="726" font-family="system-ui" font-size="12" fill="#374151">SV: student / student123</text>
+  
+  <!-- Home Indicator -->
+  <rect x="121" y="788" width="134" height="5" rx="2.5" fill="#000000" opacity="0.3"/>
+</svg>

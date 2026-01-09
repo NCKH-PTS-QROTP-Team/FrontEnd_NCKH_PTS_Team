@@ -114,3 +114,15 @@ export const TrashIcon: React.FC<IconProps> = ({ size = 24, color = '#000' }) =>
     <Path d="M10 11V17M14 11V17" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </Svg>
 );
+
+export const ChevronLeftIcon: React.FC<IconProps> = ({ size = 24, color = '#000' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M15 18L9 12L15 6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+export const ChevronRightIcon: React.FC<IconProps> = ({ size = 24, color = '#000' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path d="M9 18L15 12L9 6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);

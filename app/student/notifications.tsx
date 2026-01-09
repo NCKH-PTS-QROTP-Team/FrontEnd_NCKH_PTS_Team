@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
-import { Card } from '@/components/Card';
+import Card from '@/components/Card';
 import { Colors } from '@/constants/colors';
 
 interface Notification {

@@ -1,128 +1,166 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
 
 export default function ReportsScreen() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+
+  const contentMaxWidth = isDesktop ? 900 : '100%';
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+
   return (
-    <View className="flex-1 bg-gray-50">
+    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <StatusBar style="dark" />
       <AppHeader title="Báo cáo & Thống kê" showBack showLogout={true} />
       
       <ScrollView
-        contentContainerStyle={{ padding: 20 }}
+        contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ maxWidth: 900, width: '100%', alignSelf: 'center' }}>
+        <View style={{ maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
           {/* Summary Card */}
-          <View className="bg-white rounded-2xl p-6 mb-6" style={{
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 16,
+            padding: 24,
+            marginBottom: 24,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.1,
             shadowRadius: 8,
             elevation: 3,
           }}>
-            <Text className="text-xl font-bold text-gray-900 mb-5">
+            <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: 'bold', color: '#111827', marginBottom: 20 }}>
               Tổng quan học kỳ
             </Text>
-            <View className="flex-row justify-around">
-              <View className="items-center">
-                <Text className="text-3xl font-bold text-blue-600 mb-1">156</Text>
-                <Text className="text-sm text-gray-500">Tổng buổi</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ fontSize: 28, lineHeight: 36, fontWeight: 'bold', color: '#3FA9F5', marginBottom: 4 }}>156</Text>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280' }}>Tổng buổi</Text>
               </View>
-              <View className="w-px bg-gray-200" />
-              <View className="items-center">
-                <Text className="text-3xl font-bold text-green-600 mb-1">128</Text>
-                <Text className="text-sm text-gray-500">Có mặt</Text>
+              <View style={{ width: 1, backgroundColor: '#E5E7EB' }} />
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ fontSize: 28, lineHeight: 36, fontWeight: 'bold', color: '#10B981', marginBottom: 4 }}>128</Text>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280' }}>Có mặt</Text>
               </View>
-              <View className="w-px bg-gray-200" />
-              <View className="items-center">
-                <Text className="text-3xl font-bold text-amber-600 mb-1">18</Text>
-                <Text className="text-sm text-gray-500">Đi muộn</Text>
+              <View style={{ width: 1, backgroundColor: '#E5E7EB' }} />
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ fontSize: 28, lineHeight: 36, fontWeight: 'bold', color: '#F59E0B', marginBottom: 4 }}>18</Text>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280' }}>Đi muộn</Text>
               </View>
-              <View className="w-px bg-gray-200" />
-              <View className="items-center">
-                <Text className="text-3xl font-bold text-red-600 mb-1">10</Text>
-                <Text className="text-sm text-gray-500">Vắng</Text>
+              <View style={{ width: 1, backgroundColor: '#E5E7EB' }} />
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ fontSize: 28, lineHeight: 36, fontWeight: 'bold', color: '#EF4444', marginBottom: 4 }}>10</Text>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280' }}>Vắng</Text>
               </View>
             </View>
           </View>
 
           {/* Chart Placeholder */}
-          <View className="bg-white rounded-2xl p-6 mb-6" style={{
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 16,
+            padding: 24,
+            marginBottom: 24,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.1,
             shadowRadius: 8,
             elevation: 3,
           }}>
-            <Text className="text-lg font-bold text-gray-900 mb-4">
+            <Text style={{ fontSize: 18, lineHeight: 28, fontWeight: 'bold', color: '#111827', marginBottom: 16 }}>
               Biểu đồ chuyên cần
             </Text>
-            <View className="bg-gray-50 rounded-xl p-12 items-center justify-center"
-              style={{ height: 250 }}>
+            <View style={{
+              backgroundColor: '#F9FAFB',
+              borderRadius: 12,
+              padding: 48,
+              height: 250,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
               <View style={{ width: 64, height: 64, backgroundColor: '#E5E7EB', borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-                <Text style={{ fontSize: 32, color: '#6B7280' }}>☰</Text>
+                <Text style={{ fontSize: 32, lineHeight: 40, color: '#6B7280' }}>☰</Text>
               </View>
-              <Text className="text-gray-500 text-center">
+              <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280', textAlign: 'center' }}>
                 Biểu đồ thống kê sẽ hiển thị ở đây
               </Text>
             </View>
           </View>
 
           {/* Export Options */}
-          <View className="bg-white rounded-2xl p-6 mb-6" style={{
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 16,
+            padding: 24,
+            marginBottom: 24,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.1,
             shadowRadius: 8,
             elevation: 3,
           }}>
-            <Text className="text-lg font-bold text-gray-900 mb-4">
+            <Text style={{ fontSize: 18, lineHeight: 28, fontWeight: 'bold', color: '#111827', marginBottom: 16 }}>
               Xuất báo cáo
             </Text>
             
             <TouchableOpacity
-              className="bg-green-50 border-2 border-green-200 rounded-xl p-4 mb-3"
+              style={{
+                backgroundColor: '#D1FAE5',
+                borderWidth: 2,
+                borderColor: '#A7F3D0',
+                borderRadius: 12,
+                padding: 16,
+                marginBottom: 12,
+              }}
               activeOpacity={0.7}
             >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center">
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{ width: 40, height: 40, backgroundColor: '#D1FAE5', borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#10B981' }}>=</Text>
+                    <Text style={{ fontSize: 20, lineHeight: 24, fontWeight: 'bold', color: '#10B981' }}>=</Text>
                   </View>
                   <View>
-                    <Text className="text-base font-semibold text-gray-900">
+                    <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: '#111827' }}>
                       Xuất file Excel
                     </Text>
-                    <Text className="text-sm text-gray-500">
+                    <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280' }}>
                       Danh sách điểm danh chi tiết
                     </Text>
                   </View>
                 </View>
-                <Text className="text-green-600 font-semibold">Tải về</Text>
+                <Text style={{ color: '#047857', fontSize: 14, lineHeight: 20, fontWeight: '600' }}>Tải về</Text>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity
-              className="bg-red-50 border-2 border-red-200 rounded-xl p-4"
+              style={{
+                backgroundColor: '#FEE2E2',
+                borderWidth: 2,
+                borderColor: '#FECACA',
+                borderRadius: 12,
+                padding: 16,
+              }}
               activeOpacity={0.7}
             >
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center">
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{ width: 40, height: 40, backgroundColor: '#FEE2E2', borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#EF4444' }}>P</Text>
+                    <Text style={{ fontSize: 20, lineHeight: 24, fontWeight: 'bold', color: '#EF4444' }}>P</Text>
                   </View>
                   <View>
-                    <Text className="text-base font-semibold text-gray-900">
+                    <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: '#111827' }}>
                       Xuất file PDF
                     </Text>
-                    <Text className="text-sm text-gray-500">
+                    <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280' }}>
                       Báo cáo tổng hợp
                     </Text>
                   </View>
                 </View>
-                <Text className="text-red-600 font-semibold">Tải về</Text>
+                <Text style={{ color: '#DC2626', fontSize: 14, lineHeight: 20, fontWeight: '600' }}>Tải về</Text>
               </View>
             </TouchableOpacity>
           </View>

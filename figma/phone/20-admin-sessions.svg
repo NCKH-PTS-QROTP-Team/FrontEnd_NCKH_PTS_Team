@@ -1,0 +1,109 @@
+<svg width="375" height="812" viewBox="0 0 375 812" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="375" height="812" fill="#F9FAFB"/>
+  
+  <!-- Status Bar -->
+  <text x="24" y="36" font-family="system-ui" font-size="14" font-weight="600" fill="#000000">9:41</text>
+  <rect x="294" y="26" width="24" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="322" y="26" width="16" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="342" y="26" width="25" height="12" rx="4" fill="#000000" opacity="0.3"/>
+  
+  <!-- Header -->
+  <rect x="0" y="54" width="375" height="64" fill="#FFFFFF"/>
+  <circle cx="40" cy="86" r="16" fill="#F3F4F6"/>
+  <text x="40" y="92" font-family="system-ui" font-size="16" fill="#6B7280" text-anchor="middle">←</text>
+  <text x="72" y="94" font-family="system-ui" font-size="20" font-weight="700" fill="#111827">Giám sát điểm danh</text>
+  
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.05"/>
+    </filter>
+  </defs>
+  
+  <!-- Live Stats -->
+  <rect x="20" y="138" width="335" height="100" rx="16" fill="#3FA9F5" filter="url(#shadow)"/>
+  <rect x="36" y="154" width="44" height="44" rx="22" fill="#FFFFFF" opacity="0.2"/>
+  <text x="58" y="184" font-family="system-ui" font-size="24" fill="#FFFFFF" text-anchor="middle">🔴</text>
+  
+  <text x="92" y="172" font-family="system-ui" font-size="18" font-weight="700" fill="#FFFFFF">Đang diễn ra</text>
+  <text x="92" y="194" font-family="system-ui" font-size="13" fill="#DBEAFE">5 phiên điểm danh đang hoạt động</text>
+  <text x="92" y="214" font-family="system-ui" font-size="13" fill="#DBEAFE">Cập nhật: vừa xong</text>
+  
+  <!-- Quick Stats -->
+  <text x="20" y="270" font-family="system-ui" font-size="16" font-weight="700" fill="#111827">Thống kê realtime</text>
+  
+  <rect x="20" y="286" width="105" height="72" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="62.5" y="314" font-family="system-ui" font-size="24" font-weight="700" fill="#10B981" text-anchor="middle">156</text>
+  <text x="62.5" y="333" font-family="system-ui" font-size="12" fill="#6B7280" text-anchor="middle">Đã điểm danh</text>
+  
+  <rect x="135" y="286" width="105" height="72" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="187.5" y="314" font-family="system-ui" font-size="24" font-weight="700" fill="#F59E0B" text-anchor="middle">24</text>
+  <text x="187.5" y="333" font-family="system-ui" font-size="12" fill="#6B7280" text-anchor="middle">Đang chờ</text>
+  
+  <rect x="250" y="286" width="105" height="72" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="302.5" y="314" font-family="system-ui" font-size="24" font-weight="700" fill="#3FA9F5" text-anchor="middle">87%</text>
+  <text x="302.5" y="333" font-family="system-ui" font-size="12" fill="#6B7280" text-anchor="middle">Tỷ lệ</text>
+  
+  <!-- Active Sessions -->
+  <text x="20" y="390" font-family="system-ui" font-size="16" font-weight="700" fill="#111827">Phiên đang hoạt động</text>
+  
+  <!-- Session Card 1 -->
+  <rect x="20" y="406" width="335" height="110" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="20" y="406" width="4" height="110" rx="2" fill="#10B981"/>
+  
+  <circle cx="40" cy="428" r="8" fill="#10B981"/>
+  
+  <text x="60" y="432" font-family="system-ui" font-size="15" font-weight="700" fill="#111827">Lập trình cơ bản</text>
+  <text x="60" y="450" font-family="system-ui" font-size="12" fill="#6B7280">CS101 • GV: Nguyễn Văn A</text>
+  <text x="60" y="468" font-family="system-ui" font-size="12" fill="#6B7280">⏰ 08:00 - 10:00 • Phòng A102</text>
+  
+  <rect x="60" y="478" width="90" height="24" rx="8" fill="#D1FAE5"/>
+  <text x="66" y="495" font-family="system-ui" font-size="11" font-weight="600" fill="#065F46">✓ 32/35 (91%)</text>
+  
+  <rect x="271" y="416" width="64" height="24" rx="12" fill="#D1FAE5"/>
+  <text x="303" y="433" font-family="system-ui" font-size="11" font-weight="600" fill="#065F46" text-anchor="middle">OTP</text>
+  
+  <circle cx="325" cy="486" r="16" fill="#F3F4F6"/>
+  <text x="325" y="491" font-family="system-ui" font-size="14" fill="#6B7280" text-anchor="middle">→</text>
+  
+  <!-- Session Card 2 -->
+  <rect x="20" y="528" width="335" height="110" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="20" y="528" width="4" height="110" rx="2" fill="#10B981"/>
+  
+  <circle cx="40" cy="550" r="8" fill="#10B981"/>
+  
+  <text x="60" y="554" font-family="system-ui" font-size="15" font-weight="700" fill="#111827">Cấu trúc dữ liệu</text>
+  <text x="60" y="572" font-family="system-ui" font-size="12" fill="#6B7280">CS102 • GV: Trần Thị B</text>
+  <text x="60" y="590" font-family="system-ui" font-size="12" fill="#6B7280">⏰ 10:30 - 12:30 • Phòng B204</text>
+  
+  <rect x="60" y="600" width="90" height="24" rx="8" fill="#D1FAE5"/>
+  <text x="66" y="617" font-family="system-ui" font-size="11" font-weight="600" fill="#065F46">✓ 38/42 (90%)</text>
+  
+  <rect x="271" y="538" width="64" height="24" rx="12" fill="#E0F2FE"/>
+  <text x="303" y="555" font-family="system-ui" font-size="11" font-weight="600" fill="#0369A1" text-anchor="middle">QR Code</text>
+  
+  <circle cx="325" cy="608" r="16" fill="#F3F4F6"/>
+  <text x="325" y="613" font-family="system-ui" font-size="14" fill="#6B7280" text-anchor="middle">→</text>
+  
+  <!-- Session Card 3 -->
+  <rect x="20" y="650" width="335" height="110" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="20" y="650" width="4" height="110" rx="2" fill="#F59E0B"/>
+  
+  <circle cx="40" cy="672" r="8" fill="#F59E0B"/>
+  
+  <text x="60" y="676" font-family="system-ui" font-size="15" font-weight="700" fill="#111827">Cơ sở dữ liệu</text>
+  <text x="60" y="694" font-family="system-ui" font-size="12" fill="#6B7280">CS201 • GV: Lê Văn C</text>
+  <text x="60" y="712" font-family="system-ui" font-size="12" fill="#6B7280">⏰ 13:00 - 15:00 • Phòng C301</text>
+  
+  <rect x="60" y="722" width="90" height="24" rx="8" fill="#FEF3C7"/>
+  <text x="66" y="739" font-family="system-ui" font-size="11" font-weight="600" fill="#92400E">✓ 28/38 (74%)</text>
+  
+  <rect x="271" y="660" width="64" height="24" rx="12" fill="#D1FAE5"/>
+  <text x="303" y="677" font-family="system-ui" font-size="11" font-weight="600" fill="#065F46" text-anchor="middle">OTP</text>
+  
+  <circle cx="325" cy="730" r="16" fill="#F3F4F6"/>
+  <text x="325" y="735" font-family="system-ui" font-size="14" fill="#6B7280" text-anchor="middle">→</text>
+  
+  <!-- Home Indicator -->
+  <rect x="121" y="788" width="134" height="5" rx="2.5" fill="#000000" opacity="0.3"/>
+</svg>

@@ -1,0 +1,72 @@
+<svg width="375" height="812" viewBox="0 0 375 812" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="375" height="812" fill="#FFFFFF"/>
+  
+  <!-- Status Bar -->
+  <text x="24" y="36" font-family="system-ui" font-size="14" font-weight="600" fill="#000000">9:41</text>
+  <rect x="294" y="26" width="24" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="322" y="26" width="16" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="342" y="26" width="25" height="12" rx="4" fill="#000000" opacity="0.3"/>
+  
+  <!-- Back Button -->
+  <circle cx="40" cy="86" r="20" fill="#F3F4F6"/>
+  <text x="40" y="92" font-family="system-ui" font-size="18" fill="#6B7280" text-anchor="middle">←</text>
+  
+  <!-- Logo Section -->
+  <rect x="147.5" y="160" width="80" height="80" rx="24" fill="#3FA9F5"/>
+  <text x="187.5" y="212" font-family="system-ui" font-size="36" font-weight="600" fill="#FFFFFF" text-anchor="middle">✓</text>
+  
+  <text x="187.5" y="272" font-family="system-ui" font-size="28" font-weight="600" fill="#111827" text-anchor="middle">Xác thực OTP</text>
+  <text x="187.5" y="302" font-family="system-ui" font-size="14" fill="#6B7280" text-anchor="middle">Mã xác thực đã được gửi đến</text>
+  <text x="187.5" y="322" font-family="system-ui" font-size="14" font-weight="600" fill="#3FA9F5" text-anchor="middle">admin@email.com</text>
+  
+  <!-- OTP Input -->
+  <text x="187.5" y="374" font-family="system-ui" font-size="15" font-weight="600" fill="#111827" text-anchor="middle">Nhập mã OTP</text>
+  
+  <!-- OTP Input Boxes -->
+  <g transform="translate(43.5, 390)">
+    <rect x="0" y="0" width="44" height="56" rx="12" fill="#F9FAFB" stroke="#3FA9F5" stroke-width="2"/>
+    <text x="22" y="40" font-family="system-ui" font-size="28" font-weight="700" fill="#111827" text-anchor="middle">1</text>
+  </g>
+  <g transform="translate(95.5, 390)">
+    <rect x="0" y="0" width="44" height="56" rx="12" fill="#F9FAFB" stroke="#3FA9F5" stroke-width="2"/>
+    <text x="22" y="40" font-family="system-ui" font-size="28" font-weight="700" fill="#111827" text-anchor="middle">2</text>
+  </g>
+  <g transform="translate(147.5, 390)">
+    <rect x="0" y="0" width="44" height="56" rx="12" fill="#F9FAFB" stroke="#3FA9F5" stroke-width="2"/>
+    <text x="22" y="40" font-family="system-ui" font-size="28" font-weight="700" fill="#111827" text-anchor="middle">3</text>
+  </g>
+  <g transform="translate(199.5, 390)">
+    <rect x="0" y="0" width="44" height="56" rx="12" fill="#F9FAFB" stroke="#3FA9F5" stroke-width="2"/>
+    <text x="22" y="40" font-family="system-ui" font-size="28" font-weight="700" fill="#111827" text-anchor="middle">4</text>
+  </g>
+  <g transform="translate(251.5, 390)">
+    <rect x="0" y="0" width="44" height="56" rx="12" fill="#F9FAFB" stroke="#3FA9F5" stroke-width="2"/>
+    <text x="22" y="40" font-family="system-ui" font-size="28" font-weight="700" fill="#111827" text-anchor="middle">5</text>
+  </g>
+  <g transform="translate(303.5, 390)">
+    <rect x="0" y="0" width="44" height="56" rx="12" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="2"/>
+  </g>
+  
+  <!-- Timer -->
+  <rect x="123.5" y="470" width="128" height="40" rx="20" fill="#E0F2FE"/>
+  <text x="187.5" y="496" font-family="system-ui" font-size="16" font-weight="700" fill="#0369A1" text-anchor="middle">⏱️ 02:45</text>
+  
+  <!-- Verify Button -->
+  <rect x="24" y="534" width="327" height="48" rx="12" fill="#3FA9F5"/>
+  <text x="187.5" y="563" font-family="system-ui" font-size="16" font-weight="600" fill="#FFFFFF" text-anchor="middle">Xác nhận</text>
+  
+  <!-- Resend -->
+  <text x="187.5" y="610" font-family="system-ui" font-size="14" fill="#6B7280" text-anchor="middle">Không nhận được mã?</text>
+  <text x="187.5" y="636" font-family="system-ui" font-size="14" font-weight="600" fill="#3FA9F5" text-anchor="middle">Gửi lại mã OTP</text>
+  
+  <!-- Info Box -->
+  <rect x="24" y="670" width="327" height="84" rx="12" fill="#FEF3C7"/>
+  <text x="187.5" y="696" font-family="system-ui" font-size="12" font-weight="600" fill="#92400E" text-anchor="middle">💡 Lưu ý</text>
+  <text x="187.5" y="716" font-family="system-ui" font-size="11" fill="#78350F" text-anchor="middle">Mã OTP có hiệu lực trong 3 phút</text>
+  <text x="187.5" y="732" font-family="system-ui" font-size="11" fill="#78350F" text-anchor="middle">Kiểm tra hộp thư spam nếu không</text>
+  <text x="187.5" y="748" font-family="system-ui" font-size="11" fill="#78350F" text-anchor="middle">thấy email</text>
+  
+  <!-- Home Indicator -->
+  <rect x="121" y="788" width="134" height="5" rx="2.5" fill="#000000" opacity="0.3"/>
+</svg>

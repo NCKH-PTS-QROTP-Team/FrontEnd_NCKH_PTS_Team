@@ -1,0 +1,102 @@
+<svg width="375" height="812" viewBox="0 0 375 812" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="375" height="812" fill="#FFFFFF"/>
+  
+  <!-- Status Bar -->
+  <text x="24" y="36" font-family="system-ui" font-size="14" font-weight="600" fill="#000000">9:41</text>
+  <rect x="294" y="26" width="24" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="322" y="26" width="16" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="342" y="26" width="25" height="12" rx="4" fill="#000000" opacity="0.3"/>
+  
+  <!-- Header -->
+  <rect x="0" y="54" width="375" height="64" fill="#FFFFFF"/>
+  <circle cx="40" cy="86" r="16" fill="#F3F4F6"/>
+  <text x="40" y="92" font-family="system-ui" font-size="16" fill="#6B7280" text-anchor="middle">←</text>
+  <text x="72" y="94" font-family="system-ui" font-size="20" font-weight="700" fill="#111827">Lịch học</text>
+  
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.05"/>
+    </filter>
+  </defs>
+  
+  <!-- Date Card -->
+  <rect x="20" y="138" width="335" height="72" rx="16" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="36" y="164" font-family="system-ui" font-size="13" fill="#6B7280">Hôm nay</text>
+  <text x="36" y="192" font-family="system-ui" font-size="22" font-weight="700" fill="#111827">Thứ Năm, 02/01/2026</text>
+  
+  <!-- Schedule Title -->
+  <text x="20" y="242" font-family="system-ui" font-size="18" font-weight="700" fill="#111827">Lịch học trong ngày</text>
+  
+  <!-- Schedule Card 1 -->
+  <rect x="20" y="258" width="335" height="110" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="20" y="258" width="4" height="110" rx="2" fill="#3FA9F5"/>
+  
+  <text x="40" y="284" font-family="system-ui" font-size="16" font-weight="700" fill="#111827">Lập trình cơ bản</text>
+  <text x="40" y="306" font-family="system-ui" font-size="13" fill="#6B7280">CS101</text>
+  
+  <rect x="40" y="320" width="110" height="28" rx="8" fill="#F3F4F6"/>
+  <text x="46" y="339" font-family="system-ui" font-size="12" fill="#374151">📍 Phòng A102</text>
+  
+  <rect x="156" y="320" width="120" height="28" rx="8" fill="#F3F4F6"/>
+  <text x="162" y="339" font-family="system-ui" font-size="12" fill="#374151">⏰ 08:00 - 10:00</text>
+  
+  <rect x="271" y="268" width="64" height="24" rx="12" fill="#DBEAFE"/>
+  <text x="303" y="285" font-family="system-ui" font-size="11" font-weight="600" fill="#3FA9F5" text-anchor="middle">Sắp tới</text>
+  
+  <!-- Schedule Card 2 -->
+  <rect x="20" y="384" width="335" height="110" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="20" y="384" width="4" height="110" rx="2" fill="#10B981"/>
+  
+  <text x="40" y="410" font-family="system-ui" font-size="16" font-weight="700" fill="#111827">Cấu trúc dữ liệu</text>
+  <text x="40" y="432" font-family="system-ui" font-size="13" fill="#6B7280">CS102</text>
+  
+  <rect x="40" y="446" width="110" height="28" rx="8" fill="#F3F4F6"/>
+  <text x="46" y="465" font-family="system-ui" font-size="12" fill="#374151">📍 Phòng B204</text>
+  
+  <rect x="156" y="446" width="120" height="28" rx="8" fill="#F3F4F6"/>
+  <text x="162" y="465" font-family="system-ui" font-size="12" fill="#374151">⏰ 13:00 - 15:00</text>
+  
+  <rect x="271" y="394" width="64" height="24" rx="12" fill="#D1FAE5"/>
+  <text x="303" y="411" font-family="system-ui" font-size="11" font-weight="600" fill="#10B981" text-anchor="middle">Hôm nay</text>
+  
+  <!-- Schedule Card 3 -->
+  <rect x="20" y="510" width="335" height="110" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="20" y="510" width="4" height="110" rx="2" fill="#F59E0B"/>
+  
+  <text x="40" y="536" font-family="system-ui" font-size="16" font-weight="700" fill="#111827">Cơ sở dữ liệu</text>
+  <text x="40" y="558" font-family="system-ui" font-size="13" fill="#6B7280">CS201</text>
+  
+  <rect x="40" y="572" width="110" height="28" rx="8" fill="#F3F4F6"/>
+  <text x="46" y="591" font-family="system-ui" font-size="12" fill="#374151">📍 Phòng C301</text>
+  
+  <rect x="156" y="572" width="120" height="28" rx="8" fill="#F3F4F6"/>
+  <text x="162" y="591" font-family="system-ui" font-size="12" fill="#374151">⏰ 15:30 - 17:30</text>
+  
+  <rect x="271" y="520" width="64" height="24" rx="12" fill="#FEF3C7"/>
+  <text x="303" y="537" font-family="system-ui" font-size="11" font-weight="600" fill="#F59E0B" text-anchor="middle">Chiều nay</text>
+  
+  <!-- Bottom Navigation -->
+  <rect x="0" y="748" width="375" height="64" fill="#FFFFFF"/>
+  <line x1="0" y1="748" x2="375" y2="748" stroke="#E5E7EB" stroke-width="1"/>
+  
+  <g transform="translate(37.5, 760)">
+    <text x="32" y="34" font-family="system-ui" font-size="20" fill="#9CA3AF" text-anchor="middle">🏠</text>
+  </g>
+  
+  <g transform="translate(131.25, 760)">
+    <rect x="12" y="8" width="40" height="40" rx="12" fill="#3FA9F5" opacity="0.1"/>
+    <text x="32" y="34" font-family="system-ui" font-size="20" fill="#3FA9F5" text-anchor="middle">📅</text>
+  </g>
+  
+  <g transform="translate(225, 760)">
+    <text x="32" y="34" font-family="system-ui" font-size="20" fill="#9CA3AF" text-anchor="middle">📜</text>
+  </g>
+  
+  <g transform="translate(318.75, 760)">
+    <text x="32" y="34" font-family="system-ui" font-size="20" fill="#9CA3AF" text-anchor="middle">🔔</text>
+  </g>
+  
+  <!-- Home Indicator -->
+  <rect x="121" y="788" width="134" height="5" rx="2.5" fill="#000000" opacity="0.3"/>
+</svg>

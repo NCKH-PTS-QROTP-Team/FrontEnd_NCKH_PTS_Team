@@ -4,8 +4,6 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
 import { mockSchedules } from '@/constants/mockData';
-import AppLayout from '@/components/AppLayout';
-import { HomeIcon, CalendarIcon, QrCodeIcon, HashIcon, ScrollIcon, BellIcon } from '@/components/Icons';
 
 export default function StudentHomeScreen() {
   const router = useRouter();
@@ -18,14 +16,6 @@ export default function StudentHomeScreen() {
   const isTablet = windowWidth >= 768 && windowWidth < 1024;
   const isMobile = windowWidth < 768;
 
-  const menuItems = [
-    { icon: <HomeIcon size={20} color="#3FA9F5" />, label: 'Trang chủ', route: '/student/home' },
-    { icon: <CalendarIcon size={20} color="#3FA9F5" />, label: 'Lịch học', route: '/student/schedule' },
-    { icon: <QrCodeIcon size={20} color="#3FA9F5" />, label: 'Điểm danh QR', route: '/student/qr-attendance' },
-    { icon: <HashIcon size={20} color="#3FA9F5" />, label: 'Điểm danh OTP', route: '/student/otp-attendance' },
-    { icon: <ScrollIcon size={20} color="#3FA9F5" />, label: 'Lịch sử', route: '/student/history' },
-    { icon: <BellIcon size={20} color="#3FA9F5" />, label: 'Thông báo', route: '/student/notifications' },
-  ];
 
   // Responsive values - Match Figma exactly
   const contentMaxWidth = isDesktop ? 800 : windowWidth - 40;
@@ -43,7 +33,6 @@ export default function StudentHomeScreen() {
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <StatusBar style="dark" />
       <AppHeader title="Trang chủ" showLogout={!isWeb} />
-      
       <ScrollView
         contentContainerStyle={{ 
           paddingHorizontal: padding,
@@ -126,7 +115,6 @@ export default function StudentHomeScreen() {
             </Text>
             <View style={{ 
               flexDirection: isDesktop ? 'row' : 'column',
-              gap: quickActionGap,
             }}>
               {/* OTP Card */}
               <TouchableOpacity
@@ -144,6 +132,8 @@ export default function StudentHomeScreen() {
                   shadowOpacity: 0.1,
                   shadowRadius: 4,
                   elevation: 2,
+                  marginRight: isDesktop ? quickActionGap : 0,
+                  marginBottom: isDesktop ? 0 : quickActionGap,
                 }}
                 activeOpacity={0.7}
               >
@@ -250,7 +240,6 @@ export default function StudentHomeScreen() {
             <View style={{ 
               flexDirection: isDesktop ? 'row' : isTablet ? 'row' : 'column',
               flexWrap: isTablet && !isDesktop ? 'wrap' : 'nowrap',
-              gap: statsGap,
             }}>
               {/* Tổng buổi */}
               <View style={{
@@ -266,6 +255,8 @@ export default function StudentHomeScreen() {
                 shadowOpacity: 0.1,
                 shadowRadius: 4,
                 elevation: 2,
+                marginRight: isDesktop ? statsGap : (isTablet ? statsGap : 0),
+                marginBottom: isDesktop ? 0 : (isTablet ? statsGap : statsGap),
               }}>
                 <Text style={{ 
                   fontSize: 14, 
@@ -280,7 +271,7 @@ export default function StudentHomeScreen() {
                   lineHeight: 40 
                 }}>12</Text>
               </View>
-              
+
               {/* Có mặt */}
               <View style={{
                 width: statsWidth,
@@ -295,6 +286,8 @@ export default function StudentHomeScreen() {
                 shadowOpacity: 0.1,
                 shadowRadius: 4,
                 elevation: 2,
+                marginRight: isDesktop ? statsGap : (isTablet ? statsGap : 0),
+                marginBottom: isDesktop ? 0 : (isTablet ? statsGap : statsGap),
               }}>
                 <Text style={{ 
                   fontSize: 14, 
@@ -309,7 +302,7 @@ export default function StudentHomeScreen() {
                   lineHeight: 40 
                 }}>10</Text>
               </View>
-              
+
               {/* Đi muộn */}
               <View style={{
                 width: statsWidth,
@@ -324,6 +317,7 @@ export default function StudentHomeScreen() {
                 shadowOpacity: 0.1,
                 shadowRadius: 4,
                 elevation: 2,
+                marginBottom: isDesktop ? 0 : statsGap,
               }}>
                 <Text style={{ 
                   fontSize: 14, 
@@ -368,8 +362,8 @@ export default function StudentHomeScreen() {
             </View>
 
             {todaySchedules.length > 0 ? (
-              <View style={{ gap: 16 }}>
-                {todaySchedules.slice(0, 2).map((schedule) => (
+              <View>
+                {todaySchedules.slice(0, 2).map((schedule, index) => (
                   <TouchableOpacity
                     key={schedule.id}
                     onPress={() => router.push('/student/otp-attendance')}
@@ -385,6 +379,7 @@ export default function StudentHomeScreen() {
                       shadowOpacity: 0.1,
                       shadowRadius: 4,
                       elevation: 2,
+                      marginBottom: index < todaySchedules.slice(0, 2).length - 1 ? 16 : 0,
                     }}
                     activeOpacity={0.7}
                   >
@@ -395,7 +390,7 @@ export default function StudentHomeScreen() {
                       lineHeight: 28,
                       marginBottom: 4 
                     }}>
-                      {schedule.courseName}
+                      {schedule.courseName || ''}
                     </Text>
                     <Text style={{ 
                       fontSize: 14, 
@@ -403,7 +398,7 @@ export default function StudentHomeScreen() {
                       lineHeight: 21,
                       marginBottom: 12 
                     }}>
-                      {schedule.teacher}
+                      {schedule.teacher || ''}
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <View style={{ 
@@ -420,14 +415,14 @@ export default function StudentHomeScreen() {
                           lineHeight: 24,
                           marginBottom: 4 
                         }}>
-                          {schedule.time}
+                          {schedule.time || ''}
                         </Text>
                         <Text style={{ 
                           fontSize: 14, 
                           color: '#6B7280',
                           lineHeight: 21 
                         }}>
-                          Phòng: {schedule.room}
+                          Phòng: {schedule.room || 'N/A'}
                         </Text>
                       </View>
                     </View>
@@ -514,13 +509,5 @@ export default function StudentHomeScreen() {
     </View>
   );
 
-  return (
-    <AppLayout
-      menuItems={menuItems}
-      userRole="student"
-      userName="Sinh viên"
-    >
-      {content}
-    </AppLayout>
-  );
+  return content;
 }

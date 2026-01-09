@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
-import { Colors } from '../../../constants/colors';
-import { mockUsers, User } from '../../../constants/mockData';
-import AppHeader from '../../../components/AppHeader';
-import Card from '../../../components/Card';
-import Badge from '../../../components/Badge';
-import PrimaryButton from '../../../components/PrimaryButton';
-import { EmptyUsersIcon, EmptySearchIcon } from '../../../components/EmptyStateIllustration';
-import { SkeletonCard } from '../../../components/Skeleton';
-import { ErrorState } from '../../../components/ErrorState';
-import Toast, { useToast } from '../../../components/Toast';
+import { StatusBar } from 'expo-status-bar';
+import { Colors } from '@/constants/colors';
+import { mockUsers, User } from '@/constants/mockData';
+import { AppHeader } from '@/components/AppHeader';
+import { Card } from '@/components/Card';
+import { Badge } from '@/components/Badge';
+import { PrimaryButton } from '@/components/PrimaryButton';
+import { EmptyUsersIcon, EmptySearchIcon } from '@/components/EmptyStateIllustration';
+import { SkeletonCard } from '@/components/Skeleton';
+import { ErrorState } from '@/components/ErrorState';
+import Toast, { useToast } from '@/components/Toast';
 
 export default function UserManagement() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -18,6 +19,12 @@ export default function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const { toast, showToast, hideToast } = useToast();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+
+  const contentMaxWidth = isDesktop ? 1200 : '100%';
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
 
   // Simulate data fetching
   useEffect(() => {
@@ -57,11 +64,12 @@ export default function UserManagement() {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <StatusBar style="dark" />
       <AppHeader title="Quản lý người dùng" showLogout={true} />
       
-      <ScrollView className="flex-1">
-        <View className="p-4" style={{ maxWidth: 1200, width: '100%', alignSelf: 'center' }}>
+      <ScrollView style={{ flex: 1 }}>
+        <View style={{ paddingHorizontal, paddingVertical: 24, maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
           
           {/* Actions */}
           <View className="flex-row mb-4">

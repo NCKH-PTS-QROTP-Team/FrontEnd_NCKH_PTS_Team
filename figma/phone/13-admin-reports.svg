@@ -1,0 +1,108 @@
+<svg width="375" height="812" viewBox="0 0 375 812" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="375" height="812" fill="#F9FAFB"/>
+  
+  <!-- Status Bar -->
+  <text x="24" y="36" font-family="system-ui" font-size="14" font-weight="600" fill="#000000">9:41</text>
+  <rect x="294" y="26" width="24" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="322" y="26" width="16" height="12" rx="2" fill="#000000" opacity="0.3"/>
+  <rect x="342" y="26" width="25" height="12" rx="4" fill="#000000" opacity="0.3"/>
+  
+  <!-- Header -->
+  <rect x="0" y="54" width="375" height="64" fill="#FFFFFF"/>
+  <circle cx="40" cy="86" r="16" fill="#F3F4F6"/>
+  <text x="40" y="92" font-family="system-ui" font-size="16" fill="#6B7280" text-anchor="middle">←</text>
+  <text x="72" y="94" font-family="system-ui" font-size="20" font-weight="700" fill="#111827">Báo cáo & Thống kê</text>
+  
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.05"/>
+    </filter>
+  </defs>
+  
+  <!-- Date Range Selector -->
+  <rect x="20" y="138" width="335" height="48" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="36" y="150" font-family="system-ui" font-size="11" fill="#6B7280">Thời gian</text>
+  <text x="36" y="172" font-family="system-ui" font-size="14" font-weight="600" fill="#111827">01/01/2026 - 07/01/2026</text>
+  <rect x="313" y="154" width="24" height="24" rx="8" fill="#F3F4F6"/>
+  <text x="325" y="171" font-family="system-ui" font-size="14" fill="#6B7280" text-anchor="middle">📅</text>
+  
+  <!-- Summary Cards -->
+  <text x="20" y="218" font-family="system-ui" font-size="16" font-weight="700" fill="#111827">Tổng quan tuần này</text>
+  
+  <rect x="20" y="234" width="165" height="88" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="36" y="260" font-family="system-ui" font-size="13" fill="#6B7280">Tổng buổi học</text>
+  <text x="36" y="292" font-family="system-ui" font-size="32" font-weight="700" fill="#3FA9F5">48</text>
+  <rect x="36" y="306" width="8" height="8" rx="4" fill="#10B981"/>
+  <text x="50" y="313" font-family="system-ui" font-size="11" fill="#10B981">+8 so với tuần trước</text>
+  
+  <rect x="190" y="234" width="165" height="88" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="206" y="260" font-family="system-ui" font-size="13" fill="#6B7280">Tỷ lệ trung bình</text>
+  <text x="206" y="292" font-family="system-ui" font-size="32" font-weight="700" fill="#10B981">89%</text>
+  <rect x="206" y="306" width="8" height="8" rx="4" fill="#10B981"/>
+  <text x="220" y="313" font-family="system-ui" font-size="11" fill="#10B981">+4% so với tuần trước</text>
+  
+  <!-- Chart Card -->
+  <text x="20" y="358" font-family="system-ui" font-size="16" font-weight="700" fill="#111827">Biểu đồ điểm danh</text>
+  
+  <rect x="20" y="374" width="335" height="220" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  
+  <!-- Chart Title -->
+  <text x="36" y="398" font-family="system-ui" font-size="13" font-weight="600" fill="#111827">Tỷ lệ điểm danh theo ngày</text>
+  
+  <!-- Chart Y-axis labels -->
+  <text x="36" y="430" font-family="system-ui" font-size="10" fill="#9CA3AF">100%</text>
+  <text x="36" y="474" font-family="system-ui" font-size="10" fill="#9CA3AF">75%</text>
+  <text x="36" y="518" font-family="system-ui" font-size="10" fill="#9CA3AF">50%</text>
+  <text x="36" y="562" font-family="system-ui" font-size="10" fill="#9CA3AF">25%</text>
+  
+  <!-- Chart grid lines -->
+  <line x1="60" y1="424" x2="330" y2="424" stroke="#E5E7EB" stroke-width="1"/>
+  <line x1="60" y1="468" x2="330" y2="468" stroke="#E5E7EB" stroke-width="1"/>
+  <line x1="60" y1="512" x2="330" y2="512" stroke="#E5E7EB" stroke-width="1"/>
+  <line x1="60" y1="556" x2="330" y2="556" stroke="#E5E7EB" stroke-width="1"/>
+  
+  <!-- Chart bars -->
+  <rect x="70" y="448" width="30" height="108" rx="4" fill="#3FA9F5" opacity="0.8"/>
+  <rect x="112" y="436" width="30" height="120" rx="4" fill="#3FA9F5" opacity="0.8"/>
+  <rect x="154" y="456" width="30" height="100" rx="4" fill="#3FA9F5" opacity="0.8"/>
+  <rect x="196" y="442" width="30" height="114" rx="4" fill="#3FA9F5" opacity="0.8"/>
+  <rect x="238" y="432" width="30" height="124" rx="4" fill="#3FA9F5" opacity="0.8"/>
+  <rect x="280" y="440" width="30" height="116" rx="4" fill="#3FA9F5" opacity="0.8"/>
+  
+  <!-- Chart X-axis labels -->
+  <text x="85" y="578" font-family="system-ui" font-size="10" fill="#6B7280" text-anchor="middle">T2</text>
+  <text x="127" y="578" font-family="system-ui" font-size="10" fill="#6B7280" text-anchor="middle">T3</text>
+  <text x="169" y="578" font-family="system-ui" font-size="10" fill="#6B7280" text-anchor="middle">T4</text>
+  <text x="211" y="578" font-family="system-ui" font-size="10" fill="#6B7280" text-anchor="middle">T5</text>
+  <text x="253" y="578" font-family="system-ui" font-size="10" fill="#6B7280" text-anchor="middle">T6</text>
+  <text x="295" y="578" font-family="system-ui" font-size="10" fill="#6B7280" text-anchor="middle">T7</text>
+  
+  <!-- Top Classes -->
+  <text x="20" y="626" font-family="system-ui" font-size="16" font-weight="700" fill="#111827">Top lớp điểm danh tốt</text>
+  
+  <!-- Class Rank 1 -->
+  <rect x="20" y="642" width="335" height="60" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="36" y="658" width="28" height="28" rx="14" fill="#FFD700"/>
+  <text x="50" y="678" font-family="system-ui" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+  
+  <text x="76" y="667" font-family="system-ui" font-size="14" font-weight="600" fill="#111827">Cấu trúc dữ liệu</text>
+  <text x="76" y="685" font-family="system-ui" font-size="12" fill="#6B7280">CS102</text>
+  
+  <rect x="271" y="658" width="64" height="28" rx="14" fill="#D1FAE5"/>
+  <text x="303" y="677" font-family="system-ui" font-size="14" font-weight="700" fill="#065F46" text-anchor="middle">95%</text>
+  
+  <!-- Class Rank 2 -->
+  <rect x="20" y="710" width="335" height="60" rx="12" fill="#FFFFFF" filter="url(#shadow)"/>
+  <rect x="36" y="726" width="28" height="28" rx="14" fill="#C0C0C0"/>
+  <text x="50" y="746" font-family="system-ui" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+  
+  <text x="76" y="735" font-family="system-ui" font-size="14" font-weight="600" fill="#111827">Lập trình cơ bản</text>
+  <text x="76" y="753" font-family="system-ui" font-size="12" fill="#6B7280">CS101</text>
+  
+  <rect x="271" y="726" width="64" height="28" rx="14" fill="#D1FAE5"/>
+  <text x="303" y="745" font-family="system-ui" font-size="14" font-weight="700" fill="#065F46" text-anchor="middle">92%</text>
+  
+  <!-- Home Indicator -->
+  <rect x="121" y="788" width="134" height="5" rx="2.5" fill="#000000" opacity="0.3"/>
+</svg>

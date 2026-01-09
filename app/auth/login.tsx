@@ -44,29 +44,69 @@ export default function LoginScreen() {
     
     // Simulate API call
     setTimeout(() => {
+      const trimmedUsername = username.trim();
+      const trimmedPassword = password.trim();
+      
       const user = mockUsers.find(
-        u => u.username === username && u.password === password && u.isActive
+        u => u.username.toLowerCase() === trimmedUsername.toLowerCase() && 
+             u.password === trimmedPassword && 
+             u.isActive
       );
 
       if (user) {
+        console.log('Login successful, user:', user);
         showToast('Đăng nhập thành công!', 'success');
         // Navigate based on role after a brief delay
         setTimeout(() => {
-          switch (user.role) {
-            case 'admin':
-              router.replace('/admin/dashboard');
-              break;
-            case 'teacher':
-              router.replace('/teacher/dashboard');
-              break;
-            case 'student':
-              router.replace('/student/home');
-              break;
-            default:
-              showToast('Vai trò không hợp lệ', 'error');
+          console.log('Navigating to:', user.role);
+          try {
+            switch (user.role) {
+              case 'admin':
+                router.replace('/admin/dashboard' as any);
+                break;
+              case 'teacher':
+                router.replace('/teacher/dashboard' as any);
+                break;
+              case 'student':
+                console.log('Navigating to student home');
+                // Try navigation with multiple methods
+                try {
+                  // Method 1: router.push
+                  router.push('/student/home' as any);
+                  console.log('router.push called');
+                  
+                  // Method 2: Fallback after delay
+                  setTimeout(() => {
+                    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                      const currentPath = window.location.pathname;
+                      console.log('Current path:', currentPath);
+                      if (currentPath.includes('/auth/login')) {
+                        console.log('Still on login page, trying window.location');
+                        window.location.href = '/student/home';
+                      }
+                    }
+                  }, 300);
+                } catch (error) {
+                  console.error('Navigation error:', error);
+                  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                    window.location.href = '/student/home';
+                  }
+                }
+                break;
+              default:
+                showToast('Vai trò không hợp lệ', 'error');
+            }
+          } catch (error) {
+            console.error('Navigation error:', error);
+            // Fallback navigation
+            if (user.role === 'student') {
+              window.location.href = '/student/home';
+            }
           }
         }, 500);
       } else {
+        console.log('Login failed - user not found or inactive');
+        console.log('Username:', trimmedUsername, 'Password:', trimmedPassword);
         showToast('Tài khoản hoặc mật khẩu không đúng', 'error');
         setPasswordError('Tài khoản hoặc mật khẩu không đúng');
       }
@@ -138,8 +178,8 @@ export default function LoginScreen() {
                 setUsernameError('');
               }}
               placeholder="admin, GV001, SV001"
-              error={usernameError}
-              success={username.trim().length > 0 && !usernameError}
+              error={usernameError || undefined}
+              success={username.trim().length > 0 && !usernameError ? true : undefined}
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="next"
@@ -153,8 +193,8 @@ export default function LoginScreen() {
                 setPasswordError('');
               }}
               placeholder="Nhập mật khẩu"
-              error={passwordError}
-              success={password.trim().length > 0 && !passwordError}
+              error={passwordError || undefined}
+              success={password.trim().length > 0 && !passwordError ? true : undefined}
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
@@ -179,13 +219,16 @@ export default function LoginScreen() {
             </View>
             <View style={{ width: '100%', padding: 16, borderRadius: 8, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border }}>
               <Text style={{ fontSize: 14, color: Colors.textSecondary, lineHeight: 21, marginBottom: 8 }}>
-                <Text style={{ fontWeight: '600' }}>Admin:</Text> admin / admin123
+                <Text style={{ fontWeight: '600' }}>Admin:</Text>
+                <Text> admin / admin123</Text>
               </Text>
               <Text style={{ fontSize: 14, color: Colors.textSecondary, lineHeight: 21, marginBottom: 8 }}>
-                <Text style={{ fontWeight: '600' }}>Giảng viên:</Text> GV001 / teacher123
+                <Text style={{ fontWeight: '600' }}>Giảng viên:</Text>
+                <Text> GV001 / teacher123</Text>
               </Text>
               <Text style={{ fontSize: 14, color: Colors.textSecondary, lineHeight: 21 }}>
-                <Text style={{ fontWeight: '600' }}>Sinh viên:</Text> SV001 / student123
+                <Text style={{ fontWeight: '600' }}>Sinh viên:</Text>
+                <Text> SV001 / student123</Text>
               </Text>
             </View>
           </View>

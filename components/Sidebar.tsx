@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Colors } from '@/constants/colors';
-import { LogoutIcon } from './Icons';
+import { LogoutIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
 interface MenuItem {
   icon: React.ReactNode;
@@ -15,11 +15,20 @@ interface SidebarProps {
   menuItems: MenuItem[];
   userRole: 'admin' | 'teacher' | 'student';
   userName?: string;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export default function Sidebar({ menuItems, userRole, userName }: SidebarProps) {
+export default function Sidebar({ menuItems, userRole, userName, collapsed: externalCollapsed, onToggleCollapse }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  
+  // Use external state if provided, otherwise use internal state
+  const collapsed = externalCollapsed !== undefined ? externalCollapsed : internalCollapsed;
+  const toggleCollapse = onToggleCollapse || (() => setInternalCollapsed(!internalCollapsed));
+  
+  const sidebarWidth = collapsed ? 80 : 260;
 
   // Only show sidebar on web
   if (Platform.OS !== 'web') {
@@ -41,7 +50,7 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
   return (
     <View
       style={{
-        width: 260,
+        width: sidebarWidth,
         backgroundColor: Colors.white,
         borderRightWidth: 1,
         borderRightColor: '#E5E7EB',
@@ -50,117 +59,238 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
         top: 0,
         bottom: 0,
         left: 0,
+        ...(Platform.OS === 'web' && {
+          transition: 'width 0.3s ease',
+        } as any),
       }}
     >
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
+        {/* Toggle Button - Positioned at top right of sidebar, outside avatar area */}
+        <View
+          style={{
+            paddingTop: 16,
+            paddingHorizontal: collapsed ? 8 : 12,
+            alignItems: 'flex-end',
+            marginBottom: 8,
+          }}
+        >
+          <TouchableOpacity
+            onPress={toggleCollapse}
+            style={[
+              {
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                backgroundColor: '#FFFFFF',
+                borderWidth: 1,
+                borderColor: '#E5E7EB',
+                alignItems: 'center',
+                justifyContent: 'center',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+                elevation: 2,
+              },
+              Platform.OS === 'web' && {
+                transition: 'all 0.2s ease',
+                cursor: 'pointer',
+              } as any,
+            ]}
+            activeOpacity={0.7}
+            {...(Platform.OS === 'web' && {
+              onMouseEnter: (e: any) => {
+                e.currentTarget.style.backgroundColor = '#F9FAFB';
+                e.currentTarget.style.borderColor = '#3FA9F5';
+              },
+              onMouseLeave: (e: any) => {
+                e.currentTarget.style.backgroundColor = '#FFFFFF';
+                e.currentTarget.style.borderColor = '#E5E7EB';
+              },
+            } as any)}
+          >
+            {collapsed ? (
+              <ChevronRightIcon size={16} color="#6B7280" />
+            ) : (
+              <ChevronLeftIcon size={16} color="#6B7280" />
+            )}
+          </TouchableOpacity>
+        </View>
+
         {/* Logo & User Info - Match Figma exactly */}
-        <View style={{ padding: 24 }}>
+        <View style={{ padding: collapsed ? 16 : 24, paddingTop: collapsed ? 8 : 24, alignItems: collapsed ? 'center' : 'flex-start' }}>
           <View
             style={{
-              width: 56,
-              height: 56,
-              borderRadius: 28,
+              width: collapsed ? 48 : 56,
+              height: collapsed ? 48 : 56,
+              borderRadius: collapsed ? 24 : 28,
               backgroundColor: roleColors[userRole],
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: 12,
+              marginBottom: collapsed ? 0 : 12,
               borderWidth: 3,
               borderColor: Colors.white,
+              ...(Platform.OS === 'web' && {
+                transition: 'all 0.3s ease',
+              } as any),
             }}
           >
-            <Text style={{ color: Colors.white, fontSize: 22, fontWeight: 'bold' }}>
+            <Text style={{ color: Colors.white, fontSize: collapsed ? 20 : 22, fontWeight: 'bold' }}>
               {roleLabels[userRole][0]}
             </Text>
           </View>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 4 }}>
-            {userName || roleLabels[userRole]}
-          </Text>
-          <Text style={{ fontSize: 13, color: '#6B7280' }}>
-            {roleLabels[userRole]}
-          </Text>
+          {!collapsed && (
+            <>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 4 }}>
+                {userName || roleLabels[userRole]}
+              </Text>
+              <Text style={{ fontSize: 13, color: '#6B7280' }}>
+                {roleLabels[userRole]}
+              </Text>
+            </>
+          )}
         </View>
 
         {/* Menu Items - Match Figma exactly: padding 12px, item height 48px */}
-        <View style={{ paddingHorizontal: 12, paddingTop: 0 }}>
+        <View style={{ paddingHorizontal: collapsed ? 8 : 12, paddingTop: collapsed ? 60 : 0 }}>
           {menuItems.map((item, index) => {
-            const isActive = pathname === item.route || pathname?.startsWith(item.route + '/');
+            // Normalize routes - handle both /student/home and /(student)/home formats
+            const normalizedPathname = pathname?.replace(/^\/\(student\)/, '/student');
+            const normalizedRoute = item.route.replace(/^\/\(student\)/, '/student');
+            const isActive = normalizedPathname === normalizedRoute || (normalizedPathname && normalizedPathname.startsWith(normalizedRoute + '/'));
             const [isHovered, setIsHovered] = React.useState(false);
             
             return (
-              <TouchableOpacity
+              <View
                 key={index}
-                onPress={() => router.push(item.route as any)}
-                style={[
-                  {
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 8,
-                    paddingVertical: 0,
-                    marginBottom: 4,
-                    borderRadius: 8,
-                    height: 48,
-                    backgroundColor: isActive ? '#E0F2FE' : 'transparent',
-                    borderLeftWidth: isActive ? 3 : 0,
-                    borderLeftColor: isActive ? '#3FA9F5' : 'transparent',
-                  },
-                  {
-                    transition: 'all 0.2s ease',
-                    cursor: 'pointer',
-                  } as any,
-                ]}
-                activeOpacity={0.7}
-                {...{
+                style={{
+                  position: 'relative' as any,
+                }}
+                {...(Platform.OS === 'web' && {
                   onMouseEnter: () => setIsHovered(true),
                   onMouseLeave: () => setIsHovered(false),
-                } as any}
+                } as any)}
               >
-                <View
+                <TouchableOpacity
+                  onPress={() => router.push(item.route as any)}
                   style={[
                     {
-                      width: 32,
-                      height: 32,
-                      borderRadius: 8,
-                      backgroundColor: isActive ? '#3FA9F5' : '#F3F4F6',
+                      flexDirection: 'row',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      marginLeft: 12,
-                      marginRight: 12,
+                      paddingHorizontal: collapsed ? 0 : 8,
+                      paddingVertical: 0,
+                      marginBottom: 4,
+                      borderRadius: 8,
+                      height: 48,
+                      backgroundColor: isActive ? '#E0F2FE' : (isHovered ? '#F9FAFB' : 'transparent'),
+                      borderLeftWidth: isActive ? 3 : 0,
+                      borderLeftColor: isActive ? '#3FA9F5' : 'transparent',
+                      justifyContent: collapsed ? 'center' : 'flex-start',
                     },
                     {
                       transition: 'all 0.2s ease',
+                      cursor: 'pointer',
                     } as any,
                   ]}
+                  activeOpacity={0.7}
                 >
-                  {item.icon}
-                </View>
-                <Text
-                  style={{
-                    flex: 1,
-                    fontSize: 14,
-                    fontWeight: isActive ? '600' : '400',
-                    color: isActive ? '#3FA9F5' : '#111827',
-                  }}
-                >
-                  {item.label}
-                </Text>
-                {item.badge && item.badge > 0 && (
+                  <View
+                    style={[
+                      {
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        backgroundColor: isActive ? '#3FA9F5' : (isHovered ? '#E5E7EB' : '#F3F4F6'),
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginLeft: collapsed ? 0 : 12,
+                        marginRight: collapsed ? 0 : 12,
+                      },
+                      {
+                        transition: 'all 0.2s ease',
+                      } as any,
+                    ]}
+                  >
+                    {item.icon}
+                  </View>
+                  {!collapsed && (
+                    <>
+                      <Text
+                        style={{
+                          flex: 1,
+                          fontSize: 14,
+                          fontWeight: isActive ? '600' : '400',
+                          color: isActive ? '#3FA9F5' : '#111827',
+                          opacity: collapsed ? 0 : 1,
+                          ...(Platform.OS === 'web' && {
+                            transition: 'opacity 0.2s ease',
+                          } as any),
+                        }}
+                      >
+                        {item.label}
+                      </Text>
+                      {item.badge && item.badge > 0 && (
+                        <View
+                          style={{
+                            backgroundColor: '#EF4444',
+                            borderRadius: 10,
+                            paddingHorizontal: 8,
+                            paddingVertical: 2,
+                            minWidth: 20,
+                            alignItems: 'center',
+                            marginRight: 12,
+                          }}
+                        >
+                          <Text style={{ color: Colors.white, fontSize: 11, fontWeight: '600' }}>
+                            {item.badge > 99 ? '99+' : item.badge}
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  )}
+                </TouchableOpacity>
+                
+                {/* Tooltip when collapsed */}
+                {collapsed && isHovered && (
                   <View
                     style={{
-                      backgroundColor: '#EF4444',
-                      borderRadius: 10,
-                      paddingHorizontal: 8,
-                      paddingVertical: 2,
-                      minWidth: 20,
-                      alignItems: 'center',
-                      marginRight: 12,
+                      position: 'absolute' as any,
+                      left: 88,
+                      top: '50%',
+                      transform: [{ translateY: -12 }],
+                      backgroundColor: '#111827',
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 6,
+                      zIndex: 1000,
+                      ...(Platform.OS === 'web' && {
+                        pointerEvents: 'none' as any,
+                      } as any),
                     }}
                   >
-                    <Text style={{ color: Colors.white, fontSize: 11, fontWeight: '600' }}>
-                      {item.badge > 99 ? '99+' : item.badge}
+                    <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '500' }}>
+                      {item.label}
                     </Text>
+                    {/* Arrow */}
+                    <View
+                      style={{
+                        position: 'absolute' as any,
+                        left: -4,
+                        top: '50%',
+                        transform: [{ translateY: -4 }],
+                        width: 0,
+                        height: 0,
+                        borderTopWidth: 4,
+                        borderBottomWidth: 4,
+                        borderRightWidth: 4,
+                        borderTopColor: 'transparent',
+                        borderBottomColor: 'transparent',
+                        borderRightColor: '#111827',
+                      }}
+                    />
                   </View>
                 )}
-              </TouchableOpacity>
+              </View>
             );
           })}
         </View>
@@ -168,12 +298,14 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
 
       {/* Logout Button - Match Figma: positioned at bottom, padding 16px, height 48px */}
       <View style={{ 
-        padding: 16, 
+        padding: collapsed ? 8 : 16, 
         position: 'absolute' as any,
         bottom: 0,
         left: 0,
         right: 0,
         backgroundColor: Colors.white,
+        borderTopWidth: 1,
+        borderTopColor: '#E5E7EB',
       }}>
         <TouchableOpacity
           onPress={() => router.replace('/auth/login')}
@@ -181,7 +313,7 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
             {
               flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'center',
+              justifyContent: collapsed ? 'center' : 'center',
               paddingHorizontal: 0,
               paddingVertical: 0,
               borderRadius: 8,
@@ -197,9 +329,13 @@ export default function Sidebar({ menuItems, userRole, userName }: SidebarProps)
           ]}
           activeOpacity={0.8}
         >
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#EF4444' }}>
-            Đăng xuất
-          </Text>
+          {collapsed ? (
+            <Text style={{ fontSize: 18, color: '#EF4444' }}>🚪</Text>
+          ) : (
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#EF4444' }}>
+              Đăng xuất
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>

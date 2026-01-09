@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { Colors } from '../../constants/colors';
-import AppHeader from '../../components/AppHeader';
-import Card from '../../components/Card';
-import PrimaryButton from '../../components/PrimaryButton';
-import Tabs from '../../components/Tabs';
+import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { Colors } from '@/constants/colors';
+import { AppHeader } from '@/components/AppHeader';
+import { Card } from '@/components/Card';
+import { PrimaryButton } from '@/components/PrimaryButton';
+import { Tabs } from '@/components/Tabs';
 
 export default function Reports() {
   const [activeTab, setActiveTab] = useState('overview');
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+
+  const contentMaxWidth = isDesktop ? 1200 : '100%';
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
 
   return (
-    <View className="flex-1 bg-white">
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <StatusBar style="dark" />
       <AppHeader title="Báo cáo & Thống kê" showLogout={true} />
       
       <Tabs

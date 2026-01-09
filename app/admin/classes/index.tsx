@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
-import { Colors } from '../../../constants/colors';
-import { mockClasses } from '../../../constants/mockData';
-import AppHeader from '../../../components/AppHeader';
-import Card from '../../../components/Card';
-import PrimaryButton from '../../../components/PrimaryButton';
-import { EmptySearchIcon, EmptyListIcon } from '../../../components/EmptyStateIllustration';
+import { StatusBar } from 'expo-status-bar';
+import { Colors } from '@/constants/colors';
+import { mockClasses } from '@/constants/mockData';
+import { AppHeader } from '@/components/AppHeader';
+import { Card } from '@/components/Card';
+import { PrimaryButton } from '@/components/PrimaryButton';
+import { EmptySearchIcon, EmptyListIcon } from '@/components/EmptyStateIllustration';
 
 export default function ClassManagement() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+
+  const contentMaxWidth = isDesktop ? 1200 : '100%';
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
 
   const filteredClasses = mockClasses.filter(cls =>
     cls.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -18,11 +25,12 @@ export default function ClassManagement() {
   );
 
   return (
-    <View className="flex-1 bg-white">
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <StatusBar style="dark" />
       <AppHeader title="Quản lý lớp học" showLogout={true} />
       
-      <ScrollView className="flex-1">
-        <View className="p-4" style={{ maxWidth: 1200, width: '100%', alignSelf: 'center' }}>
+      <ScrollView style={{ flex: 1 }}>
+        <View style={{ paddingHorizontal, paddingVertical: 24, maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
           
           <PrimaryButton
             title="+ Tạo lớp học mới"

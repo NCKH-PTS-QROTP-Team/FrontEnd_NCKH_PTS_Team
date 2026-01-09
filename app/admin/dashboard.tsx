@@ -1,15 +1,25 @@
 import React from 'react';
-import { View, Text, ScrollView, Platform } from 'react-native';
+import { View, Text, ScrollView, Platform, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
-import { Colors } from '../../constants/colors';
-import AppHeader from '../../components/AppHeader';
-import StatsCard from '../../components/StatsCard';
-import Card from '../../components/Card';
-import AppLayout from '../../components/AppLayout';
-import { isDesktop, isTablet } from '../../constants/responsive';
-import { HomeIcon, UsersIcon, SchoolIcon, BookIcon, CalendarIcon, EyeIcon, ChartIcon, SettingsIcon } from '../../components/Icons';
+import { StatusBar } from 'expo-status-bar';
+import { Colors } from '@/constants/colors';
+import { AppHeader } from '@/components/AppHeader';
+import { StatsCard } from '@/components/StatsCard';
+import { Card } from '@/components/Card';
+import AppLayout from '@/components/AppLayout';
+import { HomeIcon, UsersIcon, SchoolIcon, BookIcon, CalendarIcon, EyeIcon, ChartIcon, SettingsIcon } from '@/components/Icons';
 
 export default function AdminDashboard() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+  const isWeb = Platform.OS === 'web';
+
+  const contentMaxWidth = isDesktop ? 1400 : '100%';
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+  const statsPerRow = isDesktop ? 4 : isTablet ? 2 : 2;
+  const actionsPerRow = isDesktop ? 3 : isTablet ? 2 : 1;
+
   const menuItems = [
     { icon: <HomeIcon size={20} color={Colors.primary} />, label: 'Dashboard', route: '/admin/dashboard' },
     { icon: <UsersIcon size={20} color={Colors.primary} />, label: 'Người dùng', route: '/admin/users' },
@@ -43,18 +53,13 @@ export default function AdminDashboard() {
     { title: 'Cài đặt', subtitle: 'Cấu hình hệ thống', route: '/admin/settings', icon: 'S' },
   ];
 
-  // Responsive column widths
-  const statsWidth = isDesktop ? 'w-1/4' : isTablet ? 'w-1/2' : 'w-1/2';
-  const actionWidth = isDesktop ? 'w-1/3' : isTablet ? 'w-1/2' : 'w-full';
-  const isWeb = Platform.OS === 'web';
-
- 
   const content = (
-    <View className="flex-1 bg-white">
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <StatusBar style="dark" />
       <AppHeader title="Dashboard" showBack={false} showLogout={!isWeb} />
       
-      <ScrollView className="flex-1">
-        <View className="p-4" style={{ maxWidth: 1400, width: '100%', alignSelf: 'center' }}>
+      <ScrollView style={{ flex: 1 }}>
+        <View style={{ paddingHorizontal, paddingVertical: 24, maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
           
           {/* Welcome Section */}
           <Card className="mb-6" style={{ backgroundColor: Colors.primary }}>

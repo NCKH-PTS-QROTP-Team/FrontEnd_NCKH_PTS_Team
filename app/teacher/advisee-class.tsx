@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { Colors } from '../../constants/colors';
-import AppHeader from '../../components/AppHeader';
-import Card from '../../components/Card';
-import StatsCard from '../../components/StatsCard';
-import Tabs from '../../components/Tabs';
-import StudentCard from '../../components/StudentCard';
-import { mockStudents } from '../../constants/mockData';
+import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { Colors } from '@/constants/colors';
+import { AppHeader } from '@/components/AppHeader';
+import { Card } from '@/components/Card';
+import { StatsCard } from '@/components/StatsCard';
+import { Tabs } from '@/components/Tabs';
+import { StudentCard } from '@/components/StudentCard';
+import { mockStudents } from '@/constants/mockData';
 
 export default function AdviseeClass() {
   const [activeTab, setActiveTab] = useState('overview');
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+  const statsWidth = isDesktop ? '48%' : '100%';
 
   const classStats = {
     totalStudents: 45,
