@@ -50,28 +50,24 @@ export default function Sidebar({ menuItems, userRole, userName, collapsed: exte
   return (
     <View
       style={{
-        width: sidebarWidth,
+        width: '100%',
+        height: '100%',
         backgroundColor: Colors.white,
         borderRightWidth: 1,
         borderRightColor: '#E5E7EB',
-        height: '100%',
-        position: 'absolute' as any,
-        top: 0,
-        bottom: 0,
-        left: 0,
         ...(Platform.OS === 'web' && {
           transition: 'width 0.3s ease',
         } as any),
       }}
     >
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
-        {/* Toggle Button - Positioned at top right of sidebar, outside avatar area */}
+        {/* Toggle Button */}
         <View
           style={{
             paddingTop: 16,
             paddingHorizontal: collapsed ? 8 : 12,
             alignItems: 'flex-end',
-            marginBottom: 8,
+            marginBottom: 16,
           }}
         >
           <TouchableOpacity
@@ -115,40 +111,6 @@ export default function Sidebar({ menuItems, userRole, userName, collapsed: exte
               <ChevronLeftIcon size={16} color="#6B7280" />
             )}
           </TouchableOpacity>
-        </View>
-
-        {/* Logo & User Info - Match Figma exactly */}
-        <View style={{ padding: collapsed ? 16 : 24, paddingTop: collapsed ? 8 : 24, alignItems: collapsed ? 'center' : 'flex-start' }}>
-          <View
-            style={{
-              width: collapsed ? 48 : 56,
-              height: collapsed ? 48 : 56,
-              borderRadius: collapsed ? 24 : 28,
-              backgroundColor: roleColors[userRole],
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: collapsed ? 0 : 12,
-              borderWidth: 3,
-              borderColor: Colors.white,
-              ...(Platform.OS === 'web' && {
-                transition: 'all 0.3s ease',
-              } as any),
-            }}
-          >
-            <Text style={{ color: Colors.white, fontSize: collapsed ? 20 : 22, fontWeight: 'bold' }}>
-              {roleLabels[userRole][0]}
-            </Text>
-          </View>
-          {!collapsed && (
-            <>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#111827', marginBottom: 4 }}>
-                {userName || roleLabels[userRole]}
-              </Text>
-              <Text style={{ fontSize: 13, color: '#6B7280' }}>
-                {roleLabels[userRole]}
-              </Text>
-            </>
-          )}
         </View>
 
         {/* Menu Items - Match Figma exactly: padding 12px, item height 48px */}

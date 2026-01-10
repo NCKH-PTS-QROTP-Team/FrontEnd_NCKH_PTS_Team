@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, Easing, ViewStyle } from 'react-native';
+import { View, Animated, Easing, ViewStyle, Text } from 'react-native';
 import { Colors } from '../constants/colors';
 
 interface SpinnerProps {
@@ -40,7 +40,7 @@ export const Spinner: React.FC<SpinnerProps> = ({
           width: size,
           height: size,
           borderRadius: size / 2,
-          borderWidth: 3,
+          borderWidth: Math.max(2, size / 8),
           borderColor: `${color}20`,
           borderTopColor: color,
           transform: [{ rotate }],
@@ -49,6 +49,10 @@ export const Spinner: React.FC<SpinnerProps> = ({
     </View>
   );
 };
+
+
+export default Spinner;
+
 
 interface LoadingOverlayProps {
   visible: boolean;
@@ -72,19 +76,18 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ visible, message
         zIndex: 1000,
       }}
     >
-      <Spinner size={40} />
+      <Spinner size={48} />
       {message && (
-        <View style={{ marginTop: 16 }}>
-          <Animated.Text
-            style={{
-              fontSize: 16,
-              color: Colors.textSecondary,
-              textAlign: 'center',
-            }}
-          >
-            {message}
-          </Animated.Text>
-        </View>
+        <Text
+          style={{
+            marginTop: 16,
+            fontSize: 16,
+            color: Colors.textSecondary,
+            textAlign: 'center',
+          }}
+        >
+          {message}
+        </Text>
       )}
     </View>
   );

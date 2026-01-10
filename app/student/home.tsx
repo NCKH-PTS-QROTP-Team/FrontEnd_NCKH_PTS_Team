@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { AppHeader } from '@/components/AppHeader';
 import { mockSchedules } from '@/constants/mockData';
 
 export default function StudentHomeScreen() {
@@ -32,7 +31,6 @@ export default function StudentHomeScreen() {
   const content = (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <StatusBar style="dark" />
-      <AppHeader title="Trang chủ" showLogout={!isWeb} />
       <ScrollView
         contentContainerStyle={{ 
           paddingHorizontal: padding,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -8,6 +8,7 @@ export default function GenerateOTPScreen() {
   const [otp, setOtp] = useState('');
   const [countdown, setCountdown] = useState(300);
   const [isActive, setIsActive] = useState(false);
+  const isWeb = Platform.OS === 'web';
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
@@ -45,7 +46,7 @@ export default function GenerateOTPScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <StatusBar style="dark" />
-      <AppHeader title="Tạo mã OTP" showBack showLogout={true} />
+      <AppHeader title="Tạo mã OTP" showBack showLogout={!isWeb} />
       
       <ScrollView
         contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
 import { StudentCard } from '@/components/StudentCard';
@@ -7,6 +7,7 @@ import { AttendanceStatusTag } from '@/components/AttendanceStatusTag';
 import { mockStudents } from '@/constants/mockData';
 
 export default function ClassListScreen() {
+  const isWeb = Platform.OS === 'web';
   const presentCount = mockStudents.filter(s => s.status === 'present').length;
   const lateCount = mockStudents.filter(s => s.status === 'late').length;
   const absentCount = mockStudents.filter(s => s.status === 'absent').length;
@@ -20,7 +21,7 @@ export default function ClassListScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <StatusBar style="dark" />
-      <AppHeader title="Danh sách lớp" showBack showLogout={true} />
+      <AppHeader title="Danh sách lớp" showBack showLogout={!isWeb} />
       
       <ScrollView
         contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}

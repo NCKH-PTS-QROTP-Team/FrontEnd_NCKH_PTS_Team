@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { AppHeader } from '@/components/AppHeader';
 import { ScheduleCard } from '@/components/ScheduleCard';
 import { mockSchedules } from '@/constants/mockData';
 
@@ -16,7 +15,6 @@ export default function ScheduleScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <StatusBar style="dark" />
-      <AppHeader title="Lịch học" showBack showLogout={true} />
       
       <ScrollView
         contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}

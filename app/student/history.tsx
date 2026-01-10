@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { AppHeader } from '@/components/AppHeader';
 import { AttendanceStatusTag } from '@/components/AttendanceStatusTag';
 import { mockAttendanceHistory } from '@/constants/mockData';
 
@@ -24,7 +23,6 @@ export default function HistoryScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <StatusBar style="dark" />
-      <AppHeader title="Lịch sử điểm danh" showBack showLogout={true} />
       
       <ScrollView
         contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}

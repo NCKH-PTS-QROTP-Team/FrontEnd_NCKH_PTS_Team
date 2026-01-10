@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Colors } from '@/constants/colors';
 import { AppHeader } from '@/components/AppHeader';
-import { Card } from '@/components/Card';
+import Card from '@/components/Card';
 import { StatsCard } from '@/components/StatsCard';
-import { Tabs } from '@/components/Tabs';
+import Tabs from '@/components/Tabs';
 import { StudentCard } from '@/components/StudentCard';
 import { mockStudents } from '@/constants/mockData';
 
 export default function AdviseeClass() {
   const [activeTab, setActiveTab] = useState('overview');
+  const isWeb = Platform.OS === 'web';
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
@@ -30,7 +31,7 @@ export default function AdviseeClass() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Lớp chủ nhiệm" showLogout={true} />
+      <AppHeader title="Lớp chủ nhiệm" showLogout={!isWeb} />
       
       <Tabs
         tabs={[

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
 import { PrimaryButton } from '@/components/PrimaryButton';
 
 export default function GenerateQRScreen() {
   const [isActive, setIsActive] = useState(false);
+  const isWeb = Platform.OS === 'web';
   const qrData = 'CS101_A102_20260102_0800';
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
@@ -17,7 +18,7 @@ export default function GenerateQRScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <StatusBar style="dark" />
-      <AppHeader title="Tạo QR Code" showBack showLogout={true} />
+      <AppHeader title="Tạo QR Code" showBack showLogout={!isWeb} />
       
       <ScrollView
         contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}

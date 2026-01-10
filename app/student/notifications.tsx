@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { AppHeader } from '@/components/AppHeader';
 import Card from '@/components/Card';
 import { Colors } from '@/constants/colors';
 
@@ -108,7 +107,6 @@ export default function Notifications() {
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <StatusBar style="dark" />
-      <AppHeader title="Thông báo" showLogout={true} />
       
       <ScrollView style={{ flex: 1 }}>
         <View style={{ paddingHorizontal, paddingVertical: 24, maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>

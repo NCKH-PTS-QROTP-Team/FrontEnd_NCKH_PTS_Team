@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, ActivityIndicator, Text, Modal } from 'react-native';
+import { View, Text, Modal, Platform } from 'react-native';
+import { Spinner } from './Spinner';
 import { Colors } from '@/constants/colors';
 
 interface LoadingOverlayProps {
@@ -11,39 +12,73 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   visible,
   message,
 }) => {
-  return (
-    <Modal
-      transparent
-      visible={visible}
-      animationType="fade"
+  if (!visible) return null;
+
+  const content = (
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      }}
     >
       <View
-        className="flex-1 items-center justify-center"
         style={{
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backgroundColor: '#FFFFFF',
+          borderRadius: 16,
+          padding: 32,
+          alignItems: 'center',
+          minWidth: 120,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.2,
+          shadowRadius: 8,
+          elevation: 8,
         }}
       >
-        <View
-          className="bg-white p-6 items-center"
-          style={{
-            borderRadius: 8,
-            minWidth: 120,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 6,
-            elevation: 4,
-          }}
-        >
-          <ActivityIndicator size="large" color={Colors.primary} />
-          {message && (
-            <Text className="text-gray-700 mt-4 text-center">
-              {message}
-            </Text>
-          )}
-        </View>
+        <Spinner size={48} color={Colors.primary} />
+        {message && (
+          <Text
+            style={{
+              marginTop: 20,
+              fontSize: 16,
+              color: Colors.textSecondary,
+              textAlign: 'center',
+              maxWidth: 250,
+            }}
+          >
+            {message}
+          </Text>
+        )}
       </View>
+    </View>
+  );
+
+  if (Platform.OS === 'web') {
+    // On web, render directly without Modal for better compatibility
+    return (
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999,
+        }}
+      >
+        {content}
+      </View>
+    );
+  }
+
+  return (
+    <Modal transparent visible={visible} animationType="fade">
+      {content}
     </Modal>
   );
 };
+
+export default LoadingOverlay;
 

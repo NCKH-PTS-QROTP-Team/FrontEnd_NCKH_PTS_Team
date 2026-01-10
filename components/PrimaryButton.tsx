@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, ViewStyle, Platform } from 'react-native';
+import { TouchableOpacity, Text, ViewStyle, Platform } from 'react-native';
 import { Colors } from '@/constants/colors';
+import { Spinner } from './Spinner';
 
 interface PrimaryButtonProps {
   title: string;
@@ -143,7 +144,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       } as any)}
     >
       {loading ? (
-        <ActivityIndicator color={getTextColor()} />
+        <Spinner size={20} color={getTextColor()} />
       ) : (
         <Text
           style={{

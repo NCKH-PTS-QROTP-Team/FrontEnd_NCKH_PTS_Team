@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
 
 export default function ReportsScreen() {
+  const isWeb = Platform.OS === 'web';
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
@@ -14,7 +15,7 @@ export default function ReportsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <StatusBar style="dark" />
-      <AppHeader title="Báo cáo & Thống kê" showBack showLogout={true} />
+      <AppHeader title="Báo cáo & Thống kê" showBack showLogout={!isWeb} />
       
       <ScrollView
         contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}

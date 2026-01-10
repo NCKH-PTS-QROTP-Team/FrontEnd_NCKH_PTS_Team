@@ -5,8 +5,6 @@ import { StatusBar } from 'expo-status-bar';
 import { AppHeader } from '@/components/AppHeader';
 import { StatsCard } from '@/components/StatsCard';
 import { mockStats } from '@/constants/mockData';
-import AppLayout from '@/components/AppLayout';
-import { HomeIcon, ClipboardIcon, HashIcon, QrCodeIcon, GraduationIcon, ChartIcon } from '@/components/Icons';
 
 export default function TeacherDashboardScreen() {
   const router = useRouter();
@@ -19,17 +17,7 @@ export default function TeacherDashboardScreen() {
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const quickActionWidth = isDesktop ? '48%' : '100%';
 
-  const menuItems = [
-    { icon: <HomeIcon size={20} color="#3FA9F5" />, label: 'Dashboard', route: '/teacher/dashboard' },
-    { icon: <ClipboardIcon size={20} color="#3FA9F5" />, label: 'Danh sách lớp', route: '/teacher/class-list' },
-    { icon: <HashIcon size={20} color="#3FA9F5" />, label: 'Tạo OTP', route: '/teacher/generate-otp' },
-    { icon: <QrCodeIcon size={20} color="#3FA9F5" />, label: 'Tạo QR', route: '/teacher/generate-qr' },
-    { icon: <GraduationIcon size={20} color="#3FA9F5" />, label: 'Lớp chủ nhiệm', route: '/teacher/advisee-class' },
-    { icon: <ChartIcon size={20} color="#3FA9F5" />, label: 'Báo cáo', route: '/teacher/reports' },
-  ];
-
- 
-  const content = (
+  return (
     <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <StatusBar style="dark" />
       <AppHeader title="Dashboard" showLogout={!isWeb} />
@@ -213,15 +201,5 @@ export default function TeacherDashboardScreen() {
         </View>
       </ScrollView>
     </View>
-  );
-
-  return (
-    <AppLayout
-      menuItems={menuItems}
-      userRole="teacher"
-      userName="Giảng viên"
-    >
-      {content}
-    </AppLayout>
   );
 }
