@@ -1,11 +1,14 @@
 import React from 'react';
-import { Stack } from 'expo-router';
-import { Platform } from 'react-native';
+import { Stack, useRouter, usePathname } from 'expo-router';
+import { Platform, View } from 'react-native';
 import AppLayout from '@/components/AppLayout';
+import { BottomNavigation } from '@/components/BottomNavigation';
 import { HomeIcon, CalendarIcon, QrCodeIcon, HashIcon, ScrollIcon, BellIcon } from '@/components/Icons';
 
 export default function StudentLayout() {
   const isWeb = Platform.OS === 'web';
+  const router = useRouter();
+  const pathname = usePathname();
 
   const menuItems = [
     { icon: <HomeIcon size={20} color="#3FA9F5" />, label: 'Trang chủ', route: '/student/home' },
@@ -33,8 +36,27 @@ export default function StudentLayout() {
   );
 
   if (!isWeb) {
-    // On mobile, just render the stack without sidebar
-    return stackContent;
+    // On mobile, render with bottom navigation (5 main items)
+    const bottomNavItems = [
+      { key: '/student/home', label: 'Trang chủ', icon: <HomeIcon size={24} color="#3FA9F5" /> },
+      { key: '/student/schedule', label: 'Lịch học', icon: <CalendarIcon size={24} color="#3FA9F5" /> },
+      { key: '/student/qr-attendance', label: 'QR', icon: <QrCodeIcon size={24} color="#3FA9F5" /> },
+      { key: '/student/otp-attendance', label: 'OTP', icon: <HashIcon size={24} color="#3FA9F5" /> },
+      { key: '/student/history', label: 'Lịch sử', icon: <ScrollIcon size={24} color="#3FA9F5" /> },
+    ];
+
+    const currentRoute = pathname || '/student/home';
+
+    return (
+      <View style={{ flex: 1 }}>
+        {stackContent}
+        <BottomNavigation
+          items={bottomNavItems}
+          activeKey={currentRoute}
+          onItemPress={(route) => router.push(route as any)}
+        />
+      </View>
+    );
   }
 
   // On web, wrap with AppLayout
@@ -42,7 +64,8 @@ export default function StudentLayout() {
     <AppLayout
       menuItems={menuItems}
       userRole="student"
-      userName="Sinh viên"
+      userName="Nguyễn Văn An"
+      userEmail="nguyenvanan@student.edu.vn"
     >
       {stackContent}
     </AppLayout>

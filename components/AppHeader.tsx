@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, Platform, Alert, ScrollView } from 'react
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/colors';
 import Breadcrumbs from './Breadcrumbs';
+import UserProfileDropdown from './UserProfileDropdown';
+import NotificationDropdown from './NotificationDropdown';
 
 interface BreadcrumbItem {
   label: string;
@@ -15,6 +17,14 @@ interface AppHeaderProps {
   rightAction?: React.ReactNode;
   showLogout?: boolean;
   breadcrumbs?: BreadcrumbItem[];
+  // User profile props
+  showUserProfile?: boolean;
+  userName?: string;
+  userAvatar?: string;
+  userRole?: 'student' | 'teacher' | 'admin';
+  userEmail?: string;
+  // Notifications
+  showNotifications?: boolean;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({ 
@@ -22,7 +32,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   showBack = false,
   rightAction,
   showLogout = false,
-  breadcrumbs
+  breadcrumbs,
+  showUserProfile = false,
+  userName = 'User',
+  userAvatar,
+  userRole = 'student',
+  userEmail,
+  showNotifications = false,
 }) => {
   const router = useRouter();
   const [isBackHovered, setIsBackHovered] = useState(false);
@@ -119,37 +135,59 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             {title}
           </Text>
         </View>
-        {showLogout && (
-          <TouchableOpacity
-            onPress={handleLogout}
-            className="bg-red-50 px-4"
-            style={{
-              borderRadius: 8,
-              minHeight: 44,
-              paddingVertical: 10,
-              transform: isLogoutHovered ? [{ scale: 1.03 }] : [{ scale: 1 }],
-              backgroundColor: isLogoutHovered ? '#FEE2E2' : '#FEF2F2',
-              ...(Platform.OS === 'web' && {
-                transition: 'all 0.2s ease',
-                cursor: 'pointer',
-              } as any),
-            }}
-            activeOpacity={0.8}
-            {...(Platform.OS === 'web' && {
-              onMouseEnter: () => setIsLogoutHovered(true),
-              onMouseLeave: () => setIsLogoutHovered(false),
-            } as any)}
-          >
-            <Text className="text-sm" style={{ color: Colors.error, lineHeight: 21 }}>
-              Đăng xuất
-            </Text>
-          </TouchableOpacity>
-        )}
-        {rightAction && (
-          <View>
-            {rightAction}
-          </View>
-        )}
+
+        {/* Right Section: Notifications + User Profile + Logout */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {/* Notifications */}
+          {showNotifications && (
+            <NotificationDropdown />
+          )}
+
+          {/* User Profile */}
+          {showUserProfile && (
+            <UserProfileDropdown 
+              userName={userName}
+              userAvatar={userAvatar}
+              userRole={userRole}
+              userEmail={userEmail}
+            />
+          )}
+
+          {/* Legacy Logout Button (kept for backward compatibility) */}
+          {showLogout && !showUserProfile && (
+            <TouchableOpacity
+              onPress={handleLogout}
+              className="bg-red-50 px-4"
+              style={{
+                borderRadius: 8,
+                minHeight: 44,
+                paddingVertical: 10,
+                transform: isLogoutHovered ? [{ scale: 1.03 }] : [{ scale: 1 }],
+                backgroundColor: isLogoutHovered ? '#FEE2E2' : '#FEF2F2',
+                ...(Platform.OS === 'web' && {
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+                } as any),
+              }}
+              activeOpacity={0.8}
+              {...(Platform.OS === 'web' && {
+                onMouseEnter: () => setIsLogoutHovered(true),
+                onMouseLeave: () => setIsLogoutHovered(false),
+              } as any)}
+            >
+              <Text className="text-sm" style={{ color: Colors.error, lineHeight: 21 }}>
+                Đăng xuất
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Custom Right Action */}
+          {rightAction && (
+            <View>
+              {rightAction}
+            </View>
+          )}
+        </View>
       </View>
       </View>
     </View>

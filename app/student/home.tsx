@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Platform, useWindowDimensions
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { mockSchedules } from '@/constants/mockData';
+import WeeklySchedule from '@/components/WeeklySchedule';
 
 export default function StudentHomeScreen() {
   const router = useRouter();
@@ -29,20 +30,22 @@ export default function StudentHomeScreen() {
   const statsGap = isDesktop ? 16 : 12;
 
   const content = (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <StatusBar style="dark" />
+      
       <ScrollView
         contentContainerStyle={{ 
-          paddingHorizontal: padding,
           paddingTop: isDesktop ? 20 : 20,
           paddingBottom: 40,
         }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Content with padding */}
         <View style={{ 
           maxWidth: contentMaxWidth, 
           width: '100%', 
           alignSelf: 'center',
+          paddingHorizontal: padding,
         }}>
           {/* Welcome Card - Figma: 800x160px, borderRadius 16, padding 24 */}
           <View
@@ -223,7 +226,24 @@ export default function StudentHomeScreen() {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
 
+        {/* Weekly Schedule Table - Full width without padding */}
+        <View style={{ 
+          width: '100%',
+          paddingHorizontal: isDesktop ? 24 : padding,
+          marginBottom: 40,
+        }}>
+          <WeeklySchedule />
+        </View>
+
+        {/* Content with padding continues */}
+        <View style={{ 
+          maxWidth: contentMaxWidth, 
+          width: '100%', 
+          alignSelf: 'center',
+          paddingHorizontal: padding,
+        }}>
           {/* Stats - Figma: Title + 3 cards (256x120 each, gap 16) */}
           <View style={{ marginBottom: 40 }}>
             <Text style={{ 

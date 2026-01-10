@@ -1,11 +1,14 @@
 import React from 'react';
-import { Stack } from 'expo-router';
-import { Platform } from 'react-native';
+import { Stack, useRouter, usePathname } from 'expo-router';
+import { Platform, View } from 'react-native';
 import AppLayout from '@/components/AppLayout';
+import { BottomNavigation } from '@/components/BottomNavigation';
 import { HomeIcon, ClipboardIcon, HashIcon, QrCodeIcon, GraduationIcon, ChartIcon } from '@/components/Icons';
 
 export default function TeacherLayout() {
   const isWeb = Platform.OS === 'web';
+  const router = useRouter();
+  const pathname = usePathname();
 
   const menuItems = [
     { icon: <HomeIcon size={20} color="#3FA9F5" />, label: 'Dashboard', route: '/teacher/dashboard' },
@@ -33,8 +36,27 @@ export default function TeacherLayout() {
   );
 
   if (!isWeb) {
-    // On mobile, just render the stack without sidebar
-    return stackContent;
+    // On mobile, render with bottom navigation (5 main items)
+    const bottomNavItems = [
+      { key: '/teacher/dashboard', label: 'Tổng quan', icon: <HomeIcon size={24} color="#3FA9F5" /> },
+      { key: '/teacher/class-list', label: 'Lớp học', icon: <ClipboardIcon size={24} color="#3FA9F5" /> },
+      { key: '/teacher/generate-otp', label: 'OTP', icon: <HashIcon size={24} color="#3FA9F5" /> },
+      { key: '/teacher/generate-qr', label: 'QR', icon: <QrCodeIcon size={24} color="#3FA9F5" /> },
+      { key: '/teacher/advisee-class', label: 'Chủ nhiệm', icon: <GraduationIcon size={24} color="#3FA9F5" /> },
+    ];
+
+    const currentRoute = pathname || '/teacher/dashboard';
+
+    return (
+      <View style={{ flex: 1 }}>
+        {stackContent}
+        <BottomNavigation
+          items={bottomNavItems}
+          activeKey={currentRoute}
+          onItemPress={(route) => router.push(route as any)}
+        />
+      </View>
+    );
   }
 
   // On web, wrap with AppLayout
@@ -42,7 +64,8 @@ export default function TeacherLayout() {
     <AppLayout
       menuItems={menuItems}
       userRole="teacher"
-      userName="Giảng viên"
+      userName="Trần Thị Bình"
+      userEmail="tranthib@teacher.edu.vn"
     >
       {stackContent}
     </AppLayout>

@@ -13,7 +13,7 @@ export default function ScheduleScreen() {
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <StatusBar style="dark" />
       
       <ScrollView
