@@ -8,6 +8,17 @@
   status: 'upcoming' | 'in-progress' | 'completed';
 }
 
+export interface TeacherSchedule {
+  id: string;
+  courseCode: string;
+  courseName: string;
+  dayOfWeek: number; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  time: string; // "08:00 - 10:00"
+  room: string;
+  className?: string;
+  studentCount?: number;
+}
+
 export interface AttendanceRecord {
   id: string;
   courseCode: string;
@@ -39,6 +50,27 @@ export const mockSchedules: Schedule[] = [
   { id: '1', courseCode: 'CS101', courseName: 'Lập trình cơ bản', time: '08:00 - 10:00', room: 'A102', teacher: 'TS. Nguyễn Văn A', status: 'upcoming' },
   { id: '2', courseCode: 'CS102', courseName: 'Cấu trúc dữ liệu', time: '10:15 - 12:15', room: 'B205', teacher: 'TS. Trần Thị B', status: 'in-progress' },
   { id: '3', courseCode: 'CS103', courseName: 'Hệ điều hành', time: '13:30 - 15:30', room: 'C301', teacher: 'PGS. Lê Văn C', status: 'upcoming' },
+];
+
+// Teacher weekly schedule (Monday = 1, Sunday = 0)
+export const mockTeacherSchedules: TeacherSchedule[] = [
+  // Monday
+  { id: '1', courseCode: 'CS101', courseName: 'Lập trình cơ bản', dayOfWeek: 1, time: '08:00 - 10:00', room: 'A102', className: 'CNTT01', studentCount: 45 },
+  { id: '2', courseCode: 'CS102', courseName: 'Cấu trúc dữ liệu', dayOfWeek: 1, time: '10:15 - 12:15', room: 'B205', className: 'CNTT02', studentCount: 42 },
+  { id: '3', courseCode: 'CS201', courseName: 'Cơ sở dữ liệu', dayOfWeek: 1, time: '13:30 - 15:30', room: 'C301', className: 'CNTT03', studentCount: 38 },
+  // Tuesday
+  { id: '4', courseCode: 'CS101', courseName: 'Lập trình cơ bản', dayOfWeek: 2, time: '08:00 - 10:00', room: 'A102', className: 'CNTT01', studentCount: 45 },
+  { id: '5', courseCode: 'CS103', courseName: 'Hệ điều hành', dayOfWeek: 2, time: '14:00 - 16:00', room: 'D401', className: 'CNTT04', studentCount: 40 },
+  // Wednesday
+  { id: '6', courseCode: 'CS102', courseName: 'Cấu trúc dữ liệu', dayOfWeek: 3, time: '08:00 - 10:00', room: 'B205', className: 'CNTT02', studentCount: 42 },
+  { id: '7', courseCode: 'CS201', courseName: 'Cơ sở dữ liệu', dayOfWeek: 3, time: '10:15 - 12:15', room: 'C301', className: 'CNTT03', studentCount: 38 },
+  // Thursday
+  { id: '8', courseCode: 'CS101', courseName: 'Lập trình cơ bản', dayOfWeek: 4, time: '08:00 - 10:00', room: 'A102', className: 'CNTT01', studentCount: 45 },
+  { id: '9', courseCode: 'CS102', courseName: 'Cấu trúc dữ liệu', dayOfWeek: 4, time: '10:15 - 12:15', room: 'B205', className: 'CNTT02', studentCount: 42 },
+  { id: '10', courseCode: 'CS103', courseName: 'Hệ điều hành', dayOfWeek: 4, time: '13:30 - 15:30', room: 'C301', className: 'CNTT04', studentCount: 40 },
+  // Friday
+  { id: '11', courseCode: 'CS201', courseName: 'Cơ sở dữ liệu', dayOfWeek: 5, time: '08:00 - 10:00', room: 'C301', className: 'CNTT03', studentCount: 38 },
+  { id: '12', courseCode: 'CS103', courseName: 'Hệ điều hành', dayOfWeek: 5, time: '14:00 - 16:00', room: 'D401', className: 'CNTT04', studentCount: 40 },
 ];
 
 export const mockAttendanceHistory: AttendanceRecord[] = [

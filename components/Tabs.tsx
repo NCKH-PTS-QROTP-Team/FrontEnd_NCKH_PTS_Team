@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
 import { Colors } from '../constants/colors';
 
 interface Tab {
@@ -14,28 +14,39 @@ interface TabsProps {
 }
 
 export default function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+
   return (
     <ScrollView 
       horizontal 
       showsHorizontalScrollIndicator={false}
-      className="border-b"
-      style={{ borderBottomColor: Colors.border }}
+      style={{ borderBottomWidth: 1, borderBottomColor: Colors.border }}
+      contentContainerStyle={{ flexGrow: 1 }}
     >
-      <View className="flex-row">
+      <View style={{ flexDirection: 'row', flex: 1 }}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key;
           return (
             <TouchableOpacity
               key={tab.key}
-              className="px-6 py-3 border-b-2"
               style={{
+                flex: 1,
+                paddingHorizontal: isMobile ? 16 : 24,
+                paddingVertical: isMobile ? 14 : 12,
+                minHeight: 44, // Touch-friendly minimum height for mobile
+                borderBottomWidth: 2,
                 borderBottomColor: isActive ? Colors.primary : 'transparent',
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
               onPress={() => onTabChange(tab.key)}
+              activeOpacity={0.7}
             >
               <Text
-                className="font-medium text-sm"
                 style={{
+                  fontSize: isMobile ? 15 : 14,
+                  fontWeight: isActive ? '600' : '500',
                   color: isActive ? Colors.primary : Colors.gray600,
                 }}
               >

@@ -1,55 +1,185 @@
 import React from 'react';
-import { View, Text, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, useWindowDimensions, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { ScheduleCard } from '@/components/ScheduleCard';
 import { mockSchedules } from '@/constants/mockData';
+import { Colors } from '@/constants/colors';
 
 export default function ScheduleScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
+  const isMobile = width < 768;
 
   const contentMaxWidth = isDesktop ? 800 : '100%';
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+  const cardPadding = isDesktop ? 24 : 16;
+
+  // Get current date
+  const today = new Date();
+  const weekdays = ['Chủ nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+  const dayName = weekdays[today.getDay()];
+  const dateStr = `${dayName}, ${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+    <View style={{ flex: 1, backgroundColor: Colors.surface }}>
       <StatusBar style="dark" />
       
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ 
+          paddingHorizontal, 
+          paddingVertical: isDesktop ? 24 : 20,
+          paddingBottom: isDesktop ? 32 : 24,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
           {/* Date Header */}
           <View style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: Colors.white,
             borderRadius: 16,
-            padding: 24,
-            marginBottom: 24,
+            padding: cardPadding,
+            marginBottom: isDesktop ? 24 : 20,
             borderWidth: 1,
-            borderColor: '#E5E7EB',
+            borderColor: Colors.border,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
+            shadowOpacity: 0.05,
+            shadowRadius: 8,
             elevation: 2,
           }}>
-            <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280', marginBottom: 8 }}>Hôm nay</Text>
-            <Text style={{ fontSize: 24, lineHeight: 32, fontWeight: 'bold', color: '#111827' }}>
-              Thứ Năm, 02/01/2026
+            <Text style={{ 
+              fontSize: isMobile ? 12 : 14, 
+              lineHeight: isMobile ? 18 : 20, 
+              color: Colors.textLight, 
+              marginBottom: 4,
+            }}>
+              Hôm nay
+            </Text>
+            <Text style={{ 
+              fontSize: isMobile ? 20 : isDesktop ? 24 : 22, 
+              lineHeight: isMobile ? 28 : isDesktop ? 32 : 30, 
+              fontWeight: '700', 
+              color: Colors.textHeading 
+            }}>
+              {dateStr}
             </Text>
           </View>
 
           {/* Schedule List */}
-          <Text style={{ fontSize: 18, lineHeight: 28, fontWeight: 'bold', color: '#111827', marginBottom: 16 }}>
+          <Text style={{ 
+            fontSize: isMobile ? 16 : 18, 
+            lineHeight: isMobile ? 24 : 28, 
+            fontWeight: '700', 
+            color: Colors.textHeading, 
+            marginBottom: isDesktop ? 16 : 12,
+          }}>
             Lịch học trong ngày
           </Text>
           
           <View>
-            {mockSchedules.map((schedule) => (
-              <ScheduleCard key={schedule.id} schedule={schedule} />
-            ))}
+            {mockSchedules.length === 0 ? (
+              <View style={{
+                backgroundColor: Colors.white,
+                borderRadius: 12,
+                padding: cardPadding,
+                borderWidth: 1,
+                borderColor: Colors.border,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 40,
+              }}>
+                <Text style={{ fontSize: 48, marginBottom: 12 }}>📅</Text>
+                <Text style={{ 
+                  fontSize: isMobile ? 14 : 16, 
+                  lineHeight: isMobile ? 20 : 24, 
+                  fontWeight: '600', 
+                  color: Colors.text,
+                  marginBottom: 4,
+                }}>
+                  Không có lịch học
+                </Text>
+                <Text style={{ 
+                  fontSize: isMobile ? 12 : 14, 
+                  lineHeight: isMobile ? 18 : 20, 
+                  color: Colors.textSecondary 
+                }}>
+                  Hôm nay bạn không có buổi học nào
+                </Text>
+              </View>
+            ) : (
+              mockSchedules.map((schedule, index) => (
+                <TouchableOpacity
+                  key={schedule.id}
+                  activeOpacity={0.95}
+                  style={{
+                    backgroundColor: Colors.white,
+                    borderRadius: 12,
+                    padding: cardPadding,
+                    marginBottom: index < mockSchedules.length - 1 ? (isDesktop ? 12 : 10) : 0,
+                    borderWidth: 1,
+                    borderColor: Colors.border,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 8,
+                    elevation: 2,
+                  }}
+                >
+                  {/* Course Name */}
+                  <Text style={{ 
+                    fontSize: isMobile ? 16 : 18, 
+                    lineHeight: isMobile ? 24 : 28, 
+                    fontWeight: '600', 
+                    color: Colors.textHeading,
+                    marginBottom: isMobile ? 6 : 8,
+                  }}>
+                    {schedule.courseName}
+                  </Text>
+
+                  {/* Teacher */}
+                  <Text style={{ 
+                    fontSize: isMobile ? 13 : 14, 
+                    lineHeight: isMobile ? 20 : 21, 
+                    color: Colors.textLight,
+                    marginBottom: isMobile ? 10 : 12,
+                  }}>
+                    {schedule.teacher}
+                  </Text>
+
+                  {/* Time & Room */}
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                    {/* Blue vertical line */}
+                    <View style={{
+                      width: 3,
+                      height: isMobile ? 40 : 44,
+                      backgroundColor: Colors.primary,
+                      borderRadius: 2,
+                      marginRight: isMobile ? 10 : 12,
+                    }} />
+                    
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ 
+                        fontSize: isMobile ? 15 : 16, 
+                        lineHeight: isMobile ? 22 : 24, 
+                        fontWeight: '500',
+                        color: Colors.textHeading,
+                        marginBottom: isMobile ? 2 : 4,
+                      }}>
+                        {schedule.time}
+                      </Text>
+                      <Text style={{ 
+                        fontSize: isMobile ? 13 : 14, 
+                        lineHeight: isMobile ? 20 : 21, 
+                        color: Colors.textSecondary 
+                      }}>
+                        Phòng: {schedule.room}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
           </View>
         </View>
       </ScrollView>
