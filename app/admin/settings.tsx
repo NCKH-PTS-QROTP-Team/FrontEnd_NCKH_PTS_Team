@@ -1,29 +1,33 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Switch } from 'react-native';
+import { View, Text, ScrollView, Switch, Platform, useWindowDimensions } from 'react-native';
 import { Colors } from '../../constants/colors';
 import { mockSystemSettings } from '../../constants/mockData';
-import AppHeader from '../../components/AppHeader';
 import Card from '../../components/Card';
 import Input from '../../components/Input';
 import PrimaryButton from '../../components/PrimaryButton';
 
 export default function Settings() {
   const [settings, setSettings] = useState(mockSystemSettings);
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
   const handleSave = () => {
     alert('Đã lưu cài đặt!');
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <AppHeader title="Cài đặt hệ thống" showLogout={true} />
-      
-      <ScrollView className="flex-1">
-        <View className="p-4" style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <ScrollView style={{ flex: 1 }}>
+        <View style={{ padding: Platform.OS === 'web' ? (width >= 768 ? 24 : 16) : 16, maxWidth: 800, width: '100%', alignSelf: 'center' }}>
+          
+          {/* Page Title */}
+          <Text style={{ fontSize: isMobile ? 20 : 24, fontWeight: '600', marginBottom: isMobile ? 16 : 24, color: Colors.text }}>
+            Cài đặt hệ thống
+          </Text>
           
           {/* OTP Settings */}
-          <Card className="mb-4">
-            <Text className="text-lg font-semibold mb-4" style={{ color: Colors.text }}>
+          <Card style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16, color: Colors.text }}>
               Cài đặt OTP
             </Text>
 
@@ -35,14 +39,14 @@ export default function Settings() {
               keyboardType="numeric"
             />
 
-            <Text className="text-xs mt-2" style={{ color: Colors.textSecondary }}>
+            <Text style={{ fontSize: 12, marginTop: 8, color: Colors.textSecondary }}>
               Khuyến nghị: 60-180 giây
             </Text>
           </Card>
 
           {/* QR Code Settings */}
-          <Card className="mb-4">
-            <Text className="text-lg font-semibold mb-4" style={{ color: Colors.text }}>
+          <Card style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16, color: Colors.text }}>
               Cài đặt QR Code
             </Text>
 
@@ -54,23 +58,23 @@ export default function Settings() {
               keyboardType="numeric"
             />
 
-            <Text className="text-xs mt-2" style={{ color: Colors.textSecondary }}>
+            <Text style={{ fontSize: 12, marginTop: 8, color: Colors.textSecondary }}>
               QR Code sẽ tự động làm mới sau khoảng thời gian này
             </Text>
           </Card>
 
           {/* Attendance Rules */}
-          <Card className="mb-4">
-            <Text className="text-lg font-semibold mb-4" style={{ color: Colors.text }}>
+          <Card style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16, color: Colors.text }}>
               Quy tắc điểm danh
             </Text>
 
-            <View className="flex-row justify-between items-center py-3 border-b" style={{ borderBottomColor: Colors.border }}>
-              <View className="flex-1">
-                <Text className="font-medium mb-1" style={{ color: Colors.text }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: '500', marginBottom: 4, color: Colors.text }}>
                   Cho phép điểm danh muộn
                 </Text>
-                <Text className="text-xs" style={{ color: Colors.textSecondary }}>
+                <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
                   Sinh viên có thể điểm danh sau giờ bắt đầu
                 </Text>
               </View>
@@ -83,7 +87,7 @@ export default function Settings() {
             </View>
 
             {settings.allowLateAttendance && (
-              <View className="mt-4">
+              <View style={{ marginTop: 16 }}>
                 <Input
                   label="Ngưỡng muộn (phút)"
                   placeholder="15"
@@ -91,7 +95,7 @@ export default function Settings() {
                   onChangeText={(text) => setSettings({ ...settings, lateThresholdMinutes: parseInt(text) || 15 })}
                   keyboardType="numeric"
                 />
-                <Text className="text-xs mt-2" style={{ color: Colors.textSecondary }}>
+                <Text style={{ fontSize: 12, marginTop: 8, color: Colors.textSecondary }}>
                   Điểm danh sau X phút sẽ được tính là "Muộn"
                 </Text>
               </View>
@@ -99,17 +103,17 @@ export default function Settings() {
           </Card>
 
           {/* Security Settings */}
-          <Card className="mb-4">
-            <Text className="text-lg font-semibold mb-4" style={{ color: Colors.text }}>
+          <Card style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16, color: Colors.text }}>
               Bảo mật
             </Text>
 
-            <View className="flex-row justify-between items-center py-3">
-              <View className="flex-1">
-                <Text className="font-medium mb-1" style={{ color: Colors.text }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: '500', marginBottom: 4, color: Colors.text }}>
                   Bật xác thực GPS
                 </Text>
-                <Text className="text-xs" style={{ color: Colors.textSecondary }}>
+                <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
                   Yêu cầu sinh viên ở trong phạm vi lớp học
                 </Text>
               </View>
@@ -122,8 +126,8 @@ export default function Settings() {
             </View>
 
             {settings.enableGPS && (
-              <View className="mt-3 p-3 rounded-xl" style={{ backgroundColor: Colors.warningLight }}>
-                <Text className="text-xs" style={{ color: Colors.warning }}>
+              <View style={{ marginTop: 12, padding: 12, borderRadius: 12, backgroundColor: Colors.warningLight }}>
+                <Text style={{ fontSize: 12, color: Colors.warning }}>
                   ⚠ Tính năng GPS đang được phát triển
                 </Text>
               </View>
@@ -131,13 +135,13 @@ export default function Settings() {
           </Card>
 
           {/* Notification Settings */}
-          <Card className="mb-4">
-            <Text className="text-lg font-semibold mb-4" style={{ color: Colors.text }}>
+          <Card style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16, color: Colors.text }}>
               Thông báo
             </Text>
 
-            <View className="flex-row justify-between items-center py-3 border-b" style={{ borderBottomColor: Colors.border }}>
-              <Text className="font-medium" style={{ color: Colors.text }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border }}>
+              <Text style={{ fontWeight: '500', color: Colors.text }}>
                 Email thông báo cho giảng viên
               </Text>
               <Switch
@@ -147,8 +151,8 @@ export default function Settings() {
               />
             </View>
 
-            <View className="flex-row justify-between items-center py-3 border-b" style={{ borderBottomColor: Colors.border }}>
-              <Text className="font-medium" style={{ color: Colors.text }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border }}>
+              <Text style={{ fontWeight: '500', color: Colors.text }}>
                 Email thông báo cho sinh viên
               </Text>
               <Switch
@@ -158,8 +162,8 @@ export default function Settings() {
               />
             </View>
 
-            <View className="flex-row justify-between items-center py-3">
-              <Text className="font-medium" style={{ color: Colors.text }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 }}>
+              <Text style={{ fontWeight: '500', color: Colors.text }}>
                 Cảnh báo vắng quá nhiều
               </Text>
               <Switch
@@ -177,20 +181,19 @@ export default function Settings() {
           />
 
           {/* Reset to Default */}
-          <PrimaryButton
-            title="Khôi phục mặc định"
-            variant="outline"
-            onPress={() => {
-              setSettings(mockSystemSettings);
-              alert('Đã khôi phục cài đặt mặc định');
-            }}
-            className="mt-3"
-          />
+          <View style={{ marginTop: 12 }}>
+            <PrimaryButton
+              title="Khôi phục mặc định"
+              variant="outline"
+              onPress={() => {
+                setSettings(mockSystemSettings);
+                alert('Đã khôi phục cài đặt mặc định');
+              }}
+            />
+          </View>
 
         </View>
       </ScrollView>
     </View>
   );
 }
-
-// Updated: 2026-01-02 13:16:06

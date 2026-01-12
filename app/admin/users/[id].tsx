@@ -3,7 +3,6 @@ import { View, Text, ScrollView, Switch, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors } from '../../../constants/colors';
 import { mockUsers } from '../../../constants/mockData';
-import AppHeader from '../../../components/AppHeader';
 import Card from '../../../components/Card';
 import Badge from '../../../components/Badge';
 import PrimaryButton from '../../../components/PrimaryButton';
@@ -23,7 +22,7 @@ export default function UserDetail() {
 
   if (!user) {
     return (
-      <View className="flex-1 bg-white items-center justify-center">
+      <View style={{ flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
         <Text style={{ color: Colors.textSecondary }}>Không tìm thấy người dùng</Text>
       </View>
     );
@@ -68,66 +67,87 @@ export default function UserDetail() {
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <AppHeader title="Chi tiết người dùng" showLogout={true} breadcrumbs={breadcrumbs} />
-      
-      <ScrollView className="flex-1">
-        <View className="p-4" style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <ScrollView style={{ flex: 1 }}>
+        <View style={{ padding: 16, maxWidth: 600, width: '100%', alignSelf: 'center' }}>
+          
+          {/* Page Title */}
+          <Text style={{ fontSize: 24, fontWeight: '600', marginBottom: 24, color: Colors.text }}>
+            Chi tiết người dùng
+          </Text>
           
           {/* Avatar & Name */}
-          <Card className="items-center mb-4">
+          <Card style={{ alignItems: 'center', marginBottom: 16 }}>
             <View
-              className="w-24 h-24 rounded-full items-center justify-center mb-4"
-              style={{ backgroundColor: Colors.primary }}
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: 48,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+                backgroundColor: Colors.primary,
+              }}
             >
-              <Text className="text-4xl font-bold" style={{ color: Colors.white }}>
+              <Text style={{ fontSize: 36, fontWeight: 'bold', color: Colors.white }}>
                 {user.name.charAt(0)}
               </Text>
             </View>
-            <Text className="text-2xl font-bold mb-2" style={{ color: Colors.text }}>
+            <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 8, color: Colors.text }}>
               {user.name}
             </Text>
-            <View className="flex-row mb-2">
-              <Badge {...getRoleBadge(user.role)} />
-              {!isActive && <Badge label="Vô hiệu" variant="gray" />}
+            <View style={{ flexDirection: 'row', marginBottom: 8 }}>
+              {(() => {
+                const badgeData = getRoleBadge(user.role);
+                return (
+                  <Badge variant={badgeData.variant}>
+                    {badgeData.label}
+                  </Badge>
+                );
+              })()}
+              {!isActive && (
+                <Badge variant="neutral">
+                  Vô hiệu
+                </Badge>
+              )}
             </View>
-            <Text className="text-sm" style={{ color: Colors.textSecondary }}>
+            <Text style={{ fontSize: 14, color: Colors.textSecondary }}>
               Tham gia: {new Date(user.createdAt).toLocaleDateString('vi-VN')}
             </Text>
           </Card>
 
           {/* Info */}
-          <Card className="mb-4">
-            <Text className="text-lg font-semibold mb-4" style={{ color: Colors.text }}>
+          <Card style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16, color: Colors.text }}>
               Thông tin chi tiết
             </Text>
 
-            <View className="mb-3">
-              <Text className="text-sm mb-1" style={{ color: Colors.textSecondary }}>Email</Text>
-              <Text className="text-base font-medium" style={{ color: Colors.text }}>{user.email}</Text>
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ fontSize: 14, marginBottom: 4, color: Colors.textSecondary }}>Email</Text>
+              <Text style={{ fontSize: 16, fontWeight: '500', color: Colors.text }}>{user.email}</Text>
             </View>
 
             {user.studentId && (
-              <View className="mb-3">
-                <Text className="text-sm mb-1" style={{ color: Colors.textSecondary }}>Mã sinh viên</Text>
-                <Text className="text-base font-medium" style={{ color: Colors.text }}>{user.studentId}</Text>
+              <View style={{ marginBottom: 12 }}>
+                <Text style={{ fontSize: 14, marginBottom: 4, color: Colors.textSecondary }}>Mã sinh viên</Text>
+                <Text style={{ fontSize: 16, fontWeight: '500', color: Colors.text }}>{user.studentId}</Text>
               </View>
             )}
 
             {user.teacherId && (
-              <View className="mb-3">
-                <Text className="text-sm mb-1" style={{ color: Colors.textSecondary }}>Mã giảng viên</Text>
-                <Text className="text-base font-medium" style={{ color: Colors.text }}>{user.teacherId}</Text>
+              <View style={{ marginBottom: 12 }}>
+                <Text style={{ fontSize: 14, marginBottom: 4, color: Colors.textSecondary }}>Mã giảng viên</Text>
+                <Text style={{ fontSize: 16, fontWeight: '500', color: Colors.text }}>{user.teacherId}</Text>
               </View>
             )}
 
-            <View className="mb-3">
-              <Text className="text-sm mb-1" style={{ color: Colors.textSecondary }}>ID</Text>
-              <Text className="text-base font-medium" style={{ color: Colors.text }}>{user.id}</Text>
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ fontSize: 14, marginBottom: 4, color: Colors.textSecondary }}>ID</Text>
+              <Text style={{ fontSize: 16, fontWeight: '500', color: Colors.text }}>{user.id}</Text>
             </View>
 
-            <View className="flex-row justify-between items-center pt-3 border-t" style={{ borderTopColor: Colors.border }}>
-              <Text className="font-medium" style={{ color: Colors.text }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: Colors.border }}>
+              <Text style={{ fontWeight: '500', color: Colors.text }}>
                 Trạng thái tài khoản
               </Text>
               <Switch
@@ -140,13 +160,14 @@ export default function UserDetail() {
           </Card>
 
           {/* Actions */}
-          <Card className="mb-4">
-            <PrimaryButton
-              title="Reset mật khẩu"
-              variant="outline"
-              onPress={handleResetPassword}
-              className="mb-3"
-            />
+          <Card style={{ marginBottom: 16 }}>
+            <View style={{ marginBottom: 12 }}>
+              <PrimaryButton
+                title="Reset mật khẩu"
+                variant="outline"
+                onPress={handleResetPassword}
+              />
+            </View>
             <PrimaryButton
               title="Xóa người dùng"
               variant="outline"

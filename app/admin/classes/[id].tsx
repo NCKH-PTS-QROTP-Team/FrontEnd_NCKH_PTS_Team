@@ -3,7 +3,6 @@ import { View, Text, ScrollView, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors } from '../../../constants/colors';
 import { mockClasses, mockStudents } from '../../../constants/mockData';
-import AppHeader from '../../../components/AppHeader';
 import Card from '../../../components/Card';
 import PrimaryButton from '../../../components/PrimaryButton';
 import Tabs from '../../../components/Tabs';
@@ -17,7 +16,7 @@ export default function ClassDetail() {
 
   if (!classData) {
     return (
-      <View className="flex-1 bg-white items-center justify-center">
+      <View style={{ flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
         <Text style={{ color: Colors.textSecondary }}>Không tìm thấy lớp học</Text>
       </View>
     );
@@ -42,8 +41,13 @@ export default function ClassDetail() {
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <AppHeader title={classData.code} showLogout={true} />
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      {/* Page Title */}
+      <View style={{ padding: 16, paddingBottom: 0 }}>
+        <Text style={{ fontSize: 24, fontWeight: '600', marginBottom: 16, color: Colors.text }}>
+          {classData.code}
+        </Text>
+      </View>
       
       <Tabs
         tabs={[
@@ -54,77 +58,86 @@ export default function ClassDetail() {
         onTabChange={setActiveTab}
       />
 
-      <ScrollView className="flex-1">
-        <View className="p-4" style={{ maxWidth: 1200, width: '100%', alignSelf: 'center' }}>
+      <ScrollView style={{ flex: 1 }}>
+        <View style={{ padding: 16, maxWidth: 1200, width: '100%', alignSelf: 'center' }}>
           
           {activeTab === 'info' && (
             <>
-              <Card className="mb-4">
-                <View className="items-center py-4">
+              <Card style={{ marginBottom: 16 }}>
+                <View style={{ alignItems: 'center', paddingVertical: 16 }}>
                   <View
-                    className="w-20 h-20 rounded-2xl items-center justify-center mb-4"
-                    style={{ backgroundColor: Colors.primary }}
+                    style={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 16,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 16,
+                      backgroundColor: Colors.primary,
+                    }}
                   >
-                    <Text className="text-3xl font-bold" style={{ color: Colors.white }}>
+                    <Text style={{ fontSize: 32, fontWeight: 'bold', color: Colors.white }}>
                       {classData.code.substring(0, 2)}
                     </Text>
                   </View>
-                  <Text className="text-2xl font-bold mb-2" style={{ color: Colors.text }}>
+                  <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 8, color: Colors.text }}>
                     {classData.name}
                   </Text>
-                  <Text className="text-base" style={{ color: Colors.textSecondary }}>
+                  <Text style={{ fontSize: 16, color: Colors.textSecondary }}>
                     {classData.code}
                   </Text>
                 </View>
               </Card>
 
-              <Card className="mb-4">
-                <Text className="text-lg font-semibold mb-4" style={{ color: Colors.text }}>
+              <Card style={{ marginBottom: 16 }}>
+                <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16, color: Colors.text }}>
                   Chi tiết lớp học
                 </Text>
 
-                <View className="mb-3">
-                  <Text className="text-sm mb-1" style={{ color: Colors.textSecondary }}>Môn học</Text>
-                  <Text className="text-base font-medium" style={{ color: Colors.text }}>
+                <View style={{ marginBottom: 12 }}>
+                  <Text style={{ fontSize: 14, marginBottom: 4, color: Colors.textSecondary }}>Môn học</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: Colors.text }}>
                     {classData.subject}
                   </Text>
                 </View>
 
-                <View className="mb-3">
-                  <Text className="text-sm mb-1" style={{ color: Colors.textSecondary }}>Giảng viên</Text>
-                  <Text className="text-base font-medium" style={{ color: Colors.text }}>
+                <View style={{ marginBottom: 12 }}>
+                  <Text style={{ fontSize: 14, marginBottom: 4, color: Colors.textSecondary }}>Giảng viên</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: Colors.text }}>
                     {classData.teacher}
                   </Text>
                 </View>
 
-                <View className="mb-3">
-                  <Text className="text-sm mb-1" style={{ color: Colors.textSecondary }}>Học kỳ</Text>
-                  <Text className="text-base font-medium" style={{ color: Colors.text }}>
+                <View style={{ marginBottom: 12 }}>
+                  <Text style={{ fontSize: 14, marginBottom: 4, color: Colors.textSecondary }}>Học kỳ</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: Colors.text }}>
                     {classData.semester}
                   </Text>
                 </View>
 
                 <View>
-                  <Text className="text-sm mb-1" style={{ color: Colors.textSecondary }}>Số sinh viên</Text>
-                  <Text className="text-base font-medium" style={{ color: Colors.primary }}>
+                  <Text style={{ fontSize: 14, marginBottom: 4, color: Colors.textSecondary }}>Số sinh viên</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: Colors.primary }}>
                     {classData.studentCount} sinh viên
                   </Text>
                 </View>
               </Card>
 
-              <Card className="mb-4">
-                <PrimaryButton
-                  title="Thêm sinh viên"
-                  variant="outline"
-                  onPress={() => alert('Thêm sinh viên')}
-                  className="mb-3"
-                />
-                <PrimaryButton
-                  title="Upload danh sách CSV"
-                  variant="outline"
-                  onPress={() => alert('Upload CSV')}
-                  className="mb-3"
-                />
+              <Card style={{ marginBottom: 16 }}>
+                <View style={{ marginBottom: 12 }}>
+                  <PrimaryButton
+                    title="Thêm sinh viên"
+                    variant="outline"
+                    onPress={() => alert('Thêm sinh viên')}
+                  />
+                </View>
+                <View style={{ marginBottom: 12 }}>
+                  <PrimaryButton
+                    title="Upload danh sách CSV"
+                    variant="outline"
+                    onPress={() => alert('Upload CSV')}
+                  />
+                </View>
                 <PrimaryButton
                   title="Xóa lớp học"
                   variant="outline"
@@ -137,8 +150,8 @@ export default function ClassDetail() {
 
           {activeTab === 'students' && (
             <>
-              <View className="flex-row justify-between items-center mb-4">
-                <Text className="font-medium" style={{ color: Colors.textSecondary }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ fontWeight: '500', color: Colors.textSecondary }}>
                   {mockStudents.length} sinh viên
                 </Text>
                 <PrimaryButton
@@ -149,7 +162,7 @@ export default function ClassDetail() {
               </View>
 
               {mockStudents.map((student) => (
-                <View key={student.id} className="mb-3">
+                <View key={student.id} style={{ marginBottom: 12 }}>
                   <StudentCard
                     student={student}
                     onPress={() => alert(`Chi tiết ${student.name}`)}

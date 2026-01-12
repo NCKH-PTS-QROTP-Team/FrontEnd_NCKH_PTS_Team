@@ -10,7 +10,6 @@ interface PrimaryButtonProps {
   disabled?: boolean;
   variant?: 'primary' | 'outline' | 'ghost';
   style?: ViewStyle;
-  className?: string;
 }
 
 export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
@@ -20,22 +19,11 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   disabled = false,
   variant = 'primary',
   style,
-  className,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const isDisabled = disabled || loading;
-
-  const getButtonStyle = () => {
-    if (variant === 'outline') {
-      return 'bg-white border-2';
-    }
-    if (variant === 'ghost') {
-      return 'bg-transparent';
-    }
-    return '';
-  };
 
   const getBackgroundColor = () => {
     if (isDisabled) {
@@ -108,18 +96,14 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityState={{ disabled: isDisabled }}
-      className={`
-        ${getButtonStyle()}
-        px-6
-        items-center
-        justify-center
-        ${className || ''}
-      `}
       style={[
         { 
           borderRadius: 8,
           minHeight: 44, // Minimum touch target
           paddingVertical: 12,
+          paddingHorizontal: 24,
+          alignItems: 'center',
+          justifyContent: 'center',
           backgroundColor: getBackgroundColor(),
           borderColor: getBorderColor(),
           borderWidth: variant === 'outline' ? 2 : 0,

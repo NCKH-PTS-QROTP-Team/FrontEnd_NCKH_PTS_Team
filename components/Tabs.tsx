@@ -32,10 +32,10 @@ export default function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
               key={tab.key}
               style={{
                 flex: 1,
-                paddingHorizontal: isMobile ? 16 : 24,
-                paddingVertical: isMobile ? 14 : 12,
-                minHeight: 44, // Touch-friendly minimum height for mobile
-                borderBottomWidth: 2,
+                paddingHorizontal: isMobile ? 12 : 16,
+                paddingVertical: isMobile ? 8 : 6,
+                minHeight: isMobile ? 40 : 32,
+                borderBottomWidth: isActive ? 2 : 0,
                 borderBottomColor: isActive ? Colors.primary : 'transparent',
                 justifyContent: 'center',
                 alignItems: 'center',
@@ -45,9 +45,9 @@ export default function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
             >
               <Text
                 style={{
-                  fontSize: isMobile ? 15 : 14,
-                  fontWeight: isActive ? '600' : '500',
-                  color: isActive ? Colors.primary : Colors.gray600,
+                  fontSize: isMobile ? 12 : 13,
+                  fontWeight: isActive ? '600' : '400',
+                  color: isActive ? Colors.primary : Colors.gray500,
                 }}
               >
                 {tab.label}

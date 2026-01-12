@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../../../constants/colors';
-import AppHeader from '../../../components/AppHeader';
 import Input from '../../../components/Input';
 import PrimaryButton from '../../../components/PrimaryButton';
 import Card from '../../../components/Card';
@@ -33,14 +32,17 @@ export default function CreateSubject() {
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <AppHeader title="Tạo môn học mới" showLogout={true} />
-      
-      <ScrollView className="flex-1">
-        <View className="p-4" style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <ScrollView style={{ flex: 1 }}>
+        <View style={{ padding: 16, maxWidth: 600, width: '100%', alignSelf: 'center' }}>
           
-          <Card className="mb-4">
-            <Text className="text-lg font-semibold mb-4" style={{ color: Colors.text }}>
+          {/* Page Title */}
+          <Text style={{ fontSize: 24, fontWeight: '600', marginBottom: 24, color: Colors.text }}>
+            Tạo môn học mới
+          </Text>
+          
+          <Card style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16, color: Colors.text }}>
               Thông tin môn học
             </Text>
 
@@ -76,20 +78,20 @@ export default function CreateSubject() {
               onChangeText={(text) => setFormData({ ...formData, teacherId: text })}
             />
 
-            <Text className="text-xs mt-2" style={{ color: Colors.textSecondary }}>
+            <Text style={{ fontSize: 12, marginTop: 8, color: Colors.textSecondary }}>
               Có thể phân công giảng viên sau
             </Text>
           </Card>
 
-          <View className="flex-row -mx-2">
-            <View className="flex-1 px-2">
+          <View style={{ flexDirection: 'row', marginHorizontal: -8 }}>
+            <View style={{ flex: 1, paddingHorizontal: 8 }}>
               <PrimaryButton
                 title="Hủy"
                 variant="outline"
                 onPress={() => router.back()}
               />
             </View>
-            <View className="flex-1 px-2">
+            <View style={{ flex: 1, paddingHorizontal: 8 }}>
               <PrimaryButton
                 title="Tạo môn học"
                 onPress={handleSubmit}
@@ -102,5 +104,3 @@ export default function CreateSubject() {
     </View>
   );
 }
-
-// Updated: 2026-01-02 13:16:07

@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { Colors } from '@/constants/colors';
 import { mockSubjects } from '@/constants/mockData';
-import { AppHeader } from '@/components/AppHeader';
-import { Card } from '@/components/Card';
-import { Badge } from '@/components/Badge';
-import { PrimaryButton } from '@/components/PrimaryButton';
+import Card from '@/components/Card';
+import Badge from '@/components/Badge';
+import PrimaryButton from '@/components/PrimaryButton';
+import DataTable from '@/components/DataTable';
 import { EmptySearchIcon, EmptyDocumentIcon } from '@/components/EmptyStateIllustration';
 
 export default function SubjectManagement() {
@@ -15,9 +14,12 @@ export default function SubjectManagement() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
+  const isMobile = width < 768;
+  const showTable = isDesktop; // Chỉ desktop mới hiển thị table
 
   const contentMaxWidth = isDesktop ? 1200 : '100%';
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+  const paddingVertical = isMobile ? 16 : 24;
 
   const filteredSubjects = mockSubjects.filter(subject =>
     subject.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -26,25 +28,32 @@ export default function SubjectManagement() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      <StatusBar style="dark" />
-      <AppHeader title="Quản lý môn học" showLogout={true} />
-      
       <ScrollView style={{ flex: 1 }}>
-        <View style={{ paddingHorizontal, paddingVertical: 24, maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
+        <View style={{ paddingHorizontal, paddingVertical, maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
           
-          <PrimaryButton
-            title="+ Tạo môn học mới"
-            onPress={() => router.push('/admin/subjects/create' as any)}
-            className="mb-4"
-          />
+          {/* Page Title */}
+          <Text style={{ fontSize: isMobile ? 20 : 24, fontWeight: '600', marginBottom: isMobile ? 16 : 24, color: Colors.text }}>
+            Quản lý môn học
+          </Text>
+          
+          <View style={{ marginBottom: isMobile ? 12 : 16 }}>
+            <PrimaryButton
+              title="+ Tạo môn học mới"
+              onPress={() => router.push('/admin/subjects/create' as any)}
+            />
+          </View>
 
           <TextInput
-            className="border-2 rounded-lg px-4 mb-4"
             style={{
-              height: 48,
+              height: isMobile ? 44 : 48,
+              borderWidth: 2,
               borderColor: Colors.gray200,
+              borderRadius: 8,
+              paddingHorizontal: isMobile ? 12 : 16,
+              marginBottom: isMobile ? 12 : 16,
               color: Colors.text,
               lineHeight: 24,
+              fontSize: isMobile ? 14 : 16,
               ...Platform.select({
                 web: { outlineStyle: 'none' as any },
               }),
@@ -57,58 +66,133 @@ export default function SubjectManagement() {
 
           {filteredSubjects.length > 0 ? (
             <>
-              <Text className="text-sm mb-3" style={{ color: Colors.textSecondary }}>
+              <Text style={{ fontSize: 14, marginBottom: 12, color: Colors.textSecondary }}>
                 {filteredSubjects.length} môn học
               </Text>
 
-              {filteredSubjects.map((subject) => (
-            <Card key={subject.id} onPress={() => alert(`Chi tiết ${subject.name}`)} className="mb-3">
-              <View className="flex-row items-start">
-                <View
-                  className="w-14 h-14 rounded-xl items-center justify-center mr-3"
-                  style={{ backgroundColor: Colors.successLight }}
-                >
-                  <Text className="text-2xl font-bold" style={{ color: Colors.success }}>
-                    {subject.credits}
-                  </Text>
-                </View>
+              {/* Desktop: Table View */}
+              {showTable ? (
+                <DataTable
+                  columns={[
+                    {
+                      key: 'code',
+                      label: 'Mã môn học',
+                      width: 120,
+                      render: (subject) => (
+                        <Text style={{ fontWeight: '600', fontSize: 14, color: Colors.text }}>
+                          {subject.code}
+                        </Text>
+                      ),
+                    },
+                    {
+                      key: 'name',
+                      label: 'Tên môn học',
+                      width: 300,
+                      render: (subject) => (
+                        <Text style={{ fontSize: 14, color: Colors.text }}>
+                          {subject.name}
+                        </Text>
+                      ),
+                    },
+                    {
+                      key: 'credits',
+                      label: 'Tín chỉ',
+                      width: 100,
+                      align: 'center',
+                      render: (subject) => (
+                        <Badge variant="success" size="small">
+                          {subject.credits} tín chỉ
+                        </Badge>
+                      ),
+                    },
+                    {
+                      key: 'teacher',
+                      label: 'Giảng viên',
+                      width: 200,
+                      render: (subject) => (
+                        <View>
+                          {subject.teacher ? (
+                            <Text style={{ fontSize: 14, color: Colors.textSecondary }}>
+                              {subject.teacher}
+                            </Text>
+                          ) : (
+                            <Badge variant="warning" size="small">
+                              Chưa phân công GV
+                            </Badge>
+                          )}
+                        </View>
+                      ),
+                    },
+                  ]}
+                  data={filteredSubjects}
+                  onRowPress={(subject) => alert(`Chi tiết ${subject.name}`)}
+                  zebraStriping={true}
+                  stickyHeader={true}
+                />
+              ) : (
+                /* Mobile: Card View */
+                <>
+                  {filteredSubjects.map((subject) => (
+                    <Card key={subject.id} onPress={() => alert(`Chi tiết ${subject.name}`)} style={{ marginBottom: 8 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                        <View
+                          style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 12,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginRight: 12,
+                            backgroundColor: Colors.successLight,
+                          }}
+                        >
+                          <Text style={{ fontSize: 20, fontWeight: 'bold', color: Colors.success }}>
+                            {subject.credits}
+                          </Text>
+                        </View>
 
-                <View className="flex-1">
-                  <View className="flex-row items-center justify-between mb-1">
-                    <Text className="font-semibold text-base" style={{ color: Colors.text }}>
-                      {subject.code}
-                    </Text>
-                    <Badge label={`${subject.credits} tín chỉ`} variant="success" size="sm" />
-                  </View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <View style={{ flexDirection: 'column', alignItems: 'flex-start', marginBottom: 4, gap: 4 }}>
+                            <Text style={{ fontWeight: '600', fontSize: 15, color: Colors.text }}>
+                              {subject.code}
+                            </Text>
+                            <Badge variant="success" size="small">
+                              {subject.credits} tín chỉ
+                            </Badge>
+                          </View>
 
-                  <Text className="text-sm mb-2" style={{ color: Colors.text }}>
-                    {subject.name}
-                  </Text>
+                          <Text style={{ fontSize: 13, marginBottom: 8, color: Colors.text }}>
+                            {subject.name}
+                          </Text>
 
-                  {subject.teacher && (
-                    <View className="flex-row items-center">
-                      <Text className="text-xs mr-1" style={{ color: Colors.textSecondary }}>👨‍🏫</Text>
-                      <Text className="text-xs" style={{ color: Colors.textSecondary }}>
-                        {subject.teacher}
-                      </Text>
-                    </View>
-                  )}
+                          {subject.teacher && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                              <Text style={{ fontSize: 12, marginRight: 4, color: Colors.textSecondary }}>👨‍🏫</Text>
+                              <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
+                                {subject.teacher}
+                              </Text>
+                            </View>
+                          )}
 
-                  {!subject.teacher && (
-                    <Badge label="Chưa phân công GV" variant="warning" size="sm" />
-                  )}
-                </View>
-
-                <Text className="text-2xl ml-2" style={{ color: Colors.gray300 }}>›</Text>
-              </View>
-            </Card>
-          ))}
+                          {!subject.teacher && (
+                            <Badge variant="warning" size="small">
+                              Chưa phân công GV
+                            </Badge>
+                          )}
+                        </View>
+                      </View>
+                    </Card>
+                  ))}
+                </>
+              )}
             </>
           ) : (
             <View 
-              className="bg-white border rounded-lg"
               style={{ 
+                backgroundColor: '#FFFFFF',
+                borderWidth: 1,
                 borderColor: Colors.gray200,
+                borderRadius: 8,
                 padding: 48,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -119,14 +203,12 @@ export default function SubjectManagement() {
                 <>
                   <EmptySearchIcon size={80} color={Colors.gray300} />
                   <Text 
-                    className="text-xl font-semibold mb-2 mt-4" 
-                    style={{ color: Colors.text, lineHeight: 32, textAlign: 'center' }}
+                    style={{ fontSize: 20, fontWeight: '600', marginBottom: 8, marginTop: 16, color: Colors.text, lineHeight: 32, textAlign: 'center' }}
                   >
                     Không tìm thấy kết quả
                   </Text>
                   <Text 
-                    className="text-base" 
-                    style={{ color: Colors.textSecondary, lineHeight: 24, textAlign: 'center', maxWidth: 400 }}
+                    style={{ fontSize: 16, color: Colors.textSecondary, lineHeight: 24, textAlign: 'center', maxWidth: 400 }}
                   >
                     Không tìm thấy môn học nào phù hợp với "{searchQuery}". Thử tìm kiếm với từ khóa khác.
                   </Text>
@@ -135,14 +217,12 @@ export default function SubjectManagement() {
                 <>
                   <EmptyDocumentIcon size={80} color={Colors.gray300} />
                   <Text 
-                    className="text-xl font-semibold mb-2 mt-4" 
-                    style={{ color: Colors.text, lineHeight: 32, textAlign: 'center' }}
+                    style={{ fontSize: 20, fontWeight: '600', marginBottom: 8, marginTop: 16, color: Colors.text, lineHeight: 32, textAlign: 'center' }}
                   >
                     Chưa có môn học
                   </Text>
                   <Text 
-                    className="text-base mb-4" 
-                    style={{ color: Colors.textSecondary, lineHeight: 24, textAlign: 'center', maxWidth: 400 }}
+                    style={{ fontSize: 16, marginBottom: 16, color: Colors.textSecondary, lineHeight: 24, textAlign: 'center', maxWidth: 400 }}
                   >
                     Bắt đầu bằng cách tạo môn học mới cho hệ thống.
                   </Text>
@@ -159,5 +239,3 @@ export default function SubjectManagement() {
     </View>
   );
 }
-
-// Updated: 2026-01-02 13:16:07
