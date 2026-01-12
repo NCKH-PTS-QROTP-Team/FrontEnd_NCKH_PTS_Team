@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { Image, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -19,12 +20,19 @@ import { mockUsers } from '@/constants/mockData';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [usernameError, setUsernameError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const { toast, showToast, hideToast } = useToast();
+
+  const isTablet = width >= 768 && width < 1024;
+  const isDesktop = width >= 1024;
+  const containerPadding = isDesktop ? 48 : isTablet ? 32 : 20;
+
+  const logoNameImage = require('../../assets/logoname.png');
 
   const handleLogin = async () => {
     setUsernameError('');
@@ -118,58 +126,60 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: Colors.white }}
+      style={{ flex: 1, backgroundColor: '#f5f7fb' }}
     >
       <StatusBar style="dark" />
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={{
           flexGrow: 1,
-          padding: 24,
+          padding: containerPadding,
         }}
         keyboardShouldPersistTaps="handled"
       >
-        <View 
-          style={{ flex: 1, justifyContent: 'center', maxWidth: 400, width: '100%', alignSelf: 'center' }}
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
-          {/* Logo Section */}
-          <View style={{ alignItems: 'center', marginBottom: 48 }}>
-            <View
-              style={{ 
-                width: 80, 
-                height: 80, 
-                marginBottom: 24,
-                backgroundColor: Colors.primary,
-                borderRadius: 40,
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <Text style={{ color: Colors.white, fontSize: 32, fontWeight: 'bold' }}>✓</Text>
-            </View>
-            <Text style={{ fontSize: 36, fontWeight: '600', color: Colors.textHeading, lineHeight: 44, letterSpacing: -0.5, marginBottom: 8 }}>
-              Điểm Danh
-            </Text>
-            <Text style={{ fontSize: 16, color: Colors.textSecondary, textAlign: 'center', lineHeight: 24 }}>
-              Đăng nhập để tiếp tục
-            </Text>
-          </View>
-
-          {/* Login Card */}
           <View
             style={{
+              width: '100%',
+              maxWidth: 440,
               backgroundColor: Colors.white,
+              borderRadius: 12,
+              paddingHorizontal: isDesktop ? 28 : 24,
+              paddingVertical: isDesktop ? 30 : 26,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 10,
+              elevation: 4,
               borderWidth: 1,
               borderColor: Colors.border,
-              borderRadius: 8,
-              padding: 24,
-              marginBottom: 24,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.05,
-              shadowRadius: 4,
-              elevation: 2,
             }}
           >
+            {/* Logo & title */}
+            <View style={{ alignItems: 'center', marginBottom: 20 }}>
+              <Image
+                source={logoNameImage}
+                style={{ height: 42, resizeMode: 'contain', marginBottom: 10 }}
+              />
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: Colors.textHeading,
+                  letterSpacing: 0.5,
+                  textTransform: 'uppercase',
+                }}
+              >
+                Đăng nhập hệ thống
+              </Text>
+            </View>
+
             <Input
               label="Tên đăng nhập"
               value={username}
@@ -208,28 +218,37 @@ export default function LoginScreen() {
               loading={loading}
               disabled={!username.trim() || !password.trim()}
             />
-          </View>
-
-          {/* Demo Accounts */}
-          <View style={{ alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-              <View style={{ flex: 1, height: 1, backgroundColor: Colors.border }} />
-              <Text style={{ fontSize: 14, color: Colors.textSecondary, marginHorizontal: 16, lineHeight: 21 }}>Tài khoản demo</Text>
-              <View style={{ flex: 1, height: 1, backgroundColor: Colors.border }} />
-            </View>
-            <View style={{ width: '100%', padding: 16, borderRadius: 8, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border }}>
-              <Text style={{ fontSize: 14, color: Colors.textSecondary, lineHeight: 21, marginBottom: 8 }}>
-                <Text style={{ fontWeight: '600' }}>Admin:</Text>
-                <Text> admin / admin123</Text>
+            {/* Demo Accounts */}
+            <View style={{ marginTop: 18 }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: Colors.textSecondary,
+                  textAlign: 'center',
+                  marginBottom: 8,
+                }}
+              >
+                Tài khoản demo
               </Text>
-              <Text style={{ fontSize: 14, color: Colors.textSecondary, lineHeight: 21, marginBottom: 8 }}>
-                <Text style={{ fontWeight: '600' }}>Giảng viên:</Text>
-                <Text> GV001 / teacher123</Text>
-              </Text>
-              <Text style={{ fontSize: 14, color: Colors.textSecondary, lineHeight: 21 }}>
-                <Text style={{ fontWeight: '600' }}>Sinh viên:</Text>
-                <Text> SV001 / student123</Text>
-              </Text>
+              <View
+                style={{
+                  padding: 12,
+                  borderRadius: 8,
+                  backgroundColor: Colors.surface,
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                }}
+              >
+                <Text style={{ fontSize: 13, color: Colors.textSecondary, lineHeight: 20, marginBottom: 4 }}>
+                  <Text style={{ fontWeight: '600' }}>Admin:</Text> admin / admin123
+                </Text>
+                <Text style={{ fontSize: 13, color: Colors.textSecondary, lineHeight: 20, marginBottom: 4 }}>
+                  <Text style={{ fontWeight: '600' }}>Giảng viên:</Text> GV001 / teacher123
+                </Text>
+                <Text style={{ fontSize: 13, color: Colors.textSecondary, lineHeight: 20 }}>
+                  <Text style={{ fontWeight: '600' }}>Sinh viên:</Text> SV001 / student123
+                </Text>
+              </View>
             </View>
           </View>
         </View>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { ReactNode, useState } from 'react';
 import { View, Text, TextInput, TextInputProps, Platform } from 'react-native';
 import { Colors } from '../constants/colors';
 
@@ -7,9 +7,10 @@ interface InputProps extends TextInputProps {
   error?: string;
   success?: boolean;
   helperText?: string;
+  leftIcon?: ReactNode;
 }
 
-export default function Input({ label, error, success, helperText, ...props }: InputProps) {
+export default function Input({ label, error, success, helperText, leftIcon, ...props }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
 
   const getBorderColor = () => {
@@ -48,7 +49,8 @@ export default function Input({ label, error, success, helperText, ...props }: I
               height: 48, // Touch-friendly 48px height
               borderWidth: 2,
               borderColor: getBorderColor(),
-              paddingHorizontal: 16,
+              paddingLeft: leftIcon ? 44 : 16,
+              paddingRight: 16,
               color: Colors.text,
               backgroundColor: Colors.white,
               lineHeight: 24,
@@ -73,6 +75,20 @@ export default function Input({ label, error, success, helperText, ...props }: I
           }}
           {...props}
         />
+        {leftIcon ? (
+          <View
+            style={{
+              position: 'absolute',
+              left: 12,
+              top: 0,
+              bottom: 0,
+              justifyContent: 'center',
+              pointerEvents: 'none',
+            }}
+          >
+            {leftIcon}
+          </View>
+        ) : null}
         {/* Success Icon */}
         {success && !error ? (
           <View
