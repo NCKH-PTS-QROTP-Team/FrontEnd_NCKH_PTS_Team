@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
-import { Colors } from '../../constants/colors';
-import { mockAttendanceSessions } from '../../constants/mockData';
-import Card from '../../components/Card';
-import Badge from '../../components/Badge';
-import DataTable from '../../components/DataTable';
+import { Colors } from '@/constants/colors';
+import { mockAttendanceSessions } from '@/constants/mockData';
+import Card from '@/components/Card';
+import Badge from '@/components/Badge';
+import DataTable from '@/components/DataTable';
 
 export default function AttendanceSessions() {
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
@@ -19,10 +19,21 @@ export default function AttendanceSessions() {
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const paddingVertical = isMobile ? 16 : 24;
 
-  const filteredSessions = mockAttendanceSessions.filter(session => {
-    if (filter === 'all') return true;
-    return session.status === filter;
-  });
+  const filteredSessions = useMemo(
+    () =>
+      mockAttendanceSessions.filter((session) => {
+        if (filter === 'all') return true;
+        return session.status === filter;
+      }),
+    [filter]
+  );
+
+  const summary = useMemo(() => {
+    const active = filteredSessions.filter((s) => s.status === 'active').length;
+    const present = filteredSessions.reduce((sum, s) => sum + s.present, 0);
+    const absent = filteredSessions.reduce((sum, s) => sum + s.absent, 0);
+    return { active, present, absent };
+  }, [filteredSessions]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
@@ -39,7 +50,7 @@ export default function AttendanceSessions() {
             <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8, marginBottom: isMobile ? 8 : 0 }}>
               <Card>
                 <Text style={{ fontSize: isMobile ? 24 : 30, fontWeight: 'bold', marginBottom: 4, color: Colors.primary }}>
-                  {mockAttendanceSessions.filter(s => s.status === 'active').length}
+                  {summary.active}
                 </Text>
                 <Text style={{ fontSize: isMobile ? 11 : 12, color: Colors.textSecondary }}>
                   Đang diễn ra
@@ -49,7 +60,7 @@ export default function AttendanceSessions() {
             <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8, marginBottom: isMobile ? 8 : 0 }}>
               <Card>
                 <Text style={{ fontSize: isMobile ? 24 : 30, fontWeight: 'bold', marginBottom: 4, color: Colors.success }}>
-                  {mockAttendanceSessions.reduce((sum, s) => sum + s.present, 0)}
+                  {summary.present}
                 </Text>
                 <Text style={{ fontSize: isMobile ? 11 : 12, color: Colors.textSecondary }}>
                   Có mặt
@@ -59,7 +70,7 @@ export default function AttendanceSessions() {
             <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8 }}>
               <Card>
                 <Text style={{ fontSize: isMobile ? 24 : 30, fontWeight: 'bold', marginBottom: 4, color: Colors.error }}>
-                  {mockAttendanceSessions.reduce((sum, s) => sum + s.absent, 0)}
+                  {summary.absent}
                 </Text>
                 <Text style={{ fontSize: isMobile ? 11 : 12, color: Colors.textSecondary }}>
                   Vắng mặt
@@ -107,7 +118,7 @@ export default function AttendanceSessions() {
           </Text>
 
           {/* Desktop: Table View */}
-          {showTable ? (
+          {showTable && filteredSessions.length > 0 ? (
             <DataTable
               columns={[
                 {
@@ -234,8 +245,17 @@ export default function AttendanceSessions() {
               data={filteredSessions}
               onRowPress={(session) => alert(`Chi tiết ${session.className}`)}
               zebraStriping={true}
-              stickyHeader={true}
+              stickyHeader={false}
             />
+          ) : showTable ? (
+            <Card style={{ padding: 24, alignItems: 'center', gap: 8 }}>
+              <Text style={{ fontSize: 18, fontWeight: '600', color: Colors.text }}>
+                Không có buổi học
+              </Text>
+              <Text style={{ fontSize: 14, color: Colors.textSecondary, textAlign: 'center' }}>
+                Chưa có dữ liệu phù hợp với bộ lọc hiện tại.
+              </Text>
+            </Card>
           ) : (
             /* Mobile: Card View */
             <>
@@ -328,6 +348,16 @@ export default function AttendanceSessions() {
                   </View>
                 </Card>
               ))}
+              {filteredSessions.length === 0 && (
+                <Card style={{ padding: 20, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: Colors.text, marginBottom: 4 }}>
+                    Không có buổi học
+                  </Text>
+                  <Text style={{ fontSize: 14, color: Colors.textSecondary, textAlign: 'center' }}>
+                    Chưa có dữ liệu phù hợp với bộ lọc hiện tại.
+                  </Text>
+                </Card>
+              )}
             </>
           )}
 

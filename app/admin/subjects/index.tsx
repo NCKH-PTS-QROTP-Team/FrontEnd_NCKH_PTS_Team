@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '@/constants/colors';
-import { mockSubjects } from '@/constants/mockData';
+import { mockSubjects, mockUsers, Subject } from '@/constants/mockData';
 import Card from '@/components/Card';
 import Badge from '@/components/Badge';
 import PrimaryButton from '@/components/PrimaryButton';
 import DataTable from '@/components/DataTable';
+import Modal from '@/components/Modal';
 import { EmptySearchIcon, EmptyDocumentIcon } from '@/components/EmptyStateIllustration';
+
+type TeacherType = 'LT' | 'TH';
 
 export default function SubjectManagement() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [subjects, setSubjects] = useState<Subject[]>(mockSubjects);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [selectedTeacherType, setSelectedTeacherType] = useState<TeacherType>('LT');
+  const [teacherSearch, setTeacherSearch] = useState('');
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
@@ -21,10 +29,43 @@ export default function SubjectManagement() {
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const paddingVertical = isMobile ? 16 : 24;
 
-  const filteredSubjects = mockSubjects.filter(subject =>
+  const filteredSubjects = subjects.filter(subject =>
     subject.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     subject.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const teacherOptions = useMemo(
+    () =>
+      mockUsers
+        .filter((u) => u.role === 'teacher')
+        .filter((u) =>
+          `${u.teacherId || ''} ${u.name}`.toLowerCase().includes(teacherSearch.toLowerCase())
+        ),
+    [teacherSearch]
+  );
+
+  const openAssignModal = (subject: Subject, teacherType: TeacherType = 'LT') => {
+    setSelectedSubject(subject);
+    setSelectedTeacherType(teacherType);
+    setTeacherSearch('');
+    setModalVisible(true);
+  };
+
+  const handleAssign = (teacherId?: string, teacherName?: string) => {
+    if (!selectedSubject) return;
+    setSubjects((prev) =>
+      prev.map((s) => {
+        if (s.id !== selectedSubject.id) return s;
+        
+        if (selectedTeacherType === 'LT') {
+          return { ...s, teacherLTId: teacherId, teacherLT: teacherName };
+        } else {
+          return { ...s, teacherTHId: teacherId, teacherTH: teacherName };
+        }
+      })
+    );
+    setModalVisible(false);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
@@ -106,20 +147,70 @@ export default function SubjectManagement() {
                       ),
                     },
                     {
-                      key: 'teacher',
-                      label: 'Giảng viên',
+                      key: 'teacherLT',
+                      label: 'GV Lý thuyết',
                       width: 200,
                       render: (subject) => (
-                        <View>
-                          {subject.teacher ? (
-                            <Text style={{ fontSize: 14, color: Colors.textSecondary }}>
-                              {subject.teacher}
-                            </Text>
+                        <View style={{ gap: 6 }}>
+                          {subject.teacherLT ? (
+                            <View>
+                              <Text style={{ fontSize: 13, fontWeight: '500', color: Colors.text, marginBottom: 2 }}>
+                                {subject.teacherLT}
+                              </Text>
+                              <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
+                                {subject.teacherLTId}
+                              </Text>
+                            </View>
                           ) : (
                             <Badge variant="warning" size="small">
-                              Chưa phân công GV
+                              Chưa phân công
                             </Badge>
                           )}
+                        </View>
+                      ),
+                    },
+                    {
+                      key: 'teacherTH',
+                      label: 'GV Thực hành',
+                      width: 200,
+                      render: (subject) => (
+                        <View style={{ gap: 6 }}>
+                          {subject.teacherTH ? (
+                            <View>
+                              <Text style={{ fontSize: 13, fontWeight: '500', color: Colors.text, marginBottom: 2 }}>
+                                {subject.teacherTH}
+                              </Text>
+                              <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
+                                {subject.teacherTHId}
+                              </Text>
+                            </View>
+                          ) : (
+                            <Badge variant="warning" size="small">
+                              Chưa phân công
+                            </Badge>
+                          )}
+                        </View>
+                      ),
+                    },
+                    {
+                      key: 'actions',
+                      label: 'Thao tác',
+                      width: 180,
+                      align: 'center',
+                      render: (subject) => (
+                        <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+                          <PrimaryButton
+                            title={subject.teacherLT ? 'Đổi LT' : 'GV LT'}
+                            variant="outline"
+                            onPress={() => openAssignModal(subject, 'LT')}
+                            style={{ paddingVertical: 6, paddingHorizontal: 10, minHeight: 32 }}
+                          />
+                          <PrimaryButton
+                            title={subject.teacherTH ? 'Đổi TH' : 'GV TH'}
+                            variant="outline"
+                            onPress={() => openAssignModal(subject, 'TH')}
+                            style={{ paddingVertical: 6, paddingHorizontal: 10, minHeight: 32 }}
+                          />
                         </View>
                       ),
                     },
@@ -165,22 +256,54 @@ export default function SubjectManagement() {
                             {subject.name}
                           </Text>
 
-                          {subject.teacher && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                              <Text style={{ fontSize: 12, marginRight: 4, color: Colors.textSecondary }}>👨‍🏫</Text>
+                        {/* Giảng viên Lý thuyết */}
+                        <View style={{ marginBottom: 8 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                            <Text style={{ fontSize: 12, fontWeight: '600', color: Colors.text, marginRight: 6 }}>
+                              LT:
+                            </Text>
+                            {subject.teacherLT ? (
                               <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
-                                {subject.teacher}
+                                {subject.teacherLT} {subject.teacherLTId ? `(${subject.teacherLTId})` : ''}
                               </Text>
-                            </View>
-                          )}
-
-                          {!subject.teacher && (
-                            <Badge variant="warning" size="small">
-                              Chưa phân công GV
-                            </Badge>
-                          )}
+                            ) : (
+                              <Badge variant="warning" size="small">
+                                Chưa phân công
+                              </Badge>
+                            )}
+                          </View>
+                          <PrimaryButton
+                            title={subject.teacherLT ? 'Đổi GV LT' : 'Phân công GV LT'}
+                            variant="outline"
+                            onPress={() => openAssignModal(subject, 'LT')}
+                            style={{ paddingVertical: 6, paddingHorizontal: 12 }}
+                          />
                         </View>
-                      </View>
+
+                        {/* Giảng viên Thực hành */}
+                        <View style={{ marginBottom: 8 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                            <Text style={{ fontSize: 12, fontWeight: '600', color: Colors.text, marginRight: 6 }}>
+                              TH:
+                            </Text>
+                            {subject.teacherTH ? (
+                              <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
+                                {subject.teacherTH} {subject.teacherTHId ? `(${subject.teacherTHId})` : ''}
+                              </Text>
+                            ) : (
+                              <Badge variant="warning" size="small">
+                                Chưa phân công
+                              </Badge>
+                            )}
+                          </View>
+                          <PrimaryButton
+                            title={subject.teacherTH ? 'Đổi GV TH' : 'Phân công GV TH'}
+                            variant="outline"
+                            onPress={() => openAssignModal(subject, 'TH')}
+                            style={{ paddingVertical: 6, paddingHorizontal: 12 }}
+                          />
+                        </View>
+                      </View> </View>
                     </Card>
                   ))}
                 </>
@@ -236,6 +359,154 @@ export default function SubjectManagement() {
           )}
         </View>
       </ScrollView>
+
+      {/* Modal phân công GV */}
+      <Modal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        title={`Phân công GV ${selectedTeacherType === 'LT' ? 'Lý thuyết' : 'Thực hành'}`}
+        variant="center"
+        width={520}
+      >
+        {selectedSubject && (
+          <View style={{ gap: 12 }}>
+            <View
+              style={{
+                padding: 12,
+                backgroundColor: Colors.gray50,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: Colors.gray200,
+              }}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '600', color: Colors.text }}>
+                {selectedSubject.code} - {selectedSubject.name}
+              </Text>
+              <Text style={{ fontSize: 13, color: Colors.textSecondary, marginTop: 4 }}>
+                Tín chỉ: {selectedSubject.credits}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: Colors.textSecondary, marginBottom: 4 }}>
+                    Loại phân công:
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity
+                      onPress={() => setSelectedTeacherType('LT')}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 8,
+                        paddingHorizontal: 12,
+                        borderRadius: 8,
+                        backgroundColor: selectedTeacherType === 'LT' ? Colors.primary : Colors.white,
+                        borderWidth: 2,
+                        borderColor: selectedTeacherType === 'LT' ? Colors.primary : Colors.gray200,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: selectedTeacherType === 'LT' ? Colors.white : Colors.text }}>
+                        Lý thuyết (LT)
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setSelectedTeacherType('TH')}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 8,
+                        paddingHorizontal: 12,
+                        borderRadius: 8,
+                        backgroundColor: selectedTeacherType === 'TH' ? Colors.primary : Colors.white,
+                        borderWidth: 2,
+                        borderColor: selectedTeacherType === 'TH' ? Colors.primary : Colors.gray200,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: selectedTeacherType === 'TH' ? Colors.white : Colors.text }}>
+                        Thực hành (TH)
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+              {(selectedTeacherType === 'LT' ? selectedSubject.teacherLT : selectedSubject.teacherTH) && (
+                <Text style={{ fontSize: 13, color: Colors.textSecondary, marginTop: 8 }}>
+                  Đang phân công: {selectedTeacherType === 'LT' ? selectedSubject.teacherLT : selectedSubject.teacherTH}
+                </Text>
+              )}
+            </View>
+
+            <TextInput
+              style={{
+                height: 44,
+                borderWidth: 1,
+                borderColor: Colors.gray200,
+                borderRadius: 10,
+                paddingHorizontal: 12,
+                color: Colors.text,
+                ...Platform.select({
+                  web: { outlineStyle: 'none' as any },
+                }),
+              }}
+              placeholder="Tìm giảng viên theo tên hoặc mã..."
+              placeholderTextColor={Colors.gray400}
+              value={teacherSearch}
+              onChangeText={setTeacherSearch}
+            />
+
+            <ScrollView style={{ maxHeight: 320 }} contentContainerStyle={{ gap: 8 }}>
+              {teacherOptions.map((t) => (
+                <TouchableOpacity
+                  key={t.id}
+                  onPress={() => handleAssign(t.teacherId, t.name)}
+                  style={{
+                    padding: 12,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: Colors.gray200,
+                    backgroundColor: Colors.white,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: Colors.text }}>
+                      {t.name}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
+                      {t.teacherId}
+                    </Text>
+                  </View>
+                  <Badge variant="primary" size="small">
+                    Chọn
+                  </Badge>
+                </TouchableOpacity>
+              ))}
+
+              {teacherOptions.length === 0 && (
+                <Text style={{ textAlign: 'center', color: Colors.textSecondary, paddingVertical: 12 }}>
+                  Không tìm thấy giảng viên
+                </Text>
+              )}
+            </ScrollView>
+
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <PrimaryButton
+                title="Bỏ phân công"
+                variant="outline"
+                onPress={() => handleAssign(undefined, undefined)}
+                style={{ flex: 1 }}
+              />
+              <PrimaryButton
+                title="Đóng"
+                variant="outline"
+                onPress={() => setModalVisible(false)}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </View>
+        )}
+      </Modal>
     </View>
   );
 }

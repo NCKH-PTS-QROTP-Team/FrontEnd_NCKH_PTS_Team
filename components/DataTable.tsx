@@ -2,12 +2,17 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { Colors } from '../constants/colors';
 
+type SortDirection = 'asc' | 'desc' | null;
+
 interface Column {
   key: string;
   label: string;
   width?: number;
   align?: 'left' | 'center' | 'right';
   render?: (item: any) => React.ReactNode;
+  sortable?: boolean;
+  sortDirection?: SortDirection;
+  onSort?: () => void;
 }
 
 interface DataTableProps {
@@ -77,7 +82,7 @@ export default function DataTable({
   return (
     <ScrollView 
       horizontal 
-      showsHorizontalScrollIndicator={false} 
+      showsHorizontalScrollIndicator={true} 
       style={{ marginHorizontal: -1 }}
       contentContainerStyle={{ minWidth: '100%' }}
     >
@@ -111,8 +116,10 @@ export default function DataTable({
           ]}
         >
           {columns.map((col) => (
-            <View
+            <TouchableOpacity
               key={col.key}
+              disabled={!col.sortable}
+              onPress={col.onSort}
               style={{
                 width: col.width || 150,
                 paddingVertical: 14,
@@ -120,7 +127,22 @@ export default function DataTable({
                 justifyContent: 'center',
                 borderRightWidth: col.key !== columns[columns.length - 1].key ? 1 : 0,
                 borderRightColor: Colors.gray200,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                ...(col.sortable && Platform.OS === 'web' && {
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s ease',
+                } as any),
               }}
+              {...(col.sortable && Platform.OS === 'web' && {
+                onMouseEnter: (e: any) => {
+                  e.currentTarget.style.backgroundColor = Colors.gray100;
+                },
+                onMouseLeave: (e: any) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                },
+              } as any)}
             >
               <Text 
                 style={{ 
@@ -129,11 +151,31 @@ export default function DataTable({
                   color: Colors.gray700,
                   lineHeight: 20,
                   textAlign: col.align || 'left',
+                  flex: 1,
                 }}
               >
                 {col.label}
               </Text>
-            </View>
+              {col.sortable && (
+                <View style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ 
+                    fontSize: 8, 
+                    color: col.sortDirection === 'asc' ? Colors.primary : Colors.gray400,
+                    lineHeight: 6,
+                    marginBottom: -2,
+                  }}>
+                    ▲
+                  </Text>
+                  <Text style={{ 
+                    fontSize: 8, 
+                    color: col.sortDirection === 'desc' ? Colors.primary : Colors.gray400,
+                    lineHeight: 6,
+                  }}>
+                    ▼
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
           ))}
         </View>
 
