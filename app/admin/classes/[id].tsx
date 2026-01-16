@@ -1,67 +1,63 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Alert } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Colors } from '../../../constants/colors';
-import { mockClasses, mockStudents } from '../../../constants/mockData';
-import Card from '../../../components/Card';
-import PrimaryButton from '../../../components/PrimaryButton';
-import Tabs from '../../../components/Tabs';
-import StudentCard from '../../../components/StudentCard';
-import AttendanceStatusTag from '../../../components/AttendanceStatusTag';
+import React, { useState } from "react";
+import { View, Text, ScrollView, Alert } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { Colors } from "../../../constants/colors";
+import { mockClasses, mockStudents } from "../../../constants/mockData";
+import AppHeader from "../../../components/AppHeader";
+import Card from "../../../components/Card";
+import PrimaryButton from "../../../components/PrimaryButton";
+import Tabs from "../../../components/Tabs";
+import StudentCard from "../../../components/StudentCard";
+import AttendanceStatusTag from "../../../components/AttendanceStatusTag";
 
 export default function ClassDetail() {
   const { id } = useLocalSearchParams();
-  const classData = mockClasses.find(c => c.id === id);
-  const [activeTab, setActiveTab] = useState('info');
+  const classData = mockClasses.find((c) => c.id === id);
+  const [activeTab, setActiveTab] = useState("info");
 
   if (!classData) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: Colors.textSecondary }}>Không tìm thấy lớp học</Text>
+      <View className="flex-1 bg-white items-center justify-center">
+        <Text style={{ color: Colors.textSecondary }}>
+          Không tìm thấy lớp học
+        </Text>
       </View>
     );
   }
 
   const handleDelete = () => {
-    Alert.alert(
-      'Xác nhận xóa',
-      `Bạn có chắc muốn xóa lớp ${classData.code}?`,
-      [
-        { text: 'Hủy', style: 'cancel' },
-        { 
-          text: 'Xóa', 
-          style: 'destructive',
-          onPress: () => {
-            alert('Đã xóa lớp học');
-            router.back();
-          }
+    Alert.alert("Xác nhận xóa", `Bạn có chắc muốn xóa lớp ${classData.code}?`, [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: () => {
+          alert("Đã xóa lớp học");
+          router.back();
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      {/* Page Title */}
-      <View style={{ padding: 16, paddingBottom: 0 }}>
-        <Text style={{ fontSize: 24, fontWeight: '600', marginBottom: 16, color: Colors.text }}>
-          {classData.code}
-        </Text>
-      </View>
-      
+    <View className="flex-1 bg-white">
+      <AppHeader title={classData.code} showLogout={true} />
+
       <Tabs
         tabs={[
-          { key: 'info', label: 'Thông tin' },
-          { key: 'students', label: 'Sinh viên' },
+          { key: "info", label: "Thông tin" },
+          { key: "students", label: "Sinh viên" },
         ]}
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
 
-      <ScrollView style={{ flex: 1 }}>
-        <View style={{ padding: 16, maxWidth: 1200, width: '100%', alignSelf: 'center' }}>
-          
-          {activeTab === 'info' && (
+      <ScrollView className="flex-1">
+        <View
+          className="p-4"
+          style={{ maxWidth: 1200, width: "100%", alignSelf: "center" }}
+        >
+          {activeTab === "info" && (
             <>
               <Card style={{ marginBottom: 16 }}>
                 <View style={{ alignItems: 'center', paddingVertical: 16 }}>
@@ -76,68 +72,110 @@ export default function ClassDetail() {
                       backgroundColor: Colors.primary,
                     }}
                   >
-                    <Text style={{ fontSize: 32, fontWeight: 'bold', color: Colors.white }}>
+                    <Text
+                      className="text-3xl font-bold"
+                      style={{ color: Colors.white }}
+                    >
                       {classData.code.substring(0, 2)}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 8, color: Colors.text }}>
+                  <Text
+                    className="text-2xl font-bold mb-2"
+                    style={{ color: Colors.text }}
+                  >
                     {classData.name}
                   </Text>
-                  <Text style={{ fontSize: 16, color: Colors.textSecondary }}>
+                  <Text
+                    className="text-base"
+                    style={{ color: Colors.textSecondary }}
+                  >
                     {classData.code}
                   </Text>
                 </View>
               </Card>
 
-              <Card style={{ marginBottom: 16 }}>
-                <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16, color: Colors.text }}>
+              <Card className="mb-4">
+                <Text
+                  className="text-lg font-semibold mb-4"
+                  style={{ color: Colors.text }}
+                >
                   Chi tiết lớp học
                 </Text>
 
-                <View style={{ marginBottom: 12 }}>
-                  <Text style={{ fontSize: 14, marginBottom: 4, color: Colors.textSecondary }}>Môn học</Text>
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: Colors.text }}>
+                <View className="mb-3">
+                  <Text
+                    className="text-sm mb-1"
+                    style={{ color: Colors.textSecondary }}
+                  >
+                    Môn học
+                  </Text>
+                  <Text
+                    className="text-base font-medium"
+                    style={{ color: Colors.text }}
+                  >
                     {classData.subject}
                   </Text>
                 </View>
 
-                <View style={{ marginBottom: 12 }}>
-                  <Text style={{ fontSize: 14, marginBottom: 4, color: Colors.textSecondary }}>Giảng viên</Text>
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: Colors.text }}>
+                <View className="mb-3">
+                  <Text
+                    className="text-sm mb-1"
+                    style={{ color: Colors.textSecondary }}
+                  >
+                    Giảng viên
+                  </Text>
+                  <Text
+                    className="text-base font-medium"
+                    style={{ color: Colors.text }}
+                  >
                     {classData.teacher}
                   </Text>
                 </View>
 
-                <View style={{ marginBottom: 12 }}>
-                  <Text style={{ fontSize: 14, marginBottom: 4, color: Colors.textSecondary }}>Học kỳ</Text>
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: Colors.text }}>
+                <View className="mb-3">
+                  <Text
+                    className="text-sm mb-1"
+                    style={{ color: Colors.textSecondary }}
+                  >
+                    Học kỳ
+                  </Text>
+                  <Text
+                    className="text-base font-medium"
+                    style={{ color: Colors.text }}
+                  >
                     {classData.semester}
                   </Text>
                 </View>
 
                 <View>
-                  <Text style={{ fontSize: 14, marginBottom: 4, color: Colors.textSecondary }}>Số sinh viên</Text>
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: Colors.primary }}>
+                  <Text
+                    className="text-sm mb-1"
+                    style={{ color: Colors.textSecondary }}
+                  >
+                    Số sinh viên
+                  </Text>
+                  <Text
+                    className="text-base font-medium"
+                    style={{ color: Colors.primary }}
+                  >
                     {classData.studentCount} sinh viên
                   </Text>
                 </View>
               </Card>
 
-              <Card style={{ marginBottom: 16 }}>
-                <View style={{ marginBottom: 12 }}>
-                  <PrimaryButton
-                    title="Thêm sinh viên"
-                    variant="outline"
-                    onPress={() => alert('Thêm sinh viên')}
-                  />
-                </View>
-                <View style={{ marginBottom: 12 }}>
-                  <PrimaryButton
-                    title="Upload danh sách CSV"
-                    variant="outline"
-                    onPress={() => alert('Upload CSV')}
-                  />
-                </View>
+              <Card className="mb-4">
+                <PrimaryButton
+                  title="Thêm sinh viên"
+                  variant="outline"
+                  onPress={() => alert("Thêm sinh viên")}
+                  className="mb-3"
+                />
+                <PrimaryButton
+                  title="Upload danh sách CSV"
+                  variant="outline"
+                  onPress={() => alert("Upload CSV")}
+                  className="mb-3"
+                />
                 <PrimaryButton
                   title="Xóa lớp học"
                   variant="outline"
@@ -148,15 +186,18 @@ export default function ClassDetail() {
             </>
           )}
 
-          {activeTab === 'students' && (
+          {activeTab === "students" && (
             <>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <Text style={{ fontWeight: '500', color: Colors.textSecondary }}>
+              <View className="flex-row justify-between items-center mb-4">
+                <Text
+                  className="font-medium"
+                  style={{ color: Colors.textSecondary }}
+                >
                   {mockStudents.length} sinh viên
                 </Text>
                 <PrimaryButton
                   title="+ Thêm"
-                  onPress={() => alert('Thêm sinh viên')}
+                  onPress={() => alert("Thêm sinh viên")}
                   style={{ paddingHorizontal: 16, paddingVertical: 8 }}
                 />
               </View>
@@ -171,7 +212,6 @@ export default function ClassDetail() {
               ))}
             </>
           )}
-
         </View>
       </ScrollView>
     </View>

@@ -2,12 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '@/constants/colors';
-import { mockSubjects, mockUsers, Subject } from '@/constants/mockData';
-import Card from '@/components/Card';
-import Badge from '@/components/Badge';
-import PrimaryButton from '@/components/PrimaryButton';
-import DataTable from '@/components/DataTable';
-import Modal from '@/components/Modal';
+import { mockSubjects } from '@/constants/mockData';
+import { AppHeader } from '@/components/AppHeader';
+import  Card  from '@/components/Card';
+import { Badge } from '@/components/Badge';
+import { PrimaryButton } from '@/components/PrimaryButton';
 import { EmptySearchIcon, EmptyDocumentIcon } from '@/components/EmptyStateIllustration';
 
 type TeacherType = 'LT' | 'TH';

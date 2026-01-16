@@ -3,9 +3,9 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform, useWindo
 import { router } from 'expo-router';
 import { Colors } from '@/constants/colors';
 import { mockClasses } from '@/constants/mockData';
-import Card from '@/components/Card';
-import PrimaryButton from '@/components/PrimaryButton';
-import DataTable from '@/components/DataTable';
+import { AppHeader } from '@/components/AppHeader';
+import  Card  from '@/components/Card';
+import { PrimaryButton } from '@/components/PrimaryButton';
 import { EmptySearchIcon, EmptyListIcon } from '@/components/EmptyStateIllustration';
 
 export default function ClassManagement() {

@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { TouchableOpacity, Text, ViewStyle, Platform } from 'react-native';
-import { Colors } from '@/constants/colors';
-import { Spinner } from './Spinner';
+import React, { useState } from "react";
+import { TouchableOpacity, Text, ViewStyle, Platform } from "react-native";
+import { Colors } from "@/constants/colors";
+import { Spinner } from "./Spinner";
 
 interface PrimaryButtonProps {
   title: string;
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  variant?: 'primary' | 'outline' | 'ghost';
+  variant?: "primary" | "outline" | "ghost";
   style?: ViewStyle;
 }
 
@@ -17,7 +17,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   onPress,
   loading = false,
   disabled = false,
-  variant = 'primary',
+  variant = "primary",
   style,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -25,12 +25,22 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const isDisabled = disabled || loading;
 
+  const getButtonStyle = () => {
+    if (variant === "outline") {
+      return "bg-white border-2";
+    }
+    if (variant === "ghost") {
+      return "bg-transparent";
+    }
+    return "";
+  };
+
   const getBackgroundColor = () => {
     if (isDisabled) {
-      return variant === 'outline' ? Colors.white : Colors.gray300;
+      return variant === "outline" ? Colors.white : Colors.gray300;
     }
-    if (variant === 'outline' || variant === 'ghost') {
-      return variant === 'outline' ? Colors.white : 'transparent';
+    if (variant === "outline" || variant === "ghost") {
+      return variant === "outline" ? Colors.white : "transparent";
     }
     if (isPressed) return Colors.primaryDark;
     if (isHovered) return Colors.primaryHover;
@@ -38,17 +48,17 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   };
 
   const getBorderColor = () => {
-    if (variant === 'outline') {
+    if (variant === "outline") {
       return isDisabled ? Colors.gray300 : Colors.primary;
     }
-    return 'transparent';
+    return "transparent";
   };
 
   const getTextColor = () => {
-    if (isDisabled && variant !== 'outline') {
+    if (isDisabled && variant !== "outline") {
       return Colors.gray500;
     }
-    if (variant === 'outline' || variant === 'ghost') {
+    if (variant === "outline" || variant === "ghost") {
       return isDisabled ? Colors.gray400 : Colors.primary;
     }
     return Colors.white;
@@ -56,18 +66,20 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 
   const getFocusStyle = () => {
     if (!isFocused || isDisabled) return {};
-    
-    return Platform.OS === 'web' ? {
-      outline: `3px solid ${Colors.focusRing}`,
-      outlineOffset: '2px',
-    } : {};
+
+    return Platform.OS === "web"
+      ? {
+          outline: `3px solid ${Colors.focusRing}`,
+          outlineOffset: "2px",
+        }
+      : {};
   };
 
   const getHoverStyle = () => {
     if (!isHovered || isDisabled) return {};
-    
+
     return {
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.15,
       shadowRadius: 6,
@@ -77,10 +89,10 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 
   const getPressedStyle = () => {
     if (!isPressed || isDisabled) return {};
-    
+
     return {
       transform: [{ scale: 0.96 }],
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.1,
       shadowRadius: 2,
@@ -96,8 +108,15 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityState={{ disabled: isDisabled }}
+      className={`
+        ${getButtonStyle()}
+        px-6
+        items-center
+        justify-center
+        ${className || ""}
+      `}
       style={[
-        { 
+        {
           borderRadius: 8,
           minHeight: 44, // Minimum touch target
           paddingVertical: 12,
@@ -106,12 +125,13 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
           justifyContent: 'center',
           backgroundColor: getBackgroundColor(),
           borderColor: getBorderColor(),
-          borderWidth: variant === 'outline' ? 2 : 0,
+          borderWidth: variant === "outline" ? 2 : 0,
         },
-        Platform.OS === 'web' && {
-          transition: 'all 0.2s ease',
-          cursor: isDisabled ? 'not-allowed' : 'pointer',
-        } as any,
+        Platform.OS === "web" &&
+          ({
+            transition: "all 0.2s ease",
+            cursor: isDisabled ? "not-allowed" : "pointer",
+          } as any),
         getFocusStyle(),
         getHoverStyle(),
         getPressedStyle(),
@@ -120,12 +140,13 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       activeOpacity={0.8}
       onPressIn={() => setIsPressed(true)}
       onPressOut={() => setIsPressed(false)}
-      {...(Platform.OS === 'web' && {
-        onMouseEnter: () => setIsHovered(true),
-        onMouseLeave: () => setIsHovered(false),
-        onFocus: () => setIsFocused(true),
-        onBlur: () => setIsFocused(false),
-      } as any)}
+      {...(Platform.OS === "web" &&
+        ({
+          onMouseEnter: () => setIsHovered(true),
+          onMouseLeave: () => setIsHovered(false),
+          onFocus: () => setIsFocused(true),
+          onBlur: () => setIsFocused(false),
+        } as any))}
     >
       {loading ? (
         <Spinner size={20} color={getTextColor()} />
@@ -134,10 +155,10 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
           style={{
             color: getTextColor(),
             fontSize: 16,
-            fontWeight: '600',
+            fontWeight: "600",
             letterSpacing: -0.01,
-            textAlign: 'center',
-            width: '100%',
+            textAlign: "center",
+            width: "100%",
           }}
         >
           {title}

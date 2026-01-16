@@ -1,63 +1,202 @@
-import React from 'react';
-import { View, Text, ScrollView, Platform, useWindowDimensions } from 'react-native';
-import { router } from 'expo-router';
-import { Colors } from '@/constants/colors';
-import { StatsCard } from '@/components/StatsCard';
-import Card from '@/components/Card';
-import { HomeIcon, UsersIcon, SchoolIcon, BookIcon, CalendarIcon, EyeIcon, ChartIcon, SettingsIcon } from '@/components/Icons';
+import React from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  Platform,
+  useWindowDimensions,
+  // SafeAreaView,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { Colors } from "@/constants/colors";
+import { AppHeader } from "@/components/AppHeader";
+import { StatsCard } from "@/components/StatsCard";
+import Card from "@/components/Card";
+import AppLayout from "@/components/AppLayout";
+import {
+  HomeIcon,
+  UsersIcon,
+  SchoolIcon,
+  BookIcon,
+  CalendarIcon,
+  EyeIcon,
+  ChartIcon,
+  SettingsIcon,
+} from "@/components/Icons";
 
 export default function AdminDashboard() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
-  const isMobile = width < 768;
-  const isWeb = Platform.OS === 'web';
+  const isWeb = Platform.OS === "web";
 
-  const contentMaxWidth = isDesktop ? 1400 : '100%';
+  const contentMaxWidth = isDesktop ? 1400 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const paddingVertical = isMobile ? 16 : 24;
 
+  // Calculate widths based on items per row
+  const statsWidth = isDesktop ? "w-1/4" : "w-1/2";
+  const actionWidth = isDesktop ? "w-1/3" : isTablet ? "w-1/2" : "w-full";
+
+  const menuItems = [
+    {
+      icon: <HomeIcon size={20} color={Colors.primary} />,
+      label: "Dashboard",
+      route: "/admin/dashboard",
+    },
+    {
+      icon: <UsersIcon size={20} color={Colors.primary} />,
+      label: "Người dùng",
+      route: "/admin/users",
+    },
+    {
+      icon: <SchoolIcon size={20} color={Colors.primary} />,
+      label: "Lớp học",
+      route: "/admin/classes",
+    },
+    {
+      icon: <BookIcon size={20} color={Colors.primary} />,
+      label: "Môn học",
+      route: "/admin/subjects",
+    },
+    {
+      icon: <CalendarIcon size={20} color={Colors.primary} />,
+      label: "Lịch học",
+      route: "/admin/schedules",
+    },
+    {
+      icon: <EyeIcon size={20} color={Colors.primary} />,
+      label: "Giám sát",
+      route: "/admin/sessions",
+    },
+    {
+      icon: <ChartIcon size={20} color={Colors.primary} />,
+      label: "Báo cáo",
+      route: "/admin/reports",
+    },
+    {
+      icon: <SettingsIcon size={20} color={Colors.primary} />,
+      label: "Cài đặt",
+      route: "/admin/settings",
+    },
+  ];
   const stats = [
-    { label: 'Tổng người dùng', value: '1,234', icon: <Text style={{ fontSize: 20, color: Colors.primary }}>U</Text>, color: Colors.primary },
-    { label: 'Tổng lớp học', value: '45', icon: <Text style={{ fontSize: 20, color: Colors.success }}>C</Text>, color: Colors.success },
-    { label: 'Buổi học hôm nay', value: '23', icon: <Text style={{ fontSize: 20, color: Colors.warning }}>▶</Text>, color: Colors.warning },
-    { label: 'Tỷ lệ điểm danh', value: '87%', icon: <Text style={{ fontSize: 20, color: Colors.primary }}>%</Text>, color: Colors.primary },
+    {
+      label: "Tổng người dùng",
+      value: "1,234",
+      icon: <Text style={{ fontSize: 20, color: Colors.primary }}>U</Text>,
+      color: Colors.primary,
+    },
+    {
+      label: "Tổng lớp học",
+      value: "45",
+      icon: <Text style={{ fontSize: 20, color: Colors.success }}>C</Text>,
+      color: Colors.success,
+    },
+    {
+      label: "Buổi học hôm nay",
+      value: "23",
+      icon: <Text style={{ fontSize: 20, color: Colors.warning }}>▶</Text>,
+      color: Colors.warning,
+    },
+    {
+      label: "Tỷ lệ điểm danh",
+      value: "87%",
+      icon: <Text style={{ fontSize: 20, color: Colors.primary }}>%</Text>,
+      color: Colors.primary,
+    },
   ];
 
   const todayStats = [
-    { label: 'Có mặt', value: '856', color: Colors.success },
-    { label: 'Muộn', value: '45', color: Colors.warning },
-    { label: 'Vắng', value: '123', color: Colors.error },
+    { label: "Có mặt", value: "856", color: Colors.success },
+    { label: "Muộn", value: "45", color: Colors.warning },
+    { label: "Vắng", value: "123", color: Colors.error },
   ];
 
   const quickActions = [
-    { title: 'Quản lý người dùng', subtitle: 'Thêm, sửa, xóa user', route: '/admin/users', icon: 'U' },
-    { title: 'Quản lý lớp học', subtitle: 'Tạo và quản lý lớp', route: '/admin/classes', icon: 'C' },
-    { title: 'Quản lý môn học', subtitle: 'Danh sách môn học', route: '/admin/subjects', icon: 'S' },
-    { title: 'Lịch học', subtitle: 'Xem và tạo lịch', route: '/admin/schedules', icon: 'L' },
-    { title: 'Giám sát điểm danh', subtitle: 'Theo dõi real-time', route: '/admin/sessions', icon: 'M' },
-    { title: 'Báo cáo', subtitle: 'Thống kê và export', route: '/admin/reports', icon: 'R' },
-    { title: 'Cài đặt', subtitle: 'Cấu hình hệ thống', route: '/admin/settings', icon: 'S' },
+    {
+      title: "Quản lý người dùng",
+      subtitle: "Thêm, sửa, xóa user",
+      route: "/admin/users",
+      icon: "U",
+    },
+    {
+      title: "Quản lý lớp học",
+      subtitle: "Tạo và quản lý lớp",
+      route: "/admin/classes",
+      icon: "C",
+    },
+    {
+      title: "Quản lý môn học",
+      subtitle: "Danh sách môn học",
+      route: "/admin/subjects",
+      icon: "S",
+    },
+    {
+      title: "Lịch học",
+      subtitle: "Xem và tạo lịch",
+      route: "/admin/schedules",
+      icon: "L",
+    },
+    {
+      title: "Giám sát điểm danh",
+      subtitle: "Theo dõi real-time",
+      route: "/admin/sessions",
+      icon: "M",
+    },
+    {
+      title: "Báo cáo",
+      subtitle: "Thống kê và export",
+      route: "/admin/reports",
+      icon: "R",
+    },
+    {
+      title: "Cài đặt",
+      subtitle: "Cấu hình hệ thống",
+      route: "/admin/settings",
+      icon: "S",
+    },
   ];
 
-  return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+  const content = (
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      <StatusBar style="dark" />
+      <AppHeader title="Dashboard" showBack={false} showLogout={!isWeb} />
+
       <ScrollView style={{ flex: 1 }}>
-        <View style={{ paddingHorizontal, paddingVertical, maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
-          
+        <View
+          style={{
+            paddingHorizontal,
+            paddingVertical: 24,
+            maxWidth: contentMaxWidth,
+            width: "100%",
+            alignSelf: "center",
+          }}
+        >
           {/* Welcome Section */}
-          <Card style={{ backgroundColor: Colors.primary, marginBottom: isMobile ? 16 : 24 }}>
-            <Text style={{ fontSize: isMobile ? 20 : 24, fontWeight: 'bold', marginBottom: 8, color: Colors.white }}>
+          <Card className="mb-6" style={{ backgroundColor: Colors.primary }}>
+            <Text
+              className="text-2xl font-bold mb-2"
+              style={{ color: Colors.white, letterSpacing: 0 }}
+            >
               Chào mừng Admin
             </Text>
-            <Text style={{ fontSize: isMobile ? 14 : 16, color: Colors.white, opacity: 0.9 }}>
+            <Text
+              className="text-base"
+              style={{ color: Colors.white, opacity: 0.9, letterSpacing: 0 }}
+            >
               Quản lý toàn bộ hệ thống điểm danh điện tử
             </Text>
           </Card>
 
           {/* Main Stats Grid */}
-          <View style={{ marginBottom: isMobile ? 16 : 24 }}>
-            <Text style={{ fontSize: isMobile ? 16 : 18, fontWeight: '600', marginBottom: 12, color: Colors.text }}>
+          <View className="mb-6">
+            <Text
+              className="text-lg font-semibold mb-3"
+              style={{ color: Colors.text, letterSpacing: 0 }}
+            >
               Tổng quan hệ thống
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
@@ -77,18 +216,27 @@ export default function AdminDashboard() {
           </View>
 
           {/* Today's Attendance Stats */}
-          <View style={{ marginBottom: isMobile ? 16 : 24 }}>
-            <Text style={{ fontSize: isMobile ? 16 : 18, fontWeight: '600', marginBottom: 12, color: Colors.text }}>
+          <View className="mb-6">
+            <Text
+              className="text-lg font-semibold mb-3"
+              style={{ color: Colors.text, letterSpacing: 0 }}
+            >
               Điểm danh hôm nay
             </Text>
             <View style={{ flexDirection: isMobile ? 'column' : 'row', marginHorizontal: -8, gap: isMobile ? 8 : 0 }}>
               {todayStats.map((stat, index) => (
-                <View key={index} style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8, marginBottom: isMobile ? 8 : 0 }}>
-                  <Card style={{ alignItems: 'center', paddingVertical: isMobile ? 16 : undefined }}>
-                    <Text style={{ fontSize: isMobile ? 24 : 30, fontWeight: 'bold', marginBottom: 4, color: stat.color }}>
+                <View key={index} className="flex-1 px-2">
+                  <Card className="items-center">
+                    <Text
+                      className="text-3xl font-bold mb-1"
+                      style={{ color: stat.color, letterSpacing: 0 }}
+                    >
                       {stat.value}
                     </Text>
-                    <Text style={{ fontSize: isMobile ? 13 : 14, color: Colors.textSecondary }}>
+                    <Text
+                      className="text-sm"
+                      style={{ color: Colors.textSecondary, letterSpacing: 0 }}
+                    >
                       {stat.label}
                     </Text>
                   </Card>
@@ -98,11 +246,14 @@ export default function AdminDashboard() {
           </View>
 
           {/* Quick Actions */}
-          <View style={{ marginBottom: isMobile ? 16 : 24 }}>
-            <Text style={{ fontSize: isMobile ? 16 : 18, fontWeight: '600', marginBottom: 12, color: Colors.text }}>
+          <View className="mb-6">
+            <Text
+              className="text-lg font-semibold mb-3"
+              style={{ color: Colors.text, letterSpacing: 0 }}
+            >
               Thao tác nhanh
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
+            <View className="flex-row flex-wrap mt-3 -mx-2">
               {quickActions.map((action, index) => (
                 <View 
                   key={index} 
@@ -113,25 +264,27 @@ export default function AdminDashboard() {
                   }}
                 >
                   <Card onPress={() => router.push(action.route as any)}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                      <View 
-                        style={{ 
-                          width: isMobile ? 36 : 40, 
-                          height: isMobile ? 36 : 40, 
-                          borderRadius: 12, 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          marginRight: 12,
-                          backgroundColor: Colors.infoLight 
-                        }}
+                    <View className="flex-row items-center mb-2">
+                      <View
+                        className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                        style={{ backgroundColor: Colors.infoLight }}
                       >
                         <Text style={{ fontSize: isMobile ? 18 : 20 }}>{action.icon}</Text>
                       </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: '600', marginBottom: 4, color: Colors.text, fontSize: isMobile ? 14 : 16 }}>
+                      <View className="flex-1">
+                        <Text
+                          className="font-semibold mb-1"
+                          style={{ color: Colors.text, letterSpacing: 0 }}
+                        >
                           {action.title}
                         </Text>
-                        <Text style={{ fontSize: isMobile ? 11 : 12, color: Colors.textSecondary }}>
+                        <Text
+                          className="text-xs"
+                          style={{
+                            color: Colors.textSecondary,
+                            letterSpacing: 0,
+                          }}
+                        >
                           {action.subtitle}
                         </Text>
                       </View>
@@ -143,38 +296,58 @@ export default function AdminDashboard() {
           </View>
 
           {/* Recent Activity */}
-          <View style={{ marginBottom: 24 }}>
-            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 12, color: Colors.text }}>
+          <View className="mb-6">
+            <Text
+              className="text-lg font-semibold mb-3"
+              style={{ color: Colors.text, letterSpacing: 0 }}
+            >
               Hoạt động gần đây
             </Text>
             <Card>
               {[
-                { text: 'Thêm mới 15 sinh viên vào lớp CNTT01', time: '5 phút trước' },
-                { text: 'Tạo lịch học tuần 2 HK1-2026', time: '1 giờ trước' },
-                { text: 'Cập nhật thông tin giảng viên GV001', time: '2 giờ trước' },
+                {
+                  text: "Thêm mới 15 sinh viên vào lớp CNTT01",
+                  time: "5 phút trước",
+                },
+                { text: "Tạo lịch học tuần 2 HK1-2026", time: "1 giờ trước" },
+                {
+                  text: "Cập nhật thông tin giảng viên GV001",
+                  time: "2 giờ trước",
+                },
               ].map((activity, index) => (
                 <View
                   key={index}
-                  style={{ 
-                    paddingVertical: 12, 
-                    borderBottomWidth: index === 2 ? 0 : 1,
-                    borderBottomColor: index === 2 ? 'transparent' : Colors.border 
+                  className="py-3 border-b"
+                  style={{
+                    borderBottomColor:
+                      index === 2 ? "transparent" : Colors.border,
                   }}
                 >
-                  <Text style={{ marginBottom: 4, color: Colors.text }}>
+                  <Text
+                    className="mb-1"
+                    style={{ color: Colors.text, letterSpacing: 0 }}
+                  >
                     {activity.text}
                   </Text>
-                  <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
+                  <Text
+                    className="text-xs"
+                    style={{ color: Colors.textSecondary, letterSpacing: 0 }}
+                  >
                     {activity.time}
                   </Text>
                 </View>
               ))}
             </Card>
           </View>
-
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
+  );
+
+  return (
+    <AppLayout menuItems={menuItems} userRole="admin" userName="Admin Hệ thống">
+      {content}
+    </AppLayout>
   );
 }
 

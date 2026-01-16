@@ -1,48 +1,51 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView } from 'react-native';
-import { router } from 'expo-router';
-import { Colors } from '../../../constants/colors';
-import Input from '../../../components/Input';
-import PrimaryButton from '../../../components/PrimaryButton';
-import Card from '../../../components/Card';
+import React, { useState } from "react";
+import { View, Text, ScrollView } from "react-native";
+import { router } from "expo-router";
+import { Colors } from "../../../constants/colors";
+import AppHeader from "../../../components/AppHeader";
+import Input from "../../../components/Input";
+import PrimaryButton from "../../../components/PrimaryButton";
+import Card from "../../../components/Card";
 
 export default function CreateSubject() {
   const [formData, setFormData] = useState({
-    code: '',
-    name: '',
-    credits: '3',
-    teacherId: '',
+    code: "",
+    name: "",
+    credits: "3",
+    teacherId: "",
   });
 
   const [errors, setErrors] = useState<any>({});
 
   const handleSubmit = () => {
     const newErrors: any = {};
-    if (!formData.code) newErrors.code = 'Vui lòng nhập mã môn học';
-    if (!formData.name) newErrors.name = 'Vui lòng nhập tên môn học';
-    if (!formData.credits) newErrors.credits = 'Vui lòng nhập số tín chỉ';
+    if (!formData.code) newErrors.code = "Vui lòng nhập mã môn học";
+    if (!formData.name) newErrors.name = "Vui lòng nhập tên môn học";
+    if (!formData.credits) newErrors.credits = "Vui lòng nhập số tín chỉ";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    alert('Tạo môn học thành công!');
+    alert("Tạo môn học thành công!");
     router.back();
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      <ScrollView style={{ flex: 1 }}>
-        <View style={{ padding: 16, maxWidth: 600, width: '100%', alignSelf: 'center' }}>
-          
-          {/* Page Title */}
-          <Text style={{ fontSize: 24, fontWeight: '600', marginBottom: 24, color: Colors.text }}>
-            Tạo môn học mới
-          </Text>
-          
-          <Card style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16, color: Colors.text }}>
+    <View className="flex-1 bg-white">
+      <AppHeader title="Tạo môn học mới" showLogout={true} />
+
+      <ScrollView className="flex-1">
+        <View
+          className="p-4"
+          style={{ maxWidth: 600, width: "100%", alignSelf: "center" }}
+        >
+          <Card className="mb-4">
+            <Text
+              className="text-lg font-semibold mb-4"
+              style={{ color: Colors.text }}
+            >
               Thông tin môn học
             </Text>
 
@@ -66,7 +69,9 @@ export default function CreateSubject() {
               label="Số tín chỉ *"
               placeholder="3"
               value={formData.credits}
-              onChangeText={(text) => setFormData({ ...formData, credits: text })}
+              onChangeText={(text) =>
+                setFormData({ ...formData, credits: text })
+              }
               keyboardType="numeric"
               error={errors.credits}
             />
@@ -75,10 +80,15 @@ export default function CreateSubject() {
               label="Mã giảng viên (tùy chọn)"
               placeholder="GV001"
               value={formData.teacherId}
-              onChangeText={(text) => setFormData({ ...formData, teacherId: text })}
+              onChangeText={(text) =>
+                setFormData({ ...formData, teacherId: text })
+              }
             />
 
-            <Text style={{ fontSize: 12, marginTop: 8, color: Colors.textSecondary }}>
+            <Text
+              className="text-xs mt-2"
+              style={{ color: Colors.textSecondary }}
+            >
               Có thể phân công giảng viên sau
             </Text>
           </Card>
@@ -91,14 +101,10 @@ export default function CreateSubject() {
                 onPress={() => router.back()}
               />
             </View>
-            <View style={{ flex: 1, paddingHorizontal: 8 }}>
-              <PrimaryButton
-                title="Tạo môn học"
-                onPress={handleSubmit}
-              />
+            <View className="flex-1 px-2">
+              <PrimaryButton title="Tạo môn học" onPress={handleSubmit} />
             </View>
           </View>
-
         </View>
       </ScrollView>
     </View>

@@ -1,78 +1,81 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
-import { router } from 'expo-router';
-import { Colors } from '@/constants/colors';
-import { mockAttendanceSessions } from '@/constants/mockData';
-import Card from '@/components/Card';
-import Badge from '@/components/Badge';
-import DataTable from '@/components/DataTable';
+import React, { useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { router } from "expo-router";
+import { Colors } from "../../constants/colors";
+import { mockAttendanceSessions } from "../../constants/mockData";
+import AppHeader from "../../components/AppHeader";
+import Card from "../../components/Card";
+import Badge from "../../components/Badge";
 
 export default function AttendanceSessions() {
-  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 1024;
-  const isTablet = width >= 768 && width < 1024;
-  const isMobile = width < 768;
-  const showTable = isDesktop;
+  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
 
-  const contentMaxWidth = isDesktop ? 1200 : '100%';
-  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
-  const paddingVertical = isMobile ? 16 : 24;
-
-  const filteredSessions = useMemo(
-    () =>
-      mockAttendanceSessions.filter((session) => {
-        if (filter === 'all') return true;
-        return session.status === filter;
-      }),
-    [filter]
-  );
-
-  const summary = useMemo(() => {
-    const active = filteredSessions.filter((s) => s.status === 'active').length;
-    const present = filteredSessions.reduce((sum, s) => sum + s.present, 0);
-    const absent = filteredSessions.reduce((sum, s) => sum + s.absent, 0);
-    return { active, present, absent };
-  }, [filteredSessions]);
+  const filteredSessions = mockAttendanceSessions.filter((session) => {
+    if (filter === "all") return true;
+    return session.status === filter;
+  });
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      <ScrollView style={{ flex: 1 }}>
-        <View style={{ paddingHorizontal, paddingVertical, maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
-          
-          {/* Page Title */}
-          <Text style={{ fontSize: isMobile ? 20 : 24, fontWeight: '600', marginBottom: isMobile ? 16 : 24, color: Colors.text }}>
-            Giám sát điểm danh
-          </Text>
-          
+    <View className="flex-1 bg-white">
+      <AppHeader title="Giám sát điểm danh" showLogout={true} />
+
+      <ScrollView className="flex-1">
+        <View
+          className="p-4"
+          style={{ maxWidth: 1200, width: "100%", alignSelf: "center" }}
+        >
           {/* Summary Cards */}
           <View style={{ flexDirection: isMobile ? 'column' : 'row', marginBottom: isMobile ? 12 : 16, marginHorizontal: -8, gap: isMobile ? 8 : 0 }}>
             <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8, marginBottom: isMobile ? 8 : 0 }}>
               <Card>
-                <Text style={{ fontSize: isMobile ? 24 : 30, fontWeight: 'bold', marginBottom: 4, color: Colors.primary }}>
-                  {summary.active}
+                <Text
+                  className="text-3xl font-bold mb-1"
+                  style={{ color: Colors.primary }}
+                >
+                  {
+                    mockAttendanceSessions.filter((s) => s.status === "active")
+                      .length
+                  }
                 </Text>
-                <Text style={{ fontSize: isMobile ? 11 : 12, color: Colors.textSecondary }}>
+                <Text
+                  className="text-xs"
+                  style={{ color: Colors.textSecondary }}
+                >
                   Đang diễn ra
                 </Text>
               </Card>
             </View>
             <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8, marginBottom: isMobile ? 8 : 0 }}>
               <Card>
-                <Text style={{ fontSize: isMobile ? 24 : 30, fontWeight: 'bold', marginBottom: 4, color: Colors.success }}>
-                  {summary.present}
+                <Text
+                  className="text-3xl font-bold mb-1"
+                  style={{ color: Colors.success }}
+                >
+                  {mockAttendanceSessions.reduce(
+                    (sum, s) => sum + s.present,
+                    0
+                  )}
                 </Text>
-                <Text style={{ fontSize: isMobile ? 11 : 12, color: Colors.textSecondary }}>
+                <Text
+                  className="text-xs"
+                  style={{ color: Colors.textSecondary }}
+                >
                   Có mặt
                 </Text>
               </Card>
             </View>
             <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8 }}>
               <Card>
-                <Text style={{ fontSize: isMobile ? 24 : 30, fontWeight: 'bold', marginBottom: 4, color: Colors.error }}>
-                  {summary.absent}
+                <Text
+                  className="text-3xl font-bold mb-1"
+                  style={{ color: Colors.error }}
+                >
+                  {mockAttendanceSessions.reduce((sum, s) => sum + s.absent, 0)}
                 </Text>
-                <Text style={{ fontSize: isMobile ? 11 : 12, color: Colors.textSecondary }}>
+                <Text
+                  className="text-xs"
+                  style={{ color: Colors.textSecondary }}
+                >
                   Vắng mặt
                 </Text>
               </Card>
@@ -80,29 +83,29 @@ export default function AttendanceSessions() {
           </View>
 
           {/* Filters */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-            <View style={{ flexDirection: 'row' }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mb-4"
+          >
+            <View className="flex-row">
               {[
-                { key: 'all', label: 'Tất cả' },
-                { key: 'active', label: 'Đang diễn ra' },
-                { key: 'completed', label: 'Đã kết thúc' },
+                { key: "all", label: "Tất cả" },
+                { key: "active", label: "Đang diễn ra" },
+                { key: "completed", label: "Đã kết thúc" },
               ].map((item) => (
                 <TouchableOpacity
                   key={item.key}
                   style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    borderRadius: 20,
-                    marginRight: 8,
-                    backgroundColor: filter === item.key ? Colors.primary : Colors.gray100,
+                    backgroundColor:
+                      filter === item.key ? Colors.primary : Colors.gray100,
                   }}
                   onPress={() => setFilter(item.key as any)}
                 >
                   <Text
                     style={{
-                      fontWeight: '500',
-                      fontSize: 14,
-                      color: filter === item.key ? Colors.white : Colors.gray700,
+                      color:
+                        filter === item.key ? Colors.white : Colors.gray700,
                     }}
                   >
                     {item.label}
@@ -113,50 +116,71 @@ export default function AttendanceSessions() {
           </ScrollView>
 
           {/* Sessions List */}
-          <Text style={{ fontSize: 14, marginBottom: 12, color: Colors.textSecondary }}>
+          <Text
+            className="text-sm mb-3"
+            style={{ color: Colors.textSecondary }}
+          >
             {filteredSessions.length} buổi học
           </Text>
 
-          {/* Desktop: Table View */}
-          {showTable && filteredSessions.length > 0 ? (
-            <DataTable
-              columns={[
-                {
-                  key: 'classCode',
-                  label: 'Mã lớp',
-                  width: 120,
-                  render: (session) => (
-                    <Text style={{ fontWeight: '600', fontSize: 14, color: Colors.text }}>
+          {filteredSessions.map((session) => (
+            <Card
+              key={session.id}
+              onPress={() => alert(`Chi tiết ${session.className}`)}
+              className="mb-3"
+            >
+              <View className="flex-row items-start justify-between mb-3">
+                <View className="flex-1">
+                  <View className="flex-row items-center mb-2">
+                    <Text
+                      className="font-semibold text-base mr-2"
+                      style={{ color: Colors.text }}
+                    >
                       {session.classCode}
                     </Text>
-                  ),
-                },
-                {
-                  key: 'subject',
-                  label: 'Môn học',
-                  width: 200,
-                  render: (session) => (
-                    <Text style={{ fontSize: 14, color: Colors.text }}>
-                      {session.subject}
+                    <Badge
+                      label={
+                        session.status === "active"
+                          ? "Đang diễn ra"
+                          : "Đã kết thúc"
+                      }
+                      variant={session.status === "active" ? "success" : "gray"}
+                      size="sm"
+                    />
+                    <Badge
+                      label={session.method.toUpperCase()}
+                      variant="primary"
+                      size="sm"
+                    />
+                  </View>
+
+                  <Text className="text-sm mb-1" style={{ color: Colors.text }}>
+                    {session.subject}
+                  </Text>
+
+                  <View className="flex-row items-center mb-2">
+                    <Text
+                      className="text-xs mr-1"
+                      style={{ color: Colors.textSecondary }}
+                    >
+                      👨‍🏫
                     </Text>
-                  ),
-                },
-                {
-                  key: 'teacher',
-                  label: 'Giảng viên',
-                  width: 180,
-                  render: (session) => (
-                    <Text style={{ fontSize: 14, color: Colors.textSecondary }}>
+                    <Text
+                      className="text-xs mr-3"
+                      style={{ color: Colors.textSecondary }}
+                    >
                       {session.teacher}
                     </Text>
-                  ),
-                },
-                {
-                  key: 'startTime',
-                  label: 'Thời gian',
-                  width: 150,
-                  render: (session) => (
-                    <Text style={{ fontSize: 14, color: Colors.textSecondary }}>
+                    <Text
+                      className="text-xs mr-1"
+                      style={{ color: Colors.textSecondary }}
+                    >
+                      ⏰
+                    </Text>
+                    <Text
+                      className="text-xs"
+                      style={{ color: Colors.textSecondary }}
+                    >
                       {session.startTime}
                     </Text>
                   ),
@@ -302,65 +326,99 @@ export default function AttendanceSessions() {
                     </View>
                   </View>
 
-                  {/* Attendance Stats */}
-                  <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 12 }}>
-                    <View style={{ flex: 1, alignItems: 'center' }}>
-                      <Text style={{ fontSize: isMobile ? 20 : 24, fontWeight: 'bold', marginBottom: 4, color: Colors.success }}>
-                        {session.present}
-                      </Text>
-                      <Text style={{ fontSize: isMobile ? 11 : 12, color: Colors.textSecondary }}>Có mặt</Text>
-                    </View>
-                    <View style={{ flex: 1, alignItems: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: Colors.border }}>
-                      <Text style={{ fontSize: isMobile ? 20 : 24, fontWeight: 'bold', marginBottom: 4, color: Colors.warning }}>
-                        {session.late}
-                      </Text>
-                      <Text style={{ fontSize: isMobile ? 11 : 12, color: Colors.textSecondary }}>Muộn</Text>
-                    </View>
-                    <View style={{ flex: 1, alignItems: 'center' }}>
-                      <Text style={{ fontSize: isMobile ? 20 : 24, fontWeight: 'bold', marginBottom: 4, color: Colors.error }}>
-                        {session.absent}
-                      </Text>
-                      <Text style={{ fontSize: isMobile ? 11 : 12, color: Colors.textSecondary }}>Vắng</Text>
-                    </View>
-                    <View style={{ flex: 1, alignItems: 'center', borderLeftWidth: 1, borderColor: Colors.border }}>
-                      <Text style={{ fontSize: isMobile ? 20 : 24, fontWeight: 'bold', marginBottom: 4, color: Colors.text }}>
-                        {session.total}
-                      </Text>
-                      <Text style={{ fontSize: isMobile ? 11 : 12, color: Colors.textSecondary }}>Tổng</Text>
-                    </View>
-                  </View>
-
-                  {/* Progress Bar */}
-                  <View style={{ marginTop: 12 }}>
-                    <View style={{ height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: Colors.gray200 }}>
-                      <View
-                        style={{
-                          height: '100%',
-                          borderRadius: 4,
-                          width: `${(session.present / session.total) * 100}%`,
-                          backgroundColor: Colors.success,
-                        }}
-                      />
-                    </View>
-                    <Text style={{ fontSize: isMobile ? 11 : 12, textAlign: 'right', marginTop: 4, color: Colors.textSecondary }}>
-                      {Math.round((session.present / session.total) * 100)}% điểm danh
-                    </Text>
-                  </View>
-                </Card>
-              ))}
-              {filteredSessions.length === 0 && (
-                <Card style={{ padding: 20, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: Colors.text, marginBottom: 4 }}>
-                    Không có buổi học
+              {/* Attendance Stats */}
+              <View
+                className="flex-row border-t pt-3"
+                style={{ borderTopColor: Colors.border }}
+              >
+                <View className="flex-1 items-center">
+                  <Text
+                    className="text-2xl font-bold mb-1"
+                    style={{ color: Colors.success }}
+                  >
+                    {session.present}
                   </Text>
-                  <Text style={{ fontSize: 14, color: Colors.textSecondary, textAlign: 'center' }}>
-                    Chưa có dữ liệu phù hợp với bộ lọc hiện tại.
+                  <Text
+                    className="text-xs"
+                    style={{ color: Colors.textSecondary }}
+                  >
+                    Có mặt
                   </Text>
-                </Card>
-              )}
-            </>
-          )}
+                </View>
+                <View
+                  className="flex-1 items-center border-l border-r"
+                  style={{ borderColor: Colors.border }}
+                >
+                  <Text
+                    className="text-2xl font-bold mb-1"
+                    style={{ color: Colors.warning }}
+                  >
+                    {session.late}
+                  </Text>
+                  <Text
+                    className="text-xs"
+                    style={{ color: Colors.textSecondary }}
+                  >
+                    Muộn
+                  </Text>
+                </View>
+                <View className="flex-1 items-center">
+                  <Text
+                    className="text-2xl font-bold mb-1"
+                    style={{ color: Colors.error }}
+                  >
+                    {session.absent}
+                  </Text>
+                  <Text
+                    className="text-xs"
+                    style={{ color: Colors.textSecondary }}
+                  >
+                    Vắng
+                  </Text>
+                </View>
+                <View
+                  className="flex-1 items-center border-l"
+                  style={{ borderColor: Colors.border }}
+                >
+                  <Text
+                    className="text-2xl font-bold mb-1"
+                    style={{ color: Colors.text }}
+                  >
+                    {session.total}
+                  </Text>
+                  <Text
+                    className="text-xs"
+                    style={{ color: Colors.textSecondary }}
+                  >
+                    Tổng
+                  </Text>
+                </View>
+              </View>
 
+              {/* Progress Bar */}
+              <View className="mt-3">
+                <View
+                  className="h-2 rounded-full overflow-hidden"
+                  style={{ backgroundColor: Colors.gray200 }}
+                >
+                  <View
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${(session.present / session.total) * 100}%`,
+                      backgroundColor: Colors.success,
+                    }}
+                  />
+                </View>
+                <Text
+                  className="text-xs text-right mt-1"
+                  style={{ color: Colors.textSecondary }}
+                >
+                  {Math.round((session.present / session.total) * 100)}% điểm
+                  danh
+                </Text>
+              </View>
+            </Card>
+          ))}
         </View>
       </ScrollView>
     </View>

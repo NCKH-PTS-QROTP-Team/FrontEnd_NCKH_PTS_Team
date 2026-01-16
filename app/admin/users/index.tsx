@@ -21,14 +21,9 @@ export default function UserManagement() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
-  const isMobile = width < 768;
-  const showTable = isDesktop; // Chỉ desktop mới hiển thị table
-
-  const contentMaxWidth = isDesktop ? 1200 : '100%';
+const contentMaxWidth = isDesktop ? 1200 : '100%';
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
-  const paddingVertical = isMobile ? 16 : 24;
-
-  // Simulate data fetching
+// Simulate data fetching
   useEffect(() => {
     loadUsers();
   }, []);
@@ -62,11 +57,14 @@ export default function UserManagement() {
       teacher: { label: 'Giảng viên', variant: 'primary' as const },
       student: { label: 'Sinh viên', variant: 'success' as const },
     };
-    return roleMap[role as keyof typeof roleMap] || { label: role, variant: 'neutral' as const };
-  };
+return roleMap[role as keyof typeof roleMap] || { label: role, variant: 'gray' as const };
+};
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+<StatusBar style="dark" />
+      <AppHeader title="Quản lý người dùng" showLogout={true} />
+      
       <ScrollView style={{ flex: 1 }}>
         <View style={{ paddingHorizontal, paddingVertical, maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
           
@@ -76,32 +74,28 @@ export default function UserManagement() {
           </Text>
           
           {/* Actions */}
-          <View style={{ flexDirection: isMobile ? 'column' : 'row', marginBottom: 16, gap: isMobile ? 12 : 8 }}>
-            <View style={{ flex: isMobile ? undefined : 1 }}>
-              <PrimaryButton
-                title="+ Thêm người dùng"
-                onPress={() => router.push('/admin/users/create' as any)}
-              />
-            </View>
-            <View style={{ flex: isMobile ? undefined : 1 }}>
-              <PrimaryButton
-                title="↑ Upload CSV"
-                variant="outline"
-                onPress={() => alert('Upload CSV')}
-              />
-            </View>
-          </View>
+          <View className="flex-row mb-4">
+            <PrimaryButton
+              title="+ Thêm người dùng"
+              onPress={() => router.push('/admin/users/create' as any)}
+              className="flex-1 mr-2"
+            />
+            <PrimaryButton
+              title="↑ Upload CSV"
+              variant="outline"
+              onPress={() => alert('Upload CSV')}
+              className="flex-1"
+            />
+</View>
 
           {/* Search */}
           <TextInput
+className="border-2 rounded-lg px-4 mb-4"
             style={{
               height: 48,
               borderWidth: 2,
               borderColor: Colors.gray200,
-              borderRadius: 8,
-              paddingHorizontal: 16,
-              marginBottom: 16,
-              color: Colors.text,
+color: Colors.text,
               lineHeight: 24,
               ...Platform.select({
                 web: { outlineStyle: 'none' as any },
@@ -114,9 +108,9 @@ export default function UserManagement() {
           />
 
           {/* Role Filters */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-            <View style={{ flexDirection: 'row' }}>
-              {[
+<ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+            <View className="flex-row">
+{[
                 { key: 'all', label: 'Tất cả' },
                 { key: 'admin', label: 'Admin' },
                 { key: 'teacher', label: 'Giảng viên' },
@@ -124,20 +118,16 @@ export default function UserManagement() {
               ].map((role) => (
                 <TouchableOpacity
                   key={role.key}
+className="px-4 py-2 rounded-full mr-2"
                   style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    borderRadius: 20,
-                    marginRight: 8,
-                    backgroundColor: selectedRole === role.key ? Colors.primary : Colors.gray100,
+backgroundColor: selectedRole === role.key ? Colors.primary : Colors.gray100,
                   }}
                   onPress={() => setSelectedRole(role.key as any)}
                 >
                   <Text
+className="font-medium text-sm"
                     style={{
-                      fontWeight: '500',
-                      fontSize: 14,
-                      color: selectedRole === role.key ? Colors.white : Colors.gray700,
+color: selectedRole === role.key ? Colors.white : Colors.gray700,
                     }}
                   >
                     {role.label}
@@ -169,7 +159,7 @@ export default function UserManagement() {
           {/* User List */}
           {!loading && !error && filteredUsers.length > 0 && (
             <>
-              <Text style={{ fontSize: 14, marginBottom: 12, color: Colors.textSecondary }}>
+<Text className="text-sm mb-3" style={{ color: Colors.textSecondary }}>
                 {filteredUsers.length} người dùng
               </Text>
 
@@ -291,53 +281,22 @@ export default function UserManagement() {
                           </Text>
                         </View>
 
-                        <View style={{ flex: 1, minWidth: 0 }}>
-                          <View style={{ flexDirection: 'column', alignItems: 'flex-start', marginBottom: 4, gap: 4 }}>
-                            <Text style={{ fontWeight: '600', color: Colors.text, fontSize: 15 }}>
-                              {user.name}
-                            </Text>
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
-                              {(() => {
-                                const badgeData = getRoleBadge(user.role);
-                                return (
-                                  <Badge variant={badgeData.variant} size="small">
-                                    {badgeData.label}
-                                  </Badge>
-                                );
-                              })()}
-                              {!user.isActive && (
-                                <Badge variant="neutral" size="small">
-                                  Vô hiệu
-                                </Badge>
-                              )}
-                            </View>
-                          </View>
-                          <Text style={{ fontSize: 13, marginBottom: 4, color: Colors.textSecondary }}>
-                            {user.email}
-                          </Text>
-                          {(user.studentId || user.teacherId) && (
-                            <Text style={{ fontSize: 12, color: Colors.textLight }}>
-                              {user.studentId || user.teacherId}
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                    </Card>
-                  ))}
-                </>
-              )}
-            </>
+                    <Text className="text-2xl" style={{ color: Colors.gray300 }}>›</Text>
+                  </View>
+                </Card>
+              ))}
+</>
           )}
 
           {/* Empty State */}
           {!loading && !error && filteredUsers.length === 0 && (
             <View 
+className="bg-white border rounded-lg"
               style={{ 
                 backgroundColor: '#FFFFFF',
                 borderWidth: 1,
                 borderColor: Colors.gray200,
-                borderRadius: 8,
-                padding: 48,
+padding: 48,
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginTop: 24,
@@ -347,13 +306,15 @@ export default function UserManagement() {
                 <>
                   <EmptySearchIcon size={80} color={Colors.gray300} />
                   <Text 
-                    style={{ fontSize: 20, fontWeight: '600', marginBottom: 8, marginTop: 16, color: Colors.text, lineHeight: 32, textAlign: 'center' }}
-                  >
+className="text-xl font-semibold mb-2 mt-4" 
+                    style={{ color: Colors.text, lineHeight: 32, textAlign: 'center' }}
+>
                     Không tìm thấy kết quả
                   </Text>
                   <Text 
-                    style={{ fontSize: 16, color: Colors.textSecondary, lineHeight: 24, textAlign: 'center', maxWidth: 400 }}
-                  >
+className="text-base" 
+                    style={{ color: Colors.textSecondary, lineHeight: 24, textAlign: 'center', maxWidth: 400 }}
+>
                     Không tìm thấy người dùng nào phù hợp với "{searchQuery}". Thử tìm kiếm với từ khóa khác.
                   </Text>
                 </>
@@ -361,13 +322,15 @@ export default function UserManagement() {
                 <>
                   <EmptyUsersIcon size={80} color={Colors.gray300} />
                   <Text 
-                    style={{ fontSize: 20, fontWeight: '600', marginBottom: 8, marginTop: 16, color: Colors.text, lineHeight: 32, textAlign: 'center' }}
-                  >
+className="text-xl font-semibold mb-2 mt-4" 
+                    style={{ color: Colors.text, lineHeight: 32, textAlign: 'center' }}
+>
                     Chưa có người dùng
                   </Text>
                   <Text 
-                    style={{ fontSize: 16, marginBottom: 16, color: Colors.textSecondary, lineHeight: 24, textAlign: 'center', maxWidth: 400 }}
-                  >
+className="text-base mb-4" 
+                    style={{ color: Colors.textSecondary, lineHeight: 24, textAlign: 'center', maxWidth: 400 }}
+>
                     Bắt đầu bằng cách thêm người dùng mới vào hệ thống.
                   </Text>
                   <PrimaryButton

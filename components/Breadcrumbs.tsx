@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Colors } from '@/constants/colors';
+import React from "react";
+import { View, Text, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
+import { Colors } from "@/constants/colors";
 
 interface BreadcrumbItem {
   label: string;
@@ -18,7 +18,10 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items }) => {
   if (items.length === 0) return null;
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+    <View
+      className="flex-row items-center flex-wrap"
+      style={{ marginBottom: 8 }}
+    >
       {items.map((item, index) => (
         <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
           {index > 0 && (
@@ -40,9 +43,9 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items }) => {
           ) : (
             <Text
               style={{
-                fontSize: 14,
-                color: index === items.length - 1 ? Colors.gray900 : Colors.gray600,
-                fontWeight: index === items.length - 1 ? '600' : '400',
+                color:
+                  index === items.length - 1 ? Colors.gray900 : Colors.gray600,
+                fontWeight: index === items.length - 1 ? "600" : "400",
                 lineHeight: 21,
               }}
             >
