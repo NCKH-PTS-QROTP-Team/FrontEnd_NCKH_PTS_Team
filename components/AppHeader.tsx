@@ -73,8 +73,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   return (
     <View 
+<<<<<<< HEAD
+      style={{
+        backgroundColor: '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
+=======
       className="bg-white border-b border-gray-200"
       style={{
+>>>>>>> Phu
         paddingTop: Platform.OS === 'web' ? 0 : 40,
         paddingBottom: Platform.OS === 'web' ? 0 : 16,
         paddingHorizontal: Platform.OS === 'web' ? 20 : 20,
@@ -93,8 +100,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       }}
     >
       <View 
+<<<<<<< HEAD
+        style={{ flexDirection: 'column', maxWidth: 900, width: '100%', alignSelf: 'center' }}
+=======
         className="flex-col"
         style={{ maxWidth: 900, width: '100%', alignSelf: 'center' }}
+>>>>>>> Phu
       >
         {/* Breadcrumbs */}
         {breadcrumbs && breadcrumbs.length > 0 && (
@@ -102,8 +113,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         )}
         
         {/* Header Content */}
+<<<<<<< HEAD
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+=======
         <View className="flex-row items-center justify-between">
         <View className="flex-row items-center flex-1">
+>>>>>>> Phu
           {showBack && (
             <TouchableOpacity
               onPress={() => router.back()}
@@ -124,11 +140,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 onMouseLeave: () => setIsBackHovered(false),
               } as any)}
             >
+<<<<<<< HEAD
+              <Text style={{ fontSize: 20, color: Colors.primary }}>←</Text>
+            </TouchableOpacity>
+          )}
+          <Text 
+=======
               <Text className="text-xl text-primary">←</Text>
             </TouchableOpacity>
           )}
           <Text 
             className="text-2xl font-semibold text-gray-900"
+>>>>>>> Phu
             style={{ fontSize: 24, fontWeight: '600', color: '#111827', lineHeight: 36, letterSpacing: -0.01 }}
             numberOfLines={1}
           >
@@ -157,13 +180,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {showLogout && !showUserProfile && (
             <TouchableOpacity
               onPress={handleLogout}
+<<<<<<< HEAD
+              style={{
+                backgroundColor: isLogoutHovered ? '#FEE2E2' : '#FEF2F2',
+                paddingHorizontal: 16,
+=======
               className="bg-red-50 px-4"
               style={{
+>>>>>>> Phu
                 borderRadius: 8,
                 minHeight: 44,
                 paddingVertical: 10,
                 transform: isLogoutHovered ? [{ scale: 1.03 }] : [{ scale: 1 }],
+<<<<<<< HEAD
+=======
                 backgroundColor: isLogoutHovered ? '#FEE2E2' : '#FEF2F2',
+>>>>>>> Phu
                 ...(Platform.OS === 'web' && {
                   transition: 'all 0.2s ease',
                   cursor: 'pointer',
@@ -175,7 +207,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 onMouseLeave: () => setIsLogoutHovered(false),
               } as any)}
             >
+<<<<<<< HEAD
+              <Text style={{ fontSize: 14, color: Colors.error, lineHeight: 21 }}>
+=======
               <Text className="text-sm" style={{ color: Colors.error, lineHeight: 21 }}>
+>>>>>>> Phu
                 Đăng xuất
               </Text>
             </TouchableOpacity>

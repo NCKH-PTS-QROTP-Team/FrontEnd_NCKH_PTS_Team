@@ -127,6 +127,14 @@ export interface Subject {
   credits: number;
   teacher?: string;
   teacherId?: string;
+<<<<<<< HEAD
+  // Hỗ trợ 2 giảng viên: Lý thuyết và Thực hành
+  teacherLT?: string;
+  teacherLTId?: string;
+  teacherTH?: string;
+  teacherTHId?: string;
+=======
+>>>>>>> Phu
 }
 
 export interface AttendanceSession {
@@ -168,9 +176,15 @@ export const mockClasses: Class[] = [
 ];
 
 export const mockSubjects: Subject[] = [
+<<<<<<< HEAD
+  { id: '1', code: 'CS101', name: 'Lập trình cơ bản', credits: 3, teacherLT: 'TS. Nguyễn Văn A', teacherLTId: 'GV001', teacherTH: 'ThS. Trần Thị B', teacherTHId: 'GV002' },
+  { id: '2', code: 'CS102', name: 'Cơ sở dữ liệu', credits: 4, teacherLT: 'ThS. Trần Thị B', teacherLTId: 'GV002' },
+  { id: '3', code: 'CS103', name: 'Mạng máy tính', credits: 3, teacherLT: 'TS. Lê Văn C', teacherLTId: 'GV003', teacherTH: 'TS. Lê Văn C', teacherTHId: 'GV003' },
+=======
   { id: '1', code: 'CS101', name: 'Lập trình cơ bản', credits: 3, teacher: 'TS. Nguyễn Văn A', teacherId: 'GV001' },
   { id: '2', code: 'CS102', name: 'Cơ sở dữ liệu', credits: 4, teacher: 'ThS. Trần Thị B', teacherId: 'GV002' },
   { id: '3', code: 'CS103', name: 'Mạng máy tính', credits: 3, teacher: 'TS. Lê Văn C', teacherId: 'GV003' },
+>>>>>>> Phu
   { id: '4', code: 'CS104', name: 'Trí tuệ nhân tạo', credits: 3 },
 ];
 

@@ -10,7 +10,10 @@ interface PrimaryButtonProps {
   disabled?: boolean;
   variant?: 'primary' | 'outline' | 'ghost';
   style?: ViewStyle;
+<<<<<<< HEAD
+=======
   className?: string;
+>>>>>>> Phu
 }
 
 export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
@@ -20,13 +23,18 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   disabled = false,
   variant = 'primary',
   style,
+<<<<<<< HEAD
+=======
   className,
+>>>>>>> Phu
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const isDisabled = disabled || loading;
 
+<<<<<<< HEAD
+=======
   const getButtonStyle = () => {
     if (variant === 'outline') {
       return 'bg-white border-2';
@@ -37,6 +45,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
     return '';
   };
 
+>>>>>>> Phu
   const getBackgroundColor = () => {
     if (isDisabled) {
       return variant === 'outline' ? Colors.white : Colors.gray300;
@@ -108,6 +117,8 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityState={{ disabled: isDisabled }}
+<<<<<<< HEAD
+=======
       className={`
         ${getButtonStyle()}
         px-6
@@ -115,11 +126,18 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
         justify-center
         ${className || ''}
       `}
+>>>>>>> Phu
       style={[
         { 
           borderRadius: 8,
           minHeight: 44, // Minimum touch target
           paddingVertical: 12,
+<<<<<<< HEAD
+          paddingHorizontal: 24,
+          alignItems: 'center',
+          justifyContent: 'center',
+=======
+>>>>>>> Phu
           backgroundColor: getBackgroundColor(),
           borderColor: getBorderColor(),
           borderWidth: variant === 'outline' ? 2 : 0,

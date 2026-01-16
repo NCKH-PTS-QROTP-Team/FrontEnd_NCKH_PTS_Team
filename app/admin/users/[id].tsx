@@ -115,6 +115,21 @@ export default function UserDetail() {
             )}
 
             {user.teacherId && (
+<<<<<<< HEAD
+              <View style={{ marginBottom: 12 }}>
+                <Text style={{ fontSize: 14, marginBottom: 4, color: Colors.textSecondary }}>Mã giảng viên</Text>
+                <Text style={{ fontSize: 16, fontWeight: '500', color: Colors.text }}>{user.teacherId}</Text>
+              </View>
+            )}
+
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ fontSize: 14, marginBottom: 4, color: Colors.textSecondary }}>ID</Text>
+              <Text style={{ fontSize: 16, fontWeight: '500', color: Colors.text }}>{user.id}</Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: Colors.border }}>
+              <Text style={{ fontWeight: '500', color: Colors.text }}>
+=======
               <View className="mb-3">
                 <Text className="text-sm mb-1" style={{ color: Colors.textSecondary }}>Mã giảng viên</Text>
                 <Text className="text-base font-medium" style={{ color: Colors.text }}>{user.teacherId}</Text>
@@ -128,6 +143,7 @@ export default function UserDetail() {
 
             <View className="flex-row justify-between items-center pt-3 border-t" style={{ borderTopColor: Colors.border }}>
               <Text className="font-medium" style={{ color: Colors.text }}>
+>>>>>>> Phu
                 Trạng thái tài khoản
               </Text>
               <Switch
@@ -140,6 +156,16 @@ export default function UserDetail() {
           </Card>
 
           {/* Actions */}
+<<<<<<< HEAD
+          <Card style={{ marginBottom: 16 }}>
+            <View style={{ marginBottom: 12 }}>
+              <PrimaryButton
+                title="Reset mật khẩu"
+                variant="outline"
+                onPress={handleResetPassword}
+              />
+            </View>
+=======
           <Card className="mb-4">
             <PrimaryButton
               title="Reset mật khẩu"
@@ -147,6 +173,7 @@ export default function UserDetail() {
               onPress={handleResetPassword}
               className="mb-3"
             />
+>>>>>>> Phu
             <PrimaryButton
               title="Xóa người dùng"
               variant="outline"

@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Colors } from '@/constants/colors';
 import { mockClasses } from '@/constants/mockData';
 import { AppHeader } from '@/components/AppHeader';
-import { Card } from '@/components/Card';
+import  Card  from '@/components/Card';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { EmptySearchIcon, EmptyListIcon } from '@/components/EmptyStateIllustration';
 

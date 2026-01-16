@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -9,11 +10,35 @@ export default function GenerateOTPScreen() {
   const [countdown, setCountdown] = useState(300);
   const [isActive, setIsActive] = useState(false);
   const isWeb = Platform.OS === 'web';
+=======
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  useWindowDimensions,
+  Platform,
+  SafeAreaView,
+} from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { AppHeader } from "@/components/AppHeader";
+import { PrimaryButton } from "@/components/PrimaryButton";
+
+export default function GenerateOTPScreen() {
+  const [otp, setOtp] = useState("");
+  const [countdown, setCountdown] = useState(300);
+  const [isActive, setIsActive] = useState(false);
+  const isWeb = Platform.OS === "web";
+>>>>>>> Phu
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
 
+<<<<<<< HEAD
   const contentMaxWidth = isDesktop ? 600 : '100%';
+=======
+  const contentMaxWidth = isDesktop ? 600 : "100%";
+>>>>>>> Phu
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
 
   useEffect(() => {
@@ -38,20 +63,32 @@ export default function GenerateOTPScreen() {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
+<<<<<<< HEAD
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+=======
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+>>>>>>> Phu
   };
 
   const isExpired = countdown === 0;
 
   return (
+<<<<<<< HEAD
     <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
       <StatusBar style="dark" />
       <AppHeader title="Tạo mã OTP" showBack showLogout={!isWeb} />
       
+=======
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+      <StatusBar style="dark" />
+      <AppHeader title="Tạo mã OTP" showBack showLogout={!isWeb} />
+
+>>>>>>> Phu
       <ScrollView
         contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
       >
+<<<<<<< HEAD
         <View style={{ maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
           {/* Course Info */}
           <View style={{
@@ -70,12 +107,64 @@ export default function GenerateOTPScreen() {
               Lập trình cơ bản
             </Text>
             <Text style={{ fontSize: 14, lineHeight: 20, color: '#4B5563', marginTop: 4 }}>
+=======
+        <View
+          style={{
+            maxWidth: contentMaxWidth,
+            width: "100%",
+            alignSelf: "center",
+          }}
+        >
+          {/* Course Info */}
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 24,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                lineHeight: 20,
+                color: "#6B7280",
+                marginBottom: 4,
+              }}
+            >
+              Môn học
+            </Text>
+            <Text
+              style={{
+                fontSize: 20,
+                lineHeight: 28,
+                fontWeight: "bold",
+                color: "#111827",
+              }}
+            >
+              Lập trình cơ bản
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                lineHeight: 20,
+                color: "#4B5563",
+                marginTop: 4,
+              }}
+            >
+>>>>>>> Phu
               CS101 • Phòng A102 • 08:00 - 10:00
             </Text>
           </View>
 
           {/* OTP Display */}
           {isActive ? (
+<<<<<<< HEAD
             <View className="bg-white rounded-2xl p-8 mb-6" style={{
               shadowColor: '#3FA9F5',
               shadowOffset: { width: 0, height: 4 },
@@ -86,6 +175,39 @@ export default function GenerateOTPScreen() {
               <View className="items-center mb-6">
                 <View style={{ width: 64, height: 64, backgroundColor: '#DBEAFE', borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                   <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#3FA9F5' }}>#</Text>
+=======
+            <View
+              className="bg-white rounded-2xl p-8 mb-6"
+              style={{
+                shadowColor: "#3FA9F5",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 12,
+                elevation: 5,
+              }}
+            >
+              <View className="items-center mb-6">
+                <View
+                  style={{
+                    width: 64,
+                    height: 64,
+                    backgroundColor: "#DBEAFE",
+                    borderRadius: 16,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 16,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 32,
+                      fontWeight: "bold",
+                      color: "#3FA9F5",
+                    }}
+                  >
+                    #
+                  </Text>
+>>>>>>> Phu
                 </View>
                 <Text className="text-sm text-gray-500 mb-4">
                   Mã OTP cho sinh viên
@@ -101,9 +223,17 @@ export default function GenerateOTPScreen() {
                 <Text className="text-sm text-gray-500 mb-2">
                   Thời gian còn lại
                 </Text>
+<<<<<<< HEAD
                 <Text className={`text-4xl font-bold ${
                   countdown < 60 ? 'text-red-500' : 'text-primary'
                 }`}>
+=======
+                <Text
+                  className={`text-4xl font-bold ${
+                    countdown < 60 ? "text-red-500" : "text-primary"
+                  }`}
+                >
+>>>>>>> Phu
                   {formatTime(countdown)}
                 </Text>
                 {countdown < 60 && (
@@ -114,6 +244,7 @@ export default function GenerateOTPScreen() {
               </View>
             </View>
           ) : (
+<<<<<<< HEAD
             <View className="bg-white rounded-2xl p-8 mb-6 items-center" style={{
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
@@ -123,6 +254,30 @@ export default function GenerateOTPScreen() {
             }}>
               <View style={{ width: 64, height: 64, backgroundColor: '#F3F4F6', borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                 <Text style={{ fontSize: 32, color: '#6B7280' }}>○</Text>
+=======
+            <View
+              className="bg-white rounded-2xl p-8 mb-6 items-center"
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+                elevation: 3,
+              }}
+            >
+              <View
+                style={{
+                  width: 64,
+                  height: 64,
+                  backgroundColor: "#F3F4F6",
+                  borderRadius: 16,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={{ fontSize: 32, color: "#6B7280" }}>○</Text>
+>>>>>>> Phu
               </View>
               <Text className="text-xl font-bold text-gray-900 mb-2">
                 Chưa có mã OTP
@@ -139,16 +294,38 @@ export default function GenerateOTPScreen() {
           />
 
           {/* Instructions */}
+<<<<<<< HEAD
           <View style={{ backgroundColor: '#E0F2FE', borderWidth: 1, borderColor: '#BFDBFE', borderRadius: 12, padding: 16, marginTop: 24 }}>
             <Text style={{ fontSize: 14, lineHeight: 20, color: '#1E40AF' }}>
               <Text style={{ fontWeight: '600' }}>Hướng dẫn:</Text>
               {'\n'}• Hiển thị mã OTP trên màn hình cho sinh viên
               {'\n'}• Mã có hiệu lực trong 5 phút
               {'\n'}• Sinh viên nhập mã để hoàn tất điểm danh
+=======
+          <View
+            style={{
+              backgroundColor: "#E0F2FE",
+              borderWidth: 1,
+              borderColor: "#BFDBFE",
+              borderRadius: 12,
+              padding: 16,
+              marginTop: 24,
+            }}
+          >
+            <Text style={{ fontSize: 14, lineHeight: 20, color: "#1E40AF" }}>
+              <Text style={{ fontWeight: "600" }}>Hướng dẫn:</Text>
+              {"\n"}• Hiển thị mã OTP trên màn hình cho sinh viên
+              {"\n"}• Mã có hiệu lực trong 5 phút
+              {"\n"}• Sinh viên nhập mã để hoàn tất điểm danh
+>>>>>>> Phu
             </Text>
           </View>
         </View>
       </ScrollView>
+<<<<<<< HEAD
     </View>
+=======
+    </SafeAreaView>
+>>>>>>> Phu
   );
 }

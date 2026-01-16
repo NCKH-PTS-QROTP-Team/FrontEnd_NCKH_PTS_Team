@@ -1,8 +1,8 @@
-import { Stack } from 'expo-router';
-import { View } from 'react-native';
-import { Spinner } from '@/components/Spinner';
-import { useEffect, useState } from 'react';
-import * as SplashScreen from 'expo-splash-screen';
+import { Stack } from "expo-router";
+import { View } from "react-native";
+import { Spinner } from "@/components/Spinner";
+import { useEffect, useState } from "react";
+import * as SplashScreen from "expo-splash-screen";
 // Temporarily disabled to fix web text node errors
 // import '../global.css';
 
@@ -16,7 +16,7 @@ export default function RootLayout() {
     async function prepare() {
       try {
         // Simulate loading time or add actual initialization
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       } catch (e) {
         console.warn(e);
       } finally {
@@ -30,12 +30,14 @@ export default function RootLayout() {
 
   if (!appReady) {
     return (
-      <View style={{ 
-        flex: 1, 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        backgroundColor: '#FFFFFF' 
-      }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#FFFFFF",
+        }}
+      >
         <Spinner size={48} color="#3FA9F5" />
       </View>
     );
@@ -45,7 +47,7 @@ export default function RootLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: '#FFFFFF' },
+        contentStyle: { backgroundColor: "#FFFFFF" },
       }}
     >
       <Stack.Screen name="index" />
@@ -60,6 +62,5 @@ export default function RootLayout() {
     </Stack>
   );
 }
-
 
 // Updated: 2026-01-02 13:16:05

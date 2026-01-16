@@ -122,6 +122,18 @@ export default function Sidebar({ menuItems, userRole, userName, collapsed: exte
             const isActive = normalizedPathname === normalizedRoute || (normalizedPathname && normalizedPathname.startsWith(normalizedRoute + '/'));
             const [isHovered, setIsHovered] = React.useState(false);
             
+<<<<<<< HEAD
+            // Determine icon color based on state
+            const iconContainerBg = isActive ? '#3FA9F5' : (isHovered ? '#3FA9F5' : '#F3F4F6');
+            const iconColor = (isActive || isHovered) ? '#FFFFFF' : '#3FA9F5';
+            
+            // Clone icon element with new color
+            const iconWithColor = React.isValidElement(item.icon)
+              ? React.cloneElement(item.icon as React.ReactElement<any>, { color: iconColor })
+              : item.icon;
+            
+=======
+>>>>>>> Phu
             return (
               <View
                 key={index}
@@ -162,7 +174,11 @@ export default function Sidebar({ menuItems, userRole, userName, collapsed: exte
                         width: 32,
                         height: 32,
                         borderRadius: 8,
+<<<<<<< HEAD
+                        backgroundColor: iconContainerBg,
+=======
                         backgroundColor: isActive ? '#3FA9F5' : (isHovered ? '#E5E7EB' : '#F3F4F6'),
+>>>>>>> Phu
                         alignItems: 'center',
                         justifyContent: 'center',
                         marginLeft: collapsed ? 0 : 12,
@@ -173,7 +189,11 @@ export default function Sidebar({ menuItems, userRole, userName, collapsed: exte
                       } as any,
                     ]}
                   >
+<<<<<<< HEAD
+                    {iconWithColor}
+=======
                     {item.icon}
+>>>>>>> Phu
                   </View>
                   {!collapsed && (
                     <>

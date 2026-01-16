@@ -1,11 +1,21 @@
 import React, { useState } from 'react';
+<<<<<<< HEAD
+import { View, Platform, Text, useWindowDimensions, Image } from 'react-native';
+=======
 import { View, Platform, Text, useWindowDimensions } from 'react-native';
+>>>>>>> Phu
 import { useRouter } from 'expo-router';
 import Sidebar from './Sidebar';
 import NotificationDropdown from './NotificationDropdown';
 import UserProfileDropdown from './UserProfileDropdown';
 import { Colors } from '@/constants/colors';
 
+<<<<<<< HEAD
+// Import logo IUH
+const logoNameImage = require('@/assets/logoname.png');
+
+=======
+>>>>>>> Phu
 interface MenuItem {
   icon: React.ReactNode;
   label: string;
@@ -44,11 +54,19 @@ export default function AppLayout({
   const sidebarWidth = collapsed ? 80 : 260;
   
   // Responsive values
+<<<<<<< HEAD
+  const headerHeight = isMobile ? 52 : 56;
+  const headerPadding = isMobile ? 12 : (isTablet ? 16 : 20);
+  const logoFontSize = isMobile ? 16 : 20;
+  const badgeFontSize = isMobile ? 10 : 11;
+  const badgePadding = isMobile ? 8 : 10;
+=======
   const headerHeight = isMobile ? 56 : 64;
   const headerPadding = isMobile ? 12 : (isTablet ? 16 : 24);
   const logoFontSize = isMobile ? 16 : 20;
   const badgeFontSize = isMobile ? 10 : 12;
   const badgePadding = isMobile ? 8 : 12;
+>>>>>>> Phu
 
   const roleLabels = {
     admin: 'Admin',
@@ -83,6 +101,17 @@ export default function AppLayout({
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+<<<<<<< HEAD
+          <Image
+            source={logoNameImage}
+            style={{
+              height: isMobile ? 24 : 28,
+              width: isMobile ? 80 : 110,
+              resizeMode: 'contain',
+              marginRight: isMobile ? 8 : 12,
+            }}
+          />
+=======
           <Text style={{ 
             fontSize: logoFontSize, 
             fontWeight: 'bold', 
@@ -93,6 +122,7 @@ export default function AppLayout({
           numberOfLines={1}>
             {isMobile ? 'Điểm danh' : 'OTP & Điểm Danh'}
           </Text>
+>>>>>>> Phu
           {!isMobile && (
             <View style={{ 
               paddingHorizontal: badgePadding, 
