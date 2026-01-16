@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Colors } from '@/constants/colors';
+import React from "react";
+import { View, Text, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
+import { Colors } from "@/constants/colors";
 
 interface BreadcrumbItem {
   label: string;
@@ -18,19 +18,14 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items }) => {
   if (items.length === 0) return null;
 
   return (
-<<<<<<< HEAD
-    <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
-      {items.map((item, index) => (
-        <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {index > 0 && (
-            <Text style={{ fontSize: 14, color: Colors.gray400, marginHorizontal: 8 }}>
-=======
-    <View className="flex-row items-center flex-wrap" style={{ marginBottom: 8 }}>
+    <View
+      className="flex-row items-center flex-wrap"
+      style={{ marginBottom: 8 }}
+    >
       {items.map((item, index) => (
         <View key={index} className="flex-row items-center">
           {index > 0 && (
             <Text className="text-gray-400 mx-2" style={{ fontSize: 14 }}>
->>>>>>> Phu
               /
             </Text>
           )}
@@ -40,27 +35,19 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items }) => {
               activeOpacity={0.7}
             >
               <Text
-<<<<<<< HEAD
-                style={{ fontSize: 14, color: Colors.primary, lineHeight: 21 }}
-=======
                 className="text-sm"
                 style={{ color: Colors.primary, lineHeight: 21 }}
->>>>>>> Phu
               >
                 {item.label}
               </Text>
             </TouchableOpacity>
           ) : (
             <Text
-<<<<<<< HEAD
-              style={{
-                fontSize: 14,
-=======
               className="text-sm"
               style={{
->>>>>>> Phu
-                color: index === items.length - 1 ? Colors.gray900 : Colors.gray600,
-                fontWeight: index === items.length - 1 ? '600' : '400',
+                color:
+                  index === items.length - 1 ? Colors.gray900 : Colors.gray600,
+                fontWeight: index === items.length - 1 ? "600" : "400",
                 lineHeight: 21,
               }}
             >

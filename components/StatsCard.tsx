@@ -1,12 +1,6 @@
-<<<<<<< HEAD
-import React from 'react';
-import { View, Text, Platform } from 'react-native';
-import { Colors } from '@/constants/colors';
-=======
 import React from "react";
 import { View, Text, Platform } from "react-native";
 import { Colors } from "@/constants/colors";
->>>>>>> Phu
 
 interface TrendData {
   value: number; // percentage change
@@ -40,20 +34,6 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   trend,
   sparkline,
 }) => {
-<<<<<<< HEAD
-  const displayTitle = title || label || '';
-  const isPositiveTrend = trend && trend.value >= 0;
-  const trendColor = isPositiveTrend ? Colors.success : Colors.error;
-
-  return (
-    <View
-      className="bg-white border"
-      style={{
-        borderRadius: 12,
-        padding: 20,
-        borderColor: Colors.border,
-        shadowColor: '#000',
-=======
   const displayTitle = title || label || "";
   const isPositiveTrend = trend && trend.value >= 0;
   const trendColor = isPositiveTrend ? Colors.success : Colors.error;
@@ -99,55 +79,10 @@ export const StatsCard: React.FC<StatsCardProps> = ({
         borderLeftWidth: 4,
         borderLeftColor: color,
         shadowColor: "#000",
->>>>>>> Phu
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 2,
-<<<<<<< HEAD
-        flex: 1,
-        ...(Platform.OS === 'web' && {
-          transition: 'all 0.2s ease',
-        } as any),
-      }}
-    >
-      {/* Header with Icon and Trend */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-        {icon && (
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              backgroundColor: color + '15',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {icon}
-          </View>
-        )}
-        {trend && (
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: trendColor + '10',
-              paddingHorizontal: 8,
-              paddingVertical: 4,
-              borderRadius: 6,
-            }}
-          >
-            <Text style={{ fontSize: 14, color: trendColor, fontWeight: '600', marginRight: 2 }}>
-              {isPositiveTrend ? '↑' : '↓'}
-            </Text>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: trendColor }}>
-              {Math.abs(trend.value)}%
-            </Text>
-          </View>
-        )}
-      </View>
-=======
         overflow: "hidden",
       }}
     >
@@ -205,24 +140,15 @@ export const StatsCard: React.FC<StatsCardProps> = ({
           )}
         </View>
       )}
->>>>>>> Phu
 
       {/* Title */}
       <Text
         style={{
-<<<<<<< HEAD
-          fontSize: 14,
-          color: Colors.textSecondary,
-          lineHeight: 21,
-          marginBottom: 8,
-          fontWeight: '500',
-=======
           fontSize: 13,
           color: Colors.textSecondary,
           lineHeight: 18,
           marginBottom: 6,
           fontWeight: "500",
->>>>>>> Phu
         }}
       >
         {displayTitle}
@@ -231,17 +157,10 @@ export const StatsCard: React.FC<StatsCardProps> = ({
       {/* Value */}
       <Text
         style={{
-<<<<<<< HEAD
-          fontSize: 32,
-          fontWeight: '700',
-          color: Colors.textHeading,
-          lineHeight: 40,
-=======
           fontSize: 28,
           fontWeight: "700",
           color: color,
           lineHeight: 36,
->>>>>>> Phu
           letterSpacing: -0.02,
           marginBottom: 4,
         }}
@@ -301,12 +220,6 @@ const MiniSparkline: React.FC<MiniSparklineProps> = ({
     return { x, y };
   });
 
-<<<<<<< HEAD
-  return (
-    <View style={{ height, position: 'relative', width: '100%' }}>
-      {/* Simple bar chart representation */}
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: '100%', gap: 2 }}>
-=======
   // Create color with opacity
   const getColorWithOpacity = (hexColor: string, opacity: number) => {
     const hex = hexColor.replace("#", "");
@@ -327,7 +240,6 @@ const MiniSparkline: React.FC<MiniSparklineProps> = ({
           gap: 2,
         }}
       >
->>>>>>> Phu
         {data.map((value, index) => {
           const barHeight = ((value - min) / range) * height;
           return (
@@ -336,11 +248,7 @@ const MiniSparkline: React.FC<MiniSparklineProps> = ({
               style={{
                 flex: 1,
                 height: barHeight || 2,
-<<<<<<< HEAD
-                backgroundColor: color + '80',
-=======
                 backgroundColor: getColorWithOpacity(color, 0.5),
->>>>>>> Phu
                 borderRadius: 2,
               }}
             />
@@ -351,8 +259,4 @@ const MiniSparkline: React.FC<MiniSparklineProps> = ({
   );
 };
 
-<<<<<<< HEAD
 export default StatsCard;
-=======
-export default StatsCard;
->>>>>>> Phu
