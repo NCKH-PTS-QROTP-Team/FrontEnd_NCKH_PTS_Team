@@ -9,9 +9,9 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/colors";
 import { AppHeader } from "@/components/AppHeader";
-import { Card } from "@/components/Card";
+import Card from "@/components/Card";
 import { PrimaryButton } from "@/components/PrimaryButton";
-import { Tabs } from "@/components/Tabs";
+import Tabs from "@/components/Tabs";
 
 export default function Reports() {
   const [activeTab, setActiveTab] = useState("overview");

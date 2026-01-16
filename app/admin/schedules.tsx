@@ -12,7 +12,7 @@ import { Colors } from "@/constants/colors";
 import { mockSchedules } from "@/constants/mockData";
 import { AppHeader } from "@/components/AppHeader";
 import Card from "@/components/Card";
-import { Badge } from "@/components/Badge";
+import Badge from "@/components/Badge";
 import { PrimaryButton } from "@/components/PrimaryButton";
 
 export default function ScheduleManagement() {
@@ -28,12 +28,12 @@ export default function ScheduleManagement() {
     const statusMap = {
       upcoming: { label: "Sắp diễn ra", variant: "primary" as const },
       "in-progress": { label: "Đang diễn ra", variant: "success" as const },
-      completed: { label: "Đã kết thúc", variant: "gray" as const },
+      completed: { label: "Đã kết thúc", variant: "neutral" as const },
     };
     return (
       statusMap[status as keyof typeof statusMap] || {
         label: status,
-        variant: "gray" as const,
+        variant: "neutral" as const,
       }
     );
   };
@@ -163,7 +163,12 @@ export default function ScheduleManagement() {
                     >
                       {schedule.courseCode}
                     </Text>
-                    <Badge {...getStatusBadge(schedule.status)} size="sm" />
+                    <Badge
+                      variant={getStatusBadge(schedule.status).variant}
+                      size="small"
+                    >
+                      {getStatusBadge(schedule.status).label}
+                    </Badge>
                   </View>
 
                   <Text className="text-sm mb-2" style={{ color: Colors.text }}>

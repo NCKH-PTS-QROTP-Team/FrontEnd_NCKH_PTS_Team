@@ -1,18 +1,3 @@
-<<<<<<< HEAD
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
-import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { AppHeader } from '@/components/AppHeader';
-import { StatsCard } from '@/components/StatsCard';
-import Tabs from '@/components/Tabs';
-import { mockStats, mockTeacherSchedules, TeacherSchedule } from '@/constants/mockData';
-import { Colors } from '@/constants/colors';
-
-export default function TeacherDashboardScreen() {
-  const router = useRouter();
-  const isWeb = Platform.OS === 'web';
-=======
 import React, { useState } from "react";
 import {
   View,
@@ -38,52 +23,31 @@ import { Colors } from "@/constants/colors";
 export default function TeacherDashboardScreen() {
   const router = useRouter();
   const isWeb = Platform.OS === "web";
->>>>>>> Phu
-  const { width } = useWindowDimensions();
+const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
 
-<<<<<<< HEAD
-  const [activeTab, setActiveTab] = useState<'overview' | 'schedule'>('overview');
-
-  const contentMaxWidth = isDesktop ? 1200 : '100%';
-  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
-  const quickActionWidth = isDesktop ? '48%' : '100%';
-=======
-  const [activeTab, setActiveTab] = useState<"overview" | "schedule">(
+const [activeTab, setActiveTab] = useState<"overview" | "schedule">(
     "overview"
   );
 
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const quickActionWidth = isDesktop ? "48%" : "100%";
->>>>>>> Phu
-
-  const [currentWeek, setCurrentWeek] = useState(new Date());
+const [currentWeek, setCurrentWeek] = useState(new Date());
 
   // Helper to determine period from time string (e.g., "08:00 - 10:00")
-<<<<<<< HEAD
-  const getPeriod = (time: string): 'morning' | 'afternoon' | 'evening' => {
-    const hour = parseInt(time.split(':')[0]);
-    if (hour < 12) return 'morning';
-    if (hour < 18) return 'afternoon';
-    return 'evening';
-=======
-  const getPeriod = (time: string): "morning" | "afternoon" | "evening" => {
+const getPeriod = (time: string): "morning" | "afternoon" | "evening" => {
     const hour = parseInt(time.split(":")[0]);
     if (hour < 12) return "morning";
     if (hour < 18) return "afternoon";
     return "evening";
->>>>>>> Phu
-  };
+};
 
   // Convert dayOfWeek (0=Sunday, 1=Monday, ...) to day name
   const getDayName = (dayOfWeek: number): string => {
-<<<<<<< HEAD
-    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-=======
-    const days = [
+const days = [
       "sunday",
       "monday",
       "tuesday",
@@ -92,8 +56,7 @@ export default function TeacherDashboardScreen() {
       "friday",
       "saturday",
     ];
->>>>>>> Phu
-    return days[dayOfWeek];
+return days[dayOfWeek];
   };
 
   // Format week range
@@ -102,17 +65,7 @@ export default function TeacherDashboardScreen() {
     startDate.setDate(startDate.getDate() - startDate.getDay() + 1); // Monday
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 6); // Sunday
-<<<<<<< HEAD
-    
-    return `${startDate.getDate().toString().padStart(2, '0')}/${(startDate.getMonth() + 1).toString().padStart(2, '0')} - ${endDate.getDate().toString().padStart(2, '0')}/${(endDate.getMonth() + 1).toString().padStart(2, '0')}/${endDate.getFullYear()}`;
-  };
-
-  const navigateWeek = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentWeek);
-    newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
-=======
-
-    return `${startDate.getDate().toString().padStart(2, "0")}/${(
+return `${startDate.getDate().toString().padStart(2, "0")}/${(
       startDate.getMonth() + 1
     )
       .toString()
@@ -126,21 +79,11 @@ export default function TeacherDashboardScreen() {
   const navigateWeek = (direction: "prev" | "next") => {
     const newDate = new Date(currentWeek);
     newDate.setDate(newDate.getDate() + (direction === "next" ? 7 : -7));
->>>>>>> Phu
-    setCurrentWeek(newDate);
+setCurrentWeek(newDate);
   };
 
   // Group schedules by day and period
-<<<<<<< HEAD
-  const scheduleByDayPeriod: { [day: string]: { [period: string]: TeacherSchedule[] } } = {};
-  mockTeacherSchedules.forEach(schedule => {
-    const dayName = getDayName(schedule.dayOfWeek);
-    const period = getPeriod(schedule.time);
-    
-    if (!scheduleByDayPeriod[dayName]) {
-      scheduleByDayPeriod[dayName] = { morning: [], afternoon: [], evening: [] };
-=======
-  const scheduleByDayPeriod: {
+const scheduleByDayPeriod: {
     [day: string]: { [period: string]: TeacherSchedule[] };
   } = {};
   mockTeacherSchedules.forEach((schedule) => {
@@ -153,8 +96,7 @@ export default function TeacherDashboardScreen() {
         afternoon: [],
         evening: [],
       };
->>>>>>> Phu
-    }
+}
     if (!scheduleByDayPeriod[dayName][period]) {
       scheduleByDayPeriod[dayName][period] = [];
     }
@@ -164,24 +106,7 @@ export default function TeacherDashboardScreen() {
   const renderOverview = () => (
     <>
       {/* Welcome */}
-<<<<<<< HEAD
-      <View style={{
-        backgroundColor: '#3FA9F5',
-        borderRadius: 16,
-        padding: 24,
-        marginBottom: 24,
-        shadowColor: '#3FA9F5',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
-      }}>
-        <Text style={{ color: '#FFFFFF', fontSize: 24, lineHeight: 32, fontWeight: 'bold', marginBottom: 8 }}>
-          Chào mừng Giảng viên!
-        </Text>
-        <Text style={{ color: '#DBEAFE', fontSize: 16, lineHeight: 24 }}>
-=======
-      <View
+<View
         style={{
           backgroundColor: "#3FA9F5",
           borderRadius: 16,
@@ -212,30 +137,12 @@ export default function TeacherDashboardScreen() {
             lineHeight: isMobile ? 20 : 24,
           }}
         >
->>>>>>> Phu
-          Quản lý điểm danh lớp học của bạn
+Quản lý điểm danh lớp học của bạn
         </Text>
       </View>
 
       {/* Quick Actions */}
-<<<<<<< HEAD
-      <View style={{ marginBottom: 24 }}>
-        <Text style={{ fontSize: 18, lineHeight: 28, fontWeight: 'bold', color: '#111827', marginBottom: 16 }}>
-          Tạo phiên điểm danh
-        </Text>
-        <View style={{ flexDirection: isDesktop ? 'row' : 'column', marginBottom: isDesktop ? 0 : 16 }}>
-          <TouchableOpacity
-            onPress={() => router.push('/teacher/generate-otp')}
-            style={{
-              width: quickActionWidth,
-              backgroundColor: '#FFFFFF',
-              borderRadius: 16,
-              padding: 24,
-              borderWidth: 2,
-              borderColor: '#DBEAFE',
-              shadowColor: '#000',
-=======
-      <View style={{ marginBottom: isMobile ? 16 : 24 }}>
+<View style={{ marginBottom: isMobile ? 16 : 24 }}>
         <Text
           style={{
             fontSize: isMobile ? 16 : 18,
@@ -264,27 +171,11 @@ export default function TeacherDashboardScreen() {
               borderWidth: 2,
               borderColor: "#DBEAFE",
               shadowColor: "#000",
->>>>>>> Phu
-              shadowOffset: { width: 0, height: 2 },
+shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
               shadowRadius: 4,
               elevation: 2,
-<<<<<<< HEAD
-              marginBottom: isDesktop ? 0 : 16,
-              marginRight: isDesktop ? 16 : 0,
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={{ width: 56, height: 56, backgroundColor: '#DBEAFE', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 24, lineHeight: 32, fontWeight: 'bold', color: '#3FA9F5' }}>123</Text>
-            </View>
-            <Text style={{ fontSize: 18, lineHeight: 28, fontWeight: 'bold', color: '#111827', marginBottom: 8 }}>
-              Tạo mã OTP
-            </Text>
-            <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280' }}>
-              Sinh mã số cho sinh viên điểm danh
-=======
-            }}
+}}
             activeOpacity={0.7}
           >
             <View
@@ -328,23 +219,11 @@ export default function TeacherDashboardScreen() {
               }}
             >
               {isMobile ? "Sinh mã số" : "Sinh mã số cho sinh viên điểm danh"}
->>>>>>> Phu
-            </Text>
+</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-<<<<<<< HEAD
-            onPress={() => router.push('/teacher/generate-qr')}
-            style={{
-              width: quickActionWidth,
-              backgroundColor: '#FFFFFF',
-              borderRadius: 16,
-              padding: 24,
-              borderWidth: 2,
-              borderColor: '#D1FAE5',
-              shadowColor: '#000',
-=======
-            onPress={() => router.push("/teacher/generate-qr")}
+onPress={() => router.push("/teacher/generate-qr")}
             style={{
               flex: 1,
               backgroundColor: "#FFFFFF",
@@ -353,25 +232,14 @@ export default function TeacherDashboardScreen() {
               borderWidth: 2,
               borderColor: "#D1FAE5",
               shadowColor: "#000",
->>>>>>> Phu
-              shadowOffset: { width: 0, height: 2 },
+shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
               shadowRadius: 4,
               elevation: 2,
             }}
             activeOpacity={0.7}
           >
-<<<<<<< HEAD
-            <View style={{ width: 56, height: 56, backgroundColor: '#D1FAE5', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 22, lineHeight: 28, fontWeight: 'bold', color: '#10B981' }}>QR</Text>
-            </View>
-            <Text style={{ fontSize: 18, lineHeight: 28, fontWeight: 'bold', color: '#111827', marginBottom: 8 }}>
-              Tạo QR Code
-            </Text>
-            <Text style={{ fontSize: 14, lineHeight: 20, color: '#6B7280' }}>
-              Hiển thị mã QR trên lớp
-=======
-            <View
+<View
               style={{
                 width: isMobile ? 44 : 56,
                 height: isMobile ? 44 : 56,
@@ -412,22 +280,13 @@ export default function TeacherDashboardScreen() {
               }}
             >
               {isMobile ? "Hiển thị mã" : "Hiển thị mã QR trên lớp"}
->>>>>>> Phu
-            </Text>
+</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Stats */}
-<<<<<<< HEAD
-      <View style={{ marginBottom: 24 }}>
-        <Text style={{ fontSize: 18, lineHeight: 28, fontWeight: 'bold', color: '#111827', marginBottom: 16 }}>
-          Thống kê hôm nay
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 }}>
-          <View style={{ width: isDesktop ? '48%' : '100%', marginRight: isDesktop ? '4%' : 0, marginBottom: 12 }}>
-=======
-      <View style={{ marginBottom: isMobile ? 16 : 24 }}>
+<View style={{ marginBottom: isMobile ? 16 : 24 }}>
         <Text
           style={{
             fontSize: isMobile ? 16 : 18,
@@ -449,31 +308,21 @@ export default function TeacherDashboardScreen() {
           }}
         >
           <View style={{ flex: 1 }}>
->>>>>>> Phu
-            <StatsCard
+<StatsCard
               title="Tổng SV"
               value={mockStats.totalStudents}
               color="#3FA9F5"
             />
           </View>
-<<<<<<< HEAD
-          <View style={{ width: isDesktop ? '48%' : '100%', marginBottom: 12 }}>
-=======
-          <View style={{ flex: 1 }}>
->>>>>>> Phu
-            <StatsCard
+<View style={{ flex: 1 }}>
+<StatsCard
               title="Có mặt"
               value={mockStats.presentToday}
               color="#10B981"
             />
           </View>
         </View>
-<<<<<<< HEAD
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-          <View style={{ width: isDesktop ? '48%' : '100%', marginRight: isDesktop ? '4%' : 0, marginBottom: 12 }}>
-=======
-
-        {/* Row 2 */}
+{/* Row 2 */}
         <View
           style={{
             flexDirection: "row",
@@ -481,19 +330,14 @@ export default function TeacherDashboardScreen() {
           }}
         >
           <View style={{ flex: 1 }}>
->>>>>>> Phu
-            <StatsCard
+<StatsCard
               title="Vắng"
               value={mockStats.absentToday}
               color="#EF4444"
             />
           </View>
-<<<<<<< HEAD
-          <View style={{ width: isDesktop ? '48%' : '100%', marginBottom: 12 }}>
-=======
-          <View style={{ flex: 1 }}>
->>>>>>> Phu
-            <StatsCard
+<View style={{ flex: 1 }}>
+<StatsCard
               title="Tỷ lệ"
               value={`${mockStats.attendanceRate}%`}
               color="#3FA9F5"
@@ -505,18 +349,7 @@ export default function TeacherDashboardScreen() {
       {/* Management Links */}
       <View>
         <TouchableOpacity
-<<<<<<< HEAD
-          onPress={() => router.push('/teacher/class-list')}
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 16,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            shadowColor: '#000',
-=======
-          onPress={() => router.push("/teacher/class-list")}
+onPress={() => router.push("/teacher/class-list")}
           style={{
             backgroundColor: "#FFFFFF",
             borderRadius: isMobile ? 12 : 16,
@@ -525,38 +358,11 @@ export default function TeacherDashboardScreen() {
             alignItems: "center",
             justifyContent: "space-between",
             shadowColor: "#000",
->>>>>>> Phu
-            shadowOffset: { width: 0, height: 2 },
+shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.1,
             shadowRadius: 4,
             elevation: 2,
-<<<<<<< HEAD
-            marginBottom: 16,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ backgroundColor: '#DBEAFE', borderRadius: 12, width: 48, height: 48, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-              <Text style={{ fontSize: 20, lineHeight: 24, fontWeight: 'bold', color: '#3FA9F5' }}>≡</Text>
-            </View>
-            <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: '#111827' }}>
-              Danh sách lớp học
-            </Text>
-          </View>
-          <Text style={{ fontSize: 20, lineHeight: 24, color: '#9CA3AF' }}>→</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => router.push('/teacher/reports')}
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 16,
-            padding: 16,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            shadowColor: '#000',
-=======
-            marginBottom: isMobile ? 8 : 16,
+marginBottom: isMobile ? 8 : 16,
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -614,25 +420,13 @@ export default function TeacherDashboardScreen() {
             alignItems: "center",
             justifyContent: "space-between",
             shadowColor: "#000",
->>>>>>> Phu
-            shadowOffset: { width: 0, height: 2 },
+shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.1,
             shadowRadius: 4,
             elevation: 2,
           }}
         >
-<<<<<<< HEAD
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ backgroundColor: '#FEF3C7', borderRadius: 12, width: 48, height: 48, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-              <Text style={{ fontSize: 20, lineHeight: 24, fontWeight: 'bold', color: '#F59E0B' }}>☰</Text>
-            </View>
-            <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: '#111827' }}>
-              Báo cáo & Thống kê
-            </Text>
-          </View>
-          <Text style={{ fontSize: 20, lineHeight: 24, color: '#9CA3AF' }}>→</Text>
-=======
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
+<View style={{ flexDirection: "row", alignItems: "center" }}>
             <View
               style={{
                 backgroundColor: "#FEF3C7",
@@ -675,38 +469,24 @@ export default function TeacherDashboardScreen() {
           >
             →
           </Text>
->>>>>>> Phu
-        </TouchableOpacity>
+</TouchableOpacity>
       </View>
     </>
   );
 
-<<<<<<< HEAD
-  const renderScheduleCell = (day: string, period: 'morning' | 'afternoon' | 'evening') => {
-=======
-  const renderScheduleCell = (
+const renderScheduleCell = (
     day: string,
     period: "morning" | "afternoon" | "evening"
   ) => {
->>>>>>> Phu
-    const schedules = scheduleByDayPeriod[day]?.[period] || [];
+const schedules = scheduleByDayPeriod[day]?.[period] || [];
     const columnMinWidth = isMobile ? 180 : 240;
     const cellPadding = isMobile ? 8 : 10;
     const cellMinHeight = isMobile ? 100 : 120;
-<<<<<<< HEAD
-    
-    return (
-      <View 
-        key={`${day}-${period}`}
-        style={{ 
-=======
-
-    return (
+return (
       <View
         key={`${day}-${period}`}
         style={{
->>>>>>> Phu
-          flex: 1,
+flex: 1,
           minWidth: columnMinWidth,
           minHeight: cellMinHeight,
           padding: cellPadding,
@@ -714,69 +494,7 @@ export default function TeacherDashboardScreen() {
           borderRightColor: Colors.border,
           borderBottomWidth: 1,
           borderBottomColor: Colors.border,
-<<<<<<< HEAD
-          backgroundColor: schedules && schedules.length > 0 ? Colors.white : Colors.gray50,
-        }}
-      >
-        {schedules && schedules.length > 0 && schedules.map((item, index) => (
-          <View
-            key={item.id}
-            style={{
-              backgroundColor: '#DBEAFE',
-              borderLeftWidth: 3,
-              borderLeftColor: Colors.primary,
-              padding: isMobile ? 6 : 8,
-              borderRadius: 4,
-              marginBottom: index < schedules.length - 1 ? (isMobile ? 6 : 8) : 0,
-            }}
-          >
-            <Text style={{ 
-              fontSize: isMobile ? 12 : 13, 
-              fontWeight: '700', 
-              color: Colors.textHeading,
-              lineHeight: isMobile ? 16 : 18,
-              marginBottom: isMobile ? 3 : 4,
-            }}>
-              {item.courseName}
-            </Text>
-            <Text style={{ 
-              fontSize: isMobile ? 10 : 11, 
-              color: Colors.primary,
-              lineHeight: isMobile ? 14 : 16,
-              marginBottom: isMobile ? 2 : 3,
-            }}>
-              {item.courseCode}
-            </Text>
-            <Text style={{ 
-              fontSize: isMobile ? 10 : 11, 
-              color: Colors.textLight,
-              lineHeight: isMobile ? 14 : 15,
-              marginBottom: isMobile ? 1 : 2,
-            }}>
-              {item.time}
-            </Text>
-            <Text style={{ 
-              fontSize: isMobile ? 10 : 11, 
-              color: Colors.textLight,
-              lineHeight: isMobile ? 14 : 15,
-              marginBottom: isMobile ? 1 : 2,
-            }}>
-              Phòng: {item.room}
-            </Text>
-            {item.className && (
-              <Text style={{ 
-                fontSize: isMobile ? 10 : 11, 
-                color: Colors.textSecondary,
-                lineHeight: isMobile ? 14 : 15,
-                fontWeight: '500',
-              }}>
-                {item.className} {item.studentCount && `• ${item.studentCount} SV`}
-              </Text>
-            )}
-          </View>
-        ))}
-=======
-          backgroundColor:
+backgroundColor:
             schedules && schedules.length > 0 ? Colors.white : Colors.gray50,
         }}
       >
@@ -851,8 +569,7 @@ export default function TeacherDashboardScreen() {
               )}
             </View>
           ))}
->>>>>>> Phu
-      </View>
+</View>
     );
   };
 
@@ -864,21 +581,7 @@ export default function TeacherDashboardScreen() {
     const columnMinWidth = isMobile ? 180 : 240;
 
     return (
-<<<<<<< HEAD
-      <View style={{ marginBottom: 24, width: '100%' }}>
-        {/* Week Navigation - Simple and Clean */}
-        <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: isMobile ? 16 : 20,
-          paddingVertical: isMobile ? 12 : 16,
-          paddingHorizontal: isMobile ? 16 : 0,
-        }}>
-          <TouchableOpacity
-            onPress={() => navigateWeek('prev')}
-=======
-      <View style={{ marginBottom: 24, width: "100%" }}>
+<View style={{ marginBottom: 24, width: "100%" }}>
         {/* Week Navigation - Simple and Clean */}
         <View
           style={{
@@ -892,43 +595,19 @@ export default function TeacherDashboardScreen() {
         >
           <TouchableOpacity
             onPress={() => navigateWeek("prev")}
->>>>>>> Phu
-            activeOpacity={0.7}
+activeOpacity={0.7}
             style={{
               width: isMobile ? 44 : 36,
               height: isMobile ? 44 : 36,
               borderRadius: isMobile ? 22 : 18,
               backgroundColor: Colors.gray100,
-<<<<<<< HEAD
-              alignItems: 'center',
-              justifyContent: 'center',
-=======
-              alignItems: "center",
+alignItems: "center",
               justifyContent: "center",
->>>>>>> Phu
-              marginRight: isMobile ? 12 : 16,
+marginRight: isMobile ? 12 : 16,
               minWidth: 44, // Touch-friendly minimum
             }}
           >
-<<<<<<< HEAD
-            <Text style={{ fontSize: isMobile ? 18 : 16, color: Colors.gray700, fontWeight: '600' }}>←</Text>
-          </TouchableOpacity>
-          
-          <Text style={{ 
-            fontSize: isMobile ? 13 : 15, 
-            fontWeight: '600', 
-            color: Colors.textHeading,
-            minWidth: isMobile ? 130 : 160,
-            textAlign: 'center',
-            flex: isMobile ? 1 : 0,
-          }}>
-            {formatWeekRange()}
-          </Text>
-          
-          <TouchableOpacity
-            onPress={() => navigateWeek('next')}
-=======
-            <Text
+<Text
               style={{
                 fontSize: isMobile ? 18 : 16,
                 color: Colors.gray700,
@@ -954,28 +633,19 @@ export default function TeacherDashboardScreen() {
 
           <TouchableOpacity
             onPress={() => navigateWeek("next")}
->>>>>>> Phu
-            activeOpacity={0.7}
+activeOpacity={0.7}
             style={{
               width: isMobile ? 44 : 36,
               height: isMobile ? 44 : 36,
               borderRadius: isMobile ? 22 : 18,
               backgroundColor: Colors.gray100,
-<<<<<<< HEAD
-              alignItems: 'center',
-              justifyContent: 'center',
-=======
-              alignItems: "center",
+alignItems: "center",
               justifyContent: "center",
->>>>>>> Phu
-              marginLeft: isMobile ? 12 : 16,
+marginLeft: isMobile ? 12 : 16,
               minWidth: 44, // Touch-friendly minimum
             }}
           >
-<<<<<<< HEAD
-            <Text style={{ fontSize: isMobile ? 18 : 16, color: Colors.gray700, fontWeight: '600' }}>→</Text>
-=======
-            <Text
+<Text
               style={{
                 fontSize: isMobile ? 18 : 16,
                 color: Colors.gray700,
@@ -984,27 +654,12 @@ export default function TeacherDashboardScreen() {
             >
               →
             </Text>
->>>>>>> Phu
-          </TouchableOpacity>
+</TouchableOpacity>
         </View>
 
         {/* Mobile Hint */}
         {isMobile && (
-<<<<<<< HEAD
-          <View style={{
-            backgroundColor: '#EFF6FF',
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            borderRadius: 8,
-            marginBottom: 12,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-            <Text style={{ fontSize: 20 }}>👉</Text>
-            <Text style={{ fontSize: 12, color: '#1E40AF', flex: 1 }}>
-=======
-          <View
+<View
             style={{
               backgroundColor: "#EFF6FF",
               paddingHorizontal: 12,
@@ -1018,62 +673,28 @@ export default function TeacherDashboardScreen() {
           >
             <Text style={{ fontSize: 20 }}>👉</Text>
             <Text style={{ fontSize: 12, color: "#1E40AF", flex: 1 }}>
->>>>>>> Phu
-              Vuốt sang ngang để xem lịch các ngày khác
+Vuốt sang ngang để xem lịch các ngày khác
             </Text>
           </View>
         )}
 
         {/* Schedule Table */}
-<<<<<<< HEAD
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={Platform.OS === 'web'}
-=======
-        <ScrollView
+<ScrollView
           horizontal
           showsHorizontalScrollIndicator={Platform.OS === "web"}
->>>>>>> Phu
-          style={{
+style={{
             backgroundColor: Colors.white,
             borderRadius: 12,
             borderWidth: 1,
             borderColor: Colors.border,
-<<<<<<< HEAD
-            shadowColor: '#000',
-=======
-            shadowColor: "#000",
->>>>>>> Phu
-            shadowOffset: { width: 0, height: 1 },
+shadowColor: "#000",
+shadowOffset: { width: 0, height: 1 },
             shadowOpacity: 0.05,
             shadowRadius: 2,
             elevation: 1,
           }}
         >
-<<<<<<< HEAD
-          <View style={{ minWidth: '100%' }}>
-            {/* Table Header */}
-            <View style={{ flexDirection: 'row', backgroundColor: Colors.gray50 }}>
-              <View style={{ 
-                width: isMobile ? 80 : 120, 
-                padding: headerPadding,
-                borderRightWidth: 1,
-                borderRightColor: Colors.border,
-                borderBottomWidth: 2,
-                borderBottomColor: Colors.border,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}>
-                <Text style={{ fontSize: headerFontSize, fontWeight: '700', color: Colors.textHeading }}>
-                  {isMobile ? 'Ca' : 'Ca học'}
-                </Text>
-              </View>
-              {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'].map((day, index) => (
-                <View 
-                  key={day}
-                  style={{ 
-=======
-          <View style={{ minWidth: "100%" }}>
+<View style={{ minWidth: "100%" }}>
             {/* Table Header */}
             <View
               style={{ flexDirection: "row", backgroundColor: Colors.gray50 }}
@@ -1112,23 +733,14 @@ export default function TeacherDashboardScreen() {
                 <View
                   key={day}
                   style={{
->>>>>>> Phu
-                    flex: 1,
+flex: 1,
                     minWidth: columnMinWidth,
                     padding: headerPadding,
                     borderRightWidth: index < 6 ? 1 : 0,
                     borderRightColor: Colors.border,
                     borderBottomWidth: 2,
                     borderBottomColor: Colors.border,
-<<<<<<< HEAD
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ fontSize: dayFontSize, fontWeight: '600', color: Colors.gray700 }}>
-                    {isMobile ? day.replace('Thứ ', 'T') : day}
-=======
-                    justifyContent: "center",
+justifyContent: "center",
                     alignItems: "center",
                   }}
                 >
@@ -1140,94 +752,13 @@ export default function TeacherDashboardScreen() {
                     }}
                   >
                     {isMobile ? day.replace("Thứ ", "T") : day}
->>>>>>> Phu
-                  </Text>
+</Text>
                 </View>
               ))}
             </View>
 
             {/* Morning Row */}
-<<<<<<< HEAD
-            <View style={{ flexDirection: 'row' }}>
-              <View style={{ 
-                width: isMobile ? 80 : 120,
-                padding: headerPadding,
-                borderRightWidth: 1,
-                borderRightColor: Colors.border,
-                borderBottomWidth: 1,
-                borderBottomColor: Colors.border,
-                backgroundColor: '#FFFBEB',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: isMobile ? 100 : 120,
-              }}>
-                <Text style={{ 
-                  fontSize: isMobile ? 11 : periodFontSize, 
-                  fontWeight: '600', 
-                  color: '#92400E' 
-                }}>
-                  Sáng
-                </Text>
-              </View>
-              {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
-                renderScheduleCell(day, 'morning')
-              ))}
-            </View>
-
-            {/* Afternoon Row */}
-            <View style={{ flexDirection: 'row' }}>
-              <View style={{ 
-                width: isMobile ? 80 : 120,
-                padding: headerPadding,
-                borderRightWidth: 1,
-                borderRightColor: Colors.border,
-                borderBottomWidth: 1,
-                borderBottomColor: Colors.border,
-                backgroundColor: '#FEF3C7',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: isMobile ? 100 : 120,
-              }}>
-                <Text style={{ 
-                  fontSize: isMobile ? 11 : periodFontSize, 
-                  fontWeight: '600', 
-                  color: '#92400E' 
-                }}>
-                  Chiều
-                </Text>
-              </View>
-              {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
-                renderScheduleCell(day, 'afternoon')
-              ))}
-            </View>
-
-            {/* Evening Row */}
-            <View style={{ flexDirection: 'row' }}>
-              <View style={{ 
-                width: isMobile ? 80 : 120,
-                padding: headerPadding,
-                borderRightWidth: 1,
-                borderRightColor: Colors.border,
-                borderBottomWidth: 1,
-                borderBottomColor: Colors.border,
-                backgroundColor: '#DBEAFE',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: isMobile ? 100 : 120,
-              }}>
-                <Text style={{ 
-                  fontSize: isMobile ? 11 : periodFontSize, 
-                  fontWeight: '600', 
-                  color: '#1E3A8A' 
-                }}>
-                  Tối
-                </Text>
-              </View>
-              {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
-                renderScheduleCell(day, 'evening')
-              ))}
-=======
-            <View style={{ flexDirection: "row" }}>
+<View style={{ flexDirection: "row" }}>
               <View
                 style={{
                   width: isMobile ? 80 : 120,
@@ -1335,41 +866,12 @@ export default function TeacherDashboardScreen() {
                 "saturday",
                 "sunday",
               ].map((day) => renderScheduleCell(day, "evening"))}
->>>>>>> Phu
-            </View>
+</View>
           </View>
         </ScrollView>
 
         {mockTeacherSchedules.length === 0 && (
-<<<<<<< HEAD
-          <View style={{
-            backgroundColor: Colors.white,
-            borderRadius: 12,
-            padding: isDesktop ? 20 : 16,
-            borderWidth: 1,
-            borderColor: Colors.border,
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingVertical: 40,
-            marginTop: 12,
-          }}>
-            <Text style={{ fontSize: 48, marginBottom: 12 }}>📅</Text>
-            <Text style={{
-              fontSize: isMobile ? 14 : 16,
-              lineHeight: isMobile ? 20 : 24,
-              fontWeight: '600',
-              color: Colors.text,
-              marginBottom: 4,
-            }}>
-              Không có lịch dạy
-            </Text>
-            <Text style={{
-              fontSize: isMobile ? 12 : 14,
-              lineHeight: isMobile ? 18 : 20,
-              color: Colors.textSecondary,
-            }}>
-=======
-          <View
+<View
             style={{
               backgroundColor: Colors.white,
               borderRadius: 12,
@@ -1401,8 +903,7 @@ export default function TeacherDashboardScreen() {
                 color: Colors.textSecondary,
               }}
             >
->>>>>>> Phu
-              Tuần này bạn không có lịch dạy
+Tuần này bạn không có lịch dạy
             </Text>
           </View>
         )}
@@ -1411,21 +912,7 @@ export default function TeacherDashboardScreen() {
   };
 
   return (
-<<<<<<< HEAD
-    <View style={{ flex: 1, backgroundColor: Colors.surface }}>
-      <StatusBar style="dark" />
-      
-      {/* Tabs */}
-      <View style={{ backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border }}>
-        <Tabs
-          tabs={[
-            { key: 'overview', label: 'Tổng quan' },
-            { key: 'schedule', label: 'Lịch dạy' },
-          ]}
-          activeTab={activeTab}
-          onTabChange={(key) => setActiveTab(key as 'overview' | 'schedule')}
-=======
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
+<SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
       <StatusBar style="dark" />
 
       {/* Tabs */}
@@ -1443,23 +930,12 @@ export default function TeacherDashboardScreen() {
           ]}
           activeTab={activeTab}
           onTabChange={(key) => setActiveTab(key as "overview" | "schedule")}
->>>>>>> Phu
-        />
+/>
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
-<<<<<<< HEAD
-        contentContainerStyle={{ paddingHorizontal, paddingVertical: 24, paddingBottom: isDesktop ? 32 : 24 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={{ maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
-          {activeTab === 'overview' ? renderOverview() : renderSchedule()}
-        </View>
-      </ScrollView>
-    </View>
-=======
-        contentContainerStyle={{
+contentContainerStyle={{
           paddingHorizontal,
           paddingVertical: 24,
           paddingBottom: isDesktop ? 32 : 24,
@@ -1477,6 +953,5 @@ export default function TeacherDashboardScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
->>>>>>> Phu
-  );
+);
 }

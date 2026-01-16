@@ -2,10 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, Switch } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../../../constants/colors';
-<<<<<<< HEAD
-=======
 import AppHeader from '../../../components/AppHeader';
->>>>>>> Phu
 import Input from '../../../components/Input';
 import PrimaryButton from '../../../components/PrimaryButton';
 import Card from '../../../components/Card';
@@ -48,20 +45,7 @@ export default function CreateUser() {
   };
 
   return (
-<<<<<<< HEAD
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      <ScrollView style={{ flex: 1 }}>
-        <View style={{ padding: 16, maxWidth: 600, width: '100%', alignSelf: 'center' }}>
-          
-          {/* Page Title */}
-          <Text style={{ fontSize: 24, fontWeight: '600', marginBottom: 24, color: Colors.text }}>
-            Thêm người dùng mới
-          </Text>
-          
-          <Card style={{ marginBottom: 16 }}>
-            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 16, color: Colors.text }}>
-=======
-    <View className="flex-1 bg-white">
+<View className="flex-1 bg-white">
       <AppHeader title="Thêm người dùng mới" showLogout={true} />
       
       <ScrollView className="flex-1">
@@ -69,8 +53,7 @@ export default function CreateUser() {
           
           <Card className="mb-4">
             <Text className="text-lg font-semibold mb-4" style={{ color: Colors.text }}>
->>>>>>> Phu
-              Thông tin cơ bản
+Thông tin cơ bản
             </Text>
 
             <Input
@@ -100,30 +83,18 @@ export default function CreateUser() {
               error={errors.password}
             />
 
-<<<<<<< HEAD
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 14, fontWeight: '500', marginBottom: 8, color: Colors.gray700 }}>
-                Vai trò *
-              </Text>
-              <View style={{ flexDirection: 'row', marginHorizontal: -4 }}>
-=======
-            <View className="mb-4">
+<View className="mb-4">
               <Text className="text-sm font-medium mb-2" style={{ color: Colors.gray700 }}>
                 Vai trò *
               </Text>
               <View className="flex-row -mx-1">
->>>>>>> Phu
-                {[
+{[
                   { key: 'admin', label: 'Admin' },
                   { key: 'teacher', label: 'Giảng viên' },
                   { key: 'student', label: 'Sinh viên' },
                 ].map((role) => (
-<<<<<<< HEAD
-                  <View key={role.key} style={{ flex: 1, paddingHorizontal: 4 }}>
-=======
-                  <View key={role.key} className="flex-1 px-1">
->>>>>>> Phu
-                    <PrimaryButton
+<View key={role.key} className="flex-1 px-1">
+<PrimaryButton
                       title={role.label}
                       variant={formData.role === role.key ? 'primary' : 'outline'}
                       onPress={() => setFormData({ ...formData, role: role.key })}
@@ -153,14 +124,9 @@ export default function CreateUser() {
               />
             )}
 
-<<<<<<< HEAD
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderTopColor: Colors.border }}>
-              <Text style={{ fontWeight: '500', color: Colors.text }}>
-=======
-            <View className="flex-row justify-between items-center py-3 border-t" style={{ borderTopColor: Colors.border }}>
+<View className="flex-row justify-between items-center py-3 border-t" style={{ borderTopColor: Colors.border }}>
               <Text className="font-medium" style={{ color: Colors.text }}>
->>>>>>> Phu
-                Kích hoạt tài khoản
+Kích hoạt tài khoản
               </Text>
               <Switch
                 value={formData.isActive}
@@ -171,25 +137,16 @@ export default function CreateUser() {
             </View>
           </Card>
 
-<<<<<<< HEAD
-          <View style={{ flexDirection: 'row', marginHorizontal: -8 }}>
-            <View style={{ flex: 1, paddingHorizontal: 8 }}>
-=======
-          <View className="flex-row -mx-2">
+<View className="flex-row -mx-2">
             <View className="flex-1 px-2">
->>>>>>> Phu
-              <PrimaryButton
+<PrimaryButton
                 title="Hủy"
                 variant="outline"
                 onPress={() => router.back()}
               />
             </View>
-<<<<<<< HEAD
-            <View style={{ flex: 1, paddingHorizontal: 8 }}>
-=======
-            <View className="flex-1 px-2">
->>>>>>> Phu
-              <PrimaryButton
+<View className="flex-1 px-2">
+<PrimaryButton
                 title="Tạo người dùng"
                 onPress={handleSubmit}
               />
@@ -201,8 +158,4 @@ export default function CreateUser() {
     </View>
   );
 }
-<<<<<<< HEAD
-=======
-
 // Updated: 2026-01-02 13:16:07
->>>>>>> Phu
