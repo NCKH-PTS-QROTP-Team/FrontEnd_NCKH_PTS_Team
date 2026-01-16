@@ -20,9 +20,107 @@ export default function ScheduleManagement() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
+  const isMobile = width < 768;
+  const showTable = isDesktop; // Chỉ desktop mới hiển thị table
 
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+  const paddingVertical = isMobile ? 16 : 24;
+
+  const addDays = (date: Date, days: number) => {
+    const copy = new Date(date);
+    copy.setDate(copy.getDate() + days);
+    return copy;
+  };
+
+  const formatDisplayDate = (dateString: string) => {
+    const d = new Date(dateString);
+    return d.toLocaleDateString('vi-VN', {
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  const weekLabel = useMemo(() => {
+    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const dayOfWeek = firstDay.getDay() || 7; // Monday-first idea: treat Sunday as 7
+    const weekNumber = Math.ceil((currentDate.getDate() + dayOfWeek - 1) / 7);
+    const monthYear = currentDate.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
+    return `Tuần ${weekNumber}, ${monthYear}`;
+  }, [currentDate]);
+
+  const monthLabel = useMemo(() => {
+    return currentDate.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
+  }, [currentDate]);
+
+  // Gắn ngày thật cho mockSchedules (nếu chưa có)
+  const schedulesWithDate = useMemo(() => {
+    const baseDate = currentDate;
+    const withDate = mockSchedules.map((s, idx) => {
+      if ((s as any).date) return s as any;
+      const date = addDays(baseDate, idx);
+      const iso = date.toISOString().split('T')[0];
+      return { ...s, date: iso };
+    });
+
+    // Sort theo ngày + giờ bắt đầu (nếu có)
+    return withDate.slice().sort((a: any, b: any) => {
+      const [aStart] = String(a.time || '').split(' - ');
+      const [bStart] = String(b.time || '').split(' - ');
+      const aDateTime = new Date(`${a.date}T${aStart || '00:00'}`);
+      const bDateTime = new Date(`${b.date}T${bStart || '00:00'}`);
+      return aDateTime.getTime() - bDateTime.getTime();
+    });
+  }, [currentDate]);
+
+  // Sort function
+  const handleSort = (columnKey: string) => {
+    if (sortColumn === columnKey) {
+      // Toggle direction: asc -> desc -> null (no sort)
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else if (sortDirection === 'desc') {
+        setSortDirection(null);
+        setSortColumn(null);
+      }
+    } else {
+      setSortColumn(columnKey);
+      setSortDirection('asc');
+    }
+  };
+
+  // Sorted data
+  const sortedSchedules = useMemo(() => {
+    if (!sortColumn || !sortDirection) return schedulesWithDate;
+
+    return [...schedulesWithDate].sort((a: any, b: any) => {
+      let aValue: any;
+      let bValue: any;
+
+      if (sortColumn === 'date') {
+        const [aStart] = String(a.time || '').split(' - ');
+        const [bStart] = String(b.time || '').split(' - ');
+        aValue = new Date(`${a.date}T${aStart || '00:00'}`).getTime();
+        bValue = new Date(`${b.date}T${bStart || '00:00'}`).getTime();
+      } else if (sortColumn === 'time') {
+        const [aStart] = String(a.time || '').split(' - ');
+        const [bStart] = String(b.time || '').split(' - ');
+        aValue = aStart || '';
+        bValue = bStart || '';
+      } else {
+        aValue = a[sortColumn] || '';
+        bValue = b[sortColumn] || '';
+      }
+
+      if (sortDirection === 'asc') {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+      }
+    });
+  }, [schedulesWithDate, sortColumn, sortDirection]);
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
@@ -60,9 +158,8 @@ export default function ScheduleManagement() {
           />
 
           {/* View Toggle */}
-          <View className="flex-row mb-4">
+          <View style={{ flexDirection: 'row', marginBottom: isMobile ? 12 : 16 }}>
             <TouchableOpacity
-              className="flex-1 py-3 rounded-l-xl border"
               style={{
                 backgroundColor:
                   selectedView === "week" ? Colors.primary : Colors.white,
@@ -81,7 +178,6 @@ export default function ScheduleManagement() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="flex-1 py-3 rounded-r-xl border-t border-r border-b"
               style={{
                 backgroundColor:
                   selectedView === "month" ? Colors.primary : Colors.white,
@@ -122,6 +218,49 @@ export default function ScheduleManagement() {
                   ›
                 </Text>
               </TouchableOpacity>
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <Text style={{ fontWeight: '600', fontSize: 16, color: Colors.text, marginBottom: 4 }}>
+                  {selectedView === 'week' ? weekLabel : monthLabel}
+                </Text>
+                <TouchableOpacity onPress={handleToday}>
+                  <Text style={{ fontSize: 13, color: Colors.primary }}>Hôm nay</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {Platform.OS === 'web' ? (
+                  <View
+                    style={{
+                      borderWidth: 1,
+                      borderColor: Colors.gray300,
+                      borderRadius: 8,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      backgroundColor: '#FFFFFF',
+                    }}
+                  >
+                    {/* Native HTML date input for web */}
+                    <input
+                      type="date"
+                      value={currentDate.toISOString().split('T')[0]}
+                      onChange={(e) => handleDateInputChange(e.target.value)}
+                      style={{
+                        border: 'none',
+                        outline: 'none',
+                        background: 'transparent',
+                        fontSize: 13,
+                        color: '#111827',
+                      }}
+                    />
+                  </View>
+                ) : (
+                  <TouchableOpacity onPress={handleToday} style={{ paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <Text style={{ fontSize: 13, color: Colors.primary }}>Chọn ngày</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity style={{ padding: 8 }} onPress={handleNext}>
+                  <Text style={{ fontSize: 24, color: Colors.primary }}>›</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </Card>
 
@@ -203,6 +342,21 @@ export default function ScheduleManagement() {
                       >
                         {schedule.teacher}
                       </Text>
+
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                          <Text style={{ fontSize: 12, marginRight: 4, color: Colors.textSecondary }}>📍</Text>
+                          <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
+                            {schedule.room}
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                          <Text style={{ fontSize: 12, marginRight: 4, color: Colors.textSecondary }}>👨‍🏫</Text>
+                          <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
+                            {schedule.teacher}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
                   </View>
                 </View>
@@ -218,8 +372,8 @@ export default function ScheduleManagement() {
           ))}
 
           {/* Bulk Actions */}
-          <Card className="mt-4">
-            <Text className="font-semibold mb-3" style={{ color: Colors.text }}>
+          <Card style={{ marginTop: 16 }}>
+            <Text style={{ fontWeight: '600', marginBottom: 12, color: Colors.text }}>
               Thao tác hàng loạt
             </Text>
             <PrimaryButton
@@ -239,5 +393,3 @@ export default function ScheduleManagement() {
     </View>
   );
 }
-
-// Updated: 2026-01-02 13:16:06

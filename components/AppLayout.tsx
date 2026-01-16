@@ -6,6 +6,9 @@ import NotificationDropdown from "./NotificationDropdown";
 import UserProfileDropdown from "./UserProfileDropdown";
 import { Colors } from "@/constants/colors";
 
+// Import logo IUH
+const logoNameImage = require('@/assets/logoname.png');
+
 interface MenuItem {
   icon: React.ReactNode;
   label: string;

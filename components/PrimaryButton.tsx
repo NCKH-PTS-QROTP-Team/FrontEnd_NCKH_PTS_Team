@@ -10,7 +10,6 @@ interface PrimaryButtonProps {
   disabled?: boolean;
   variant?: "primary" | "outline" | "ghost";
   style?: ViewStyle;
-  className?: string;
 }
 
 export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
@@ -20,7 +19,6 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   disabled = false,
   variant = "primary",
   style,
-  className,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
@@ -122,6 +120,9 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
           borderRadius: 8,
           minHeight: 44, // Minimum touch target
           paddingVertical: 12,
+          paddingHorizontal: 24,
+          alignItems: 'center',
+          justifyContent: 'center',
           backgroundColor: getBackgroundColor(),
           borderColor: getBorderColor(),
           borderWidth: variant === "outline" ? 2 : 0,

@@ -59,11 +59,18 @@ export default function ClassDetail() {
         >
           {activeTab === "info" && (
             <>
-              <Card className="mb-4">
-                <View className="items-center py-4">
+              <Card style={{ marginBottom: 16 }}>
+                <View style={{ alignItems: 'center', paddingVertical: 16 }}>
                   <View
-                    className="w-20 h-20 rounded-2xl items-center justify-center mb-4"
-                    style={{ backgroundColor: Colors.primary }}
+                    style={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 16,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 16,
+                      backgroundColor: Colors.primary,
+                    }}
                   >
                     <Text
                       className="text-3xl font-bold"
@@ -196,7 +203,7 @@ export default function ClassDetail() {
               </View>
 
               {mockStudents.map((student) => (
-                <View key={student.id} className="mb-3">
+                <View key={student.id} style={{ marginBottom: 12 }}>
                   <StudentCard
                     student={student}
                     onPress={() => alert(`Chi tiết ${student.name}`)}

@@ -12,7 +12,6 @@ import { isDesktop } from "../constants/responsive";
 interface CardProps {
   children: React.ReactNode;
   onPress?: () => void;
-  className?: string;
   style?: ViewStyle | ViewStyle[];
 }
 
@@ -32,9 +31,11 @@ export default function Card({
 
   return (
     <Container
-      className={`bg-white border border-gray-200 ${className}`}
       style={[
         {
+          backgroundColor: '#FFFFFF',
+          borderWidth: 1,
+          borderColor: '#E5E7EB',
           borderRadius: 8,
           padding: cardPadding,
           shadowColor: "#000",

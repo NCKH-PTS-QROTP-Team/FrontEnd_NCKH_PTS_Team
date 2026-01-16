@@ -97,8 +97,8 @@ export default function CreateClass() {
             />
           </Card>
 
-          <View className="flex-row -mx-2">
-            <View className="flex-1 px-2">
+          <View style={{ flexDirection: 'row', marginHorizontal: -8 }}>
+            <View style={{ flex: 1, paddingHorizontal: 8 }}>
               <PrimaryButton
                 title="Hủy"
                 variant="outline"
@@ -114,5 +114,3 @@ export default function CreateClass() {
     </View>
   );
 }
-
-// Updated: 2026-01-02 13:16:06

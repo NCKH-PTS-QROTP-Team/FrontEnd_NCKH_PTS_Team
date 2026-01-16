@@ -25,8 +25,8 @@ export default function AttendanceSessions() {
           style={{ maxWidth: 1200, width: "100%", alignSelf: "center" }}
         >
           {/* Summary Cards */}
-          <View className="flex-row mb-4 -mx-2">
-            <View className="flex-1 px-2">
+          <View style={{ flexDirection: isMobile ? 'column' : 'row', marginBottom: isMobile ? 12 : 16, marginHorizontal: -8, gap: isMobile ? 8 : 0 }}>
+            <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8, marginBottom: isMobile ? 8 : 0 }}>
               <Card>
                 <Text
                   className="text-3xl font-bold mb-1"
@@ -45,7 +45,7 @@ export default function AttendanceSessions() {
                 </Text>
               </Card>
             </View>
-            <View className="flex-1 px-2">
+            <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8, marginBottom: isMobile ? 8 : 0 }}>
               <Card>
                 <Text
                   className="text-3xl font-bold mb-1"
@@ -64,7 +64,7 @@ export default function AttendanceSessions() {
                 </Text>
               </Card>
             </View>
-            <View className="flex-1 px-2">
+            <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8 }}>
               <Card>
                 <Text
                   className="text-3xl font-bold mb-1"
@@ -96,7 +96,6 @@ export default function AttendanceSessions() {
               ].map((item) => (
                 <TouchableOpacity
                   key={item.key}
-                  className="px-4 py-2 rounded-full mr-2"
                   style={{
                     backgroundColor:
                       filter === item.key ? Colors.primary : Colors.gray100,
@@ -104,7 +103,6 @@ export default function AttendanceSessions() {
                   onPress={() => setFilter(item.key as any)}
                 >
                   <Text
-                    className="font-medium text-sm"
                     style={{
                       color:
                         filter === item.key ? Colors.white : Colors.gray700,
@@ -185,9 +183,148 @@ export default function AttendanceSessions() {
                     >
                       {session.startTime}
                     </Text>
+                  ),
+                },
+                {
+                  key: 'status',
+                  label: 'Trạng thái',
+                  width: 140,
+                  align: 'center',
+                  render: (session) => (
+                    <Badge
+                      variant={session.status === 'active' ? 'success' : 'neutral'}
+                      size="small"
+                    >
+                      {session.status === 'active' ? 'Đang diễn ra' : 'Đã kết thúc'}
+                    </Badge>
+                  ),
+                },
+                {
+                  key: 'method',
+                  label: 'Phương thức',
+                  width: 120,
+                  align: 'center',
+                  render: (session) => (
+                    <Badge variant="primary" size="small">
+                      {session.method.toUpperCase()}
+                    </Badge>
+                  ),
+                },
+                {
+                  key: 'present',
+                  label: 'Có mặt',
+                  width: 100,
+                  align: 'center',
+                  render: (session) => (
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.success }}>
+                      {session.present}
+                    </Text>
+                  ),
+                },
+                {
+                  key: 'late',
+                  label: 'Muộn',
+                  width: 100,
+                  align: 'center',
+                  render: (session) => (
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.warning }}>
+                      {session.late}
+                    </Text>
+                  ),
+                },
+                {
+                  key: 'absent',
+                  label: 'Vắng',
+                  width: 100,
+                  align: 'center',
+                  render: (session) => (
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.error }}>
+                      {session.absent}
+                    </Text>
+                  ),
+                },
+                {
+                  key: 'total',
+                  label: 'Tổng',
+                  width: 100,
+                  align: 'center',
+                  render: (session) => (
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.text }}>
+                      {session.total}
+                    </Text>
+                  ),
+                },
+                {
+                  key: 'attendanceRate',
+                  label: 'Tỷ lệ',
+                  width: 100,
+                  align: 'center',
+                  render: (session) => (
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.primary }}>
+                      {Math.round((session.present / session.total) * 100)}%
+                    </Text>
+                  ),
+                },
+              ]}
+              data={filteredSessions}
+              onRowPress={(session) => alert(`Chi tiết ${session.className}`)}
+              zebraStriping={true}
+              stickyHeader={false}
+            />
+          ) : showTable ? (
+            <Card style={{ padding: 24, alignItems: 'center', gap: 8 }}>
+              <Text style={{ fontSize: 18, fontWeight: '600', color: Colors.text }}>
+                Không có buổi học
+              </Text>
+              <Text style={{ fontSize: 14, color: Colors.textSecondary, textAlign: 'center' }}>
+                Chưa có dữ liệu phù hợp với bộ lọc hiện tại.
+              </Text>
+            </Card>
+          ) : (
+            /* Mobile: Card View */
+            <>
+              {filteredSessions.map((session) => (
+                <Card key={session.id} onPress={() => alert(`Chi tiết ${session.className}`)} style={{ marginBottom: isMobile ? 8 : 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 4 }}>
+                        <Text style={{ fontWeight: '600', fontSize: isMobile ? 15 : 16, marginRight: 8, color: Colors.text }}>
+                          {session.classCode}
+                        </Text>
+                        <Badge
+                          variant={session.status === 'active' ? 'success' : 'neutral'}
+                          size="small"
+                        >
+                          {session.status === 'active' ? 'Đang diễn ra' : 'Đã kết thúc'}
+                        </Badge>
+                        <Badge
+                          variant="primary"
+                          size="small"
+                        >
+                          {session.method.toUpperCase()}
+                        </Badge>
+                      </View>
+
+                      <Text style={{ fontSize: isMobile ? 13 : 14, marginBottom: 4, color: Colors.text }}>
+                        {session.subject}
+                      </Text>
+
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <Text style={{ fontSize: 12, marginRight: 4, color: Colors.textSecondary }}>👨‍🏫</Text>
+                          <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
+                            {session.teacher}
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <Text style={{ fontSize: 12, marginRight: 4, color: Colors.textSecondary }}>⏰</Text>
+                          <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
+                            {session.startTime}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
                   </View>
-                </View>
-              </View>
 
               {/* Attendance Stats */}
               <View
@@ -287,5 +424,3 @@ export default function AttendanceSessions() {
     </View>
   );
 }
-
-// Updated: 2026-01-02 13:16:06

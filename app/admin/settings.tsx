@@ -9,6 +9,8 @@ import PrimaryButton from "../../components/PrimaryButton";
 
 export default function Settings() {
   const [settings, setSettings] = useState(mockSystemSettings);
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
   const handleSave = () => {
     alert("Đã lưu cài đặt!");
@@ -121,7 +123,7 @@ export default function Settings() {
             </View>
 
             {settings.allowLateAttendance && (
-              <View className="mt-4">
+              <View style={{ marginTop: 16 }}>
                 <Input
                   label="Ngưỡng muộn (phút)"
                   placeholder="15"
@@ -227,8 +229,8 @@ export default function Settings() {
               />
             </View>
 
-            <View className="flex-row justify-between items-center py-3">
-              <Text className="font-medium" style={{ color: Colors.text }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 }}>
+              <Text style={{ fontWeight: '500', color: Colors.text }}>
                 Cảnh báo vắng quá nhiều
               </Text>
               <Switch
@@ -257,5 +259,3 @@ export default function Settings() {
     </View>
   );
 }
-
-// Updated: 2026-01-02 13:16:06

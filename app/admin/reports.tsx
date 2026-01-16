@@ -18,9 +18,12 @@ export default function Reports() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
+  const isMobile = width < 768;
 
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+  const paddingVertical = isMobile ? 16 : 24;
+  const showTable = isDesktop;
 
   return (
     <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
@@ -46,7 +49,7 @@ export default function Reports() {
           {activeTab === "overview" && (
             <>
               {/* Summary Stats */}
-              <View className="flex-row flex-wrap mb-4 -mx-2">
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: isMobile ? 16 : 24, marginHorizontal: -8 }}>
                 {[
                   {
                     label: "Tổng buổi học",
@@ -97,8 +100,16 @@ export default function Reports() {
                   Biểu đồ điểm danh theo thời gian
                 </Text>
                 <View
-                  className="rounded-xl items-center justify-center"
-                  style={{ height: 200, backgroundColor: Colors.gray100 }}
+                  style={{
+                    borderRadius: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: isMobile ? 250 : 300,
+                    backgroundColor: Colors.gray50,
+                    borderWidth: 1,
+                    borderColor: Colors.gray200,
+                    borderStyle: 'dashed',
+                  }}
                 >
                   <Text style={{ color: Colors.textSecondary }}>
                     📊 Chart Placeholder
@@ -255,26 +266,26 @@ export default function Reports() {
           )}
 
           {/* Export Section */}
-          <Card className="mt-4">
-            <Text className="font-semibold mb-3" style={{ color: Colors.text }}>
+          <Card style={{ marginTop: isMobile ? 16 : 24, padding: isMobile ? 16 : 24 }}>
+            <Text style={{ fontWeight: '600', marginBottom: isMobile ? 16 : 20, fontSize: isMobile ? 16 : 18, color: Colors.text }}>
               Xuất báo cáo
             </Text>
-            <View className="flex-row -mx-2">
-              <View className="flex-1 px-2">
+            <View style={{ flexDirection: isMobile ? 'column' : 'row', marginHorizontal: -8, gap: isMobile ? 12 : 0 }}>
+              <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8, marginBottom: isMobile ? 0 : 0 }}>
                 <PrimaryButton
                   title="Excel"
                   variant="outline"
                   onPress={() => alert("Export Excel")}
                 />
               </View>
-              <View className="flex-1 px-2">
+              <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8, marginBottom: isMobile ? 0 : 0 }}>
                 <PrimaryButton
                   title="PDF"
                   variant="outline"
                   onPress={() => alert("Export PDF")}
                 />
               </View>
-              <View className="flex-1 px-2">
+              <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8 }}>
                 <PrimaryButton
                   title="CSV"
                   variant="outline"
@@ -288,5 +299,3 @@ export default function Reports() {
     </View>
   );
 }
-
-// Updated: 2026-01-02 13:16:05

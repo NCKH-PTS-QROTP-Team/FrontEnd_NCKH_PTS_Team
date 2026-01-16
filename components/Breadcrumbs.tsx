@@ -23,9 +23,9 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items }) => {
       style={{ marginBottom: 8 }}
     >
       {items.map((item, index) => (
-        <View key={index} className="flex-row items-center">
+        <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
           {index > 0 && (
-            <Text className="text-gray-400 mx-2" style={{ fontSize: 14 }}>
+            <Text style={{ fontSize: 14, color: Colors.gray400, marginHorizontal: 8 }}>
               /
             </Text>
           )}
@@ -35,15 +35,13 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items }) => {
               activeOpacity={0.7}
             >
               <Text
-                className="text-sm"
-                style={{ color: Colors.primary, lineHeight: 21 }}
+                style={{ fontSize: 14, color: Colors.primary, lineHeight: 21 }}
               >
                 {item.label}
               </Text>
             </TouchableOpacity>
           ) : (
             <Text
-              className="text-sm"
               style={{
                 color:
                   index === items.length - 1 ? Colors.gray900 : Colors.gray600,

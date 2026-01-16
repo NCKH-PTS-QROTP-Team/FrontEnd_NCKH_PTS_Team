@@ -47,45 +47,45 @@ export interface Stats {
 }
 
 export const mockSchedules: Schedule[] = [
-  { id: '1', courseCode: 'CS101', courseName: 'L?p trình co b?n', time: '08:00 - 10:00', room: 'A102', teacher: 'TS. Nguy?n Van A', status: 'upcoming' },
-  { id: '2', courseCode: 'CS102', courseName: 'C?u trúc d? li?u', time: '10:15 - 12:15', room: 'B205', teacher: 'TS. Tr?n Th? B', status: 'in-progress' },
-  { id: '3', courseCode: 'CS103', courseName: 'H? di?u hành', time: '13:30 - 15:30', room: 'C301', teacher: 'PGS. Lê Van C', status: 'upcoming' },
+  { id: '1', courseCode: 'CS101', courseName: 'L?p trï¿½nh co b?n', time: '08:00 - 10:00', room: 'A102', teacher: 'TS. Nguy?n Van A', status: 'upcoming' },
+  { id: '2', courseCode: 'CS102', courseName: 'C?u trï¿½c d? li?u', time: '10:15 - 12:15', room: 'B205', teacher: 'TS. Tr?n Th? B', status: 'in-progress' },
+  { id: '3', courseCode: 'CS103', courseName: 'H? di?u hï¿½nh', time: '13:30 - 15:30', room: 'C301', teacher: 'PGS. Lï¿½ Van C', status: 'upcoming' },
 ];
 
 // Teacher weekly schedule (Monday = 1, Sunday = 0)
 export const mockTeacherSchedules: TeacherSchedule[] = [
   // Monday
-  { id: '1', courseCode: 'CS101', courseName: 'L?p trình co b?n', dayOfWeek: 1, time: '08:00 - 10:00', room: 'A102', className: 'CNTT01', studentCount: 45 },
-  { id: '2', courseCode: 'CS102', courseName: 'C?u trúc d? li?u', dayOfWeek: 1, time: '10:15 - 12:15', room: 'B205', className: 'CNTT02', studentCount: 42 },
+  { id: '1', courseCode: 'CS101', courseName: 'L?p trï¿½nh co b?n', dayOfWeek: 1, time: '08:00 - 10:00', room: 'A102', className: 'CNTT01', studentCount: 45 },
+  { id: '2', courseCode: 'CS102', courseName: 'C?u trï¿½c d? li?u', dayOfWeek: 1, time: '10:15 - 12:15', room: 'B205', className: 'CNTT02', studentCount: 42 },
   { id: '3', courseCode: 'CS201', courseName: 'Co s? d? li?u', dayOfWeek: 1, time: '13:30 - 15:30', room: 'C301', className: 'CNTT03', studentCount: 38 },
   // Tuesday
-  { id: '4', courseCode: 'CS101', courseName: 'L?p trình co b?n', dayOfWeek: 2, time: '08:00 - 10:00', room: 'A102', className: 'CNTT01', studentCount: 45 },
-  { id: '5', courseCode: 'CS103', courseName: 'H? di?u hành', dayOfWeek: 2, time: '14:00 - 16:00', room: 'D401', className: 'CNTT04', studentCount: 40 },
+  { id: '4', courseCode: 'CS101', courseName: 'L?p trï¿½nh co b?n', dayOfWeek: 2, time: '08:00 - 10:00', room: 'A102', className: 'CNTT01', studentCount: 45 },
+  { id: '5', courseCode: 'CS103', courseName: 'H? di?u hï¿½nh', dayOfWeek: 2, time: '14:00 - 16:00', room: 'D401', className: 'CNTT04', studentCount: 40 },
   // Wednesday
-  { id: '6', courseCode: 'CS102', courseName: 'C?u trúc d? li?u', dayOfWeek: 3, time: '08:00 - 10:00', room: 'B205', className: 'CNTT02', studentCount: 42 },
+  { id: '6', courseCode: 'CS102', courseName: 'C?u trï¿½c d? li?u', dayOfWeek: 3, time: '08:00 - 10:00', room: 'B205', className: 'CNTT02', studentCount: 42 },
   { id: '7', courseCode: 'CS201', courseName: 'Co s? d? li?u', dayOfWeek: 3, time: '10:15 - 12:15', room: 'C301', className: 'CNTT03', studentCount: 38 },
   // Thursday
-  { id: '8', courseCode: 'CS101', courseName: 'L?p trình co b?n', dayOfWeek: 4, time: '08:00 - 10:00', room: 'A102', className: 'CNTT01', studentCount: 45 },
-  { id: '9', courseCode: 'CS102', courseName: 'C?u trúc d? li?u', dayOfWeek: 4, time: '10:15 - 12:15', room: 'B205', className: 'CNTT02', studentCount: 42 },
-  { id: '10', courseCode: 'CS103', courseName: 'H? di?u hành', dayOfWeek: 4, time: '13:30 - 15:30', room: 'C301', className: 'CNTT04', studentCount: 40 },
+  { id: '8', courseCode: 'CS101', courseName: 'L?p trï¿½nh co b?n', dayOfWeek: 4, time: '08:00 - 10:00', room: 'A102', className: 'CNTT01', studentCount: 45 },
+  { id: '9', courseCode: 'CS102', courseName: 'C?u trï¿½c d? li?u', dayOfWeek: 4, time: '10:15 - 12:15', room: 'B205', className: 'CNTT02', studentCount: 42 },
+  { id: '10', courseCode: 'CS103', courseName: 'H? di?u hï¿½nh', dayOfWeek: 4, time: '13:30 - 15:30', room: 'C301', className: 'CNTT04', studentCount: 40 },
   // Friday
   { id: '11', courseCode: 'CS201', courseName: 'Co s? d? li?u', dayOfWeek: 5, time: '08:00 - 10:00', room: 'C301', className: 'CNTT03', studentCount: 38 },
-  { id: '12', courseCode: 'CS103', courseName: 'H? di?u hành', dayOfWeek: 5, time: '14:00 - 16:00', room: 'D401', className: 'CNTT04', studentCount: 40 },
+  { id: '12', courseCode: 'CS103', courseName: 'H? di?u hï¿½nh', dayOfWeek: 5, time: '14:00 - 16:00', room: 'D401', className: 'CNTT04', studentCount: 40 },
 ];
 
 export const mockAttendanceHistory: AttendanceRecord[] = [
-  { id: '1', courseCode: 'CS101', courseName: 'L?p trình co b?n', date: '2026-01-02', time: '08:00', status: 'present', method: 'qr' },
-  { id: '2', courseCode: 'CS102', courseName: 'C?u trúc d? li?u', date: '2026-01-01', time: '10:15', status: 'late', method: 'otp' },
-  { id: '3', courseCode: 'CS103', courseName: 'H? di?u hành', date: '2025-12-30', time: '13:30', status: 'absent', method: 'none' },
-  { id: '4', courseCode: 'CS101', courseName: 'L?p trình co b?n', date: '2025-12-29', time: '08:00', status: 'present', method: 'qr' },
+  { id: '1', courseCode: 'CS101', courseName: 'L?p trï¿½nh co b?n', date: '2026-01-02', time: '08:00', status: 'present', method: 'qr' },
+  { id: '2', courseCode: 'CS102', courseName: 'C?u trï¿½c d? li?u', date: '2026-01-01', time: '10:15', status: 'late', method: 'otp' },
+  { id: '3', courseCode: 'CS103', courseName: 'H? di?u hï¿½nh', date: '2025-12-30', time: '13:30', status: 'absent', method: 'none' },
+  { id: '4', courseCode: 'CS101', courseName: 'L?p trï¿½nh co b?n', date: '2025-12-29', time: '08:00', status: 'present', method: 'qr' },
 ];
 
 export const mockStudents: Student[] = [
   { id: '1', studentId: 'SV001', name: 'Nguy?n Van An', avatar: null, status: 'present', attendedAt: '08:05' },
-  { id: '2', studentId: 'SV002', name: 'Tr?n Th? Bình', avatar: null, status: 'late', attendedAt: '08:20' },
-  { id: '3', studentId: 'SV003', name: 'Lê Hoàng Cu?ng', avatar: null, status: 'absent', attendedAt: null },
+  { id: '2', studentId: 'SV002', name: 'Tr?n Th? Bï¿½nh', avatar: null, status: 'late', attendedAt: '08:20' },
+  { id: '3', studentId: 'SV003', name: 'Lï¿½ Hoï¿½ng Cu?ng', avatar: null, status: 'absent', attendedAt: null },
   { id: '4', studentId: 'SV004', name: 'Ph?m Th? Dung', avatar: null, status: 'present', attendedAt: '08:02' },
-  { id: '5', studentId: 'SV005', name: 'Hoàng Van Em', avatar: null, status: 'present', attendedAt: '08:01' },
+  { id: '5', studentId: 'SV005', name: 'Hoï¿½ng Van Em', avatar: null, status: 'present', attendedAt: '08:01' },
 ];
 
 export const mockStats: Stats = {
@@ -127,6 +127,11 @@ export interface Subject {
   credits: number;
   teacher?: string;
   teacherId?: string;
+  // Há»— trá»£ 2 giáº£ng viÃªn: LÃ½ thuyáº¿t vÃ  Thá»±c hÃ nh
+  teacherLT?: string;
+  teacherLTId?: string;
+  teacherTH?: string;
+  teacherTHId?: string;
 }
 
 export interface AttendanceSession {
@@ -158,28 +163,28 @@ export const mockUsers: User[] = [
   { id: '2', name: 'TS. Nguy?n Van A', email: 'nva@teacher.edu.vn', username: 'GV001', password: 'teacher123', role: 'teacher', teacherId: 'GV001', isActive: true, createdAt: '2025-01-05' },
   { id: '3', name: 'ThS. Tr?n Th? B', email: 'ttb@teacher.edu.vn', username: 'GV002', password: 'teacher123', role: 'teacher', teacherId: 'GV002', isActive: true, createdAt: '2025-01-06' },
   { id: '4', name: 'Nguy?n Van An', email: 'nva@student.edu.vn', username: 'SV001', password: 'student123', role: 'student', studentId: 'SV001', isActive: true, createdAt: '2025-02-01' },
-  { id: '5', name: 'Tr?n Th? Bình', email: 'ttb@student.edu.vn', username: 'SV002', password: 'student123', role: 'student', studentId: 'SV002', isActive: false, createdAt: '2025-02-01' },
+  { id: '5', name: 'Tr?n Th? Bï¿½nh', email: 'ttb@student.edu.vn', username: 'SV002', password: 'student123', role: 'student', studentId: 'SV002', isActive: false, createdAt: '2025-02-01' },
 ];
 
 export const mockClasses: Class[] = [
-  { id: '1', code: 'CNTT01', name: 'Công ngh? thông tin 01', teacher: 'TS. Nguy?n Van A', teacherId: 'GV001', studentCount: 45, subject: 'L?p trình co b?n', semester: 'HK1-2025' },
-  { id: '2', code: 'CNTT02', name: 'Công ngh? thông tin 02', teacher: 'ThS. Tr?n Th? B', teacherId: 'GV002', studentCount: 42, subject: 'Co s? d? li?u', semester: 'HK1-2025' },
-  { id: '3', code: 'KTPM01', name: 'K? thu?t ph?n m?m 01', teacher: 'TS. Lê Van C', teacherId: 'GV003', studentCount: 38, subject: 'M?ng máy tính', semester: 'HK1-2025' },
+  { id: '1', code: 'CNTT01', name: 'Cï¿½ng ngh? thï¿½ng tin 01', teacher: 'TS. Nguy?n Van A', teacherId: 'GV001', studentCount: 45, subject: 'L?p trï¿½nh co b?n', semester: 'HK1-2025' },
+  { id: '2', code: 'CNTT02', name: 'Cï¿½ng ngh? thï¿½ng tin 02', teacher: 'ThS. Tr?n Th? B', teacherId: 'GV002', studentCount: 42, subject: 'Co s? d? li?u', semester: 'HK1-2025' },
+  { id: '3', code: 'KTPM01', name: 'K? thu?t ph?n m?m 01', teacher: 'TS. Lï¿½ Van C', teacherId: 'GV003', studentCount: 38, subject: 'M?ng mï¿½y tï¿½nh', semester: 'HK1-2025' },
 ];
 
 export const mockSubjects: Subject[] = [
-{ id: '1', code: 'CS101', name: 'L?p trình co b?n', credits: 3, teacher: 'TS. Nguy?n Van A', teacherId: 'GV001' },
-  { id: '2', code: 'CS102', name: 'Co s? d? li?u', credits: 4, teacher: 'ThS. Tr?n Th? B', teacherId: 'GV002' },
-  { id: '3', code: 'CS103', name: 'M?ng máy tính', credits: 3, teacher: 'TS. Lê Van C', teacherId: 'GV003' },
-{ id: '4', code: 'CS104', name: 'Trí tu? nhân t?o', credits: 3 },
+  { id: '1', code: 'CS101', name: 'Láº­p trÃ¬nh cÆ¡ báº£n', credits: 3, teacherLT: 'TS. Nguyá»…n VÄƒn A', teacherLTId: 'GV001', teacherTH: 'ThS. Tráº§n Thá»‹ B', teacherTHId: 'GV002' },
+  { id: '2', code: 'CS102', name: 'CÆ¡ sá»Ÿ dá»¯ liá»‡u', credits: 4, teacherLT: 'ThS. Tráº§n Thá»‹ B', teacherLTId: 'GV002' },
+  { id: '3', code: 'CS103', name: 'Máº¡ng mÃ¡y tÃ­nh', credits: 3, teacherLT: 'TS. LÃª VÄƒn C', teacherLTId: 'GV003', teacherTH: 'TS. LÃª VÄƒn C', teacherTHId: 'GV003' },
+  { id: '4', code: 'CS104', name: 'TrÃ­ tuá»‡ nhÃ¢n táº¡o', credits: 3 },
 ];
 
 export const mockAttendanceSessions: AttendanceSession[] = [
   {
     id: '1',
     classCode: 'CNTT01',
-    className: 'Công ngh? thông tin 01',
-    subject: 'L?p trình co b?n',
+    className: 'Cï¿½ng ngh? thï¿½ng tin 01',
+    subject: 'L?p trï¿½nh co b?n',
     teacher: 'TS. Nguy?n Van A',
     startTime: '08:00',
     status: 'active',
@@ -192,7 +197,7 @@ export const mockAttendanceSessions: AttendanceSession[] = [
   {
     id: '2',
     classCode: 'CNTT02',
-    className: 'Công ngh? thông tin 02',
+    className: 'Cï¿½ng ngh? thï¿½ng tin 02',
     subject: 'Co s? d? li?u',
     teacher: 'ThS. Tr?n Th? B',
     startTime: '10:15',

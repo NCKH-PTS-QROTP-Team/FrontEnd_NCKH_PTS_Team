@@ -86,10 +86,17 @@ export default function UserDetail() {
           style={{ maxWidth: 600, width: "100%", alignSelf: "center" }}
         >
           {/* Avatar & Name */}
-          <Card className="items-center mb-4">
+          <Card style={{ alignItems: 'center', marginBottom: 16 }}>
             <View
-              className="w-24 h-24 rounded-full items-center justify-center mb-4"
-              style={{ backgroundColor: Colors.primary }}
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: 48,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+                backgroundColor: Colors.primary,
+              }}
             >
               <Text
                 className="text-4xl font-bold"
@@ -209,13 +216,14 @@ export default function UserDetail() {
           </Card>
 
           {/* Actions */}
-          <Card className="mb-4">
-            <PrimaryButton
-              title="Reset mật khẩu"
-              variant="outline"
-              onPress={handleResetPassword}
-              className="mb-3"
-            />
+          <Card style={{ marginBottom: 16 }}>
+            <View style={{ marginBottom: 12 }}>
+              <PrimaryButton
+                title="Reset mật khẩu"
+                variant="outline"
+                onPress={handleResetPassword}
+              />
+            </View>
             <PrimaryButton
               title="Xóa người dùng"
               variant="outline"

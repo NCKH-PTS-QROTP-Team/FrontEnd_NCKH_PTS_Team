@@ -34,8 +34,7 @@ export default function AdminDashboard() {
 
   const contentMaxWidth = isDesktop ? 1400 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
-  const statsPerRow = isDesktop ? 4 : isTablet ? 2 : 2;
-  const actionsPerRow = isDesktop ? 3 : isTablet ? 2 : 1;
+  const paddingVertical = isMobile ? 16 : 24;
 
   // Calculate widths based on items per row
   const statsWidth = isDesktop ? "w-1/4" : "w-1/2";
@@ -200,9 +199,16 @@ export default function AdminDashboard() {
             >
               Tổng quan hệ thống
             </Text>
-            <View className="flex-row flex-wrap -mx-2">
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
               {stats.map((stat, index) => (
-                <View key={index} className={`${statsWidth} px-2 mb-3`}>
+                <View 
+                  key={index} 
+                  style={{ 
+                    width: isDesktop ? '25%' : isTablet ? '50%' : '100%',
+                    paddingHorizontal: 8, 
+                    marginBottom: isMobile ? 8 : 12 
+                  }}
+                >
                   <StatsCard {...stat} />
                 </View>
               ))}
@@ -217,7 +223,7 @@ export default function AdminDashboard() {
             >
               Điểm danh hôm nay
             </Text>
-            <View className="flex-row -mx-2">
+            <View style={{ flexDirection: isMobile ? 'column' : 'row', marginHorizontal: -8, gap: isMobile ? 8 : 0 }}>
               {todayStats.map((stat, index) => (
                 <View key={index} className="flex-1 px-2">
                   <Card className="items-center">
@@ -249,14 +255,21 @@ export default function AdminDashboard() {
             </Text>
             <View className="flex-row flex-wrap mt-3 -mx-2">
               {quickActions.map((action, index) => (
-                <View key={index} className={`${actionWidth} px-2 mb-3`}>
+                <View 
+                  key={index} 
+                  style={{ 
+                    width: isDesktop ? '33.333%' : isTablet ? '50%' : '100%',
+                    paddingHorizontal: 8, 
+                    marginBottom: isMobile ? 8 : 12 
+                  }}
+                >
                   <Card onPress={() => router.push(action.route as any)}>
                     <View className="flex-row items-center mb-2">
                       <View
                         className="w-10 h-10 rounded-xl items-center justify-center mr-3"
                         style={{ backgroundColor: Colors.infoLight }}
                       >
-                        <Text style={{ fontSize: 20 }}>{action.icon}</Text>
+                        <Text style={{ fontSize: isMobile ? 18 : 20 }}>{action.icon}</Text>
                       </View>
                       <View className="flex-1">
                         <Text

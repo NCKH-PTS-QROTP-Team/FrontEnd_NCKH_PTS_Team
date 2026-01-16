@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, Switch } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../../../constants/colors';
-import AppHeader from '../../../components/AppHeader';
 import Input from '../../../components/Input';
 import PrimaryButton from '../../../components/PrimaryButton';
 import Card from '../../../components/Card';
