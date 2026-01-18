@@ -11,14 +11,14 @@ interface BottomNavItem {
   key: string;
   label: string;
   icon: React.ReactNode;
-isCenterButton?: boolean; // For the special floating button
+  isCenterButton?: boolean; // For the special floating button
 }
 
 interface BottomNavigationProps {
   items: BottomNavItem[];
   activeKey: string;
   onItemPress: (key: string) => void;
-centerButton?: {
+  centerButton?: {
     icon: React.ReactNode;
     onPress: () => void;
   };
@@ -29,24 +29,20 @@ centerButton?: {
  * - Shows on mobile (width < 768px)
  * - Fixed at bottom of screen
  * - Special floating button in center
-* - 44px minimum touch targets
+ * - 44px minimum touch targets
  * - Icon + label layout
  */
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   items,
   activeKey,
   onItemPress,
-centerButton,
+  centerButton,
 }) => {
   const [windowWidth] = useState(Dimensions.get("window").width);
-const isMobile = windowWidth < 768;
+  const isMobile = windowWidth < 768;
 
   // Hide on desktop
   if (!isMobile) return null;
-
-// Split items into left and right (for floating center button)
-  const leftItems = items.slice(0, 2);
-  const rightItems = items.slice(2);
 
   return (
     <View
@@ -55,35 +51,34 @@ const isMobile = windowWidth < 768;
         bottom: 0,
         left: 0,
         right: 0,
-        height: 70,
+        height: 65,
         ...(Platform.OS === "web" && {
           position: "fixed" as any,
-zIndex: 999,
+          zIndex: 999,
         }),
       }}
     >
-{/* Background with curved cutout */}
+      {/* Navigation bar */}
       <View
         style={{
           position: "absolute",
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: Colors.white,
+          backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
-          borderTopColor: Colors.border,
-          height: 60,
-          paddingBottom: Platform.OS === "ios" ? 20 : 8,
+          borderTopColor: "#F3F4F6",
+          height: 65,
           flexDirection: "row",
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
+          shadowOpacity: 0.06,
           shadowRadius: 8,
           elevation: 8,
         }}
       >
-        {/* Left items */}
-        {leftItems.map((item) => {
+        {/* Render all items evenly distributed */}
+        {items.map((item) => {
           const isActive = item.key === activeKey;
           return (
             <TouchableOpacity
@@ -108,60 +103,22 @@ zIndex: 999,
                   marginBottom: 4,
                 }}
               >
-                {item.icon}
+                {typeof item.icon === "object" &&
+                React.isValidElement(item.icon)
+                  ? React.cloneElement(item.icon as React.ReactElement<any>, {
+                      color: isActive ? "#3FA9F5" : "#9CA3AF",
+                      size: 22,
+                    })
+                  : item.icon}
               </View>
               <Text
                 style={{
                   fontSize: 11,
                   fontWeight: isActive ? "600" : "400",
-                  color: isActive ? Colors.primary : Colors.textSecondary,
-                  letterSpacing: -0.01,
+                  color: isActive ? "#3FA9F5" : "#6B7280",
+                  textAlign: "center",
                 }}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-
-        {/* Spacer for center button */}
-        <View style={{ flex: 1 }} />
-
-        {/* Right items */}
-        {rightItems.map((item) => {
-          const isActive = item.key === activeKey;
-          return (
-            <TouchableOpacity
-              key={item.key}
-              onPress={() => onItemPress(item.key)}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel={item.label}
-              accessibilityState={{ selected: isActive }}
-              style={{
-                flex: 1,
-                alignItems: "center",
-                justifyContent: "center",
-                paddingVertical: 8,
-                minHeight: 44,
-              }}
-            >
-              <View
-                style={{
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 4,
-                }}
-              >
-                {item.icon}
-              </View>
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: isActive ? "600" : "400",
-                  color: isActive ? Colors.primary : Colors.textSecondary,
-                  letterSpacing: -0.01,
-                }}
+                numberOfLines={1}
               >
                 {item.label}
               </Text>
@@ -170,7 +127,7 @@ zIndex: 999,
         })}
       </View>
 
-      {/* Floating center button */}
+      {/* Floating center button (if provided) */}
       {centerButton && (
         <TouchableOpacity
           onPress={centerButton.onPress}
@@ -179,28 +136,28 @@ zIndex: 999,
           accessibilityLabel="Điểm danh"
           style={{
             position: "absolute",
-            bottom: 30,
+            bottom: 35,
             left: "50%",
             marginLeft: -32,
             width: 64,
             height: 64,
             borderRadius: 32,
-            backgroundColor: Colors.primary,
+            backgroundColor: "#3FA9F5",
             alignItems: "center",
             justifyContent: "center",
-            shadowColor: Colors.primary,
+            shadowColor: "#3FA9F5",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.3,
             shadowRadius: 8,
             elevation: 8,
             borderWidth: 4,
-            borderColor: Colors.white,
+            borderColor: "#FFFFFF",
           }}
         >
           {centerButton.icon}
         </TouchableOpacity>
       )}
-</View>
+    </View>
   );
 };
 
@@ -213,10 +170,10 @@ interface BottomNavigationSpacerProps {
  * Use at the bottom of scrollable content
  */
 export const BottomNavigationSpacer: React.FC<BottomNavigationSpacerProps> = ({
-  height = 70,
+  height = 65,
 }) => {
-const [windowWidth] = useState(Dimensions.get("window").width);
-const isMobile = windowWidth < 768;
+  const [windowWidth] = useState(Dimensions.get("window").width);
+  const isMobile = windowWidth < 768;
 
   if (!isMobile) return null;
 
