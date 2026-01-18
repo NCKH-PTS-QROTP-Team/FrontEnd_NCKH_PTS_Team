@@ -81,7 +81,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         paddingTop: Platform.OS === "web" ? 0 : 40,
         paddingBottom: Platform.OS === "web" ? 0 : 16,
         paddingHorizontal: Platform.OS === "web" ? 20 : 20,
-        height: Platform.OS === "web" ? 80 : undefined,
+        height: Platform.OS === "web" ? 64 : undefined,
         justifyContent: "center",
         ...(Platform.OS === "web" &&
           ({
@@ -100,7 +100,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     >
       <View
         className="flex-col"
-        style={{ maxWidth: 900, width: "100%", alignSelf: "center" }}
+        style={{ maxWidth: 1200, width: "100%", alignSelf: "center" }}
       >
         {/* Breadcrumbs */}
         {breadcrumbs && breadcrumbs.length > 0 && (
@@ -108,21 +108,32 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         )}
 
         {/* Header Content */}
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center flex-1">
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
             {showBack && (
               <TouchableOpacity
                 onPress={() => router.back()}
                 style={{
-                  marginRight: 16,
-                  minWidth: 44,
-                  minHeight: 44,
+                  marginRight: 12,
+                  width: 40,
+                  height: 40,
+                  borderRadius: 8,
                   justifyContent: "center",
                   alignItems: "center",
-                  transform: isBackHovered ? [{ scale: 1.1 }] : [{ scale: 1 }],
+                  backgroundColor: isBackHovered
+                    ? Colors.gray100
+                    : "transparent",
+                  transform: isBackHovered ? [{ scale: 1.05 }] : [{ scale: 1 }],
                   ...(Platform.OS === "web" &&
                     ({
                       transition: "all 0.2s ease",
+                      cursor: "pointer",
                     } as any)),
                 }}
                 activeOpacity={0.6}
@@ -132,16 +143,23 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     onMouseLeave: () => setIsBackHovered(false),
                   } as any))}
               >
-                <Text className="text-xl text-primary">←</Text>
+                <Text
+                  style={{
+                    fontSize: 20,
+                    color: Colors.primary,
+                    lineHeight: 20,
+                  }}
+                >
+                  ←
+                </Text>
               </TouchableOpacity>
             )}
             <Text
-              className="text-2xl font-semibold text-gray-900"
               style={{
                 fontSize: 24,
                 fontWeight: "600",
                 color: "#111827",
-                lineHeight: 36,
+                lineHeight: 32,
                 letterSpacing: -0.01,
               }}
               numberOfLines={1}

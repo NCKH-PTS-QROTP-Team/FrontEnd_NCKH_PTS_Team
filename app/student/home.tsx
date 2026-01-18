@@ -24,15 +24,15 @@ export default function StudentHomeScreen() {
   const isTablet = windowWidth >= 768 && windowWidth < 1024;
   const isMobile = windowWidth < 768;
 
-  // Responsive values - Match Figma exactly
-  const contentMaxWidth = isDesktop ? 800 : "100%";
-  const padding = isMobile ? 16 : isTablet ? 20 : 0;
+  // Responsive values - Optimized for web
+  const contentMaxWidth = isDesktop ? 1200 : "100%";
+  const padding = isMobile ? 16 : isTablet ? 24 : 32;
 
-  // Quick action cards: Mobile 2 cards in row, Desktop 384px each with 32px gap
-  const quickActionGap = isMobile ? 8 : isDesktop ? 32 : 16;
+  // Quick action cards: Desktop 3-4 columns, Mobile 2 cards in row
+  const quickActionGap = isMobile ? 12 : isDesktop ? 24 : 16;
 
-  // Stats cards: Mobile 2x2 grid, Desktop 256px each with 16px gap
-  const statsGap = isMobile ? 8 : isDesktop ? 16 : 12;
+  // Stats cards: Desktop 4 columns, Mobile 2x2 grid
+  const statsGap = isMobile ? 12 : isDesktop ? 20 : 16;
 
   const content = (
     <SafeAreaView
@@ -61,35 +61,29 @@ export default function StudentHomeScreen() {
           <View
             style={{
               width: "100%",
-              minHeight: isMobile ? 140 : 160,
+              minHeight: isDesktop ? 220 : isMobile ? 140 : 180,
               backgroundColor: "#3FA9F5",
-              borderRadius: isMobile ? 12 : 16,
-              padding: isMobile ? 20 : 24,
-              marginBottom: isMobile ? 16 : 24,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-              elevation: 2,
+              borderRadius: 12,
+              padding: isDesktop ? 32 : isMobile ? 20 : 24,
+              marginBottom: isMobile ? 20 : 32,
             }}
           >
             <Text
               style={{
                 color: "#FFFFFF",
-                fontSize: isMobile ? 20 : 24,
-                fontWeight: "bold",
-                lineHeight: isMobile ? 28 : 32,
-                marginBottom: 6,
+                fontSize: isDesktop ? 28 : isMobile ? 20 : 24,
+                fontWeight: "700",
+                marginBottom: 8,
               }}
             >
               Xin chào!
             </Text>
             <Text
               style={{
-                color: "#DBEAFE",
-                fontSize: isMobile ? 14 : 16,
-                lineHeight: isMobile ? 20 : 24,
-                marginBottom: isMobile ? 12 : 16,
+                color: "#FFFFFF",
+                opacity: 0.9,
+                fontSize: isDesktop ? 16 : isMobile ? 14 : 15,
+                marginBottom: isDesktop ? 20 : isMobile ? 12 : 16,
               }}
             >
               Hôm nay bạn có {todaySchedules.length} buổi học
@@ -98,9 +92,9 @@ export default function StudentHomeScreen() {
               onPress={() => router.push("/student/schedule")}
               style={{
                 backgroundColor: "#FFFFFF",
-                borderRadius: isMobile ? 8 : 12,
-                width: isMobile ? 120 : 140,
-                height: isMobile ? 36 : 40,
+                borderRadius: 8,
+                width: isDesktop ? 150 : isMobile ? 120 : 140,
+                height: isMobile ? 40 : 44,
                 justifyContent: "center",
                 alignItems: "center",
               }}
@@ -108,10 +102,9 @@ export default function StudentHomeScreen() {
             >
               <Text
                 style={{
-                  fontSize: isMobile ? 13 : 14,
+                  fontSize: 14,
                   fontWeight: "600",
                   color: "#3FA9F5",
-                  lineHeight: 21,
                 }}
               >
                 Xem lịch học →
@@ -120,14 +113,13 @@ export default function StudentHomeScreen() {
           </View>
 
           {/* Quick Actions - 2 cards in row on mobile */}
-          <View style={{ marginBottom: isMobile ? 16 : 40 }}>
+          <View style={{ marginBottom: isMobile ? 24 : 32 }}>
             <Text
               style={{
-                fontSize: isMobile ? 16 : 18,
-                fontWeight: "bold",
+                fontSize: isDesktop ? 18 : isMobile ? 16 : 17,
+                fontWeight: "600",
                 color: "#111827",
-                lineHeight: 28,
-                marginBottom: isMobile ? 12 : 16,
+                marginBottom: isMobile ? 16 : 20,
               }}
             >
               Điểm danh nhanh
@@ -143,37 +135,31 @@ export default function StudentHomeScreen() {
                 onPress={() => router.push("/student/otp-attendance")}
                 style={{
                   flex: 1,
-                  minHeight: isMobile ? 120 : 160,
+                  minHeight: isDesktop ? 200 : isMobile ? 120 : 160,
                   backgroundColor: "#FFFFFF",
-                  borderRadius: isMobile ? 12 : 16,
-                  padding: isMobile ? 16 : 20,
-                  borderWidth: 2,
-                  borderColor: "#DBEAFE",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 2,
+                  borderRadius: 12,
+                  padding: isDesktop ? 24 : isMobile ? 16 : 20,
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB",
                 }}
                 activeOpacity={0.7}
               >
                 <View
                   style={{
-                    backgroundColor: "#DBEAFE",
-                    borderRadius: isMobile ? 10 : 12,
-                    width: isMobile ? 40 : 48,
-                    height: isMobile ? 40 : 48,
+                    backgroundColor: "#EFF6FF",
+                    borderRadius: 10,
+                    width: isDesktop ? 56 : isMobile ? 40 : 48,
+                    height: isDesktop ? 56 : isMobile ? 40 : 48,
                     alignItems: "center",
                     justifyContent: "center",
-                    marginBottom: isMobile ? 8 : 12,
+                    marginBottom: isDesktop ? 16 : isMobile ? 8 : 12,
                   }}
                 >
                   <Text
                     style={{
-                      fontSize: isMobile ? 18 : 24,
-                      fontWeight: "bold",
+                      fontSize: isDesktop ? 24 : isMobile ? 18 : 20,
+                      fontWeight: "700",
                       color: "#3FA9F5",
-                      lineHeight: isMobile ? 24 : 32,
                     }}
                   >
                     OTP
@@ -181,10 +167,9 @@ export default function StudentHomeScreen() {
                 </View>
                 <Text
                   style={{
-                    fontSize: isMobile ? 14 : 16,
-                    fontWeight: "bold",
+                    fontSize: isDesktop ? 17 : isMobile ? 14 : 16,
+                    fontWeight: "600",
                     color: "#111827",
-                    lineHeight: isMobile ? 20 : 24,
                     marginBottom: 4,
                   }}
                 >
@@ -192,9 +177,8 @@ export default function StudentHomeScreen() {
                 </Text>
                 <Text
                   style={{
-                    fontSize: isMobile ? 12 : 14,
+                    fontSize: isDesktop ? 14 : isMobile ? 12 : 13,
                     color: "#6B7280",
-                    lineHeight: isMobile ? 18 : 21,
                   }}
                 >
                   Nhập mã từ GV
@@ -206,37 +190,31 @@ export default function StudentHomeScreen() {
                 onPress={() => router.push("/student/qr-attendance")}
                 style={{
                   flex: 1,
-                  minHeight: isMobile ? 120 : 160,
+                  minHeight: isDesktop ? 200 : isMobile ? 120 : 160,
                   backgroundColor: "#FFFFFF",
-                  borderRadius: isMobile ? 12 : 16,
-                  padding: isMobile ? 16 : 20,
-                  borderWidth: 2,
-                  borderColor: "#D1FAE5",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 2,
+                  borderRadius: 12,
+                  padding: isDesktop ? 24 : isMobile ? 16 : 20,
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB",
                 }}
                 activeOpacity={0.7}
               >
                 <View
                   style={{
-                    backgroundColor: "#D1FAE5",
-                    borderRadius: isMobile ? 10 : 12,
-                    width: isMobile ? 40 : 48,
-                    height: isMobile ? 40 : 48,
+                    backgroundColor: "#ECFDF5",
+                    borderRadius: 10,
+                    width: isDesktop ? 56 : isMobile ? 40 : 48,
+                    height: isDesktop ? 56 : isMobile ? 40 : 48,
                     alignItems: "center",
                     justifyContent: "center",
-                    marginBottom: isMobile ? 8 : 12,
+                    marginBottom: isDesktop ? 16 : isMobile ? 8 : 12,
                   }}
                 >
                   <Text
                     style={{
-                      fontSize: isMobile ? 16 : 22,
-                      fontWeight: "bold",
+                      fontSize: isDesktop ? 22 : isMobile ? 16 : 18,
+                      fontWeight: "700",
                       color: "#10B981",
-                      lineHeight: isMobile ? 24 : 28,
                     }}
                   >
                     QR
@@ -244,10 +222,9 @@ export default function StudentHomeScreen() {
                 </View>
                 <Text
                   style={{
-                    fontSize: isMobile ? 14 : 16,
-                    fontWeight: "bold",
+                    fontSize: isDesktop ? 17 : isMobile ? 14 : 16,
+                    fontWeight: "600",
                     color: "#111827",
-                    lineHeight: isMobile ? 20 : 24,
                     marginBottom: 4,
                   }}
                 >
@@ -255,9 +232,8 @@ export default function StudentHomeScreen() {
                 </Text>
                 <Text
                   style={{
-                    fontSize: isMobile ? 12 : 14,
+                    fontSize: isDesktop ? 14 : isMobile ? 12 : 13,
                     color: "#6B7280",
-                    lineHeight: isMobile ? 18 : 21,
                   }}
                 >
                   Quét mã trên lớp
@@ -287,210 +263,319 @@ export default function StudentHomeScreen() {
             paddingHorizontal: padding,
           }}
         >
-          {/* Stats - 2x2 grid on mobile */}
-          <View style={{ marginBottom: isMobile ? 16 : 40 }}>
+          {/* Stats - 2x2 grid on mobile, 4 columns on desktop */}
+          <View style={{ marginBottom: isMobile ? 24 : 32 }}>
             <Text
               style={{
-                fontSize: isMobile ? 16 : 18,
-                fontWeight: "bold",
+                fontSize: isDesktop ? 18 : isMobile ? 16 : 17,
+                fontWeight: "600",
                 color: "#111827",
-                lineHeight: 28,
-                marginBottom: isMobile ? 12 : 16,
+                marginBottom: isMobile ? 16 : 20,
               }}
             >
               Thống kê tuần này
             </Text>
 
-            {/* First row: Tổng buổi + Có mặt */}
-            <View
-              style={{
-                flexDirection: "row",
-                gap: statsGap,
-                marginBottom: statsGap,
-              }}
-            >
-              {/* Tổng buổi */}
-              <View
-                style={{
-                  flex: 1,
-                  minHeight: isMobile ? 100 : 120,
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: isMobile ? 8 : 12,
-                  padding: isMobile ? 12 : 16,
-                  borderWidth: 1,
-                  borderColor: "#E5E7EB",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 2,
-                  elevation: 1,
-                }}
-              >
-                <Text
+            {/* Desktop: Single row with 4 columns, Mobile: 2x2 grid */}
+            {isDesktop ? (
+              <View style={{ flexDirection: "row", gap: statsGap }}>
+                {/* Tổng buổi */}
+                <View
                   style={{
-                    fontSize: isMobile ? 12 : 14,
-                    color: "#6B7280",
-                    lineHeight: 21,
-                    marginBottom: isMobile ? 4 : 8,
+                    flex: 1,
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 12,
+                    padding: 20,
+                    borderLeftWidth: 3,
+                    borderLeftColor: "#3FA9F5",
                   }}
                 >
-                  Tổng buổi
-                </Text>
-                <Text
-                  style={{
-                    fontSize: isMobile ? 28 : 36,
-                    fontWeight: "600",
-                    color: "#3FA9F5",
-                    lineHeight: isMobile ? 32 : 40,
-                  }}
-                >
-                  12
-                </Text>
-              </View>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: "#6B7280",
+                      marginBottom: 8,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Tổng buổi
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 40,
+                      fontWeight: "700",
+                      color: "#3FA9F5",
+                    }}
+                  >
+                    12
+                  </Text>
+                </View>
 
-              {/* Có mặt */}
-              <View
-                style={{
-                  flex: 1,
-                  minHeight: isMobile ? 100 : 120,
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: isMobile ? 8 : 12,
-                  padding: isMobile ? 12 : 16,
-                  borderWidth: 1,
-                  borderColor: "#E5E7EB",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 2,
-                  elevation: 1,
-                }}
-              >
-                <Text
+                {/* Có mặt */}
+                <View
                   style={{
-                    fontSize: isMobile ? 12 : 14,
-                    color: "#6B7280",
-                    lineHeight: 21,
-                    marginBottom: isMobile ? 4 : 8,
+                    flex: 1,
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 12,
+                    padding: 20,
+                    borderLeftWidth: 3,
+                    borderLeftColor: "#10B981",
                   }}
                 >
-                  Có mặt
-                </Text>
-                <Text
-                  style={{
-                    fontSize: isMobile ? 28 : 36,
-                    fontWeight: "600",
-                    color: "#10B981",
-                    lineHeight: isMobile ? 32 : 40,
-                  }}
-                >
-                  10
-                </Text>
-              </View>
-            </View>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: "#6B7280",
+                      marginBottom: 8,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Có mặt
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 40,
+                      fontWeight: "700",
+                      color: "#10B981",
+                    }}
+                  >
+                    10
+                  </Text>
+                </View>
 
-            {/* Second row: Đi muộn + Vắng */}
-            <View
-              style={{
-                flexDirection: "row",
-                gap: statsGap,
-              }}
-            >
-              {/* Đi muộn */}
-              <View
-                style={{
-                  flex: 1,
-                  minHeight: isMobile ? 100 : 120,
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: isMobile ? 8 : 12,
-                  padding: isMobile ? 12 : 16,
-                  borderWidth: 1,
-                  borderColor: "#E5E7EB",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 2,
-                  elevation: 1,
-                }}
-              >
-                <Text
+                {/* Đi muộn */}
+                <View
                   style={{
-                    fontSize: isMobile ? 12 : 14,
-                    color: "#6B7280",
-                    lineHeight: 21,
-                    marginBottom: isMobile ? 4 : 8,
+                    flex: 1,
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 12,
+                    padding: 20,
+                    borderLeftWidth: 3,
+                    borderLeftColor: "#F59E0B",
                   }}
                 >
-                  Đi muộn
-                </Text>
-                <Text
-                  style={{
-                    fontSize: isMobile ? 28 : 36,
-                    fontWeight: "600",
-                    color: "#F59E0B",
-                    lineHeight: isMobile ? 32 : 40,
-                  }}
-                >
-                  2
-                </Text>
-              </View>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: "#6B7280",
+                      marginBottom: 8,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Đi muộn
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 40,
+                      fontWeight: "700",
+                      color: "#F59E0B",
+                    }}
+                  >
+                    2
+                  </Text>
+                </View>
 
-              {/* Vắng */}
-              <View
-                style={{
-                  flex: 1,
-                  minHeight: isMobile ? 100 : 120,
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: isMobile ? 8 : 12,
-                  padding: isMobile ? 12 : 16,
-                  borderWidth: 1,
-                  borderColor: "#E5E7EB",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 2,
-                  elevation: 1,
-                }}
-              >
-                <Text
+                {/* Vắng */}
+                <View
                   style={{
-                    fontSize: isMobile ? 12 : 14,
-                    color: "#6B7280",
-                    lineHeight: 21,
-                    marginBottom: isMobile ? 4 : 8,
+                    flex: 1,
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 12,
+                    padding: 20,
+                    borderLeftWidth: 3,
+                    borderLeftColor: "#EF4444",
                   }}
                 >
-                  Vắng
-                </Text>
-                <Text
-                  style={{
-                    fontSize: isMobile ? 28 : 36,
-                    fontWeight: "600",
-                    color: "#EF4444",
-                    lineHeight: isMobile ? 32 : 40,
-                  }}
-                >
-                  0
-                </Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: "#6B7280",
+                      marginBottom: 8,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Vắng
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 40,
+                      fontWeight: "700",
+                      color: "#EF4444",
+                    }}
+                  >
+                    0
+                  </Text>
+                </View>
               </View>
-            </View>
+            ) : (
+              <>
+                {/* First row: Tổng buổi + Có mặt */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: statsGap,
+                    marginBottom: statsGap,
+                  }}
+                >
+                  {/* Tổng buổi */}
+                  <View
+                    style={{
+                      flex: 1,
+                      minHeight: isMobile ? 100 : 120,
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 8,
+                      padding: isMobile ? 12 : 16,
+                      borderLeftWidth: 3,
+                      borderLeftColor: "#3FA9F5",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 12 : 14,
+                        color: "#6B7280",
+                        marginBottom: isMobile ? 4 : 8,
+                        fontWeight: "500",
+                      }}
+                    >
+                      Tổng buổi
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 32 : 36,
+                        fontWeight: "700",
+                        color: "#3FA9F5",
+                      }}
+                    >
+                      12
+                    </Text>
+                  </View>
+
+                  {/* Có mặt */}
+                  <View
+                    style={{
+                      flex: 1,
+                      minHeight: isMobile ? 100 : 120,
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 8,
+                      padding: isMobile ? 12 : 16,
+                      borderLeftWidth: 3,
+                      borderLeftColor: "#10B981",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 12 : 14,
+                        color: "#6B7280",
+                        marginBottom: isMobile ? 4 : 8,
+                        fontWeight: "500",
+                      }}
+                    >
+                      Có mặt
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 32 : 36,
+                        fontWeight: "700",
+                        color: "#10B981",
+                      }}
+                    >
+                      10
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Second row: Đi muộn + Vắng */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: statsGap,
+                  }}
+                >
+                  {/* Đi muộn */}
+                  <View
+                    style={{
+                      flex: 1,
+                      minHeight: isMobile ? 100 : 120,
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 8,
+                      padding: isMobile ? 12 : 16,
+                      borderLeftWidth: 3,
+                      borderLeftColor: "#F59E0B",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 12 : 14,
+                        color: "#6B7280",
+                        marginBottom: isMobile ? 4 : 8,
+                        fontWeight: "500",
+                      }}
+                    >
+                      Đi muộn
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 32 : 36,
+                        fontWeight: "700",
+                        color: "#F59E0B",
+                      }}
+                    >
+                      2
+                    </Text>
+                  </View>
+
+                  {/* Vắng */}
+                  <View
+                    style={{
+                      flex: 1,
+                      minHeight: isMobile ? 100 : 120,
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 8,
+                      padding: isMobile ? 12 : 16,
+                      borderLeftWidth: 3,
+                      borderLeftColor: "#EF4444",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 12 : 14,
+                        color: "#6B7280",
+                        marginBottom: isMobile ? 4 : 8,
+                        fontWeight: "500",
+                      }}
+                    >
+                      Vắng
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 32 : 36,
+                        fontWeight: "700",
+                        color: "#EF4444",
+                      }}
+                    >
+                      0
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
           </View>
 
           {/* Today's Schedule */}
-          <View style={{ marginBottom: isMobile ? 16 : 24 }}>
+          <View style={{ marginBottom: isMobile ? 20 : 24 }}>
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
-                marginBottom: isMobile ? 12 : 16,
+                marginBottom: isMobile ? 16 : 20,
               }}
             >
               <Text
                 style={{
-                  fontSize: isMobile ? 16 : 18,
-                  fontWeight: "bold",
+                  fontSize: isDesktop ? 18 : isMobile ? 16 : 17,
+                  fontWeight: "600",
                   color: "#111827",
-                  lineHeight: 28,
                 }}
               >
                 Lịch học hôm nay

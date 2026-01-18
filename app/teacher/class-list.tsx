@@ -7,6 +7,7 @@ import {
   Platform,
   TouchableOpacity,
   Modal,
+  SafeAreaView,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { AppHeader } from "@/components/AppHeader";
@@ -142,8 +143,9 @@ export default function ClassListScreen() {
   >(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const contentMaxWidth = isDesktop ? 1400 : "100%";
+  const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+  const paddingVertical = isMobile ? 16 : 24;
 
   const handleClassPress = (classItem: (typeof mockClasses)[0]) => {
     setSelectedClass(classItem);
@@ -169,13 +171,9 @@ export default function ClassListScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
       <StatusBar style="dark" />
-      <AppHeader
-        title="Danh sách lớp học"
-        showBack={false}
-        showLogout={!isWeb}
-      />
+      <AppHeader title="Danh sách lớp học" showBack showLogout={!isWeb} />
 
       <ScrollView
         contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
@@ -188,17 +186,7 @@ export default function ClassListScreen() {
             alignSelf: "center",
           }}
         >
-          {/* Page Title */}
-          <Text
-            style={{
-              fontSize: isMobile ? 20 : 24,
-              fontWeight: "600",
-              marginBottom: isMobile ? 16 : 24,
-              color: Colors.text,
-            }}
-          >
-            Lớp học của tôi
-          </Text>
+          {/* Page Title - Removed since it's redundant with AppHeader */}
 
           {/* Summary Stats */}
           <View
@@ -724,6 +712,6 @@ export default function ClassListScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }

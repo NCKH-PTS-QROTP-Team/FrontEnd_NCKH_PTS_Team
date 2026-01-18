@@ -5,7 +5,7 @@ import {
   ScrollView,
   Platform,
   useWindowDimensions,
-  // SafeAreaView,
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -36,6 +36,7 @@ export default function AdminDashboard() {
   const contentMaxWidth = isDesktop ? 1400 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const paddingVertical = isMobile ? 16 : 24;
+  const cardGap = isMobile ? 12 : 16;
 
   // Calculate widths based on items per row
   const statsWidth = isDesktop ? "w-1/4" : "w-1/2";
@@ -118,55 +119,61 @@ export default function AdminDashboard() {
 
   const quickActions = [
     {
-      title: "Quản lý người dùng",
-      subtitle: "Thêm, sửa, xóa user",
+      title: "Người dùng",
       route: "/admin/users",
-      icon: "U",
+      icon: UsersIcon,
+      color: "#3FA9F5",
     },
     {
-      title: "Quản lý lớp học",
-      subtitle: "Tạo và quản lý lớp",
+      title: "Lớp học",
       route: "/admin/classes",
-      icon: "C",
+      icon: SchoolIcon,
+      color: "#10B981",
     },
     {
-      title: "Quản lý môn học",
-      subtitle: "Danh sách môn học",
+      title: "Môn học",
       route: "/admin/subjects",
-      icon: "S",
+      icon: BookIcon,
+      color: "#8B5CF6",
     },
     {
       title: "Lịch học",
-      subtitle: "Xem và tạo lịch",
       route: "/admin/schedules",
-      icon: "L",
+      icon: CalendarIcon,
+      color: "#F59E0B",
     },
     {
-      title: "Giám sát điểm danh",
-      subtitle: "Theo dõi real-time",
+      title: "Giám sát",
       route: "/admin/sessions",
-      icon: "M",
+      icon: EyeIcon,
+      color: "#EF4444",
     },
     {
       title: "Báo cáo",
-      subtitle: "Thống kê và export",
       route: "/admin/reports",
-      icon: "R",
+      icon: ChartIcon,
+      color: "#06B6D4",
     },
     {
       title: "Cài đặt",
-      subtitle: "Cấu hình hệ thống",
       route: "/admin/settings",
-      icon: "S",
+      icon: SettingsIcon,
+      color: "#6B7280",
     },
   ];
 
   const content = (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
       <StatusBar style="dark" />
       <AppHeader title="Dashboard" showBack={false} showLogout={!isWeb} />
 
-      <ScrollView style={{ flex: 1 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingBottom: isMobile ? 100 : 40,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
         <View
           style={{
             paddingHorizontal,
@@ -193,10 +200,14 @@ export default function AdminDashboard() {
           </Card>
 
           {/* Main Stats Grid */}
-          <View className="mb-6">
+          <View style={{ marginBottom: isMobile ? 24 : 32 }}>
             <Text
-              className="text-lg font-semibold mb-3"
-              style={{ color: Colors.text, letterSpacing: 0 }}
+              style={{
+                fontSize: isMobile ? 16 : 18,
+                fontWeight: "600",
+                color: "#111827",
+                marginBottom: isMobile ? 16 : 20,
+              }}
             >
               Tổng quan hệ thống
             </Text>
@@ -204,117 +215,210 @@ export default function AdminDashboard() {
               style={{
                 flexDirection: "row",
                 flexWrap: "wrap",
-                marginHorizontal: -8,
+                marginHorizontal: -cardGap / 2,
               }}
             >
               {stats.map((stat, index) => (
                 <View
                   key={index}
                   style={{
-                    width: isDesktop ? "25%" : isTablet ? "50%" : "100%",
-                    paddingHorizontal: 8,
-                    marginBottom: isMobile ? 8 : 12,
+                    width: isDesktop ? "25%" : "50%",
+                    paddingHorizontal: cardGap / 2,
+                    marginBottom: cardGap,
                   }}
                 >
-                  <StatsCard {...stat} />
+                  <View
+                    style={{
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: isMobile ? 8 : 12,
+                      padding: isMobile ? 16 : 20,
+                      borderLeftWidth: 3,
+                      borderLeftColor: stat.color,
+                      minHeight: isMobile ? 100 : 120,
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.03,
+                      shadowRadius: 2,
+                      elevation: 1,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 12 : 13,
+                        color: "#6B7280",
+                        marginBottom: isMobile ? 4 : 8,
+                        fontWeight: "500",
+                      }}
+                    >
+                      {stat.label}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 32 : 40,
+                        fontWeight: "700",
+                        color: stat.color,
+                      }}
+                    >
+                      {stat.value}
+                    </Text>
+                  </View>
                 </View>
               ))}
             </View>
           </View>
 
           {/* Today's Attendance Stats */}
-          <View className="mb-6">
+          <View style={{ marginBottom: isMobile ? 24 : 32 }}>
             <Text
-              className="text-lg font-semibold mb-3"
-              style={{ color: Colors.text, letterSpacing: 0 }}
+              style={{
+                fontSize: isMobile ? 16 : 18,
+                fontWeight: "600",
+                color: "#111827",
+                marginBottom: isMobile ? 16 : 20,
+              }}
             >
               Điểm danh hôm nay
             </Text>
             <View
               style={{
-                flexDirection: isMobile ? "column" : "row",
-                marginHorizontal: -8,
-                gap: isMobile ? 8 : 0,
+                flexDirection: "row",
+                gap: cardGap,
               }}
             >
               {todayStats.map((stat, index) => (
-                <View key={index} className="flex-1 px-2">
-                  <Card className="items-center">
+                <View key={index} style={{ flex: 1 }}>
+                  <View
+                    style={{
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: isMobile ? 8 : 12,
+                      padding: isMobile ? 16 : 20,
+                      borderLeftWidth: 3,
+                      borderLeftColor: stat.color,
+                      minHeight: isMobile ? 80 : 100,
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.03,
+                      shadowRadius: 2,
+                      elevation: 1,
+                    }}
+                  >
                     <Text
-                      className="text-3xl font-bold mb-1"
-                      style={{ color: stat.color, letterSpacing: 0 }}
-                    >
-                      {stat.value}
-                    </Text>
-                    <Text
-                      className="text-sm"
-                      style={{ color: Colors.textSecondary, letterSpacing: 0 }}
+                      style={{
+                        fontSize: isMobile ? 12 : 13,
+                        color: "#6B7280",
+                        marginBottom: isMobile ? 4 : 8,
+                        fontWeight: "500",
+                      }}
                     >
                       {stat.label}
                     </Text>
-                  </Card>
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 28 : 32,
+                        fontWeight: "700",
+                        color: stat.color,
+                      }}
+                    >
+                      {stat.value}
+                    </Text>
+                  </View>
                 </View>
               ))}
             </View>
           </View>
 
           {/* Quick Actions */}
-          <View className="mb-6">
+          <View style={{ marginBottom: isMobile ? 24 : 32 }}>
             <Text
-              className="text-lg font-semibold mb-3"
-              style={{ color: Colors.text, letterSpacing: 0 }}
+              style={{
+                fontSize: isMobile ? 16 : 18,
+                fontWeight: "600",
+                color: "#111827",
+                marginBottom: isMobile ? 16 : 20,
+              }}
             >
               Thao tác nhanh
             </Text>
-            <View className="flex-row flex-wrap mt-3 -mx-2">
-              {quickActions.map((action, index) => (
-                <View
-                  key={index}
-                  style={{
-                    width: isDesktop ? "33.333%" : isTablet ? "50%" : "100%",
-                    paddingHorizontal: 8,
-                    marginBottom: isMobile ? 8 : 12,
-                  }}
-                >
-                  <Card onPress={() => router.push(action.route as any)}>
-                    <View className="flex-row items-center mb-2">
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                marginHorizontal: -cardGap / 2,
+              }}
+            >
+              {quickActions.map((action, index) => {
+                const IconComponent = action.icon;
+                return (
+                  <View
+                    key={index}
+                    style={{
+                      width: isDesktop ? "20%" : isTablet ? "25%" : "33.333%",
+                      paddingHorizontal: cardGap / 2,
+                      marginBottom: cardGap,
+                    }}
+                  >
+                    <TouchableOpacity
+                      onPress={() => router.push(action.route as any)}
+                      style={{
+                        backgroundColor: "#FFFFFF",
+                        borderRadius: isMobile ? 8 : 12,
+                        padding: isMobile ? 12 : 16,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        minHeight: isMobile ? 80 : 100,
+                        borderWidth: 1,
+                        borderColor: "#F3F4F6",
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.02,
+                        shadowRadius: 2,
+                        elevation: 1,
+                      }}
+                      activeOpacity={0.7}
+                    >
                       <View
-                        className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-                        style={{ backgroundColor: Colors.infoLight }}
+                        style={{
+                          width: isMobile ? 40 : 48,
+                          height: isMobile ? 40 : 48,
+                          borderRadius: isMobile ? 10 : 12,
+                          backgroundColor: action.color + "15",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginBottom: isMobile ? 8 : 12,
+                        }}
                       >
-                        <Text style={{ fontSize: isMobile ? 18 : 20 }}>
-                          {action.icon}
-                        </Text>
+                        <IconComponent
+                          size={isMobile ? 20 : 24}
+                          color={action.color}
+                        />
                       </View>
-                      <View className="flex-1">
-                        <Text
-                          className="font-semibold mb-1"
-                          style={{ color: Colors.text, letterSpacing: 0 }}
-                        >
-                          {action.title}
-                        </Text>
-                        <Text
-                          className="text-xs"
-                          style={{
-                            color: Colors.textSecondary,
-                            letterSpacing: 0,
-                          }}
-                        >
-                          {action.subtitle}
-                        </Text>
-                      </View>
-                    </View>
-                  </Card>
-                </View>
-              ))}
+                      <Text
+                        style={{
+                          fontSize: isMobile ? 12 : 14,
+                          fontWeight: "600",
+                          color: "#111827",
+                          textAlign: "center",
+                        }}
+                        numberOfLines={2}
+                      >
+                        {action.title}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
             </View>
           </View>
 
           {/* Recent Activity */}
-          <View className="mb-6">
+          <View style={{ marginBottom: isMobile ? 24 : 32 }}>
             <Text
-              className="text-lg font-semibold mb-3"
-              style={{ color: Colors.text, letterSpacing: 0 }}
+              style={{
+                fontSize: isMobile ? 16 : 18,
+                fontWeight: "600",
+                color: Colors.text,
+                marginBottom: isMobile ? 16 : 20,
+              }}
             >
               Hoạt động gần đây
             </Text>
@@ -332,21 +436,26 @@ export default function AdminDashboard() {
               ].map((activity, index) => (
                 <View
                   key={index}
-                  className="py-3 border-b"
                   style={{
-                    borderBottomColor:
-                      index === 2 ? "transparent" : Colors.border,
+                    paddingVertical: isMobile ? 12 : 16,
+                    borderBottomWidth: index === 2 ? 0 : 1,
+                    borderBottomColor: Colors.border,
                   }}
                 >
                   <Text
-                    className="mb-1"
-                    style={{ color: Colors.text, letterSpacing: 0 }}
+                    style={{
+                      fontSize: isMobile ? 14 : 15,
+                      color: Colors.text,
+                      marginBottom: 4,
+                    }}
                   >
                     {activity.text}
                   </Text>
                   <Text
-                    className="text-xs"
-                    style={{ color: Colors.textSecondary, letterSpacing: 0 }}
+                    style={{
+                      fontSize: isMobile ? 12 : 13,
+                      color: Colors.textSecondary,
+                    }}
                   >
                     {activity.time}
                   </Text>
@@ -356,7 +465,7 @@ export default function AdminDashboard() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 
   return (

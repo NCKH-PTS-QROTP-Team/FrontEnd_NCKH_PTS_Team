@@ -16,12 +16,13 @@ export default function GenerateOTPScreen() {
   const [countdown, setCountdown] = useState(300);
   const [isActive, setIsActive] = useState(false);
   const isWeb = Platform.OS === "web";
-const { width } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
+  const isMobile = width < 768;
 
-const contentMaxWidth = isDesktop ? 600 : "100%";
-const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+  const contentMaxWidth = isDesktop ? 1200 : "100%";
+  const paddingHorizontal = isDesktop ? 32 : isTablet ? 24 : 16;
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -45,193 +46,333 @@ const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-return `${mins}:${secs.toString().padStart(2, "0")}`;
-};
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   const isExpired = countdown === 0;
 
   return (
-<SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
       <StatusBar style="dark" />
       <AppHeader title="Tạo mã OTP" showBack showLogout={!isWeb} />
 
-<ScrollView
-        contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal,
+          paddingVertical: isDesktop ? 32 : 24,
+        }}
         showsVerticalScrollIndicator={false}
       >
-<View
+        <View
           style={{
             maxWidth: contentMaxWidth,
             width: "100%",
             alignSelf: "center",
           }}
         >
-          {/* Course Info */}
+          {/* Desktop: Two-column layout, Mobile: Stacked */}
           <View
             style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: 16,
-              padding: 20,
+              flexDirection: isDesktop ? "row" : "column",
+              gap: isDesktop ? 24 : 0,
               marginBottom: 24,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 3,
             }}
           >
-            <Text
+            {/* Left Column - Course Info */}
+            <View
               style={{
-                fontSize: 14,
-                lineHeight: 20,
-                color: "#6B7280",
-                marginBottom: 4,
-              }}
-            >
-              Môn học
-            </Text>
-            <Text
-              style={{
-                fontSize: 20,
-                lineHeight: 28,
-                fontWeight: "bold",
-                color: "#111827",
-              }}
-            >
-              Lập trình cơ bản
-            </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                lineHeight: 20,
-                color: "#4B5563",
-                marginTop: 4,
-              }}
-            >
-CS101 • Phòng A102 • 08:00 - 10:00
-            </Text>
-          </View>
-
-          {/* OTP Display */}
-          {isActive ? (
-<View
-              className="bg-white rounded-2xl p-8 mb-6"
-              style={{
-                shadowColor: "#3FA9F5",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 12,
-                elevation: 5,
-              }}
-            >
-              <View className="items-center mb-6">
-                <View
-                  style={{
-                    width: 64,
-                    height: 64,
-                    backgroundColor: "#DBEAFE",
-                    borderRadius: 16,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 16,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 32,
-                      fontWeight: "bold",
-                      color: "#3FA9F5",
-                    }}
-                  >
-                    #
-                  </Text>
-</View>
-                <Text className="text-sm text-gray-500 mb-4">
-                  Mã OTP cho sinh viên
-                </Text>
-                <View className="bg-primary px-8 py-4 rounded-2xl">
-                  <Text className="text-5xl font-bold text-white tracking-widest">
-                    {otp}
-                  </Text>
-                </View>
-              </View>
-
-              <View className="items-center pt-6 border-t border-gray-100">
-                <Text className="text-sm text-gray-500 mb-2">
-                  Thời gian còn lại
-                </Text>
-<Text
-                  className={`text-4xl font-bold ${
-                    countdown < 60 ? "text-red-500" : "text-primary"
-                  }`}
-                >
-{formatTime(countdown)}
-                </Text>
-                {countdown < 60 && (
-                  <Text className="text-sm text-red-500 mt-2">
-                    Sắp hết hạn!
-                  </Text>
-                )}
-              </View>
-            </View>
-          ) : (
-<View
-              className="bg-white rounded-2xl p-8 mb-6 items-center"
-              style={{
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 3,
+                flex: isDesktop ? 1 : undefined,
+                marginBottom: isMobile ? 20 : 0,
               }}
             >
               <View
                 style={{
-                  width: 64,
-                  height: 64,
-                  backgroundColor: "#F3F4F6",
-                  borderRadius: 16,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 16,
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 12,
+                  padding: 24,
+                  height: isDesktop ? "100%" : "auto",
                 }}
               >
-                <Text style={{ fontSize: 32, color: "#6B7280" }}>○</Text>
-</View>
-              <Text className="text-xl font-bold text-gray-900 mb-2">
-                Chưa có mã OTP
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "500",
+                    color: "#6B7280",
+                    marginBottom: 8,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Môn học
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 24,
+                    fontWeight: "700",
+                    color: "#111827",
+                    marginBottom: 16,
+                  }}
+                >
+                  Lập trình cơ bản
+                </Text>
+                <View style={{ gap: 8 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View
+                      style={{
+                        width: 4,
+                        height: 4,
+                        borderRadius: 2,
+                        backgroundColor: "#3FA9F5",
+                        marginRight: 8,
+                      }}
+                    />
+                    <Text style={{ fontSize: 14, color: "#4B5563" }}>
+                      CS101
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View
+                      style={{
+                        width: 4,
+                        height: 4,
+                        borderRadius: 2,
+                        backgroundColor: "#3FA9F5",
+                        marginRight: 8,
+                      }}
+                    />
+                    <Text style={{ fontSize: 14, color: "#4B5563" }}>
+                      Phòng A102
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View
+                      style={{
+                        width: 4,
+                        height: 4,
+                        borderRadius: 2,
+                        backgroundColor: "#3FA9F5",
+                        marginRight: 8,
+                      }}
+                    />
+                    <Text style={{ fontSize: 14, color: "#4B5563" }}>
+                      08:00 - 10:00
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Instructions moved here for desktop */}
+                {isDesktop && (
+                  <View
+                    style={{
+                      backgroundColor: "#F0F9FF",
+                      borderRadius: 8,
+                      padding: 16,
+                      marginTop: 24,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "600",
+                        color: "#1E40AF",
+                        marginBottom: 8,
+                      }}
+                    >
+                      Hướng dẫn
+                    </Text>
+                    <Text
+                      style={{ fontSize: 13, lineHeight: 20, color: "#1E40AF" }}
+                    >
+                      • Hiển thị mã OTP cho sinh viên{"\n"}• Mã có hiệu lực
+                      trong 5 phút{"\n"}• Sinh viên nhập mã để điểm danh
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+            {/* Right Column - OTP Display */}
+            <View
+              style={{
+                flex: isDesktop ? 1 : undefined,
+              }}
+            >
+              {isActive ? (
+                <View
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 12,
+                    padding: isDesktop ? 32 : 24,
+                    height: isDesktop ? "100%" : "auto",
+                    justifyContent: "center",
+                  }}
+                >
+                  <View style={{ alignItems: "center" }}>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "500",
+                        color: "#6B7280",
+                        marginBottom: 16,
+                        textTransform: "uppercase",
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      Mã OTP hiện tại
+                    </Text>
+                    <View
+                      style={{
+                        backgroundColor: "#3FA9F5",
+                        paddingHorizontal: isDesktop ? 48 : 32,
+                        paddingVertical: isDesktop ? 32 : 24,
+                        borderRadius: 16,
+                        marginBottom: 24,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: isDesktop ? 72 : 56,
+                          fontWeight: "700",
+                          color: "#FFFFFF",
+                          letterSpacing: 8,
+                        }}
+                      >
+                        {otp}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={{
+                        width: "100%",
+                        paddingTop: 20,
+                        borderTopWidth: 1,
+                        borderTopColor: "#E5E7EB",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: "500",
+                          color: "#6B7280",
+                          marginBottom: 12,
+                        }}
+                      >
+                        Thời gian còn lại
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: isDesktop ? 48 : 40,
+                          fontWeight: "700",
+                          color: countdown < 60 ? "#EF4444" : "#3FA9F5",
+                        }}
+                      >
+                        {formatTime(countdown)}
+                      </Text>
+                      {countdown < 60 && (
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontWeight: "600",
+                            color: "#EF4444",
+                            marginTop: 8,
+                          }}
+                        >
+                          Sắp hết hạn!
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <View
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 12,
+                    padding: isDesktop ? 32 : 24,
+                    height: isDesktop ? "100%" : "auto",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 80,
+                      height: 80,
+                      backgroundColor: "#F3F4F6",
+                      borderRadius: 40,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: 20,
+                    }}
+                  >
+                    <Text style={{ fontSize: 40, color: "#9CA3AF" }}>○</Text>
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      fontWeight: "600",
+                      color: "#111827",
+                      marginBottom: 8,
+                    }}
+                  >
+                    Chưa có mã OTP
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: "#6B7280",
+                      textAlign: "center",
+                    }}
+                  >
+                    Nhấn nút bên dưới để tạo mã mới
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Button - Full width on mobile, constrained on desktop */}
+          <View
+            style={{
+              maxWidth: isDesktop ? 400 : "100%",
+              alignSelf: "center",
+              width: "100%",
+            }}
+          >
+            <PrimaryButton
+              title={isActive ? "Tạo mã mới" : "Tạo mã OTP"}
+              onPress={generateOTP}
+            />
+          </View>
+
+          {/* Instructions - Only show on mobile/tablet */}
+          {!isDesktop && (
+            <View
+              style={{
+                backgroundColor: "#F0F9FF",
+                borderRadius: 8,
+                padding: 16,
+                marginTop: 24,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "600",
+                  color: "#1E40AF",
+                  marginBottom: 8,
+                }}
+              >
+                Hướng dẫn
               </Text>
-              <Text className="text-sm text-gray-500 text-center">
-                Nhấn nút bên dưới để tạo mã OTP mới
+              <Text style={{ fontSize: 13, lineHeight: 20, color: "#1E40AF" }}>
+                • Hiển thị mã OTP cho sinh viên{"\n"}• Mã có hiệu lực trong 5
+                phút{"\n"}• Sinh viên nhập mã để điểm danh
               </Text>
             </View>
           )}
-
-          <PrimaryButton
-            title={isActive ? "Tạo mã mới" : "Tạo mã OTP"}
-            onPress={generateOTP}
-          />
-
-          {/* Instructions */}
-<View
-            style={{
-              backgroundColor: "#E0F2FE",
-              borderWidth: 1,
-              borderColor: "#BFDBFE",
-              borderRadius: 12,
-              padding: 16,
-              marginTop: 24,
-            }}
-          >
-            <Text style={{ fontSize: 14, lineHeight: 20, color: "#1E40AF" }}>
-              <Text style={{ fontWeight: "600" }}>Hướng dẫn:</Text>
-              {"\n"}• Hiển thị mã OTP trên màn hình cho sinh viên
-              {"\n"}• Mã có hiệu lực trong 5 phút
-              {"\n"}• Sinh viên nhập mã để hoàn tất điểm danh
-</Text>
-          </View>
         </View>
       </ScrollView>
-</SafeAreaView>
-);
+    </SafeAreaView>
+  );
 }
