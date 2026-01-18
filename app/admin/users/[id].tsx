@@ -86,14 +86,14 @@ export default function UserDetail() {
           style={{ maxWidth: 600, width: "100%", alignSelf: "center" }}
         >
           {/* Avatar & Name */}
-          <Card style={{ alignItems: 'center', marginBottom: 16 }}>
+          <Card style={{ alignItems: "center", marginBottom: 16 }}>
             <View
               style={{
                 width: 96,
                 height: 96,
                 borderRadius: 48,
-                alignItems: 'center',
-                justifyContent: 'center',
+                alignItems: "center",
+                justifyContent: "center",
                 marginBottom: 16,
                 backgroundColor: Colors.primary,
               }}
@@ -127,7 +127,7 @@ export default function UserDetail() {
           </Card>
 
           {/* Info */}
-          <Card className="mb-4">
+          <Card style={{ marginBottom: 16 }}>
             <Text
               className="text-lg font-semibold mb-4"
               style={{ color: Colors.text }}

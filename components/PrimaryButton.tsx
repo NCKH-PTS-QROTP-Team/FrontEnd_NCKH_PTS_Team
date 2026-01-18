@@ -108,21 +108,14 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityState={{ disabled: isDisabled }}
-      className={`
-        ${getButtonStyle()}
-        px-6
-        items-center
-        justify-center
-        ${className || ""}
-      `}
       style={[
         {
           borderRadius: 8,
           minHeight: 44, // Minimum touch target
           paddingVertical: 12,
           paddingHorizontal: 24,
-          alignItems: 'center',
-          justifyContent: 'center',
+          alignItems: "center",
+          justifyContent: "center",
           backgroundColor: getBackgroundColor(),
           borderColor: getBorderColor(),
           borderWidth: variant === "outline" ? 2 : 0,

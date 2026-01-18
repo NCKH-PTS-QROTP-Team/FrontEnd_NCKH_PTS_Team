@@ -213,7 +213,7 @@ export default function Sidebar({
                       } as any,
                     ]}
                   >
-                    {iconWithColor}
+                    {item.icon}
                   </View>
                   {!collapsed && (
                     <>

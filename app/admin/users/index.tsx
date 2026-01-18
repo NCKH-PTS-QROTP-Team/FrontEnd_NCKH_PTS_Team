@@ -1,29 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform, useWindowDimensions } from 'react-native';
-import { router } from 'expo-router';
-import { Colors } from '@/constants/colors';
-import { mockUsers, User } from '@/constants/mockData';
-import Card from '@/components/Card';
-import Badge from '@/components/Badge';
-import PrimaryButton from '@/components/PrimaryButton';
-import DataTable from '@/components/DataTable';
-import { EmptyUsersIcon, EmptySearchIcon } from '@/components/EmptyStateIllustration';
-import { SkeletonCard } from '@/components/Skeleton';
-import { ErrorState } from '@/components/ErrorState';
-import Toast, { useToast } from '@/components/Toast';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Platform,
+  useWindowDimensions,
+} from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { router } from "expo-router";
+import { Colors } from "@/constants/colors";
+import { mockUsers, User } from "@/constants/mockData";
+import Card from "@/components/Card";
+import Badge from "@/components/Badge";
+import PrimaryButton from "@/components/PrimaryButton";
+import DataTable from "@/components/DataTable";
+import {
+  EmptyUsersIcon,
+  EmptySearchIcon,
+} from "@/components/EmptyStateIllustration";
+import { SkeletonCard } from "@/components/Skeleton";
+import { ErrorState } from "@/components/ErrorState";
+import Toast, { useToast } from "@/components/Toast";
+import AppHeader from "@/components/AppHeader";
 
 export default function UserManagement() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRole, setSelectedRole] = useState<'all' | 'admin' | 'teacher' | 'student'>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRole, setSelectedRole] = useState<
+    "all" | "admin" | "teacher" | "student"
+  >("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const { toast, showToast, hideToast } = useToast();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
-const contentMaxWidth = isDesktop ? 1200 : '100%';
+  const isMobile = width < 768;
+  const showTable = isDesktop || isTablet;
+  const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
-// Simulate data fetching
+  const paddingVertical = isMobile ? 16 : 24;
+  // Simulate data fetching
   useEffect(() => {
     loadUsers();
   }, []);
@@ -31,7 +49,7 @@ const contentMaxWidth = isDesktop ? 1200 : '100%';
   const loadUsers = () => {
     setLoading(true);
     setError(false);
-    
+
     // Simulate API call
     setTimeout(() => {
       // Randomly simulate error (10% chance)
@@ -44,61 +62,81 @@ const contentMaxWidth = isDesktop ? 1200 : '100%';
     }, 1000);
   };
 
-  const filteredUsers = mockUsers.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = selectedRole === 'all' || user.role === selectedRole;
+  const filteredUsers = mockUsers.filter((user) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = selectedRole === "all" || user.role === selectedRole;
     return matchesSearch && matchesRole;
   });
 
   const getRoleBadge = (role: string) => {
     const roleMap = {
-      admin: { label: 'Admin', variant: 'error' as const },
-      teacher: { label: 'Giảng viên', variant: 'primary' as const },
-      student: { label: 'Sinh viên', variant: 'success' as const },
+      admin: { label: "Admin", variant: "error" as const },
+      teacher: { label: "Giảng viên", variant: "primary" as const },
+      student: { label: "Sinh viên", variant: "success" as const },
     };
-return roleMap[role as keyof typeof roleMap] || { label: role, variant: 'gray' as const };
-};
+    return (
+      roleMap[role as keyof typeof roleMap] || {
+        label: role,
+        variant: "gray" as const,
+      }
+    );
+  };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-<StatusBar style="dark" />
+    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      <StatusBar style="dark" />
       <AppHeader title="Quản lý người dùng" showLogout={true} />
-      
+
       <ScrollView style={{ flex: 1 }}>
-        <View style={{ paddingHorizontal, paddingVertical, maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
-          
+        <View
+          style={{
+            paddingHorizontal,
+            paddingVertical,
+            maxWidth: contentMaxWidth,
+            width: "100%",
+            alignSelf: "center",
+          }}
+        >
           {/* Page Title */}
-          <Text style={{ fontSize: isMobile ? 20 : 24, fontWeight: '600', marginBottom: isMobile ? 16 : 24, color: Colors.text }}>
+          <Text
+            style={{
+              fontSize: isMobile ? 20 : 24,
+              fontWeight: "600",
+              marginBottom: isMobile ? 16 : 24,
+              color: Colors.text,
+            }}
+          >
             Quản lý người dùng
           </Text>
-          
+
           {/* Actions */}
           <View className="flex-row mb-4">
             <PrimaryButton
               title="+ Thêm người dùng"
-              onPress={() => router.push('/admin/users/create' as any)}
-              className="flex-1 mr-2"
+              onPress={() => router.push("/admin/users/create" as any)}
+              style={{ flex: 1, marginRight: 8 }}
             />
             <PrimaryButton
               title="↑ Upload CSV"
               variant="outline"
-              onPress={() => alert('Upload CSV')}
-              className="flex-1"
+              onPress={() => alert("Upload CSV")}
+              style={{ flex: 1 }}
             />
-</View>
+          </View>
 
           {/* Search */}
           <TextInput
-className="border-2 rounded-lg px-4 mb-4"
+            className="border-2 rounded-lg px-4 mb-4"
             style={{
               height: 48,
               borderWidth: 2,
               borderColor: Colors.gray200,
-color: Colors.text,
+              color: Colors.text,
               lineHeight: 24,
               ...Platform.select({
-                web: { outlineStyle: 'none' as any },
+                web: { outlineStyle: "none" as any },
               }),
             }}
             placeholder="Tìm kiếm theo tên, email..."
@@ -108,26 +146,36 @@ color: Colors.text,
           />
 
           {/* Role Filters */}
-<ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mb-4"
+          >
             <View className="flex-row">
-{[
-                { key: 'all', label: 'Tất cả' },
-                { key: 'admin', label: 'Admin' },
-                { key: 'teacher', label: 'Giảng viên' },
-                { key: 'student', label: 'Sinh viên' },
+              {[
+                { key: "all", label: "Tất cả" },
+                { key: "admin", label: "Admin" },
+                { key: "teacher", label: "Giảng viên" },
+                { key: "student", label: "Sinh viên" },
               ].map((role) => (
                 <TouchableOpacity
                   key={role.key}
-className="px-4 py-2 rounded-full mr-2"
+                  className="px-4 py-2 rounded-full mr-2"
                   style={{
-backgroundColor: selectedRole === role.key ? Colors.primary : Colors.gray100,
+                    backgroundColor:
+                      selectedRole === role.key
+                        ? Colors.primary
+                        : Colors.gray100,
                   }}
                   onPress={() => setSelectedRole(role.key as any)}
                 >
                   <Text
-className="font-medium text-sm"
+                    className="font-medium text-sm"
                     style={{
-color: selectedRole === role.key ? Colors.white : Colors.gray700,
+                      color:
+                        selectedRole === role.key
+                          ? Colors.white
+                          : Colors.gray700,
                     }}
                   >
                     {role.label}
@@ -159,7 +207,10 @@ color: selectedRole === role.key ? Colors.white : Colors.gray700,
           {/* User List */}
           {!loading && !error && filteredUsers.length > 0 && (
             <>
-<Text className="text-sm mb-3" style={{ color: Colors.textSecondary }}>
+              <Text
+                className="text-sm mb-3"
+                style={{ color: Colors.textSecondary }}
+              >
                 {filteredUsers.length} người dùng
               </Text>
 
@@ -168,53 +219,74 @@ color: selectedRole === role.key ? Colors.white : Colors.gray700,
                 <DataTable
                   columns={[
                     {
-                      key: 'avatar',
-                      label: '',
+                      key: "avatar",
+                      label: "",
                       width: 60,
-                      align: 'center',
+                      align: "center",
                       render: (user) => (
                         <View
                           style={{
                             width: 36,
                             height: 36,
                             borderRadius: 18,
-                            alignItems: 'center',
-                            justifyContent: 'center',
+                            alignItems: "center",
+                            justifyContent: "center",
                             backgroundColor: Colors.gray100,
-                            alignSelf: 'center',
+                            alignSelf: "center",
                           }}
                         >
-                          <Text style={{ fontSize: 16, fontWeight: 'bold', color: Colors.primary }}>
+                          <Text
+                            style={{
+                              fontSize: 16,
+                              fontWeight: "bold",
+                              color: Colors.primary,
+                            }}
+                          >
                             {user.name.charAt(0)}
                           </Text>
                         </View>
                       ),
                     },
                     {
-                      key: 'name',
-                      label: 'Họ và tên',
+                      key: "name",
+                      label: "Họ và tên",
                       width: 200,
                       render: (user) => (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                          <Text style={{ fontWeight: '600', color: Colors.text, fontSize: 14 }}>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                            gap: 6,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontWeight: "600",
+                              color: Colors.text,
+                              fontSize: 14,
+                            }}
+                          >
                             {user.name}
                           </Text>
                         </View>
                       ),
                     },
                     {
-                      key: 'email',
-                      label: 'Email',
+                      key: "email",
+                      label: "Email",
                       width: 250,
                       render: (user) => (
-                        <Text style={{ fontSize: 14, color: Colors.textSecondary }}>
+                        <Text
+                          style={{ fontSize: 14, color: Colors.textSecondary }}
+                        >
                           {user.email}
                         </Text>
                       ),
                     },
                     {
-                      key: 'role',
-                      label: 'Vai trò',
+                      key: "role",
+                      label: "Vai trò",
                       width: 140,
                       render: (user) => {
                         const badgeData = getRoleBadge(user.role);
@@ -226,116 +298,202 @@ color: selectedRole === role.key ? Colors.white : Colors.gray700,
                       },
                     },
                     {
-                      key: 'id',
-                      label: 'Mã',
+                      key: "id",
+                      label: "Mã",
                       width: 120,
                       render: (user) => (
-                        <Text style={{ fontSize: 14, color: Colors.textSecondary }}>
-                          {user.studentId || user.teacherId || '-'}
+                        <Text
+                          style={{ fontSize: 14, color: Colors.textSecondary }}
+                        >
+                          {user.studentId || user.teacherId || "-"}
                         </Text>
                       ),
                     },
                     {
-                      key: 'status',
-                      label: 'Trạng thái',
+                      key: "status",
+                      label: "Trạng thái",
                       width: 120,
-                      align: 'center',
+                      align: "center",
                       render: (user) => (
-                        <View style={{ alignItems: 'center' }}>
+                        <View style={{ alignItems: "center" }}>
                           {!user.isActive && (
                             <Badge variant="neutral" size="small">
                               Vô hiệu
                             </Badge>
                           )}
                           {user.isActive && (
-                            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.success }} />
+                            <View
+                              style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: 4,
+                                backgroundColor: Colors.success,
+                              }}
+                            />
                           )}
                         </View>
                       ),
                     },
                   ]}
                   data={filteredUsers}
-                  onRowPress={(user) => router.push(`/admin/users/${user.id}` as any)}
+                  onRowPress={(user) =>
+                    router.push(`/admin/users/${user.id}` as any)
+                  }
                   zebraStriping={true}
                   stickyHeader={true}
                 />
               ) : (
                 /* Mobile: Card View */
                 <>
-                  {filteredUsers.map((user) => (
-                    <Card key={user.id} onPress={() => router.push(`/admin/users/${user.id}` as any)} style={{ marginBottom: 8 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  {filteredUsers.map((user) => {
+                    const badgeData = getRoleBadge(user.role);
+                    return (
+                      <Card
+                        key={user.id}
+                        onPress={() =>
+                          router.push(`/admin/users/${user.id}` as any)
+                        }
+                        style={{ marginBottom: 8 }}
+                      >
                         <View
                           style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 20,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginRight: 12,
-                            backgroundColor: Colors.gray100,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
                           }}
                         >
-                          <Text style={{ fontSize: 18, fontWeight: 'bold', color: Colors.primary }}>
-                            {user.name.charAt(0)}
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              flex: 1,
+                            }}
+                          >
+                            <View
+                              style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 20,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                marginRight: 12,
+                                backgroundColor: Colors.gray100,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 18,
+                                  fontWeight: "bold",
+                                  color: Colors.primary,
+                                }}
+                              >
+                                {user.name.charAt(0)}
+                              </Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text
+                                style={{
+                                  fontWeight: "600",
+                                  color: Colors.text,
+                                  fontSize: 14,
+                                  marginBottom: 4,
+                                }}
+                              >
+                                {user.name}
+                              </Text>
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  color: Colors.textSecondary,
+                                  marginBottom: 4,
+                                }}
+                              >
+                                {user.email}
+                              </Text>
+                              <Badge variant={badgeData.variant} size="small">
+                                {badgeData.label}
+                              </Badge>
+                            </View>
+                          </View>
+                          <Text style={{ fontSize: 24, color: Colors.gray300 }}>
+                            ›
                           </Text>
                         </View>
-
-                    <Text className="text-2xl" style={{ color: Colors.gray300 }}>›</Text>
-                  </View>
-                </Card>
-              ))}
-</>
+                      </Card>
+                    );
+                  })}
+                </>
+              )}
+            </>
           )}
 
           {/* Empty State */}
           {!loading && !error && filteredUsers.length === 0 && (
-            <View 
-className="bg-white border rounded-lg"
-              style={{ 
-                backgroundColor: '#FFFFFF',
+            <View
+              className="bg-white border rounded-lg"
+              style={{
+                backgroundColor: "#FFFFFF",
                 borderWidth: 1,
                 borderColor: Colors.gray200,
-padding: 48,
-                alignItems: 'center',
-                justifyContent: 'center',
+                padding: 48,
+                alignItems: "center",
+                justifyContent: "center",
                 marginTop: 24,
               }}
             >
               {searchQuery ? (
                 <>
                   <EmptySearchIcon size={80} color={Colors.gray300} />
-                  <Text 
-className="text-xl font-semibold mb-2 mt-4" 
-                    style={{ color: Colors.text, lineHeight: 32, textAlign: 'center' }}
->
+                  <Text
+                    className="text-xl font-semibold mb-2 mt-4"
+                    style={{
+                      color: Colors.text,
+                      lineHeight: 32,
+                      textAlign: "center",
+                    }}
+                  >
                     Không tìm thấy kết quả
                   </Text>
-                  <Text 
-className="text-base" 
-                    style={{ color: Colors.textSecondary, lineHeight: 24, textAlign: 'center', maxWidth: 400 }}
->
-                    Không tìm thấy người dùng nào phù hợp với "{searchQuery}". Thử tìm kiếm với từ khóa khác.
+                  <Text
+                    className="text-base"
+                    style={{
+                      color: Colors.textSecondary,
+                      lineHeight: 24,
+                      textAlign: "center",
+                      maxWidth: 400,
+                    }}
+                  >
+                    Không tìm thấy người dùng nào phù hợp với "{searchQuery}".
+                    Thử tìm kiếm với từ khóa khác.
                   </Text>
                 </>
               ) : (
                 <>
                   <EmptyUsersIcon size={80} color={Colors.gray300} />
-                  <Text 
-className="text-xl font-semibold mb-2 mt-4" 
-                    style={{ color: Colors.text, lineHeight: 32, textAlign: 'center' }}
->
+                  <Text
+                    className="text-xl font-semibold mb-2 mt-4"
+                    style={{
+                      color: Colors.text,
+                      lineHeight: 32,
+                      textAlign: "center",
+                    }}
+                  >
                     Chưa có người dùng
                   </Text>
-                  <Text 
-className="text-base mb-4" 
-                    style={{ color: Colors.textSecondary, lineHeight: 24, textAlign: 'center', maxWidth: 400 }}
->
+                  <Text
+                    className="text-base mb-4"
+                    style={{
+                      color: Colors.textSecondary,
+                      lineHeight: 24,
+                      textAlign: "center",
+                      maxWidth: 400,
+                    }}
+                  >
                     Bắt đầu bằng cách thêm người dùng mới vào hệ thống.
                   </Text>
                   <PrimaryButton
                     title="+ Thêm người dùng"
-                    onPress={() => router.push('/admin/users/create' as any)}
+                    onPress={() => router.push("/admin/users/create" as any)}
                   />
                 </>
               )}

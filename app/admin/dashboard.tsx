@@ -30,6 +30,7 @@ export default function AdminDashboard() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
+  const isMobile = width < 768;
   const isWeb = Platform.OS === "web";
 
   const contentMaxWidth = isDesktop ? 1400 : "100%";
@@ -199,14 +200,20 @@ export default function AdminDashboard() {
             >
               Tổng quan hệ thống
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                marginHorizontal: -8,
+              }}
+            >
               {stats.map((stat, index) => (
-                <View 
-                  key={index} 
-                  style={{ 
-                    width: isDesktop ? '25%' : isTablet ? '50%' : '100%',
-                    paddingHorizontal: 8, 
-                    marginBottom: isMobile ? 8 : 12 
+                <View
+                  key={index}
+                  style={{
+                    width: isDesktop ? "25%" : isTablet ? "50%" : "100%",
+                    paddingHorizontal: 8,
+                    marginBottom: isMobile ? 8 : 12,
                   }}
                 >
                   <StatsCard {...stat} />
@@ -223,7 +230,13 @@ export default function AdminDashboard() {
             >
               Điểm danh hôm nay
             </Text>
-            <View style={{ flexDirection: isMobile ? 'column' : 'row', marginHorizontal: -8, gap: isMobile ? 8 : 0 }}>
+            <View
+              style={{
+                flexDirection: isMobile ? "column" : "row",
+                marginHorizontal: -8,
+                gap: isMobile ? 8 : 0,
+              }}
+            >
               {todayStats.map((stat, index) => (
                 <View key={index} className="flex-1 px-2">
                   <Card className="items-center">
@@ -255,12 +268,12 @@ export default function AdminDashboard() {
             </Text>
             <View className="flex-row flex-wrap mt-3 -mx-2">
               {quickActions.map((action, index) => (
-                <View 
-                  key={index} 
-                  style={{ 
-                    width: isDesktop ? '33.333%' : isTablet ? '50%' : '100%',
-                    paddingHorizontal: 8, 
-                    marginBottom: isMobile ? 8 : 12 
+                <View
+                  key={index}
+                  style={{
+                    width: isDesktop ? "33.333%" : isTablet ? "50%" : "100%",
+                    paddingHorizontal: 8,
+                    marginBottom: isMobile ? 8 : 12,
                   }}
                 >
                   <Card onPress={() => router.push(action.route as any)}>
@@ -269,7 +282,9 @@ export default function AdminDashboard() {
                         className="w-10 h-10 rounded-xl items-center justify-center mr-3"
                         style={{ backgroundColor: Colors.infoLight }}
                       >
-                        <Text style={{ fontSize: isMobile ? 18 : 20 }}>{action.icon}</Text>
+                        <Text style={{ fontSize: isMobile ? 18 : 20 }}>
+                          {action.icon}
+                        </Text>
                       </View>
                       <View className="flex-1">
                         <Text
