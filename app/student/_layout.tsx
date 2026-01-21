@@ -63,6 +63,8 @@ export default function StudentLayout() {
       <Stack.Screen name="schedule" />
       <Stack.Screen name="qr-attendance" />
       <Stack.Screen name="otp-attendance" />
+      <Stack.Screen name="face-attendance" />
+      <Stack.Screen name="register-face" />
       <Stack.Screen name="history" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="attendance-actions" />

@@ -333,6 +333,42 @@ export default function StudentProfileScreen() {
               flexDirection: "row",
               alignItems: "center",
               padding: 16,
+              borderBottomWidth: 1,
+              borderBottomColor: Colors.border,
+            }}
+            onPress={() => router.push("/student/register-face")}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "#8B5CF615",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 12,
+              }}
+            >
+              <UserIcon size={20} color="#8B5CF6" />
+            </View>
+            <Text
+              style={{
+                flex: 1,
+                fontSize: 15,
+                color: Colors.textHeading,
+                fontWeight: "500",
+              }}
+            >
+              Đăng ký nhận diện khuôn mặt
+            </Text>
+            <ChevronRightIcon size={20} color={Colors.textSecondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              padding: 16,
             }}
           >
             <View

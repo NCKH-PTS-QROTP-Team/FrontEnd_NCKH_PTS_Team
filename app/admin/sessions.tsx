@@ -16,6 +16,8 @@ import Badge from "../../components/Badge";
 import DataTable from "../../components/DataTable";
 
 export default function AttendanceSessions() {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;

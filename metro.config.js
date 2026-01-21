@@ -9,6 +9,8 @@ config.resolver = {
   alias: {
     '@': path.resolve(__dirname),
   },
+  // Ensure proper source extensions for web
+  sourceExts: [...config.resolver.sourceExts, 'web.js', 'web.ts', 'web.tsx'],
 };
 
 module.exports = config;
