@@ -10,13 +10,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/colors";
-import { HashIcon, QrCodeIcon } from "@/components/Icons";
+import { HashIcon, QrCodeIcon, UserIcon } from "@/components/Icons";
 
 export default function StudentAttendanceActionsScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
-  const [activeTab, setActiveTab] = useState<"qr" | "otp">("qr");
+  const [activeTab, setActiveTab] = useState<"qr" | "otp" | "face">("qr");
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
@@ -59,27 +59,27 @@ export default function StudentAttendanceActionsScreen() {
           style={{
             flex: 1,
             paddingVertical: 12,
-            paddingHorizontal: 16,
+            paddingHorizontal: 12,
             borderRadius: 12,
             backgroundColor: activeTab === "qr" ? "#10B98115" : Colors.gray50,
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
-            gap: 8,
+            gap: 6,
           }}
         >
           <QrCodeIcon
-            size={20}
+            size={18}
             color={activeTab === "qr" ? "#10B981" : Colors.textSecondary}
           />
           <Text
             style={{
-              fontSize: 15,
+              fontSize: 13,
               fontWeight: activeTab === "qr" ? "600" : "400",
               color: activeTab === "qr" ? "#10B981" : Colors.textSecondary,
             }}
           >
-            Quét QR
+            QR
           </Text>
         </TouchableOpacity>
 
@@ -88,29 +88,60 @@ export default function StudentAttendanceActionsScreen() {
           style={{
             flex: 1,
             paddingVertical: 12,
-            paddingHorizontal: 16,
+            paddingHorizontal: 12,
             borderRadius: 12,
             backgroundColor:
               activeTab === "otp" ? Colors.primary + "15" : Colors.gray50,
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
-            gap: 8,
+            gap: 6,
           }}
         >
           <HashIcon
-            size={20}
+            size={18}
             color={activeTab === "otp" ? Colors.primary : Colors.textSecondary}
           />
           <Text
             style={{
-              fontSize: 15,
+              fontSize: 13,
               fontWeight: activeTab === "otp" ? "600" : "400",
               color:
                 activeTab === "otp" ? Colors.primary : Colors.textSecondary,
             }}
           >
-            Nhập OTP
+            OTP
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setActiveTab("face")}
+          style={{
+            flex: 1,
+            paddingVertical: 12,
+            paddingHorizontal: 12,
+            borderRadius: 12,
+            backgroundColor:
+              activeTab === "face" ? "#8B5CF615" : Colors.gray50,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+          }}
+        >
+          <UserIcon
+            size={18}
+            color={activeTab === "face" ? "#8B5CF6" : Colors.textSecondary}
+          />
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: activeTab === "face" ? "600" : "400",
+              color:
+                activeTab === "face" ? "#8B5CF6" : Colors.textSecondary,
+            }}
+          >
+            Face
           </Text>
         </TouchableOpacity>
       </View>
@@ -245,6 +276,64 @@ export default function StudentAttendanceActionsScreen() {
               </Text>
             </View>
           </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={() => router.push("/student/face-attendance")}
+            style={{
+              backgroundColor: Colors.white,
+              borderRadius: 16,
+              padding: 24,
+              borderWidth: 2,
+              borderColor: "#EDE9FE",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                width: 80,
+                height: 80,
+                backgroundColor: "#EDE9FE",
+                borderRadius: 20,
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 20,
+              }}
+            >
+              <UserIcon size={48} color="#8B5CF6" />
+            </View>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "bold",
+                color: Colors.textHeading,
+                marginBottom: 8,
+              }}
+            >
+              Quét mặt điểm danh
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: Colors.textSecondary,
+                textAlign: "center",
+              }}
+            >
+              Quét khuôn mặt để xác thực và điểm danh
+            </Text>
+            <View
+              style={{
+                marginTop: 20,
+                paddingVertical: 12,
+                paddingHorizontal: 24,
+                backgroundColor: "#8B5CF6",
+                borderRadius: 12,
+              }}
+            >
+              <Text style={{ color: Colors.white, fontWeight: "600" }}>
+                Mở camera →
+              </Text>
+            </View>
+          </TouchableOpacity>
         )}
 
         {/* Instructions */}
@@ -271,7 +360,9 @@ export default function StudentAttendanceActionsScreen() {
           <Text style={{ fontSize: 13, color: "#1E3A8A", lineHeight: 20 }}>
             {activeTab === "qr"
               ? "1. Nhấn 'Mở camera' để bật camera\n2. Hướng camera vào mã QR của giảng viên\n3. Chờ hệ thống xác nhận điểm danh\n4. Mã QR có hiệu lực trong 5 phút"
-              : "1. Nhấn 'Bắt đầu' để mở form nhập mã\n2. Nhập 6 chữ số OTP từ giảng viên\n3. Nhấn 'Xác nhận' để hoàn tất\n4. Mã OTP có hiệu lực trong 5 phút"}
+              : activeTab === "otp"
+              ? "1. Nhấn 'Bắt đầu' để mở form nhập mã\n2. Nhập 6 chữ số OTP từ giảng viên\n3. Nhấn 'Xác nhận' để hoàn tất\n4. Mã OTP có hiệu lực trong 5 phút"
+              : "1. Nhấn 'Mở camera' để bật camera selfie\n2. Đặt khuôn mặt trong khung\n3. Nhấn 'Quét mặt để điểm danh'\n4. Chờ hệ thống xác thực (cần đăng ký face trước)"}
           </Text>
         </View>
 

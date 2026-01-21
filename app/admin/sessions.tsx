@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions, Platform } from "react-native";
 import { router } from "expo-router";
 import { Colors } from "../../constants/colors";
 import { mockAttendanceSessions } from "../../constants/mockData";
@@ -8,6 +8,8 @@ import Card from "../../components/Card";
 import Badge from "../../components/Badge";
 
 export default function AttendanceSessions() {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
 
   const filteredSessions = mockAttendanceSessions.filter((session) => {
@@ -183,95 +185,13 @@ export default function AttendanceSessions() {
                     >
                       {session.startTime}
                     </Text>
-                  ),
-                },
-                {
-                  key: 'status',
-                  label: 'Trạng thái',
-                  width: 140,
-                  align: 'center',
-                  render: (session) => (
-                    <Badge
-                      variant={session.status === 'active' ? 'success' : 'neutral'}
-                      size="small"
-                    >
-                      {session.status === 'active' ? 'Đang diễn ra' : 'Đã kết thúc'}
-                    </Badge>
-                  ),
-                },
-                {
-                  key: 'method',
-                  label: 'Phương thức',
-                  width: 120,
-                  align: 'center',
-                  render: (session) => (
-                    <Badge variant="primary" size="small">
-                      {session.method.toUpperCase()}
-                    </Badge>
-                  ),
-                },
-                {
-                  key: 'present',
-                  label: 'Có mặt',
-                  width: 100,
-                  align: 'center',
-                  render: (session) => (
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.success }}>
-                      {session.present}
-                    </Text>
-                  ),
-                },
-                {
-                  key: 'late',
-                  label: 'Muộn',
-                  width: 100,
-                  align: 'center',
-                  render: (session) => (
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.warning }}>
-                      {session.late}
-                    </Text>
-                  ),
-                },
-                {
-                  key: 'absent',
-                  label: 'Vắng',
-                  width: 100,
-                  align: 'center',
-                  render: (session) => (
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.error }}>
-                      {session.absent}
-                    </Text>
-                  ),
-                },
-                {
-                  key: 'total',
-                  label: 'Tổng',
-                  width: 100,
-                  align: 'center',
-                  render: (session) => (
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.text }}>
-                      {session.total}
-                    </Text>
-                  ),
-                },
-                {
-                  key: 'attendanceRate',
-                  label: 'Tỷ lệ',
-                  width: 100,
-                  align: 'center',
-                  render: (session) => (
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.primary }}>
-                      {Math.round((session.present / session.total) * 100)}%
-                    </Text>
-                  ),
-                },
-              ]}
-              data={filteredSessions}
-              onRowPress={(session) => alert(`Chi tiết ${session.className}`)}
-              zebraStriping={true}
-              stickyHeader={false}
-            />
-          ) : showTable ? (
+                  </View>
+                </View>
+              </View>
+            </Card>
+          ))}
+
+          {filteredSessions.length === 0 && (
             <Card style={{ padding: 24, alignItems: 'center', gap: 8 }}>
               <Text style={{ fontSize: 18, fontWeight: '600', color: Colors.text }}>
                 Không có buổi học
@@ -280,145 +200,7 @@ export default function AttendanceSessions() {
                 Chưa có dữ liệu phù hợp với bộ lọc hiện tại.
               </Text>
             </Card>
-          ) : (
-            /* Mobile: Card View */
-            <>
-              {filteredSessions.map((session) => (
-                <Card key={session.id} onPress={() => alert(`Chi tiết ${session.className}`)} style={{ marginBottom: isMobile ? 8 : 12 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 4 }}>
-                        <Text style={{ fontWeight: '600', fontSize: isMobile ? 15 : 16, marginRight: 8, color: Colors.text }}>
-                          {session.classCode}
-                        </Text>
-                        <Badge
-                          variant={session.status === 'active' ? 'success' : 'neutral'}
-                          size="small"
-                        >
-                          {session.status === 'active' ? 'Đang diễn ra' : 'Đã kết thúc'}
-                        </Badge>
-                        <Badge
-                          variant="primary"
-                          size="small"
-                        >
-                          {session.method.toUpperCase()}
-                        </Badge>
-                      </View>
-
-                      <Text style={{ fontSize: isMobile ? 13 : 14, marginBottom: 4, color: Colors.text }}>
-                        {session.subject}
-                      </Text>
-
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ fontSize: 12, marginRight: 4, color: Colors.textSecondary }}>👨‍🏫</Text>
-                          <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
-                            {session.teacher}
-                          </Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={{ fontSize: 12, marginRight: 4, color: Colors.textSecondary }}>⏰</Text>
-                          <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
-                            {session.startTime}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-
-              {/* Attendance Stats */}
-              <View
-                className="flex-row border-t pt-3"
-                style={{ borderTopColor: Colors.border }}
-              >
-                <View className="flex-1 items-center">
-                  <Text
-                    className="text-2xl font-bold mb-1"
-                    style={{ color: Colors.success }}
-                  >
-                    {session.present}
-                  </Text>
-                  <Text
-                    className="text-xs"
-                    style={{ color: Colors.textSecondary }}
-                  >
-                    Có mặt
-                  </Text>
-                </View>
-                <View
-                  className="flex-1 items-center border-l border-r"
-                  style={{ borderColor: Colors.border }}
-                >
-                  <Text
-                    className="text-2xl font-bold mb-1"
-                    style={{ color: Colors.warning }}
-                  >
-                    {session.late}
-                  </Text>
-                  <Text
-                    className="text-xs"
-                    style={{ color: Colors.textSecondary }}
-                  >
-                    Muộn
-                  </Text>
-                </View>
-                <View className="flex-1 items-center">
-                  <Text
-                    className="text-2xl font-bold mb-1"
-                    style={{ color: Colors.error }}
-                  >
-                    {session.absent}
-                  </Text>
-                  <Text
-                    className="text-xs"
-                    style={{ color: Colors.textSecondary }}
-                  >
-                    Vắng
-                  </Text>
-                </View>
-                <View
-                  className="flex-1 items-center border-l"
-                  style={{ borderColor: Colors.border }}
-                >
-                  <Text
-                    className="text-2xl font-bold mb-1"
-                    style={{ color: Colors.text }}
-                  >
-                    {session.total}
-                  </Text>
-                  <Text
-                    className="text-xs"
-                    style={{ color: Colors.textSecondary }}
-                  >
-                    Tổng
-                  </Text>
-                </View>
-              </View>
-
-              {/* Progress Bar */}
-              <View className="mt-3">
-                <View
-                  className="h-2 rounded-full overflow-hidden"
-                  style={{ backgroundColor: Colors.gray200 }}
-                >
-                  <View
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${(session.present / session.total) * 100}%`,
-                      backgroundColor: Colors.success,
-                    }}
-                  />
-                </View>
-                <Text
-                  className="text-xs text-right mt-1"
-                  style={{ color: Colors.textSecondary }}
-                >
-                  {Math.round((session.present / session.total) * 100)}% điểm
-                  danh
-                </Text>
-              </View>
-            </Card>
-          ))}
+          )}
         </View>
       </ScrollView>
     </View>
