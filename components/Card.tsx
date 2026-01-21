@@ -13,6 +13,7 @@ interface CardProps {
   children: React.ReactNode;
   onPress?: () => void;
   style?: ViewStyle | ViewStyle[];
+  className?: string;
 }
 
 export default function Card({
@@ -33,24 +34,24 @@ export default function Card({
     <Container
       style={[
         {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: "#FFFFFF",
           borderWidth: 1,
-          borderColor: '#E5E7EB',
+          borderColor: "#F3F4F6",
           borderRadius: 8,
           padding: cardPadding,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isHovered && onPress ? 0.1 : 0.03,
-          shadowRadius: isHovered && onPress ? 8 : 3,
-          elevation: isHovered && onPress ? 4 : 1,
+          shadowOpacity: isHovered && onPress ? 0.06 : 0.02,
+          shadowRadius: isHovered && onPress ? 4 : 2,
+          elevation: isHovered && onPress ? 2 : 1,
           transform:
             isHovered && onPress && Platform.OS === "web"
-              ? [{ scale: 1.02 }]
+              ? [{ scale: 1.01 }]
               : [],
         },
         Platform.OS === "web" &&
           ({
-            transition: "all 0.2s ease",
+            transition: "all 0.15s ease",
           } as any),
         flatStyle,
       ]}

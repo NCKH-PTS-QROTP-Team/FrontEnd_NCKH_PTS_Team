@@ -24,44 +24,40 @@ export default function Tabs({ tabs, activeTab, onTabChange }: TabsProps) {
   const isMobile = width < 768;
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={{ borderBottomWidth: 1, borderBottomColor: Colors.border }}
-      contentContainerStyle={{ flexGrow: 1 }}
-    >
-      <View style={{ flexDirection: "row", flex: 1 }}>
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.key;
-          return (
-            <TouchableOpacity
-              key={tab.key}
-              style={{
-                flex: 1,
-                paddingHorizontal: isMobile ? 16 : 24,
-                paddingVertical: isMobile ? 14 : 12,
-                minHeight: 44, // Touch-friendly minimum height for mobile
-                borderBottomWidth: 2,
-                borderBottomColor: isActive ? Colors.primary : "transparent",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              onPress={() => onTabChange(tab.key)}
-              activeOpacity={0.7}
-            >
-              <Text
+    <View style={{ borderBottomWidth: 1, borderBottomColor: Colors.border }}>
+      <View style={{ maxWidth: 1200, width: "100%", alignSelf: "center" }}>
+        <View style={{ flexDirection: "row", width: "100%" }}>
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <TouchableOpacity
+                key={tab.key}
                 style={{
-                  fontSize: isMobile ? 15 : 14,
-                  fontWeight: isActive ? "600" : "500",
-                  color: isActive ? Colors.primary : Colors.gray600,
+                  flex: 1,
+                  paddingHorizontal: isMobile ? 16 : 20,
+                  paddingVertical: 12,
+                  borderBottomWidth: 2,
+                  borderBottomColor: isActive ? Colors.primary : "transparent",
+                  justifyContent: "center",
+                  alignItems: "center",
                 }}
+                onPress={() => onTabChange(tab.key)}
+                activeOpacity={0.7}
               >
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: isActive ? "600" : "500",
+                    color: isActive ? Colors.primary : Colors.gray600,
+                  }}
+                >
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
-    </ScrollView>
+    </View>
   );
 }
