@@ -119,6 +119,19 @@ export const faceService = {
   },
 
   /**
+   * Thêm góc mặt mới (multi-angle registration)
+   */
+  addFaceAngle: async (
+    request: RegisterFaceFromCameraRequest
+  ): Promise<FaceResponse> => {
+    const response = await apiClient.post<ApiResponse<FaceResponse>>(
+      '/face/add-face-angle',
+      request
+    );
+    return response.data.data;
+  },
+
+  /**
    * Verify face với encoding
    */
   verify: async (request: VerifyFaceRequest): Promise<FaceVerifyResponse> => {
@@ -239,6 +252,20 @@ export const faceService = {
           'Content-Type': 'multipart/form-data',
         },
       }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Detect face realtime từ camera frame (base64)
+   * Dùng cho quét realtime để hiển thị bounding box
+   */
+  detectRealtime: async (
+    base64Image: string
+  ): Promise<FaceDetectionResponse> => {
+    const response = await apiClient.post<ApiResponse<FaceDetectionResponse>>(
+      '/face/detect-realtime',
+      { base64Image }
     );
     return response.data.data;
   },

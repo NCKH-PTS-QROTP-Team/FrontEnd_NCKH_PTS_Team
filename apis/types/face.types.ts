@@ -40,6 +40,7 @@ export interface FaceResponse {
   studentId: string;
   isVerified: boolean;
   registeredAt: string;
+  registeredAnglesCount?: number; // Số góc mặt đã đăng ký
 }
 
 /**
@@ -77,5 +78,7 @@ export interface FaceDetectionResponse {
   eyesDetected?: number;
   smilesDetected?: number;
   processedImageBase64?: string;
+  imageWidth?: number; // Width của image đã detect (từ OpenCV Mat)
+  imageHeight?: number; // Height của image đã detect (từ OpenCV Mat)
 }
 

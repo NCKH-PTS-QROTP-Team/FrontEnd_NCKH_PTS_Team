@@ -41,6 +41,11 @@ export default function StudentLayout() {
       route: "/student/otp-attendance",
     },
     {
+      icon: <UserIcon size={20} color="#3FA9F5" />,
+      label: "Đăng ký Face",
+      route: "/student/register-face",
+    },
+    {
       icon: <ScrollIcon size={20} color="#3FA9F5" />,
       label: "Lịch sử",
       route: "/student/history",
@@ -104,13 +109,13 @@ export default function StudentLayout() {
         ),
       },
       {
-        key: "/student/history",
-        label: "Lịch sử",
+        key: "/student/register-face",
+        label: "Đăng ký Face",
         icon: (
-          <ScrollIcon
+          <UserIcon
             size={24}
             color={
-              pathname === "/student/history"
+              pathname === "/student/register-face"
                 ? Colors.primary
                 : Colors.textSecondary
             }

@@ -210,7 +210,7 @@ export default function StudentAttendanceActionsScreen() {
               </Text>
             </View>
           </TouchableOpacity>
-        ) : (
+        ) : activeTab === "otp" ? (
           <TouchableOpacity
             onPress={() => router.push("/student/otp-attendance")}
             style={{
