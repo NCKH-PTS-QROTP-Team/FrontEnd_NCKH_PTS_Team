@@ -11,7 +11,7 @@ export enum UserRole {
  * Login Request
  */
 export interface LoginRequest {
-  username: string;
+  loginId: string;
   password: string;
 }
 

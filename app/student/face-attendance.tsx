@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { faceService } from "@/apis";
+import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import { Colors } from "@/constants/colors";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import Toast, { useToast } from "@/components/Toast";
@@ -32,12 +33,31 @@ export default function FaceAttendanceScreen() {
   const contentMaxWidth = isDesktop ? 500 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
 
-  // Student ID - nên lấy từ user context/auth
-  const studentId = "SV001"; // TODO: Get from auth context
+  // Student ID - lấy từ JWT token
+  const [studentId, setStudentId] = useState<string | null>(null);
+
+  // Lấy studentId từ JWT token
+  useEffect(() => {
+    const loadStudentId = async () => {
+      const id = await getStudentIdFromToken();
+      if (!id) {
+        showToast("Không thể lấy thông tin sinh viên. Vui lòng đăng nhập lại.", "error");
+        setTimeout(() => router.back(), 2000);
+        return;
+      }
+      setStudentId(id);
+    };
+    loadStudentId();
+  }, []);
 
   const handleCaptureAndVerify = async () => {
     if (!cameraRef.current) {
       showToast("Camera chưa sẵn sàng", "error");
+      return;
+    }
+
+    if (!studentId) {
+      showToast("Không tìm thấy mã sinh viên. Vui lòng đăng nhập lại.", "error");
       return;
     }
 
@@ -57,8 +77,8 @@ export default function FaceAttendanceScreen() {
 
       setCaptured(true);
 
-      // Tạo base64 string với prefix
-      const base64Image = `data:image/jpeg;base64,${photo.base64}`;
+      // Gửi base64 thuần (backend sẽ tự strip prefix nếu có)
+      const base64Image = photo.base64;
 
       // Gọi API verify face
       const verifyResult = await faceService.verifyFromCamera({

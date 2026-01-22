@@ -35,6 +35,7 @@ export default function Sidebar({
   const router = useRouter();
   const pathname = usePathname();
   const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   // Use external state if provided, otherwise use internal state
   const collapsed =
@@ -151,7 +152,7 @@ export default function Sidebar({
               normalizedPathname === normalizedRoute ||
               (normalizedPathname &&
                 normalizedPathname.startsWith(normalizedRoute + "/"));
-            const [isHovered, setIsHovered] = React.useState(false);
+            const isHovered = hoveredIndex === index;
 
             return (
               <View
@@ -161,8 +162,8 @@ export default function Sidebar({
                 }}
                 {...(Platform.OS === "web" &&
                   ({
-                    onMouseEnter: () => setIsHovered(true),
-                    onMouseLeave: () => setIsHovered(false),
+                    onMouseEnter: () => setHoveredIndex(index),
+                    onMouseLeave: () => setHoveredIndex(null),
                   } as any))}
               >
                 <TouchableOpacity

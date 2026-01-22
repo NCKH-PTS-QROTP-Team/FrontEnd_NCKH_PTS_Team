@@ -10,9 +10,9 @@ class SocketClient {
   private isConnected: boolean = false;
 
   constructor() {
-    // Base URL cho socket - có thể config từ env
+    // Base URL cho socket - Socket.IO chạy trên port 9092 (configurable trong backend)
     this.baseURL = __DEV__
-      ? 'http://localhost:8080'
+      ? 'http://localhost:9092' // Socket port riêng để tránh conflict
       : 'https://your-production-api.com';
   }
 

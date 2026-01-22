@@ -17,13 +17,11 @@ import DataTable from "../../components/DataTable";
 
 export default function AttendanceSessions() {
   const { width } = useWindowDimensions();
-  const isMobile = width < 768;
-  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
-  const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
   const showTable = isDesktop || isTablet;
+  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
 
   const filteredSessions = mockAttendanceSessions.filter((session) => {
     if (filter === "all") return true;
@@ -183,7 +181,6 @@ export default function AttendanceSessions() {
               </Text>
             </Card>
           ) : showTable ? (
-            /* Desktop/Tablet: Table View */
             <DataTable
               columns={[
                 {
@@ -353,7 +350,6 @@ export default function AttendanceSessions() {
               stickyHeader={false}
             />
           ) : (
-            /* Mobile: Card View */
             <>
               {filteredSessions.map((session) => (
                 <Card

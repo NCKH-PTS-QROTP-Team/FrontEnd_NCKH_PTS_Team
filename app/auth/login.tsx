@@ -17,6 +17,7 @@ import Input from '@/components/Input';
 import Toast, { useToast } from '@/components/Toast';
 import { Colors } from '@/constants/colors';
 import { mockUsers } from '@/constants/mockData';
+import { authService } from '@/apis';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -50,77 +51,95 @@ export default function LoginScreen() {
 
     setLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Gọi API login thật
+      const trimmedUsername = username.trim();
+      const trimmedPassword = password.trim();
+
+      const loginResponse = await authService.login({
+        loginId: trimmedUsername,
+        password: trimmedPassword,
+      });
+
+      console.log('Login successful, response:', loginResponse);
+      showToast('Đăng nhập thành công!', 'success');
+
+      // Navigate based on role after a brief delay
+      setTimeout(() => {
+        try {
+          switch (loginResponse.role.toLowerCase()) {
+            case 'admin':
+              router.replace('/admin/dashboard' as any);
+              break;
+            case 'teacher':
+              router.replace('/teacher/dashboard' as any);
+              break;
+            case 'student':
+              router.replace('/student/home' as any);
+              break;
+            default:
+              showToast('Vai trò không hợp lệ', 'error');
+          }
+        } catch (error) {
+          console.error('Navigation error:', error);
+        }
+      }, 500);
+
+      setLoading(false);
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      // Fallback: Thử dùng mock data nếu API không khả dụng
       const trimmedUsername = username.trim();
       const trimmedPassword = password.trim();
       
-      const user = mockUsers.find(
+      const mockUser = mockUsers.find(
         u => u.username.toLowerCase() === trimmedUsername.toLowerCase() && 
              u.password === trimmedPassword && 
              u.isActive
       );
 
-      if (user) {
-        console.log('Login successful, user:', user);
-        showToast('Đăng nhập thành công!', 'success');
-        // Navigate based on role after a brief delay
+      if (mockUser && error.isNetworkError) {
+        console.log('API không khả dụng, dùng mock data');
+        showToast('Đăng nhập thành công (mock)!', 'success');
+        
+        // Tạo mock JWT token đơn giản (chỉ để test)
+        // Trong production, phải dùng API thật
+        const mockToken = btoa(JSON.stringify({
+          studentId: mockUser.studentId,
+          teacherId: mockUser.teacherId,
+          role: mockUser.role,
+          userId: mockUser.id,
+        }));
+        
+        // Lưu mock token
+        await authService.logout(); // Clear trước
+        const { setAuthToken } = await import('@/apis/config/apiClient');
+        await setAuthToken(mockToken);
+        
         setTimeout(() => {
-          console.log('Navigating to:', user.role);
-          try {
-            switch (user.role) {
-              case 'admin':
-                router.replace('/admin/dashboard' as any);
-                break;
-              case 'teacher':
-                router.replace('/teacher/dashboard' as any);
-                break;
-              case 'student':
-                console.log('Navigating to student home');
-                // Try navigation with multiple methods
-                try {
-                  // Method 1: router.push
-                  router.push('/student/home' as any);
-                  console.log('router.push called');
-                  
-                  // Method 2: Fallback after delay
-                  setTimeout(() => {
-                    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                      const currentPath = window.location.pathname;
-                      console.log('Current path:', currentPath);
-                      if (currentPath.includes('/auth/login')) {
-                        console.log('Still on login page, trying window.location');
-                        window.location.href = '/student/home';
-                      }
-                    }
-                  }, 300);
-                } catch (error) {
-                  console.error('Navigation error:', error);
-                  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                    window.location.href = '/student/home';
-                  }
-                }
-                break;
-              default:
-                showToast('Vai trò không hợp lệ', 'error');
-            }
-          } catch (error) {
-            console.error('Navigation error:', error);
-            // Fallback navigation
-            if (user.role === 'student') {
-              window.location.href = '/student/home';
-            }
+          switch (mockUser.role) {
+            case 'admin':
+              router.replace('/admin/dashboard' as any);
+              break;
+            case 'teacher':
+              router.replace('/teacher/dashboard' as any);
+              break;
+            case 'student':
+              router.replace('/student/home' as any);
+              break;
           }
         }, 500);
       } else {
-        console.log('Login failed - user not found or inactive');
-        console.log('Username:', trimmedUsername, 'Password:', trimmedPassword);
-        showToast('Tài khoản hoặc mật khẩu không đúng', 'error');
+        showToast(
+          error.message || 'Tài khoản hoặc mật khẩu không đúng',
+          'error'
+        );
         setPasswordError('Tài khoản hoặc mật khẩu không đúng');
       }
       
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (
