@@ -41,8 +41,6 @@ export default function ClassDetail() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title={classData.code} showLogout={true} />
-
       <Tabs
         tabs={[
           { key: "info", label: "Thông tin" },
@@ -60,14 +58,14 @@ export default function ClassDetail() {
           {activeTab === "info" && (
             <>
               <Card style={{ marginBottom: 16 }}>
-                <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+                <View style={{ alignItems: "center", paddingVertical: 16 }}>
                   <View
                     style={{
                       width: 80,
                       height: 80,
                       borderRadius: 16,
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      alignItems: "center",
+                      justifyContent: "center",
                       marginBottom: 16,
                       backgroundColor: Colors.primary,
                     }}

@@ -6,11 +6,10 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   Platform,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/colors";
-import { AppHeader } from "@/components/AppHeader";
 import Card from "@/components/Card";
 import { StatsCard } from "@/components/StatsCard";
 import Tabs from "@/components/Tabs";
@@ -41,9 +40,11 @@ export default function AdviseeClass() {
   }));
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#FFFFFF" }}
+      edges={["top"]}
+    >
       <StatusBar style="dark" />
-      <AppHeader title="Lớp chủ nhiệm" showBack showLogout={!isWeb} />
 
       <Tabs
         tabs={[
@@ -316,7 +317,7 @@ export default function AdviseeClass() {
                 {atRiskStudents.map((student, idx) => {
                   const totalSessions = 15;
                   const absenceRate = Math.round(
-                    (student.absences / totalSessions) * 100
+                    (student.absences / totalSessions) * 100,
                   );
                   return (
                     <View
@@ -559,7 +560,7 @@ export default function AdviseeClass() {
               {atRiskStudents.map((student, idx) => {
                 const totalSessions = 15;
                 const absenceRate = Math.round(
-                  (student.absences / totalSessions) * 100
+                  (student.absences / totalSessions) * 100,
                 );
                 return (
                   <View

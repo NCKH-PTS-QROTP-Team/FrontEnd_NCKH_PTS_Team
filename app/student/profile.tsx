@@ -40,7 +40,10 @@ export default function StudentProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: Colors.surface }}
+      edges={["top"]}
+    >
       <StatusBar style="dark" />
 
       {/* Header */}

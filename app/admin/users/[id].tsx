@@ -54,7 +54,7 @@ export default function UserDetail() {
             router.back();
           },
         },
-      ]
+      ],
     );
   };
 
@@ -68,18 +68,12 @@ export default function UserDetail() {
           text: "Reset",
           onPress: () => alert("Đã gửi mật khẩu mới qua email"),
         },
-      ]
+      ],
     );
   };
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader
-        title="Chi tiết người dùng"
-        showLogout={true}
-        breadcrumbs={breadcrumbs}
-      />
-
       <ScrollView className="flex-1">
         <View
           className="p-4"

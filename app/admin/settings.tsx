@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Switch } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Switch,
+  useWindowDimensions,
+} from "react-native";
 import { Colors } from "../../constants/colors";
 import { mockSystemSettings } from "../../constants/mockData";
 import AppHeader from "../../components/AppHeader";
@@ -18,8 +24,6 @@ export default function Settings() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Cài đặt hệ thống" showLogout={true} />
-
       <ScrollView className="flex-1">
         <View
           className="p-4"
@@ -229,8 +233,15 @@ export default function Settings() {
               />
             </View>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 }}>
-              <Text style={{ fontWeight: '500', color: Colors.text }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingVertical: 12,
+              }}
+            >
+              <Text style={{ fontWeight: "500", color: Colors.text }}>
                 Cảnh báo vắng quá nhiều
               </Text>
               <Switch
@@ -252,7 +263,7 @@ export default function Settings() {
               setSettings(mockSystemSettings);
               alert("Đã khôi phục cài đặt mặc định");
             }}
-            className="mt-3"
+            style={{ marginTop: 12 }}
           />
         </View>
       </ScrollView>

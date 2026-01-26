@@ -7,10 +7,9 @@ import {
   Platform,
   TouchableOpacity,
   Modal,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { AppHeader } from "@/components/AppHeader";
 import { StudentCard } from "@/components/StudentCard";
 import { Colors } from "@/constants/colors";
 import Card from "@/components/Card";
@@ -171,9 +170,11 @@ export default function ClassListScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#F9FAFB" }}
+      edges={["top"]}
+    >
       <StatusBar style="dark" />
-      <AppHeader title="Danh sách lớp học" showBack showLogout={!isWeb} />
 
       <ScrollView
         contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
@@ -191,84 +192,154 @@ export default function ClassListScreen() {
           {/* Summary Stats */}
           <View
             style={{
-              flexDirection: isMobile ? "column" : "row",
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
               marginBottom: 24,
-              marginHorizontal: -8,
-              gap: isMobile ? 8 : 0,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 8,
+              elevation: 3,
             }}
           >
-            <View
+            <Text
               style={{
-                flex: isMobile ? undefined : 1,
-                paddingHorizontal: 8,
-                marginBottom: isMobile ? 8 : 0,
+                fontSize: 20,
+                lineHeight: 28,
+                fontWeight: "bold",
+                color: "#111827",
+                marginBottom: 20,
               }}
             >
-              <Card>
-                <Text
-                  style={{
-                    fontSize: 28,
-                    fontWeight: "bold",
-                    color: Colors.primary,
-                    marginBottom: 4,
-                  }}
-                >
-                  {mockClasses.length}
-                </Text>
-                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
-                  Tổng lớp học
-                </Text>
-              </Card>
-            </View>
+              Tổng quan
+            </Text>
             <View
               style={{
-                flex: isMobile ? undefined : 1,
-                paddingHorizontal: 8,
-                marginBottom: isMobile ? 8 : 0,
+                flexDirection: "row",
+                flexWrap: "wrap",
+                marginHorizontal: -8,
               }}
             >
-              <Card>
-                <Text
+              <View
+                style={{
+                  width: isMobile ? "50%" : isTablet ? "50%" : "33.333%",
+                  paddingHorizontal: 8,
+                  marginBottom: isMobile ? 16 : 0,
+                }}
+              >
+                <View
                   style={{
-                    fontSize: 28,
-                    fontWeight: "bold",
-                    color: Colors.success,
-                    marginBottom: 4,
+                    backgroundColor: "#EFF6FF",
+                    borderRadius: 12,
+                    padding: 16,
+                    alignItems: "center",
                   }}
                 >
-                  {mockClasses.reduce((sum, c) => sum + c.totalStudents, 0)}
-                </Text>
-                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
-                  Tổng sinh viên
-                </Text>
-              </Card>
-            </View>
-            <View
-              style={{
-                flex: isMobile ? undefined : 1,
-                paddingHorizontal: 8,
-                marginBottom: isMobile ? 8 : 0,
-              }}
-            >
-              <Card>
-                <Text
+                  <Text
+                    style={{
+                      fontSize: 32,
+                      lineHeight: 40,
+                      fontWeight: "bold",
+                      color: Colors.primary,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {mockClasses.length}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: "#6B7280",
+                      textAlign: "center",
+                    }}
+                  >
+                    Tổng lớp học
+                  </Text>
+                </View>
+              </View>
+              <View
+                style={{
+                  width: isMobile ? "50%" : isTablet ? "50%" : "33.333%",
+                  paddingHorizontal: 8,
+                  marginBottom: isMobile ? 16 : 0,
+                }}
+              >
+                <View
                   style={{
-                    fontSize: 28,
-                    fontWeight: "bold",
-                    color: Colors.info,
-                    marginBottom: 4,
+                    backgroundColor: "#ECFDF5",
+                    borderRadius: 12,
+                    padding: 16,
+                    alignItems: "center",
                   }}
                 >
-                  {Math.round(
-                    mockClasses.reduce((sum, c) => sum + c.attendanceRate, 0) /
-                      mockClasses.length
-                  )}
-                  %
-                </Text>
-                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
-                  Tỷ lệ điểm danh TB
-                </Text>
-              </Card>
+                  <Text
+                    style={{
+                      fontSize: 32,
+                      lineHeight: 40,
+                      fontWeight: "bold",
+                      color: Colors.success,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {mockClasses.reduce((sum, c) => sum + c.totalStudents, 0)}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: "#6B7280",
+                      textAlign: "center",
+                    }}
+                  >
+                    Tổng sinh viên
+                  </Text>
+                </View>
+              </View>
+              <View
+                style={{
+                  width: isMobile ? "100%" : isTablet ? "100%" : "33.333%",
+                  paddingHorizontal: 8,
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: "#F0F9FF",
+                    borderRadius: 12,
+                    padding: 16,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 32,
+                      lineHeight: 40,
+                      fontWeight: "bold",
+                      color: Colors.info,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {Math.round(
+                      mockClasses.reduce(
+                        (sum, c) => sum + c.attendanceRate,
+                        0,
+                      ) / mockClasses.length,
+                    )}
+                    %
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: "#6B7280",
+                      textAlign: "center",
+                    }}
+                  >
+                    Tỷ lệ điểm danh TB
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
 
@@ -314,8 +385,8 @@ export default function ClassListScreen() {
                           classItem.attendanceRate >= 90
                             ? "success"
                             : classItem.attendanceRate >= 75
-                            ? "warning"
-                            : "error"
+                              ? "warning"
+                              : "error"
                         }
                         size="small"
                       >

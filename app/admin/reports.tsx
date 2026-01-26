@@ -28,8 +28,6 @@ export default function Reports() {
   return (
     <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
       <StatusBar style="dark" />
-      <AppHeader title="Báo cáo & Thống kê" showLogout={true} />
-
       <Tabs
         tabs={[
           { key: "overview", label: "Tổng quan" },
@@ -49,7 +47,14 @@ export default function Reports() {
           {activeTab === "overview" && (
             <>
               {/* Summary Stats */}
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: isMobile ? 16 : 24, marginHorizontal: -8 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  marginBottom: isMobile ? 16 : 24,
+                  marginHorizontal: -8,
+                }}
+              >
                 {[
                   {
                     label: "Tổng buổi học",
@@ -102,13 +107,13 @@ export default function Reports() {
                 <View
                   style={{
                     borderRadius: 12,
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    alignItems: "center",
+                    justifyContent: "center",
                     height: isMobile ? 250 : 300,
                     backgroundColor: Colors.gray50,
                     borderWidth: 1,
                     borderColor: Colors.gray200,
-                    borderStyle: 'dashed',
+                    borderStyle: "dashed",
                   }}
                 >
                   <Text style={{ color: Colors.textSecondary }}>
@@ -266,26 +271,58 @@ export default function Reports() {
           )}
 
           {/* Export Section */}
-          <Card style={{ marginTop: isMobile ? 16 : 24, padding: isMobile ? 16 : 24 }}>
-            <Text style={{ fontWeight: '600', marginBottom: isMobile ? 16 : 20, fontSize: isMobile ? 16 : 18, color: Colors.text }}>
+          <Card
+            style={{
+              marginTop: isMobile ? 16 : 24,
+              padding: isMobile ? 16 : 24,
+            }}
+          >
+            <Text
+              style={{
+                fontWeight: "600",
+                marginBottom: isMobile ? 16 : 20,
+                fontSize: isMobile ? 16 : 18,
+                color: Colors.text,
+              }}
+            >
               Xuất báo cáo
             </Text>
-            <View style={{ flexDirection: isMobile ? 'column' : 'row', marginHorizontal: -8, gap: isMobile ? 12 : 0 }}>
-              <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8, marginBottom: isMobile ? 0 : 0 }}>
+            <View
+              style={{
+                flexDirection: isMobile ? "column" : "row",
+                marginHorizontal: -8,
+                gap: isMobile ? 12 : 0,
+              }}
+            >
+              <View
+                style={{
+                  flex: isMobile ? undefined : 1,
+                  paddingHorizontal: 8,
+                  marginBottom: isMobile ? 0 : 0,
+                }}
+              >
                 <PrimaryButton
                   title="Excel"
                   variant="outline"
                   onPress={() => alert("Export Excel")}
                 />
               </View>
-              <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8, marginBottom: isMobile ? 0 : 0 }}>
+              <View
+                style={{
+                  flex: isMobile ? undefined : 1,
+                  paddingHorizontal: 8,
+                  marginBottom: isMobile ? 0 : 0,
+                }}
+              >
                 <PrimaryButton
                   title="PDF"
                   variant="outline"
                   onPress={() => alert("Export PDF")}
                 />
               </View>
-              <View style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8 }}>
+              <View
+                style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8 }}
+              >
                 <PrimaryButton
                   title="CSV"
                   variant="outline"

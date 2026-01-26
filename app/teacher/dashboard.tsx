@@ -10,7 +10,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { AppHeader } from "@/components/AppHeader";
 import { StatsCard } from "@/components/StatsCard";
 import Tabs from "@/components/Tabs";
 import {
@@ -23,31 +22,31 @@ import { Colors } from "@/constants/colors";
 export default function TeacherDashboardScreen() {
   const router = useRouter();
   const isWeb = Platform.OS === "web";
-const { width } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
 
-const [activeTab, setActiveTab] = useState<"overview" | "schedule">(
-    "overview"
+  const [activeTab, setActiveTab] = useState<"overview" | "schedule">(
+    "overview",
   );
 
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const quickActionWidth = isDesktop ? "48%" : "100%";
-const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [currentWeek, setCurrentWeek] = useState(new Date());
 
   // Helper to determine period from time string (e.g., "08:00 - 10:00")
-const getPeriod = (time: string): "morning" | "afternoon" | "evening" => {
+  const getPeriod = (time: string): "morning" | "afternoon" | "evening" => {
     const hour = parseInt(time.split(":")[0]);
     if (hour < 12) return "morning";
     if (hour < 18) return "afternoon";
     return "evening";
-};
+  };
 
   // Convert dayOfWeek (0=Sunday, 1=Monday, ...) to day name
   const getDayName = (dayOfWeek: number): string => {
-const days = [
+    const days = [
       "sunday",
       "monday",
       "tuesday",
@@ -56,7 +55,7 @@ const days = [
       "friday",
       "saturday",
     ];
-return days[dayOfWeek];
+    return days[dayOfWeek];
   };
 
   // Format week range
@@ -65,7 +64,7 @@ return days[dayOfWeek];
     startDate.setDate(startDate.getDate() - startDate.getDay() + 1); // Monday
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 6); // Sunday
-return `${startDate.getDate().toString().padStart(2, "0")}/${(
+    return `${startDate.getDate().toString().padStart(2, "0")}/${(
       startDate.getMonth() + 1
     )
       .toString()
@@ -79,11 +78,11 @@ return `${startDate.getDate().toString().padStart(2, "0")}/${(
   const navigateWeek = (direction: "prev" | "next") => {
     const newDate = new Date(currentWeek);
     newDate.setDate(newDate.getDate() + (direction === "next" ? 7 : -7));
-setCurrentWeek(newDate);
+    setCurrentWeek(newDate);
   };
 
   // Group schedules by day and period
-const scheduleByDayPeriod: {
+  const scheduleByDayPeriod: {
     [day: string]: { [period: string]: TeacherSchedule[] };
   } = {};
   mockTeacherSchedules.forEach((schedule) => {
@@ -96,7 +95,7 @@ const scheduleByDayPeriod: {
         afternoon: [],
         evening: [],
       };
-}
+    }
     if (!scheduleByDayPeriod[dayName][period]) {
       scheduleByDayPeriod[dayName][period] = [];
     }
@@ -106,7 +105,7 @@ const scheduleByDayPeriod: {
   const renderOverview = () => (
     <>
       {/* Welcome */}
-<View
+      <View
         style={{
           backgroundColor: "#3FA9F5",
           borderRadius: 16,
@@ -137,12 +136,12 @@ const scheduleByDayPeriod: {
             lineHeight: isMobile ? 20 : 24,
           }}
         >
-Quản lý điểm danh lớp học của bạn
+          Quản lý điểm danh lớp học của bạn
         </Text>
       </View>
 
       {/* Quick Actions */}
-<View style={{ marginBottom: isMobile ? 16 : 24 }}>
+      <View style={{ marginBottom: isMobile ? 16 : 24 }}>
         <Text
           style={{
             fontSize: isMobile ? 16 : 18,
@@ -171,11 +170,11 @@ Quản lý điểm danh lớp học của bạn
               borderWidth: 2,
               borderColor: "#DBEAFE",
               shadowColor: "#000",
-shadowOffset: { width: 0, height: 2 },
+              shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
               shadowRadius: 4,
               elevation: 2,
-}}
+            }}
             activeOpacity={0.7}
           >
             <View
@@ -219,11 +218,11 @@ shadowOffset: { width: 0, height: 2 },
               }}
             >
               {isMobile ? "Sinh mã số" : "Sinh mã số cho sinh viên điểm danh"}
-</Text>
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-onPress={() => router.push("/teacher/generate-qr")}
+            onPress={() => router.push("/teacher/generate-qr")}
             style={{
               flex: 1,
               backgroundColor: "#FFFFFF",
@@ -232,14 +231,14 @@ onPress={() => router.push("/teacher/generate-qr")}
               borderWidth: 2,
               borderColor: "#D1FAE5",
               shadowColor: "#000",
-shadowOffset: { width: 0, height: 2 },
+              shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
               shadowRadius: 4,
               elevation: 2,
             }}
             activeOpacity={0.7}
           >
-<View
+            <View
               style={{
                 width: isMobile ? 44 : 56,
                 height: isMobile ? 44 : 56,
@@ -280,68 +279,191 @@ shadowOffset: { width: 0, height: 2 },
               }}
             >
               {isMobile ? "Hiển thị mã" : "Hiển thị mã QR trên lớp"}
-</Text>
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Stats */}
-<View style={{ marginBottom: isMobile ? 16 : 24 }}>
-        <Text
-          style={{
-            fontSize: isMobile ? 16 : 18,
-            lineHeight: isMobile ? 24 : 28,
-            fontWeight: "bold",
-            color: "#111827",
-            marginBottom: isMobile ? 12 : 16,
-          }}
-        >
-          Thống kê hôm nay
-        </Text>
-
-        {/* Row 1 */}
+      <View style={{ marginBottom: isMobile ? 16 : 24 }}>
         <View
           style={{
-            flexDirection: "row",
-            gap: isMobile ? 8 : 12,
-            marginBottom: isMobile ? 8 : 12,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 16,
+            padding: 24,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 3,
           }}
         >
-          <View style={{ flex: 1 }}>
-<StatsCard
-              title="Tổng SV"
-              value={mockStats.totalStudents}
-              color="#3FA9F5"
-            />
-          </View>
-<View style={{ flex: 1 }}>
-<StatsCard
-              title="Có mặt"
-              value={mockStats.presentToday}
-              color="#10B981"
-            />
-          </View>
-        </View>
-{/* Row 2 */}
-        <View
-          style={{
-            flexDirection: "row",
-            gap: isMobile ? 8 : 12,
-          }}
-        >
-          <View style={{ flex: 1 }}>
-<StatsCard
-              title="Vắng"
-              value={mockStats.absentToday}
-              color="#EF4444"
-            />
-          </View>
-<View style={{ flex: 1 }}>
-<StatsCard
-              title="Tỷ lệ"
-              value={`${mockStats.attendanceRate}%`}
-              color="#3FA9F5"
-            />
+          <Text
+            style={{
+              fontSize: 20,
+              lineHeight: 28,
+              fontWeight: "bold",
+              color: "#111827",
+              marginBottom: 20,
+            }}
+          >
+            Thống kê hôm nay
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              marginHorizontal: -8,
+            }}
+          >
+            <View
+              style={{
+                width: isMobile ? "50%" : "25%",
+                paddingHorizontal: 8,
+                marginBottom: isMobile ? 16 : 0,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: "#EFF6FF",
+                  borderRadius: 12,
+                  padding: 16,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 32,
+                    lineHeight: 40,
+                    fontWeight: "bold",
+                    color: "#3FA9F5",
+                    marginBottom: 4,
+                  }}
+                >
+                  {mockStats.totalStudents}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    lineHeight: 20,
+                    color: "#6B7280",
+                    textAlign: "center",
+                  }}
+                >
+                  Tổng SV
+                </Text>
+              </View>
+            </View>
+            <View
+              style={{
+                width: isMobile ? "50%" : "25%",
+                paddingHorizontal: 8,
+                marginBottom: isMobile ? 16 : 0,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: "#ECFDF5",
+                  borderRadius: 12,
+                  padding: 16,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 32,
+                    lineHeight: 40,
+                    fontWeight: "bold",
+                    color: "#10B981",
+                    marginBottom: 4,
+                  }}
+                >
+                  {mockStats.presentToday}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    lineHeight: 20,
+                    color: "#6B7280",
+                    textAlign: "center",
+                  }}
+                >
+                  Có mặt
+                </Text>
+              </View>
+            </View>
+            <View
+              style={{
+                width: isMobile ? "50%" : "25%",
+                paddingHorizontal: 8,
+                marginBottom: isMobile ? 16 : 0,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: "#FEE2E2",
+                  borderRadius: 12,
+                  padding: 16,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 32,
+                    lineHeight: 40,
+                    fontWeight: "bold",
+                    color: "#EF4444",
+                    marginBottom: 4,
+                  }}
+                >
+                  {mockStats.absentToday}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    lineHeight: 20,
+                    color: "#6B7280",
+                    textAlign: "center",
+                  }}
+                >
+                  Vắng
+                </Text>
+              </View>
+            </View>
+            <View
+              style={{ width: isMobile ? "50%" : "25%", paddingHorizontal: 8 }}
+            >
+              <View
+                style={{
+                  backgroundColor: "#F0F9FF",
+                  borderRadius: 12,
+                  padding: 16,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 32,
+                    lineHeight: 40,
+                    fontWeight: "bold",
+                    color: "#3FA9F5",
+                    marginBottom: 4,
+                  }}
+                >
+                  {mockStats.attendanceRate}%
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    lineHeight: 20,
+                    color: "#6B7280",
+                    textAlign: "center",
+                  }}
+                >
+                  Tỷ lệ
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
       </View>
@@ -349,7 +471,7 @@ shadowOffset: { width: 0, height: 2 },
       {/* Management Links */}
       <View>
         <TouchableOpacity
-onPress={() => router.push("/teacher/class-list")}
+          onPress={() => router.push("/teacher/class-list")}
           style={{
             backgroundColor: "#FFFFFF",
             borderRadius: isMobile ? 12 : 16,
@@ -358,11 +480,11 @@ onPress={() => router.push("/teacher/class-list")}
             alignItems: "center",
             justifyContent: "space-between",
             shadowColor: "#000",
-shadowOffset: { width: 0, height: 2 },
+            shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.1,
             shadowRadius: 4,
             elevation: 2,
-marginBottom: isMobile ? 8 : 16,
+            marginBottom: isMobile ? 8 : 16,
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -420,13 +542,13 @@ marginBottom: isMobile ? 8 : 16,
             alignItems: "center",
             justifyContent: "space-between",
             shadowColor: "#000",
-shadowOffset: { width: 0, height: 2 },
+            shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.1,
             shadowRadius: 4,
             elevation: 2,
           }}
         >
-<View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
             <View
               style={{
                 backgroundColor: "#FEF3C7",
@@ -469,24 +591,24 @@ shadowOffset: { width: 0, height: 2 },
           >
             →
           </Text>
-</TouchableOpacity>
+        </TouchableOpacity>
       </View>
     </>
   );
 
-const renderScheduleCell = (
+  const renderScheduleCell = (
     day: string,
-    period: "morning" | "afternoon" | "evening"
+    period: "morning" | "afternoon" | "evening",
   ) => {
-const schedules = scheduleByDayPeriod[day]?.[period] || [];
+    const schedules = scheduleByDayPeriod[day]?.[period] || [];
     const columnMinWidth = isMobile ? 180 : 240;
     const cellPadding = isMobile ? 8 : 10;
     const cellMinHeight = isMobile ? 100 : 120;
-return (
+    return (
       <View
         key={`${day}-${period}`}
         style={{
-flex: 1,
+          flex: 1,
           minWidth: columnMinWidth,
           minHeight: cellMinHeight,
           padding: cellPadding,
@@ -494,7 +616,7 @@ flex: 1,
           borderRightColor: Colors.border,
           borderBottomWidth: 1,
           borderBottomColor: Colors.border,
-backgroundColor:
+          backgroundColor:
             schedules && schedules.length > 0 ? Colors.white : Colors.gray50,
         }}
       >
@@ -569,7 +691,7 @@ backgroundColor:
               )}
             </View>
           ))}
-</View>
+      </View>
     );
   };
 
@@ -581,7 +703,7 @@ backgroundColor:
     const columnMinWidth = isMobile ? 180 : 240;
 
     return (
-<View style={{ marginBottom: 24, width: "100%" }}>
+      <View style={{ marginBottom: 24, width: "100%" }}>
         {/* Week Navigation - Simple and Clean */}
         <View
           style={{
@@ -595,19 +717,19 @@ backgroundColor:
         >
           <TouchableOpacity
             onPress={() => navigateWeek("prev")}
-activeOpacity={0.7}
+            activeOpacity={0.7}
             style={{
               width: isMobile ? 44 : 36,
               height: isMobile ? 44 : 36,
               borderRadius: isMobile ? 22 : 18,
               backgroundColor: Colors.gray100,
-alignItems: "center",
+              alignItems: "center",
               justifyContent: "center",
-marginRight: isMobile ? 12 : 16,
+              marginRight: isMobile ? 12 : 16,
               minWidth: 44, // Touch-friendly minimum
             }}
           >
-<Text
+            <Text
               style={{
                 fontSize: isMobile ? 18 : 16,
                 color: Colors.gray700,
@@ -633,19 +755,19 @@ marginRight: isMobile ? 12 : 16,
 
           <TouchableOpacity
             onPress={() => navigateWeek("next")}
-activeOpacity={0.7}
+            activeOpacity={0.7}
             style={{
               width: isMobile ? 44 : 36,
               height: isMobile ? 44 : 36,
               borderRadius: isMobile ? 22 : 18,
               backgroundColor: Colors.gray100,
-alignItems: "center",
+              alignItems: "center",
               justifyContent: "center",
-marginLeft: isMobile ? 12 : 16,
+              marginLeft: isMobile ? 12 : 16,
               minWidth: 44, // Touch-friendly minimum
             }}
           >
-<Text
+            <Text
               style={{
                 fontSize: isMobile ? 18 : 16,
                 color: Colors.gray700,
@@ -654,12 +776,12 @@ marginLeft: isMobile ? 12 : 16,
             >
               →
             </Text>
-</TouchableOpacity>
+          </TouchableOpacity>
         </View>
 
         {/* Mobile Hint */}
         {isMobile && (
-<View
+          <View
             style={{
               backgroundColor: "#EFF6FF",
               paddingHorizontal: 12,
@@ -673,28 +795,28 @@ marginLeft: isMobile ? 12 : 16,
           >
             <Text style={{ fontSize: 20 }}>👉</Text>
             <Text style={{ fontSize: 12, color: "#1E40AF", flex: 1 }}>
-Vuốt sang ngang để xem lịch các ngày khác
+              Vuốt sang ngang để xem lịch các ngày khác
             </Text>
           </View>
         )}
 
         {/* Schedule Table */}
-<ScrollView
+        <ScrollView
           horizontal
           showsHorizontalScrollIndicator={Platform.OS === "web"}
-style={{
+          style={{
             backgroundColor: Colors.white,
             borderRadius: 12,
             borderWidth: 1,
             borderColor: Colors.border,
-shadowColor: "#000",
-shadowOffset: { width: 0, height: 1 },
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
             shadowOpacity: 0.05,
             shadowRadius: 2,
             elevation: 1,
           }}
         >
-<View style={{ minWidth: "100%" }}>
+          <View style={{ minWidth: "100%" }}>
             {/* Table Header */}
             <View
               style={{ flexDirection: "row", backgroundColor: Colors.gray50 }}
@@ -733,14 +855,14 @@ shadowOffset: { width: 0, height: 1 },
                 <View
                   key={day}
                   style={{
-flex: 1,
+                    flex: 1,
                     minWidth: columnMinWidth,
                     padding: headerPadding,
                     borderRightWidth: index < 6 ? 1 : 0,
                     borderRightColor: Colors.border,
                     borderBottomWidth: 2,
                     borderBottomColor: Colors.border,
-justifyContent: "center",
+                    justifyContent: "center",
                     alignItems: "center",
                   }}
                 >
@@ -752,13 +874,13 @@ justifyContent: "center",
                     }}
                   >
                     {isMobile ? day.replace("Thứ ", "T") : day}
-</Text>
+                  </Text>
                 </View>
               ))}
             </View>
 
             {/* Morning Row */}
-<View style={{ flexDirection: "row" }}>
+            <View style={{ flexDirection: "row" }}>
               <View
                 style={{
                   width: isMobile ? 80 : 120,
@@ -866,12 +988,12 @@ justifyContent: "center",
                 "saturday",
                 "sunday",
               ].map((day) => renderScheduleCell(day, "evening"))}
-</View>
+            </View>
           </View>
         </ScrollView>
 
         {mockTeacherSchedules.length === 0 && (
-<View
+          <View
             style={{
               backgroundColor: Colors.white,
               borderRadius: 12,
@@ -903,7 +1025,7 @@ justifyContent: "center",
                 color: Colors.textSecondary,
               }}
             >
-Tuần này bạn không có lịch dạy
+              Tuần này bạn không có lịch dạy
             </Text>
           </View>
         )}
@@ -912,7 +1034,7 @@ Tuần này bạn không có lịch dạy
   };
 
   return (
-<SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
       <StatusBar style="dark" />
 
       {/* Tabs */}
@@ -930,12 +1052,12 @@ Tuần này bạn không có lịch dạy
           ]}
           activeTab={activeTab}
           onTabChange={(key) => setActiveTab(key as "overview" | "schedule")}
-/>
+        />
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
-contentContainerStyle={{
+        contentContainerStyle={{
           paddingHorizontal,
           paddingVertical: 24,
           paddingBottom: isDesktop ? 32 : 24,
@@ -953,5 +1075,5 @@ contentContainerStyle={{
         </View>
       </ScrollView>
     </SafeAreaView>
-);
+  );
 }

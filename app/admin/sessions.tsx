@@ -30,8 +30,6 @@ export default function AttendanceSessions() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Giám sát điểm danh" showLogout={true} />
-
       <ScrollView className="flex-1">
         <View
           className="p-4"
@@ -85,7 +83,7 @@ export default function AttendanceSessions() {
                 >
                   {mockAttendanceSessions.reduce(
                     (sum, s) => sum + s.present,
-                    0
+                    0,
                   )}
                 </Text>
                 <Text

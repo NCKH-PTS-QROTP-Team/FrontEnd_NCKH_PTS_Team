@@ -5,10 +5,9 @@ import {
   ScrollView,
   useWindowDimensions,
   Platform,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { AppHeader } from "@/components/AppHeader";
 import { PrimaryButton } from "@/components/PrimaryButton";
 
 export default function GenerateQRScreen() {
@@ -24,9 +23,11 @@ export default function GenerateQRScreen() {
   const paddingHorizontal = isDesktop ? 32 : isTablet ? 24 : 16;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#F9FAFB" }}
+      edges={["top"]}
+    >
       <StatusBar style="dark" />
-      <AppHeader title="Tạo QR Code" showBack showLogout={!isWeb} />
 
       <ScrollView
         contentContainerStyle={{
@@ -72,7 +73,6 @@ export default function GenerateQRScreen() {
                     color: "#6B7280",
                     marginBottom: 8,
                     textTransform: "uppercase",
-                    letterSpacing: 0.5,
                   }}
                 >
                   Môn học

@@ -6,6 +6,7 @@ import {
   Platform,
   useWindowDimensions,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -165,7 +166,6 @@ export default function AdminDashboard() {
   const content = (
     <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
       <StatusBar style="dark" />
-      <AppHeader title="Dashboard" showBack={false} showLogout={!isWeb} />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -184,20 +184,22 @@ export default function AdminDashboard() {
           }}
         >
           {/* Welcome Section */}
-          <Card className="mb-6" style={{ backgroundColor: Colors.primary }}>
-            <Text
-              className="text-2xl font-bold mb-2"
-              style={{ color: Colors.white, letterSpacing: 0 }}
-            >
-              Chào mừng Admin
-            </Text>
-            <Text
-              className="text-base"
-              style={{ color: Colors.white, opacity: 0.9, letterSpacing: 0 }}
-            >
-              Quản lý toàn bộ hệ thống điểm danh điện tử
-            </Text>
-          </Card>
+          <View
+            style={{
+              marginBottom: isMobile ? 24 : 32,
+              borderRadius: 12,
+              overflow: "hidden",
+            }}
+          >
+            <Image
+              source={require("@/assets/admin-banner.png")}
+              style={{
+                width: "100%",
+                height: isMobile ? 120 : isTablet ? 150 : 180,
+                resizeMode: "cover",
+              }}
+            />
+          </View>
 
           {/* Main Stats Grid */}
           <View style={{ marginBottom: isMobile ? 24 : 32 }}>
