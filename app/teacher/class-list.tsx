@@ -15,6 +15,7 @@ import { Colors } from "@/constants/colors";
 import Card from "@/components/Card";
 import Badge from "@/components/Badge";
 import PrimaryButton from "@/components/PrimaryButton";
+import { CalendarIcon, UsersIcon } from "@/components/Icons";
 
 // Mock data cho các lớp học
 const mockClasses = [
@@ -360,80 +361,126 @@ export default function ClassListScreen() {
                   marginBottom: 16,
                 }}
               >
-                <Card onPress={() => handleClassPress(classItem)}>
-                  {/* Class Header */}
-                  <View style={{ marginBottom: 12 }}>
+                <TouchableOpacity
+                  onPress={() => handleClassPress(classItem)}
+                  activeOpacity={0.7}
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 16,
+                    padding: 20,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 8,
+                    elevation: 3,
+                    borderLeftWidth: 4,
+                    borderLeftColor:
+                      classItem.attendanceRate >= 90
+                        ? "#10B981"
+                        : classItem.attendanceRate >= 75
+                          ? "#F59E0B"
+                          : "#EF4444",
+                  }}
+                >
+                  {/* Header với code và badge */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 12,
+                    }}
+                  >
                     <View
                       style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        marginBottom: 8,
+                        backgroundColor: "#F3F4F6",
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 8,
                       }}
                     >
                       <Text
                         style={{
-                          fontSize: 18,
-                          fontWeight: "600",
-                          color: Colors.text,
+                          fontSize: 16,
+                          fontWeight: "bold",
+                          color: "#111827",
                         }}
                       >
                         {classItem.code}
                       </Text>
-                      <Badge
-                        variant={
-                          classItem.attendanceRate >= 90
-                            ? "success"
-                            : classItem.attendanceRate >= 75
-                              ? "warning"
-                              : "error"
-                        }
-                        size="small"
-                      >
-                        {classItem.attendanceRate}%
-                      </Badge>
                     </View>
-                    <Text
+                    <View
                       style={{
-                        fontSize: 14,
-                        color: Colors.text,
-                        marginBottom: 4,
+                        backgroundColor:
+                          classItem.attendanceRate >= 90
+                            ? "#ECFDF5"
+                            : classItem.attendanceRate >= 75
+                              ? "#FEF3C7"
+                              : "#FEE2E2",
+                        paddingHorizontal: 10,
+                        paddingVertical: 4,
+                        borderRadius: 6,
                       }}
                     >
-                      {classItem.name}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
-                      {classItem.subject}
-                    </Text>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          fontWeight: "700",
+                          color:
+                            classItem.attendanceRate >= 90
+                              ? "#10B981"
+                              : classItem.attendanceRate >= 75
+                                ? "#F59E0B"
+                                : "#EF4444",
+                        }}
+                      >
+                        {classItem.attendanceRate}%
+                      </Text>
+                    </View>
                   </View>
 
-                  {/* Schedule Info */}
+                  {/* Tên môn học */}
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: "600",
+                      color: "#111827",
+                      marginBottom: 4,
+                      lineHeight: 22,
+                    }}
+                  >
+                    {classItem.name}
+                  </Text>
+                  <Text
+                    style={{ fontSize: 13, color: "#6B7280", marginBottom: 16 }}
+                  >
+                    {classItem.subject}
+                  </Text>
+
+                  {/* Thông tin lịch học - Simple text */}
                   <View
                     style={{
-                      marginBottom: 12,
-                      paddingTop: 12,
-                      borderTopWidth: 1,
-                      borderTopColor: Colors.border,
+                      backgroundColor: "#F9FAFB",
+                      borderRadius: 10,
+                      padding: 12,
+                      marginBottom: 16,
                     }}
                   >
                     <View
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
-                        marginBottom: 4,
+                        marginBottom: 6,
                       }}
                     >
+                      <CalendarIcon size={14} color="#6B7280" />
                       <Text
                         style={{
-                          fontSize: 12,
-                          color: Colors.textSecondary,
-                          marginRight: 4,
+                          fontSize: 13,
+                          color: "#374151",
+                          marginLeft: 8,
+                          flex: 1,
                         }}
-                      >
-                        🕐
-                      </Text>
-                      <Text
-                        style={{ fontSize: 12, color: Colors.textSecondary }}
                       >
                         {classItem.schedule}
                       </Text>
@@ -443,110 +490,136 @@ export default function ClassListScreen() {
                     >
                       <Text
                         style={{
-                          fontSize: 12,
-                          color: Colors.textSecondary,
-                          marginRight: 4,
+                          fontSize: 13,
+                          color: "#6B7280",
+                          fontWeight: "600",
+                          width: 22,
+                          textAlign: "center",
                         }}
                       >
                         📍
                       </Text>
                       <Text
-                        style={{ fontSize: 12, color: Colors.textSecondary }}
+                        style={{
+                          fontSize: 13,
+                          color: "#374151",
+                          marginLeft: 8,
+                        }}
                       >
                         Phòng {classItem.room}
                       </Text>
                     </View>
                   </View>
 
-                  {/* Attendance Stats */}
+                  {/* Stats dạng horizontal pills */}
                   <View
                     style={{
                       flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
+                      gap: 8,
+                      flexWrap: "wrap",
                     }}
                   >
-                    <View style={{ alignItems: "center", flex: 1 }}>
-                      <Text
-                        style={{
-                          fontSize: 20,
-                          fontWeight: "bold",
-                          color: Colors.success,
-                          marginBottom: 2,
-                        }}
-                      >
-                        {classItem.presentCount}
-                      </Text>
-                      <Text
-                        style={{ fontSize: 11, color: Colors.textSecondary }}
-                      >
-                        Có mặt
-                      </Text>
-                    </View>
                     <View
                       style={{
+                        backgroundColor: "#ECFDF5",
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 20,
+                        flexDirection: "row",
                         alignItems: "center",
-                        flex: 1,
-                        borderLeftWidth: 1,
-                        borderRightWidth: 1,
-                        borderColor: Colors.border,
+                        gap: 6,
                       }}
                     >
                       <Text
                         style={{
-                          fontSize: 20,
+                          fontSize: 16,
                           fontWeight: "bold",
-                          color: Colors.warning,
-                          marginBottom: 2,
+                          color: "#10B981",
+                        }}
+                      >
+                        {classItem.presentCount}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: "#059669" }}>
+                        Có mặt
+                      </Text>
+                    </View>
+
+                    <View
+                      style={{
+                        backgroundColor: "#FEF3C7",
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 20,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: "bold",
+                          color: "#F59E0B",
                         }}
                       >
                         {classItem.lateCount}
                       </Text>
-                      <Text
-                        style={{ fontSize: 11, color: Colors.textSecondary }}
-                      >
+                      <Text style={{ fontSize: 12, color: "#D97706" }}>
                         Muộn
                       </Text>
                     </View>
-                    <View style={{ alignItems: "center", flex: 1 }}>
+
+                    <View
+                      style={{
+                        backgroundColor: "#FEE2E2",
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 20,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
                       <Text
                         style={{
-                          fontSize: 20,
+                          fontSize: 16,
                           fontWeight: "bold",
-                          color: Colors.error,
-                          marginBottom: 2,
+                          color: "#EF4444",
                         }}
                       >
                         {classItem.absentCount}
                       </Text>
-                      <Text
-                        style={{ fontSize: 11, color: Colors.textSecondary }}
-                      >
+                      <Text style={{ fontSize: 12, color: "#DC2626" }}>
                         Vắng
                       </Text>
                     </View>
                   </View>
 
-                  {/* Student Count */}
+                  {/* Total students */}
                   <View
                     style={{
-                      marginTop: 12,
-                      paddingTop: 12,
+                      marginTop: 16,
+                      paddingTop: 16,
                       borderTopWidth: 1,
-                      borderTopColor: Colors.border,
+                      borderTopColor: "#E5E7EB",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
+                    <UsersIcon size={16} color="#6B7280" />
                     <Text
                       style={{
-                        fontSize: 12,
-                        color: Colors.textSecondary,
-                        textAlign: "center",
+                        fontSize: 13,
+                        color: "#6B7280",
+                        marginLeft: 6,
+                        fontWeight: "500",
                       }}
                     >
-                      👥 {classItem.totalStudents} sinh viên
+                      {classItem.totalStudents} sinh viên
                     </Text>
                   </View>
-                </Card>
+                </TouchableOpacity>
               </View>
             ))}
           </View>

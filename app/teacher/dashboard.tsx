@@ -6,12 +6,14 @@ import {
   TouchableOpacity,
   Platform,
   useWindowDimensions,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { StatsCard } from "@/components/StatsCard";
 import Tabs from "@/components/Tabs";
+import WeeklyCalendar from "@/components/WeeklyCalendar";
 import {
   mockStats,
   mockTeacherSchedules,
@@ -104,41 +106,24 @@ export default function TeacherDashboardScreen() {
 
   const renderOverview = () => (
     <>
-      {/* Welcome */}
-      <View
+      {/* Banner */}
+      <Image
+        source={require("@/assets/teacher-banner.png")}
         style={{
-          backgroundColor: "#3FA9F5",
+          width: "100%",
+          height: isMobile ? 150 : isTablet ? 180 : 200,
           borderRadius: 16,
-          padding: isMobile ? 16 : 24,
           marginBottom: isMobile ? 16 : 24,
-          shadowColor: "#3FA9F5",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.2,
-          shadowRadius: 8,
-          elevation: 4,
         }}
-      >
-        <Text
-          style={{
-            color: "#FFFFFF",
-            fontSize: isMobile ? 20 : 24,
-            lineHeight: isMobile ? 28 : 32,
-            fontWeight: "bold",
-            marginBottom: 8,
-          }}
-        >
-          Chào mừng Giảng viên!
-        </Text>
-        <Text
-          style={{
-            color: "#DBEAFE",
-            fontSize: isMobile ? 14 : 16,
-            lineHeight: isMobile ? 20 : 24,
-          }}
-        >
-          Quản lý điểm danh lớp học của bạn
-        </Text>
-      </View>
+        resizeMode="contain"
+      />
+
+      {/* Weekly Calendar - Mobile Only */}
+      {isMobile && (
+        <View style={{ marginBottom: 16 }}>
+          <WeeklyCalendar />
+        </View>
+      )}
 
       {/* Quick Actions */}
       <View style={{ marginBottom: isMobile ? 16 : 24 }}>
