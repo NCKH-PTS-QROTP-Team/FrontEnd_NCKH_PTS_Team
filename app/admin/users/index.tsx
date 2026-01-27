@@ -87,8 +87,6 @@ export default function UserManagement() {
   return (
     <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
       <StatusBar style="dark" />
-      <AppHeader title="Quản lý người dùng" showLogout={true} />
-
       <ScrollView style={{ flex: 1 }}>
         <View
           style={{

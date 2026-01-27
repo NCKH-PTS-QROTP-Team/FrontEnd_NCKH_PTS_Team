@@ -21,7 +21,7 @@ export default function ScheduleManagement() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(
-    null
+    null,
   );
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
@@ -53,7 +53,7 @@ export default function ScheduleManagement() {
     const firstDay = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth(),
-      1
+      1,
     );
     const dayOfWeek = firstDay.getDay() || 7; // Monday-first idea: treat Sunday as 7
     const weekNumber = Math.ceil((currentDate.getDate() + dayOfWeek - 1) / 7);
@@ -186,8 +186,6 @@ export default function ScheduleManagement() {
   return (
     <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
       <StatusBar style="dark" />
-      <AppHeader title="Quản lý lịch học" showLogout={true} />
-
       <ScrollView style={{ flex: 1 }}>
         <View
           style={{

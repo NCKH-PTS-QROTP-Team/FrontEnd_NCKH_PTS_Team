@@ -26,9 +26,7 @@ export default function AccessibilityDemo() {
               fontSize: 32,
               fontWeight: '700',
               color: Colors.textHeading, // gray-900
-              lineHeight: 40,
-              letterSpacing: -0.02,
-              marginBottom: 8,
+              lineHeight: 40,              marginBottom: 8,
             }}
           >
             Accessibility & Colors Demo
@@ -51,9 +49,7 @@ export default function AccessibilityDemo() {
               fontSize: 24,
               fontWeight: '600',
               color: Colors.textHeading,
-              lineHeight: 32,
-              letterSpacing: -0.01,
-              marginBottom: 16,
+              lineHeight: 32,              marginBottom: 16,
             }}
           >
             Color Contrast (4.5:1 minimum)
@@ -149,9 +145,7 @@ export default function AccessibilityDemo() {
               fontSize: 24,
               fontWeight: '600',
               color: Colors.textHeading,
-              lineHeight: 32,
-              letterSpacing: -0.01,
-              marginBottom: 16,
+              lineHeight: 32,              marginBottom: 16,
             }}
           >
             Text Color Hierarchy
@@ -207,9 +201,7 @@ export default function AccessibilityDemo() {
               fontSize: 24,
               fontWeight: '600',
               color: Colors.textHeading,
-              lineHeight: 32,
-              letterSpacing: -0.01,
-              marginBottom: 8,
+              lineHeight: 32,              marginBottom: 8,
             }}
           >
             Keyboard Navigation (Tab to test)
@@ -253,9 +245,7 @@ export default function AccessibilityDemo() {
               fontSize: 24,
               fontWeight: '600',
               color: Colors.textHeading,
-              lineHeight: 32,
-              letterSpacing: -0.01,
-              marginBottom: 16,
+              lineHeight: 32,              marginBottom: 16,
             }}
           >
             Minimum Icon Size: 24x24px
@@ -296,9 +286,7 @@ export default function AccessibilityDemo() {
               fontSize: 24,
               fontWeight: '600',
               color: Colors.textHeading,
-              lineHeight: 32,
-              letterSpacing: -0.01,
-              marginBottom: 8,
+              lineHeight: 32,              marginBottom: 8,
             }}
           >
             Minimum Touch Target: 44x44px

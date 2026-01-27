@@ -34,9 +34,7 @@ export default function AnimationsDemo() {
                 fontSize: 32,
                 fontWeight: '700',
                 color: Colors.textHeading,
-                lineHeight: 40,
-                letterSpacing: -0.02,
-                marginBottom: 8,
+                lineHeight: 40,                marginBottom: 8,
               }}
             >
               Animations & Micro-interactions
@@ -59,9 +57,7 @@ export default function AnimationsDemo() {
                 fontSize: 24,
                 fontWeight: '600',
                 color: Colors.textHeading,
-                lineHeight: 32,
-                letterSpacing: -0.01,
-                marginBottom: 8,
+                lineHeight: 32,                marginBottom: 8,
               }}
             >
               1. Page Transition
@@ -104,9 +100,7 @@ export default function AnimationsDemo() {
                 fontSize: 24,
                 fontWeight: '600',
                 color: Colors.textHeading,
-                lineHeight: 32,
-                letterSpacing: -0.01,
-                marginBottom: 16,
+                lineHeight: 32,                marginBottom: 16,
               }}
             >
               2. Modal Animations
@@ -174,9 +168,7 @@ export default function AnimationsDemo() {
                 fontSize: 24,
                 fontWeight: '600',
                 color: Colors.textHeading,
-                lineHeight: 32,
-                letterSpacing: -0.01,
-                marginBottom: 8,
+                lineHeight: 32,                marginBottom: 8,
               }}
             >
               3. Toast Slide-in (Top-right)
@@ -234,9 +226,7 @@ export default function AnimationsDemo() {
                 fontSize: 24,
                 fontWeight: '600',
                 color: Colors.textHeading,
-                lineHeight: 32,
-                letterSpacing: -0.01,
-                marginBottom: 16,
+                lineHeight: 32,                marginBottom: 16,
               }}
             >
               4. Button Click Feedback
@@ -281,9 +271,7 @@ export default function AnimationsDemo() {
                 fontSize: 24,
                 fontWeight: '600',
                 color: Colors.textHeading,
-                lineHeight: 32,
-                letterSpacing: -0.01,
-                marginBottom: 8,
+                lineHeight: 32,                marginBottom: 8,
               }}
             >
               5. Card Hover Lift Effect
@@ -366,9 +354,7 @@ export default function AnimationsDemo() {
                 fontSize: 24,
                 fontWeight: '600',
                 color: Colors.textHeading,
-                lineHeight: 32,
-                letterSpacing: -0.01,
-                marginBottom: 8,
+                lineHeight: 32,                marginBottom: 8,
               }}
             >
               6. Skeleton Loading Shimmer

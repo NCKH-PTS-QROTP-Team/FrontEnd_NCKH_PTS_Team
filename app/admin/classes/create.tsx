@@ -36,8 +36,6 @@ export default function CreateClass() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Tạo lớp học mới" showLogout={true} />
-
       <ScrollView className="flex-1">
         <View
           className="p-4"
@@ -97,7 +95,7 @@ export default function CreateClass() {
             />
           </Card>
 
-          <View style={{ flexDirection: 'row', marginHorizontal: -8 }}>
+          <View style={{ flexDirection: "row", marginHorizontal: -8 }}>
             <View style={{ flex: 1, paddingHorizontal: 8 }}>
               <PrimaryButton
                 title="Hủy"

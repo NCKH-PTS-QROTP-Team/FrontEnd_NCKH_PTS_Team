@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   Platform,
   useWindowDimensions,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { PrimaryButton } from "@/components/PrimaryButton";
@@ -23,8 +23,8 @@ export default function QRAttendanceScreen() {
       setScanning(false);
       setScanned(true);
       setTimeout(() => {
-alert("Điểm danh thành công!");
-router.back();
+        alert("Điểm danh thành công!");
+        router.back();
       }, 500);
     }, 2000);
   };
@@ -33,11 +33,14 @@ router.back();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
 
-const contentMaxWidth = isDesktop ? 500 : "100%";
+  const contentMaxWidth = isDesktop ? 500 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#F9FAFB" }}
+      edges={["top"]}
+    >
       <StatusBar style="dark" />
       <View
         style={{
@@ -60,11 +63,11 @@ const contentMaxWidth = isDesktop ? 500 : "100%";
         </Text>
       </View>
 
-<ScrollView
+      <ScrollView
         contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
       >
-<View
+        <View
           style={{
             maxWidth: contentMaxWidth,
             width: "100%",
@@ -75,19 +78,19 @@ const contentMaxWidth = isDesktop ? 500 : "100%";
           <View
             style={{
               backgroundColor: "#FFFFFF",
-borderRadius: 16,
+              borderRadius: 16,
               padding: 20,
               marginBottom: 24,
               borderWidth: 1,
-borderColor: "#E5E7EB",
+              borderColor: "#E5E7EB",
               shadowColor: "#000",
-shadowOffset: { width: 0, height: 2 },
+              shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
               shadowRadius: 8,
               elevation: 3,
             }}
           >
-<View
+            <View
               style={{
                 backgroundColor: "#D1FAE5",
                 borderRadius: 12,
@@ -116,7 +119,7 @@ shadowOffset: { width: 0, height: 2 },
                 Lập trình cơ bản
               </Text>
               <Text style={{ fontSize: 14, lineHeight: 20, color: "#4B5563" }}>
-CS101 • Phòng A102 • 08:00 - 10:00
+                CS101 • Phòng A102 • 08:00 - 10:00
               </Text>
             </View>
           </View>
@@ -124,14 +127,14 @@ CS101 • Phòng A102 • 08:00 - 10:00
           {/* Scanner Card */}
           <View
             style={{
-backgroundColor: "#FFFFFF",
-borderRadius: 16,
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
               padding: 24,
               marginBottom: 24,
               borderWidth: 1,
-borderColor: "#E5E7EB",
+              borderColor: "#E5E7EB",
               shadowColor: "#000",
-shadowOffset: { width: 0, height: 2 },
+              shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
               shadowRadius: 8,
               elevation: 3,
@@ -140,7 +143,7 @@ shadowOffset: { width: 0, height: 2 },
             {/* Scanner Area */}
             <View
               style={{
-backgroundColor: "#F9FAFB",
+                backgroundColor: "#F9FAFB",
                 borderRadius: 16,
                 aspectRatio: 1,
                 maxWidth: isDesktop ? 400 : "100%",
@@ -199,11 +202,11 @@ backgroundColor: "#F9FAFB",
                       textAlign: "center",
                     }}
                   >
-Nhấn nút bên dưới để bắt đầu
+                    Nhấn nút bên dưới để bắt đầu
                   </Text>
                 </View>
               )}
-{scanning && (
+              {scanning && (
                 <View style={{ alignItems: "center" }}>
                   <View
                     style={{
@@ -246,13 +249,13 @@ Nhấn nút bên dưới để bắt đầu
                       textAlign: "center",
                     }}
                   >
-Hướng camera vào QR code
+                    Hướng camera vào QR code
                   </Text>
                 </View>
               )}
 
               {scanned && (
-<View style={{ alignItems: "center" }}>
+                <View style={{ alignItems: "center" }}>
                   <Text
                     style={{ fontSize: 70, lineHeight: 80, marginBottom: 16 }}
                   >
@@ -272,28 +275,28 @@ Hướng camera vào QR code
                   <Text
                     style={{ fontSize: 14, lineHeight: 20, color: "#6B7280" }}
                   >
-Đang xử lý...
+                    Đang xử lý...
                   </Text>
                 </View>
               )}
             </View>
 
             <PrimaryButton
-title={
+              title={
                 scanning
                   ? "Đang quét..."
                   : scanned
-                  ? "Hoàn tất"
-                  : "Bắt đầu quét"
+                    ? "Hoàn tất"
+                    : "Bắt đầu quét"
               }
-onPress={handleScan}
+              onPress={handleScan}
               disabled={scanning || scanned}
               loading={scanning}
             />
           </View>
 
           {/* Help Text */}
-<View
+          <View
             style={{
               backgroundColor: "#E0F2FE",
               borderRadius: 12,
@@ -316,12 +319,12 @@ onPress={handleScan}
             <Text style={{ fontSize: 14, lineHeight: 20, color: "#1E3A8A" }}>
               Nhấn "Bắt đầu quét" và hướng camera vào QR code mà giảng viên hiển
               thị để hoàn tất điểm danh.
-</Text>
+            </Text>
           </View>
         </View>
       </ScrollView>
-</SafeAreaView>
-);
+    </SafeAreaView>
+  );
 }
 
 // Updated: 2026-01-02 13:16:08

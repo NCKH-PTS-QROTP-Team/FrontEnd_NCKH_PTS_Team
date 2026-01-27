@@ -7,15 +7,15 @@ import {
   Platform,
   TouchableOpacity,
   Modal,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { AppHeader } from "@/components/AppHeader";
 import { StudentCard } from "@/components/StudentCard";
 import { Colors } from "@/constants/colors";
 import Card from "@/components/Card";
 import Badge from "@/components/Badge";
 import PrimaryButton from "@/components/PrimaryButton";
+import { CalendarIcon, UsersIcon } from "@/components/Icons";
 
 // Mock data cho các lớp học
 const mockClasses = [
@@ -171,9 +171,11 @@ export default function ClassListScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#F9FAFB" }}
+      edges={["top"]}
+    >
       <StatusBar style="dark" />
-      <AppHeader title="Danh sách lớp học" showBack showLogout={!isWeb} />
 
       <ScrollView
         contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
@@ -191,84 +193,154 @@ export default function ClassListScreen() {
           {/* Summary Stats */}
           <View
             style={{
-              flexDirection: isMobile ? "column" : "row",
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
               marginBottom: 24,
-              marginHorizontal: -8,
-              gap: isMobile ? 8 : 0,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 8,
+              elevation: 3,
             }}
           >
-            <View
+            <Text
               style={{
-                flex: isMobile ? undefined : 1,
-                paddingHorizontal: 8,
-                marginBottom: isMobile ? 8 : 0,
+                fontSize: 20,
+                lineHeight: 28,
+                fontWeight: "bold",
+                color: "#111827",
+                marginBottom: 20,
               }}
             >
-              <Card>
-                <Text
-                  style={{
-                    fontSize: 28,
-                    fontWeight: "bold",
-                    color: Colors.primary,
-                    marginBottom: 4,
-                  }}
-                >
-                  {mockClasses.length}
-                </Text>
-                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
-                  Tổng lớp học
-                </Text>
-              </Card>
-            </View>
+              Tổng quan
+            </Text>
             <View
               style={{
-                flex: isMobile ? undefined : 1,
-                paddingHorizontal: 8,
-                marginBottom: isMobile ? 8 : 0,
+                flexDirection: "row",
+                flexWrap: "wrap",
+                marginHorizontal: -8,
               }}
             >
-              <Card>
-                <Text
+              <View
+                style={{
+                  width: isMobile ? "50%" : isTablet ? "50%" : "33.333%",
+                  paddingHorizontal: 8,
+                  marginBottom: isMobile ? 16 : 0,
+                }}
+              >
+                <View
                   style={{
-                    fontSize: 28,
-                    fontWeight: "bold",
-                    color: Colors.success,
-                    marginBottom: 4,
+                    backgroundColor: "#EFF6FF",
+                    borderRadius: 12,
+                    padding: 16,
+                    alignItems: "center",
                   }}
                 >
-                  {mockClasses.reduce((sum, c) => sum + c.totalStudents, 0)}
-                </Text>
-                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
-                  Tổng sinh viên
-                </Text>
-              </Card>
-            </View>
-            <View
-              style={{
-                flex: isMobile ? undefined : 1,
-                paddingHorizontal: 8,
-                marginBottom: isMobile ? 8 : 0,
-              }}
-            >
-              <Card>
-                <Text
+                  <Text
+                    style={{
+                      fontSize: 32,
+                      lineHeight: 40,
+                      fontWeight: "bold",
+                      color: Colors.primary,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {mockClasses.length}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: "#6B7280",
+                      textAlign: "center",
+                    }}
+                  >
+                    Tổng lớp học
+                  </Text>
+                </View>
+              </View>
+              <View
+                style={{
+                  width: isMobile ? "50%" : isTablet ? "50%" : "33.333%",
+                  paddingHorizontal: 8,
+                  marginBottom: isMobile ? 16 : 0,
+                }}
+              >
+                <View
                   style={{
-                    fontSize: 28,
-                    fontWeight: "bold",
-                    color: Colors.info,
-                    marginBottom: 4,
+                    backgroundColor: "#ECFDF5",
+                    borderRadius: 12,
+                    padding: 16,
+                    alignItems: "center",
                   }}
                 >
-                  {Math.round(
-                    mockClasses.reduce((sum, c) => sum + c.attendanceRate, 0) /
-                      mockClasses.length
-                  )}
-                  %
-                </Text>
-                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
-                  Tỷ lệ điểm danh TB
-                </Text>
-              </Card>
+                  <Text
+                    style={{
+                      fontSize: 32,
+                      lineHeight: 40,
+                      fontWeight: "bold",
+                      color: Colors.success,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {mockClasses.reduce((sum, c) => sum + c.totalStudents, 0)}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: "#6B7280",
+                      textAlign: "center",
+                    }}
+                  >
+                    Tổng sinh viên
+                  </Text>
+                </View>
+              </View>
+              <View
+                style={{
+                  width: isMobile ? "100%" : isTablet ? "100%" : "33.333%",
+                  paddingHorizontal: 8,
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: "#F0F9FF",
+                    borderRadius: 12,
+                    padding: 16,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 32,
+                      lineHeight: 40,
+                      fontWeight: "bold",
+                      color: Colors.info,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {Math.round(
+                      mockClasses.reduce(
+                        (sum, c) => sum + c.attendanceRate,
+                        0,
+                      ) / mockClasses.length,
+                    )}
+                    %
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: "#6B7280",
+                      textAlign: "center",
+                    }}
+                  >
+                    Tỷ lệ điểm danh TB
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
 
@@ -289,80 +361,126 @@ export default function ClassListScreen() {
                   marginBottom: 16,
                 }}
               >
-                <Card onPress={() => handleClassPress(classItem)}>
-                  {/* Class Header */}
-                  <View style={{ marginBottom: 12 }}>
+                <TouchableOpacity
+                  onPress={() => handleClassPress(classItem)}
+                  activeOpacity={0.7}
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 16,
+                    padding: 20,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 8,
+                    elevation: 3,
+                    borderLeftWidth: 4,
+                    borderLeftColor:
+                      classItem.attendanceRate >= 90
+                        ? "#10B981"
+                        : classItem.attendanceRate >= 75
+                          ? "#F59E0B"
+                          : "#EF4444",
+                  }}
+                >
+                  {/* Header với code và badge */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 12,
+                    }}
+                  >
                     <View
                       style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        marginBottom: 8,
+                        backgroundColor: "#F3F4F6",
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 8,
                       }}
                     >
                       <Text
                         style={{
-                          fontSize: 18,
-                          fontWeight: "600",
-                          color: Colors.text,
+                          fontSize: 16,
+                          fontWeight: "bold",
+                          color: "#111827",
                         }}
                       >
                         {classItem.code}
                       </Text>
-                      <Badge
-                        variant={
-                          classItem.attendanceRate >= 90
-                            ? "success"
-                            : classItem.attendanceRate >= 75
-                            ? "warning"
-                            : "error"
-                        }
-                        size="small"
-                      >
-                        {classItem.attendanceRate}%
-                      </Badge>
                     </View>
-                    <Text
+                    <View
                       style={{
-                        fontSize: 14,
-                        color: Colors.text,
-                        marginBottom: 4,
+                        backgroundColor:
+                          classItem.attendanceRate >= 90
+                            ? "#ECFDF5"
+                            : classItem.attendanceRate >= 75
+                              ? "#FEF3C7"
+                              : "#FEE2E2",
+                        paddingHorizontal: 10,
+                        paddingVertical: 4,
+                        borderRadius: 6,
                       }}
                     >
-                      {classItem.name}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
-                      {classItem.subject}
-                    </Text>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          fontWeight: "700",
+                          color:
+                            classItem.attendanceRate >= 90
+                              ? "#10B981"
+                              : classItem.attendanceRate >= 75
+                                ? "#F59E0B"
+                                : "#EF4444",
+                        }}
+                      >
+                        {classItem.attendanceRate}%
+                      </Text>
+                    </View>
                   </View>
 
-                  {/* Schedule Info */}
+                  {/* Tên môn học */}
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: "600",
+                      color: "#111827",
+                      marginBottom: 4,
+                      lineHeight: 22,
+                    }}
+                  >
+                    {classItem.name}
+                  </Text>
+                  <Text
+                    style={{ fontSize: 13, color: "#6B7280", marginBottom: 16 }}
+                  >
+                    {classItem.subject}
+                  </Text>
+
+                  {/* Thông tin lịch học - Simple text */}
                   <View
                     style={{
-                      marginBottom: 12,
-                      paddingTop: 12,
-                      borderTopWidth: 1,
-                      borderTopColor: Colors.border,
+                      backgroundColor: "#F9FAFB",
+                      borderRadius: 10,
+                      padding: 12,
+                      marginBottom: 16,
                     }}
                   >
                     <View
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
-                        marginBottom: 4,
+                        marginBottom: 6,
                       }}
                     >
+                      <CalendarIcon size={14} color="#6B7280" />
                       <Text
                         style={{
-                          fontSize: 12,
-                          color: Colors.textSecondary,
-                          marginRight: 4,
+                          fontSize: 13,
+                          color: "#374151",
+                          marginLeft: 8,
+                          flex: 1,
                         }}
-                      >
-                        🕐
-                      </Text>
-                      <Text
-                        style={{ fontSize: 12, color: Colors.textSecondary }}
                       >
                         {classItem.schedule}
                       </Text>
@@ -372,110 +490,136 @@ export default function ClassListScreen() {
                     >
                       <Text
                         style={{
-                          fontSize: 12,
-                          color: Colors.textSecondary,
-                          marginRight: 4,
+                          fontSize: 13,
+                          color: "#6B7280",
+                          fontWeight: "600",
+                          width: 22,
+                          textAlign: "center",
                         }}
                       >
                         📍
                       </Text>
                       <Text
-                        style={{ fontSize: 12, color: Colors.textSecondary }}
+                        style={{
+                          fontSize: 13,
+                          color: "#374151",
+                          marginLeft: 8,
+                        }}
                       >
                         Phòng {classItem.room}
                       </Text>
                     </View>
                   </View>
 
-                  {/* Attendance Stats */}
+                  {/* Stats dạng horizontal pills */}
                   <View
                     style={{
                       flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
+                      gap: 8,
+                      flexWrap: "wrap",
                     }}
                   >
-                    <View style={{ alignItems: "center", flex: 1 }}>
-                      <Text
-                        style={{
-                          fontSize: 20,
-                          fontWeight: "bold",
-                          color: Colors.success,
-                          marginBottom: 2,
-                        }}
-                      >
-                        {classItem.presentCount}
-                      </Text>
-                      <Text
-                        style={{ fontSize: 11, color: Colors.textSecondary }}
-                      >
-                        Có mặt
-                      </Text>
-                    </View>
                     <View
                       style={{
+                        backgroundColor: "#ECFDF5",
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 20,
+                        flexDirection: "row",
                         alignItems: "center",
-                        flex: 1,
-                        borderLeftWidth: 1,
-                        borderRightWidth: 1,
-                        borderColor: Colors.border,
+                        gap: 6,
                       }}
                     >
                       <Text
                         style={{
-                          fontSize: 20,
+                          fontSize: 16,
                           fontWeight: "bold",
-                          color: Colors.warning,
-                          marginBottom: 2,
+                          color: "#10B981",
+                        }}
+                      >
+                        {classItem.presentCount}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: "#059669" }}>
+                        Có mặt
+                      </Text>
+                    </View>
+
+                    <View
+                      style={{
+                        backgroundColor: "#FEF3C7",
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 20,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: "bold",
+                          color: "#F59E0B",
                         }}
                       >
                         {classItem.lateCount}
                       </Text>
-                      <Text
-                        style={{ fontSize: 11, color: Colors.textSecondary }}
-                      >
+                      <Text style={{ fontSize: 12, color: "#D97706" }}>
                         Muộn
                       </Text>
                     </View>
-                    <View style={{ alignItems: "center", flex: 1 }}>
+
+                    <View
+                      style={{
+                        backgroundColor: "#FEE2E2",
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 20,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
                       <Text
                         style={{
-                          fontSize: 20,
+                          fontSize: 16,
                           fontWeight: "bold",
-                          color: Colors.error,
-                          marginBottom: 2,
+                          color: "#EF4444",
                         }}
                       >
                         {classItem.absentCount}
                       </Text>
-                      <Text
-                        style={{ fontSize: 11, color: Colors.textSecondary }}
-                      >
+                      <Text style={{ fontSize: 12, color: "#DC2626" }}>
                         Vắng
                       </Text>
                     </View>
                   </View>
 
-                  {/* Student Count */}
+                  {/* Total students */}
                   <View
                     style={{
-                      marginTop: 12,
-                      paddingTop: 12,
+                      marginTop: 16,
+                      paddingTop: 16,
                       borderTopWidth: 1,
-                      borderTopColor: Colors.border,
+                      borderTopColor: "#E5E7EB",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
+                    <UsersIcon size={16} color="#6B7280" />
                     <Text
                       style={{
-                        fontSize: 12,
-                        color: Colors.textSecondary,
-                        textAlign: "center",
+                        fontSize: 13,
+                        color: "#6B7280",
+                        marginLeft: 6,
+                        fontWeight: "500",
                       }}
                     >
-                      👥 {classItem.totalStudents} sinh viên
+                      {classItem.totalStudents} sinh viên
                     </Text>
                   </View>
-                </Card>
+                </TouchableOpacity>
               </View>
             ))}
           </View>

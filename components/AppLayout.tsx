@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Platform, Text, useWindowDimensions } from "react-native";
+import { View, Platform, Text, useWindowDimensions, Image } from "react-native";
 import { useRouter } from "expo-router";
 import Sidebar from "./Sidebar";
 import NotificationDropdown from "./NotificationDropdown";
@@ -7,7 +7,7 @@ import UserProfileDropdown from "./UserProfileDropdown";
 import { Colors } from "@/constants/colors";
 
 // Import logo IUH
-const logoNameImage = require('@/assets/logoname.png');
+const logoNameImage = require("@/assets/logoname.png");
 
 interface MenuItem {
   icon: React.ReactNode;

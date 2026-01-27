@@ -5,10 +5,9 @@ import {
   ScrollView,
   useWindowDimensions,
   Platform,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { AppHeader } from "@/components/AppHeader";
 import { PrimaryButton } from "@/components/PrimaryButton";
 
 export default function GenerateOTPScreen() {
@@ -52,9 +51,11 @@ export default function GenerateOTPScreen() {
   const isExpired = countdown === 0;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#F9FAFB" }}
+      edges={["top"]}
+    >
       <StatusBar style="dark" />
-      <AppHeader title="Tạo mã OTP" showBack showLogout={!isWeb} />
 
       <ScrollView
         contentContainerStyle={{
@@ -100,7 +101,6 @@ export default function GenerateOTPScreen() {
                     color: "#6B7280",
                     marginBottom: 8,
                     textTransform: "uppercase",
-                    letterSpacing: 0.5,
                   }}
                 >
                   Môn học

@@ -1,4 +1,4 @@
-import { Dimensions } from 'react-native';
+import { Dimensions, Platform } from 'react-native';
 
 /**
  * Responsive text utilities
@@ -15,19 +15,19 @@ export const ResponsiveText = {
     fontSize: Math.round(40 * scaleFactor), // 36px mobile, 40px desktop
     lineHeight: Math.round(48 * scaleFactor),
     fontWeight: '700' as const,
-    letterSpacing: -0.02,
+    ...(Platform.OS !== 'android' && { letterSpacing: -0.02 }),
   },
   displayMd: {
     fontSize: Math.round(36 * scaleFactor), // 32px mobile, 36px desktop
     lineHeight: Math.round(44 * scaleFactor),
     fontWeight: '700' as const,
-    letterSpacing: -0.02,
+    ...(Platform.OS !== 'android' && { letterSpacing: -0.02 }),
   },
   displaySm: {
     fontSize: Math.round(32 * scaleFactor), // 29px mobile, 32px desktop
     lineHeight: Math.round(40 * scaleFactor),
     fontWeight: '700' as const,
-    letterSpacing: -0.02,
+    ...(Platform.OS !== 'android' && { letterSpacing: -0.02 }),
   },
 
   // Heading sizes (20-28px)
@@ -35,25 +35,25 @@ export const ResponsiveText = {
     fontSize: Math.round(28 * scaleFactor), // 25px mobile, 28px desktop
     lineHeight: Math.round(36 * scaleFactor),
     fontWeight: '700' as const,
-    letterSpacing: -0.01,
+    ...(Platform.OS !== 'android' && { letterSpacing: -0.01 }),
   },
   h2: {
     fontSize: Math.round(24 * scaleFactor), // 22px mobile, 24px desktop
     lineHeight: Math.round(32 * scaleFactor),
     fontWeight: '600' as const,
-    letterSpacing: -0.01,
+    ...(Platform.OS !== 'android' && { letterSpacing: -0.01 }),
   },
   h3: {
     fontSize: Math.round(20 * scaleFactor), // 18px mobile, 20px desktop
     lineHeight: Math.round(28 * scaleFactor),
     fontWeight: '600' as const,
-    letterSpacing: -0.01,
+    ...(Platform.OS !== 'android' && { letterSpacing: -0.01 }),
   },
   h4: {
     fontSize: Math.round(18 * scaleFactor), // 16px mobile, 18px desktop
     lineHeight: Math.round(27 * scaleFactor),
     fontWeight: '600' as const,
-    letterSpacing: -0.01,
+    ...(Platform.OS !== 'android' && { letterSpacing: -0.01 }),
   },
 
   // Body sizes (14-16px)
@@ -90,13 +90,13 @@ export const ResponsiveText = {
     fontSize: Math.round(16 * scaleFactor), // 14px mobile, 16px desktop
     lineHeight: Math.round(24 * scaleFactor),
     fontWeight: '600' as const,
-    letterSpacing: -0.01,
+    ...(Platform.OS !== 'android' && { letterSpacing: -0.01 }),
   },
   buttonSmall: {
     fontSize: Math.round(14 * scaleFactor), // 13px mobile, 14px desktop
     lineHeight: Math.round(21 * scaleFactor),
     fontWeight: '600' as const,
-    letterSpacing: -0.01,
+    ...(Platform.OS !== 'android' && { letterSpacing: -0.01 }),
   },
 };
 

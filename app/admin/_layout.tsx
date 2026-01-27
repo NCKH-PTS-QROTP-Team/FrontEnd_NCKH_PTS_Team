@@ -116,7 +116,7 @@ export default function AdminLayout() {
     return (
       <SafeAreaView
         style={{ flex: 1, backgroundColor: "#FFFFFF" }}
-        edges={["bottom"]}
+        edges={["top", "bottom"]}
       >
         {stackContent}
         <BottomNavigation
@@ -128,10 +128,19 @@ export default function AdminLayout() {
     );
   }
 
-  // On web, wrap with AppLayout
+  // On web, wrap with AppLayout and SafeAreaView
   return (
-    <AppLayout menuItems={menuItems} userRole="admin" userName="Admin Hệ thống">
-      {stackContent}
-    </AppLayout>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#FFFFFF" }}
+      edges={["top", "left", "right"]}
+    >
+      <AppLayout
+        menuItems={menuItems}
+        userRole="admin"
+        userName="Admin Hệ thống"
+      >
+        {stackContent}
+      </AppLayout>
+    </SafeAreaView>
   );
 }
