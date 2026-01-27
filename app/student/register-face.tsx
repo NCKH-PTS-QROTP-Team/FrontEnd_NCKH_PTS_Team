@@ -100,11 +100,12 @@ export default function RegisterFaceScreen() {
   const { toast, showToast, hideToast } = useToast();
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const { socket, isConnected, connect, disconnect, emit, on, off } = useSocket();
-  
-  // Auto-connect socket when camera becomes active (if enabled)
 
+  // Responsive layout
+  const isTablet = width >= 768 && width < 1024;
   const isDesktop = width >= 1024;
-  const paddingHorizontal = isDesktop ? 24 : 16;
+  const maxContentWidth = isDesktop ? 480 : isTablet ? 420 : width;
+  const paddingHorizontal = isDesktop ? 32 : isTablet ? 24 : 16;
   const currentAngle = FACE_ANGLES[currentStep];
   const progress = ((currentStep + 1) / FACE_ANGLES.length) * 100;
   
@@ -573,18 +574,38 @@ export default function RegisterFaceScreen() {
       {/* Camera View */}
       {cameraActive && (
         <View
-          style={{ flex: 1 }}
-          onLayout={(e) => {
-            const { width: pw, height: ph } = e.nativeEvent.layout;
-            if (pw > 0 && ph > 0) {
-              setPreviewLayout({ width: pw, height: ph });
-            }
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: Platform.OS === "web" ? "center" : "flex-start",
           }}
         >
-          <CameraView ref={cameraRef} style={{ flex: 1 }} facing="front" />
+          <View
+            style={
+              Platform.OS === "web"
+                ? {
+                    width: Math.min(maxContentWidth, width),
+                    aspectRatio: 3 / 4,
+                    maxHeight: height,
+                    borderRadius: 24,
+                    overflow: "hidden",
+                  }
+                : {
+                    flex: 1,
+                    alignSelf: "stretch",
+                  }
+            }
+            onLayout={(e) => {
+              const { width: pw, height: ph } = e.nativeEvent.layout;
+              if (pw > 0 && ph > 0) {
+                setPreviewLayout({ width: pw, height: ph });
+              }
+            }}
+          >
+            <CameraView ref={cameraRef} style={{ flex: 1 }} facing="front" />
           
-          {/* Overlay - Tách ra ngoài CameraView để tránh warning */}
-          <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
+            {/* Overlay - Tách ra ngoài CameraView để tránh warning */}
+            <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
             {/* Top Header với Progress Bar */}
             <View
               style={{
@@ -802,7 +823,8 @@ export default function RegisterFaceScreen() {
                   Hủy
               </Text>
             </TouchableOpacity>
-          </Animated.View>
+            </Animated.View>
+            </View>
           </View>
         </View>
       )}
