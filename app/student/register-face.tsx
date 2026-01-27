@@ -45,6 +45,10 @@ interface FaceDetection {
   height: number;
 }
 
+const FACE_BOX_SMOOTHING_ALPHA = 0.65; // 0..1 (cao hơn = mượt hơn nhưng trễ hơn)
+const READY_STABLE_FRAMES = 3; // số frame liên tiếp đạt điều kiện để auto-capture
+const AUTO_CAPTURE_COUNTDOWN_SEC = 3;
+
 const FACE_ANGLES: FaceAngleStep[] = [
   {
     id: "straight",
@@ -84,17 +88,24 @@ export default function RegisterFaceScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [studentId, setStudentId] = useState<string | null>(null);
   const [loadingStudentId, setLoadingStudentId] = useState(true);
+  const [checkingFaceStatus, setCheckingFaceStatus] = useState(false);
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [capturing, setCapturing] = useState(false);
   const [cameraActive, setCameraActive] = useState(true);
   const [faceDetected, setFaceDetected] = useState<FaceDetection | null>(null);
   const [detecting, setDetecting] = useState(false);
+  const [isReadyToCapture, setIsReadyToCapture] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [previewLayout, setPreviewLayout] = useState<{ width: number; height: number }>({
     width,
     height,
   });
   const cameraRef = useRef<CameraView>(null);
   const detectIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const stableFramesRef = useRef(0);
+  const faceBoxRef = useRef<FaceDetection | null>(null);
   // Lưu image dimensions để scale coordinates chính xác
   const lastImageDimensions = useRef<{ width: number; height: number } | null>(null);
   const { toast, showToast, hideToast } = useToast();
@@ -111,6 +122,63 @@ export default function RegisterFaceScreen() {
   
   // Enable socket khi backend đã có socket server (port 8081)
   const useSocketForDetection = false; // Tạm tắt để dùng API fallback
+
+  const getGuideRect = (previewW: number, previewH: number) => {
+    // Match UI guide frame: top 25%, left/right 10%, aspectRatio 0.75
+    const x = previewW * 0.1;
+    const w = previewW * 0.8;
+    const h = w / 0.75;
+    const y = previewH * 0.25;
+    return { x, y, w, h };
+  };
+
+  const isFaceInsideGuide = (face: FaceDetection, previewW: number, previewH: number) => {
+    const guide = getGuideRect(previewW, previewH);
+    const cx = face.x + face.width / 2;
+    const cy = face.y + face.height / 2;
+
+    const centerInside =
+      cx >= guide.x &&
+      cx <= guide.x + guide.w &&
+      cy >= guide.y &&
+      cy <= guide.y + guide.h;
+
+    // Face should not be too small / too big relative to guide frame
+    const minW = guide.w * 0.22;
+    const maxW = guide.w * 0.92;
+
+    return centerInside && face.width >= minW && face.width <= maxW;
+  };
+
+  const updateFaceDetection = (next: FaceDetection | null) => {
+    if (!next) {
+      faceBoxRef.current = null;
+      stableFramesRef.current = 0;
+      setIsReadyToCapture(false);
+      setFaceDetected(null);
+      return;
+    }
+
+    const prev = faceBoxRef.current;
+    const smoothed: FaceDetection = prev
+      ? {
+          x: prev.x * FACE_BOX_SMOOTHING_ALPHA + next.x * (1 - FACE_BOX_SMOOTHING_ALPHA),
+          y: prev.y * FACE_BOX_SMOOTHING_ALPHA + next.y * (1 - FACE_BOX_SMOOTHING_ALPHA),
+          width: prev.width * FACE_BOX_SMOOTHING_ALPHA + next.width * (1 - FACE_BOX_SMOOTHING_ALPHA),
+          height: prev.height * FACE_BOX_SMOOTHING_ALPHA + next.height * (1 - FACE_BOX_SMOOTHING_ALPHA),
+        }
+      : next;
+
+    faceBoxRef.current = smoothed;
+    setFaceDetected(smoothed);
+
+    const previewW = previewLayout.width || width;
+    const previewH = previewLayout.height || height;
+    const inside = isFaceInsideGuide(smoothed, previewW, previewH);
+
+    stableFramesRef.current = inside ? stableFramesRef.current + 1 : 0;
+    setIsReadyToCapture(stableFramesRef.current >= READY_STABLE_FRAMES);
+  };
 
   // Lấy studentId từ JWT token
   useEffect(() => {
@@ -140,6 +208,42 @@ export default function RegisterFaceScreen() {
     };
     loadStudentId();
   }, []);
+
+  // Check nếu sinh viên đã đăng ký khuôn mặt chưa (trải nghiệm kiểu banking)
+  useEffect(() => {
+    if (!studentId) return;
+
+    const checkStatus = async () => {
+      try {
+        setCheckingFaceStatus(true);
+        const info = await faceService.getByStudentId(studentId);
+
+        // Có face data => đã đăng ký
+        if (info?.registeredAnglesCount && info.registeredAnglesCount > 0) {
+          setAlreadyRegistered(true);
+          setCameraActive(false);
+        } else {
+          // Có record nhưng không có angles count (hiếm) vẫn xem là đã đăng ký
+          setAlreadyRegistered(true);
+          setCameraActive(false);
+        }
+      } catch (err: any) {
+        // 404 => chưa đăng ký, cho phép vào flow
+        const status = err?.response?.status;
+        if (status === 404) {
+          setAlreadyRegistered(false);
+          setCameraActive(true);
+        } else {
+          // Lỗi khác: không chặn user, chỉ cảnh báo nhẹ
+          setAlreadyRegistered(false);
+        }
+      } finally {
+        setCheckingFaceStatus(false);
+      }
+    };
+
+    checkStatus();
+  }, [studentId]);
 
   // Connect socket khi mount và camera active
   useEffect(() => {
@@ -235,14 +339,14 @@ export default function RegisterFaceScreen() {
         const finalWidth = Math.max(40, Math.min(scaledWidth, previewW - finalX));
         const finalHeight = Math.max(40, Math.min(scaledHeight, previewH - finalY));
         
-        setFaceDetected({
+        updateFaceDetection({
           x: finalX,
           y: finalY,
           width: finalWidth,
           height: finalHeight,
         });
       } else {
-        setFaceDetected(null);
+        updateFaceDetection(null);
       }
     };
 
@@ -251,7 +355,7 @@ export default function RegisterFaceScreen() {
     return () => {
       off('face:detected', handleFaceDetection);
     };
-  }, [isConnected, width, height, on, off, useSocketForDetection]);
+  }, [isConnected, width, height, on, off, useSocketForDetection, previewLayout]);
 
   // Detect face realtime qua socket (fallback về API nếu socket chưa ready)
   useEffect(() => {
@@ -365,7 +469,7 @@ export default function RegisterFaceScreen() {
                 const finalWidth = Math.max(40, Math.min(scaledWidth, previewW - finalX));
                 const finalHeight = Math.max(40, Math.min(scaledHeight, previewH - finalY));
                 
-                setFaceDetected({
+                updateFaceDetection({
                   x: finalX,
                   y: finalY,
                   width: finalWidth,
@@ -374,7 +478,7 @@ export default function RegisterFaceScreen() {
               }
             }
           } else {
-            setFaceDetected(null);
+            updateFaceDetection(null);
           }
         }
 
@@ -382,7 +486,7 @@ export default function RegisterFaceScreen() {
           // Ignore camera not ready errors (sẽ retry ở lần tiếp theo)
           if (error?.message?.includes('camera data') || error?.message?.includes('HTMLVideoElement')) {
             // Camera chưa sẵn sàng, bỏ qua frame này
-            setFaceDetected(null);
+            updateFaceDetection(null);
           }
           // Silently handle other errors
       } finally {
@@ -395,15 +499,15 @@ export default function RegisterFaceScreen() {
         clearInterval(detectIntervalRef.current);
       }
     };
-  }, [cameraActive, capturing, detecting, isConnected, emit, width, height]);
+  }, [cameraActive, capturing, detecting, isConnected, emit, width, height, previewLayout]);
 
-  const handleCapture = async () => {
+  const handleCapture = async (opts?: { isAuto?: boolean }) => {
     if (!cameraRef.current || !studentId || capturing) {
       return;
     }
     
     // Warning nếu không có face detected, nhưng vẫn cho phép chụp
-    if (!faceDetected) {
+    if (!faceDetected && !opts?.isAuto) {
       showToast("Chưa phát hiện khuôn mặt. Vẫn sẽ thử chụp...", "warning");
     }
 
@@ -456,12 +560,12 @@ export default function RegisterFaceScreen() {
         Animated.timing(fadeAnim, {
           toValue: 0,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
       ]).start();
 
@@ -493,10 +597,65 @@ export default function RegisterFaceScreen() {
     }
   };
 
+  // Auto-capture kiểu ngân hàng: khi face "ready" ổn định -> đếm ngược -> chụp
+  useEffect(() => {
+    if (!cameraActive || capturing) return;
+
+    // Nếu mất điều kiện ready thì hủy countdown
+    if (!isReadyToCapture) {
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+      }
+      setCountdown(null);
+      return;
+    }
+
+    // Nếu đã countdown rồi thì thôi
+    if (countdownTimerRef.current || countdown !== null) return;
+
+    setCountdown(AUTO_CAPTURE_COUNTDOWN_SEC);
+    countdownTimerRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev === null) return null;
+        if (prev <= 1) {
+          if (countdownTimerRef.current) {
+            clearInterval(countdownTimerRef.current);
+            countdownTimerRef.current = null;
+          }
+          // Trigger capture (manual logic giữ nguyên)
+          setTimeout(() => {
+            handleCapture({ isAuto: true });
+          }, 0);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [cameraActive, capturing, isReadyToCapture, countdown]);
+
+  // Reset UI state khi đổi step / tắt camera
+  useEffect(() => {
+    stableFramesRef.current = 0;
+    setIsReadyToCapture(false);
+    setCountdown(null);
+    faceBoxRef.current = null;
+    setFaceDetected(null);
+
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+  }, [currentStep, cameraActive]);
+
   const handleCancel = () => {
     setCameraActive(false); // Tắt camera
     if (detectIntervalRef.current) {
       clearInterval(detectIntervalRef.current);
+    }
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
     }
     // Stop emitting frames
     off('face:detected');
@@ -509,19 +668,81 @@ export default function RegisterFaceScreen() {
       if (detectIntervalRef.current) {
         clearInterval(detectIntervalRef.current);
       }
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+      }
       setCameraActive(false);
     };
   }, []);
 
   // Loading state
-  if (loadingStudentId || !permission) {
+  if (loadingStudentId || checkingFaceStatus || !permission) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color={Colors.primary} />
           <Text style={{ marginTop: 16, color: Colors.textSecondary }}>
-            {loadingStudentId ? "Đang tải thông tin..." : "Đang tải camera..."}
+            {loadingStudentId
+              ? "Đang tải thông tin..."
+              : checkingFaceStatus
+              ? "Đang kiểm tra trạng thái đăng ký khuôn mặt..."
+              : "Đang tải camera..."}
           </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Đã đăng ký face rồi -> chặn vào flow, trải nghiệm kiểu banking
+  if (alreadyRegistered) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
+        <StatusBar style="dark" />
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: paddingHorizontal,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 520,
+              backgroundColor: Colors.white,
+              borderRadius: 18,
+              padding: 20,
+              borderWidth: 1,
+              borderColor: "rgba(0,0,0,0.06)",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "800",
+                color: Colors.textHeading,
+                textAlign: "center",
+                marginBottom: 10,
+              }}
+            >
+              Bạn đã đăng ký khuôn mặt rồi
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: Colors.textSecondary,
+                textAlign: "center",
+                lineHeight: 20,
+                marginBottom: 18,
+              }}
+            >
+              Khuôn mặt của bạn đã được đăng ký trước đó. Nếu bạn cần đăng ký lại,
+              vui lòng liên hệ quản trị viên.
+            </Text>
+            <PrimaryButton title="Quay lại" onPress={() => router.back()} />
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -618,6 +839,34 @@ export default function RegisterFaceScreen() {
                 zIndex: 10,
               }}
             >
+              {/* Ready chip */}
+              {(isReadyToCapture || countdown !== null) && (
+                <View
+                  style={{
+                    alignSelf: "center",
+                    marginBottom: 10,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 999,
+                    backgroundColor:
+                      countdown !== null
+                        ? "rgba(0, 180, 216, 0.95)"
+                        : "rgba(34, 197, 94, 0.95)",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#000",
+                      fontSize: 12,
+                      fontWeight: "700",
+                      letterSpacing: 0.2,
+                    }}
+                  >
+                    {countdown !== null ? `Đang chụp: ${countdown}` : "Sẵn sàng"}
+                  </Text>
+                </View>
+              )}
+
               {/* Progress Bar */}
               <View
                 style={{
@@ -772,7 +1021,11 @@ export default function RegisterFaceScreen() {
                     marginBottom: 8,
                   }}
                 >
-                  {faceDetected
+                  {countdown !== null
+                    ? `Giữ yên... chụp sau ${countdown}`
+                    : isReadyToCapture
+                    ? "Giữ yên... đang chuẩn bị chụp"
+                    : faceDetected
                     ? "Khuôn mặt đã được nhận diện"
                     : currentAngle.instruction}
                 </Text>
@@ -783,8 +1036,12 @@ export default function RegisterFaceScreen() {
                     textAlign: "center",
                   }}
                 >
-                  {faceDetected
-                    ? "Nhấn nút bên dưới để chụp ảnh"
+                  {countdown !== null
+                    ? "Đừng di chuyển để ảnh rõ nét"
+                    : isReadyToCapture
+                    ? "Hệ thống sẽ tự chụp nếu bạn giữ ổn định"
+                    : faceDetected
+                    ? "Giữ mặt trong khung nét đứt để tự chụp"
                     : "Đảm bảo ánh sáng đủ và khuôn mặt rõ ràng"}
                 </Text>
               </View>
@@ -794,13 +1051,15 @@ export default function RegisterFaceScreen() {
                 title={
                   capturing
                     ? "Đang xử lý..."
+                    : countdown !== null
+                    ? `Chụp sau ${countdown}`
                     : currentStep === FACE_ANGLES.length - 1
                     ? "Hoàn tất"
                     : "Chụp ảnh"
                 }
                 onPress={handleCapture}
                 loading={capturing}
-                disabled={capturing}
+                disabled={capturing || countdown !== null}
               />
 
               {/* Back Button */}
