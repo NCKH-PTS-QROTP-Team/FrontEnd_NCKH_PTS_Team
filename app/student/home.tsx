@@ -143,7 +143,6 @@ export default function StudentHomeScreen() {
 
           {/* Today's Schedule - Single card with auto-rotate */}
           <View style={{ marginBottom: isMobile ? 20 : 24 }}>
-            {" "}
             <View
               style={{
                 flexDirection: "row",
