@@ -447,300 +447,181 @@ export default function StudentHomeScreen() {
         >
           {/* Stats - 2x2 grid on mobile, 4 columns on desktop */}
           <View style={{ marginBottom: isMobile ? 24 : 32 }}>
-            <Text
+            <View
               style={{
-                fontSize: isDesktop ? 18 : isMobile ? 16 : 17,
-                fontWeight: "600",
-                color: "#111827",
-                marginBottom: isMobile ? 16 : 20,
+                backgroundColor: "#FFFFFF",
+                borderRadius: 16,
+                padding: isDesktop ? 24 : isMobile ? 16 : 20,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+                elevation: 3,
               }}
             >
-              Thống kê tuần này
-            </Text>
-
-            {/* Desktop: Single row with 4 columns, Mobile: 2x2 grid */}
-            {isDesktop ? (
-              <View style={{ flexDirection: "row", gap: statsGap }}>
+              <Text
+                style={{
+                  fontSize: isDesktop ? 20 : isMobile ? 18 : 19,
+                  lineHeight: 28,
+                  fontWeight: "bold",
+                  color: "#111827",
+                  marginBottom: isDesktop ? 20 : isMobile ? 16 : 18,
+                }}
+              >
+                Thống kê tuần này
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: isDesktop ? 16 : isMobile ? 12 : 14,
+                }}
+              >
                 {/* Tổng buổi */}
                 <View
                   style={{
-                    flex: 1,
-                    backgroundColor: "#FFFFFF",
+                    flex: isMobile ? 0 : 1,
+                    width: isMobile ? "48%" : undefined,
+                    backgroundColor: "#EFF6FF",
                     borderRadius: 12,
-                    padding: 20,
-                    borderLeftWidth: 3,
-                    borderLeftColor: "#3FA9F5",
+                    padding: isDesktop ? 24 : isMobile ? 16 : 20,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: isDesktop ? 120 : isMobile ? 100 : 110,
                   }}
                 >
                   <Text
                     style={{
-                      fontSize: 13,
+                      fontSize: isDesktop ? 40 : isMobile ? 36 : 38,
+                      lineHeight: isDesktop ? 48 : isMobile ? 44 : 46,
+                      fontWeight: "bold",
+                      color: "#3FA9F5",
+                      marginBottom: 4,
+                    }}
+                  >
+                    12
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: isMobile ? 13 : 14,
+                      lineHeight: 20,
                       color: "#6B7280",
-                      marginBottom: 8,
                       fontWeight: "500",
                     }}
                   >
                     Tổng buổi
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 40,
-                      fontWeight: "700",
-                      color: "#3FA9F5",
-                    }}
-                  >
-                    12
                   </Text>
                 </View>
 
                 {/* Có mặt */}
                 <View
                   style={{
-                    flex: 1,
-                    backgroundColor: "#FFFFFF",
+                    flex: isMobile ? 0 : 1,
+                    width: isMobile ? "48%" : undefined,
+                    backgroundColor: "#ECFDF5",
                     borderRadius: 12,
-                    padding: 20,
-                    borderLeftWidth: 3,
-                    borderLeftColor: "#10B981",
+                    padding: isDesktop ? 24 : isMobile ? 16 : 20,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: isDesktop ? 120 : isMobile ? 100 : 110,
                   }}
                 >
                   <Text
                     style={{
-                      fontSize: 13,
-                      color: "#6B7280",
-                      marginBottom: 8,
-                      fontWeight: "500",
-                    }}
-                  >
-                    Có mặt
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 40,
-                      fontWeight: "700",
+                      fontSize: isDesktop ? 40 : isMobile ? 36 : 38,
+                      lineHeight: isDesktop ? 48 : isMobile ? 44 : 46,
+                      fontWeight: "bold",
                       color: "#10B981",
+                      marginBottom: 4,
                     }}
                   >
                     10
                   </Text>
-                </View>
-
-                {/* Đi muộn */}
-                <View
-                  style={{
-                    flex: 1,
-                    backgroundColor: "#FFFFFF",
-                    borderRadius: 12,
-                    padding: 20,
-                    borderLeftWidth: 3,
-                    borderLeftColor: "#F59E0B",
-                  }}
-                >
                   <Text
                     style={{
-                      fontSize: 13,
+                      fontSize: isMobile ? 13 : 14,
+                      lineHeight: 20,
                       color: "#6B7280",
-                      marginBottom: 8,
                       fontWeight: "500",
                     }}
                   >
-                    Đi muộn
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 40,
-                      fontWeight: "700",
-                      color: "#F59E0B",
-                    }}
-                  >
-                    2
+                    Có mặt
                   </Text>
                 </View>
 
                 {/* Vắng */}
                 <View
                   style={{
-                    flex: 1,
-                    backgroundColor: "#FFFFFF",
+                    flex: isMobile ? 0 : 1,
+                    width: isMobile ? "48%" : undefined,
+                    backgroundColor: "#FEF2F2",
                     borderRadius: 12,
-                    padding: 20,
-                    borderLeftWidth: 3,
-                    borderLeftColor: "#EF4444",
+                    padding: isDesktop ? 24 : isMobile ? 16 : 20,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: isDesktop ? 120 : isMobile ? 100 : 110,
                   }}
                 >
                   <Text
                     style={{
-                      fontSize: 13,
+                      fontSize: isDesktop ? 40 : isMobile ? 36 : 38,
+                      lineHeight: isDesktop ? 48 : isMobile ? 44 : 46,
+                      fontWeight: "bold",
+                      color: "#EF4444",
+                      marginBottom: 4,
+                    }}
+                  >
+                    0
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: isMobile ? 13 : 14,
+                      lineHeight: 20,
                       color: "#6B7280",
-                      marginBottom: 8,
                       fontWeight: "500",
                     }}
                   >
                     Vắng
                   </Text>
+                </View>
+
+                {/* Tỷ lệ */}
+                <View
+                  style={{
+                    flex: isMobile ? 0 : 1,
+                    width: isMobile ? "48%" : undefined,
+                    backgroundColor: "#F3F4F6",
+                    borderRadius: 12,
+                    padding: isDesktop ? 24 : isMobile ? 16 : 20,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: isDesktop ? 120 : isMobile ? 100 : 110,
+                  }}
+                >
                   <Text
                     style={{
-                      fontSize: 40,
-                      fontWeight: "700",
-                      color: "#EF4444",
+                      fontSize: isDesktop ? 40 : isMobile ? 36 : 38,
+                      lineHeight: isDesktop ? 48 : isMobile ? 44 : 46,
+                      fontWeight: "bold",
+                      color: "#3FA9F5",
+                      marginBottom: 4,
                     }}
                   >
-                    0
+                    84%
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: isMobile ? 13 : 14,
+                      lineHeight: 20,
+                      color: "#6B7280",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Tỷ lệ
                   </Text>
                 </View>
               </View>
-            ) : (
-              <>
-                {/* First row: Tổng buổi + Có mặt */}
-                <View
-                  style={{
-                    flexDirection: "row",
-                    gap: statsGap,
-                    marginBottom: statsGap,
-                  }}
-                >
-                  {/* Tổng buổi */}
-                  <View
-                    style={{
-                      flex: 1,
-                      minHeight: isMobile ? 100 : 120,
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: 8,
-                      padding: isMobile ? 12 : 16,
-                      borderLeftWidth: 3,
-                      borderLeftColor: "#3FA9F5",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: isMobile ? 12 : 14,
-                        color: "#6B7280",
-                        marginBottom: isMobile ? 4 : 8,
-                        fontWeight: "500",
-                      }}
-                    >
-                      Tổng buổi
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: isMobile ? 32 : 36,
-                        fontWeight: "700",
-                        color: "#3FA9F5",
-                      }}
-                    >
-                      12
-                    </Text>
-                  </View>
-
-                  {/* Có mặt */}
-                  <View
-                    style={{
-                      flex: 1,
-                      minHeight: isMobile ? 100 : 120,
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: 8,
-                      padding: isMobile ? 12 : 16,
-                      borderLeftWidth: 3,
-                      borderLeftColor: "#10B981",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: isMobile ? 12 : 14,
-                        color: "#6B7280",
-                        marginBottom: isMobile ? 4 : 8,
-                        fontWeight: "500",
-                      }}
-                    >
-                      Có mặt
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: isMobile ? 32 : 36,
-                        fontWeight: "700",
-                        color: "#10B981",
-                      }}
-                    >
-                      10
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Second row: Đi muộn + Vắng */}
-                <View
-                  style={{
-                    flexDirection: "row",
-                    gap: statsGap,
-                  }}
-                >
-                  {/* Đi muộn */}
-                  <View
-                    style={{
-                      flex: 1,
-                      minHeight: isMobile ? 100 : 120,
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: 8,
-                      padding: isMobile ? 12 : 16,
-                      borderLeftWidth: 3,
-                      borderLeftColor: "#F59E0B",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: isMobile ? 12 : 14,
-                        color: "#6B7280",
-                        marginBottom: isMobile ? 4 : 8,
-                        fontWeight: "500",
-                      }}
-                    >
-                      Đi muộn
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: isMobile ? 32 : 36,
-                        fontWeight: "700",
-                        color: "#F59E0B",
-                      }}
-                    >
-                      2
-                    </Text>
-                  </View>
-
-                  {/* Vắng */}
-                  <View
-                    style={{
-                      flex: 1,
-                      minHeight: isMobile ? 100 : 120,
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: 8,
-                      padding: isMobile ? 12 : 16,
-                      borderLeftWidth: 3,
-                      borderLeftColor: "#EF4444",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: isMobile ? 12 : 14,
-                        color: "#6B7280",
-                        marginBottom: isMobile ? 4 : 8,
-                        fontWeight: "500",
-                      }}
-                    >
-                      Vắng
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: isMobile ? 32 : 36,
-                        fontWeight: "700",
-                        color: "#EF4444",
-                      }}
-                    >
-                      0
-                    </Text>
-                  </View>
-                </View>
-              </>
-            )}
+            </View>
           </View>
 
           {/* History Link */}
