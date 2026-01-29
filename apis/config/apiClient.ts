@@ -3,9 +3,25 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 // Base URL - có thể config từ env
-const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:8080/api' 
-  : 'https://your-production-api.com/api';
+// Sử dụng IP local của máy tính chạy backend thay vì localhost cho mobile
+// Để tìm IP: chạy lệnh 'ipconfig' (Windows) hoặc 'ifconfig' (Mac/Linux)
+const getApiBaseUrl = () => {
+  if (__DEV__) {
+    if (Platform.OS === 'web') {
+      return 'http://localhost:8080/api';
+    } else if (Platform.OS === 'android') {
+      // 10.0.2.2 là địa chỉ đặc biệt cho Android Emulator trỏ về localhost của máy host
+      // Nếu dùng thiết bị thật, thay bằng IP của máy: http://192.168.1.81:8080/api
+      return 'http://192.168.1.81:8080/api';
+    } else {
+      // iOS Simulator có thể dùng localhost
+      return 'http://localhost:8080/api';
+    }
+  }
+  return 'https://your-production-api.com/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Tạo axios instance
 const apiClient: AxiosInstance = axios.create({

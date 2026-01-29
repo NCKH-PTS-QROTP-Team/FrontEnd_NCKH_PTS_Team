@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,49 +8,49 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
-} from 'react-native';
-import { Image, useWindowDimensions } from 'react-native';
-import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { PrimaryButton } from '@/components/PrimaryButton';
-import Input from '@/components/Input';
-import Toast, { useToast } from '@/components/Toast';
-import { Colors } from '@/constants/colors';
-import { mockUsers } from '@/constants/mockData';
-import { authService } from '@/apis';
+} from "react-native";
+import { Image, useWindowDimensions } from "react-native";
+import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { PrimaryButton } from "@/components/PrimaryButton";
+import Input from "@/components/Input";
+import Toast, { useToast } from "@/components/Toast";
+import { Colors } from "@/constants/colors";
+import { mockUsers } from "@/constants/mockData";
+import { authService } from "@/apis";
 
 export default function LoginScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [usernameError, setUsernameError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  const [usernameError, setUsernameError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const { toast, showToast, hideToast } = useToast();
 
   const isTablet = width >= 768 && width < 1024;
   const isDesktop = width >= 1024;
   const containerPadding = isDesktop ? 48 : isTablet ? 32 : 20;
 
-  const logoNameImage = require('../../assets/logoname.png');
+  const logoNameImage = require("../../assets/logoname.png");
 
   const handleLogin = async () => {
-    setUsernameError('');
-    setPasswordError('');
+    setUsernameError("");
+    setPasswordError("");
 
     if (!username.trim()) {
-      setUsernameError('Vui lòng nhập tên đăng nhập');
+      setUsernameError("Vui lòng nhập tên đăng nhập");
       return;
     }
 
     if (!password.trim()) {
-      setPasswordError('Vui lòng nhập mật khẩu');
+      setPasswordError("Vui lòng nhập mật khẩu");
       return;
     }
 
     setLoading(true);
-    
+
     try {
       // Gọi API login thật
       const trimmedUsername = username.trim();
@@ -61,91 +61,94 @@ export default function LoginScreen() {
         password: trimmedPassword,
       });
 
-      console.log('Login successful, response:', loginResponse);
-      showToast('Đăng nhập thành công!', 'success');
+      console.log("Login successful, response:", loginResponse);
+      showToast("Đăng nhập thành công!", "success");
 
       // Navigate based on role after a brief delay
       setTimeout(() => {
         try {
           switch (loginResponse.role.toLowerCase()) {
-            case 'admin':
-              router.replace('/admin/dashboard' as any);
+            case "admin":
+              router.replace("/admin/dashboard" as any);
               break;
-            case 'teacher':
-              router.replace('/teacher/dashboard' as any);
+            case "teacher":
+              router.replace("/teacher/dashboard" as any);
               break;
-            case 'student':
-              router.replace('/student/home' as any);
+            case "student":
+              router.replace("/student/home" as any);
               break;
             default:
-              showToast('Vai trò không hợp lệ', 'error');
+              showToast("Vai trò không hợp lệ", "error");
           }
         } catch (error) {
-          console.error('Navigation error:', error);
+          console.error("Navigation error:", error);
         }
       }, 500);
 
       setLoading(false);
     } catch (error: any) {
-      console.error('Login error:', error);
-      
+      console.error("Login error:", error);
+
       // Fallback: Thử dùng mock data nếu API không khả dụng
       const trimmedUsername = username.trim();
       const trimmedPassword = password.trim();
-      
+
       const mockUser = mockUsers.find(
-        u => u.username.toLowerCase() === trimmedUsername.toLowerCase() && 
-             u.password === trimmedPassword && 
-             u.isActive
+        (u) =>
+          u.username.toLowerCase() === trimmedUsername.toLowerCase() &&
+          u.password === trimmedPassword &&
+          u.isActive,
       );
 
       if (mockUser && error.isNetworkError) {
-        console.log('API không khả dụng, dùng mock data');
-        showToast('Đăng nhập thành công (mock)!', 'success');
-        
+        console.log("API không khả dụng, dùng mock data");
+        showToast("Đăng nhập thành công (mock)!", "success");
+
         // Tạo mock JWT token đơn giản (chỉ để test)
         // Trong production, phải dùng API thật
-        const mockToken = btoa(JSON.stringify({
-          studentId: mockUser.studentId,
-          teacherId: mockUser.teacherId,
-          role: mockUser.role,
-          userId: mockUser.id,
-        }));
-        
+        const mockToken = btoa(
+          JSON.stringify({
+            studentId: mockUser.studentId,
+            teacherId: mockUser.teacherId,
+            role: mockUser.role,
+            userId: mockUser.id,
+          }),
+        );
+
         // Lưu mock token
         await authService.logout(); // Clear trước
-        const { setAuthToken } = await import('@/apis/config/apiClient');
+        const { setAuthToken } = await import("@/apis/config/apiClient");
         await setAuthToken(mockToken);
-        
+
         setTimeout(() => {
           switch (mockUser.role) {
-            case 'admin':
-              router.replace('/admin/dashboard' as any);
+            case "admin":
+              router.replace("/admin/dashboard" as any);
               break;
-            case 'teacher':
-              router.replace('/teacher/dashboard' as any);
+            case "teacher":
+              router.replace("/teacher/dashboard" as any);
               break;
-            case 'student':
-              router.replace('/student/home' as any);
+            case "student":
+              router.replace("/student/home" as any);
               break;
           }
         }, 500);
       } else {
         showToast(
-          error.message || 'Tài khoản hoặc mật khẩu không đúng',
-          'error'
+          error.message || "Tài khoản hoặc mật khẩu không đúng",
+          "error",
         );
-        setPasswordError('Tài khoản hoặc mật khẩu không đúng');
+        setPasswordError("Tài khoản hoặc mật khẩu không đúng");
       }
-      
+
       setLoading(false);
     }
   };
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1, backgroundColor: '#f5f7fb' }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1, backgroundColor: "#f5f7fb" }}
     >
       <StatusBar style="dark" />
       <ScrollView
@@ -159,19 +162,19 @@ export default function LoginScreen() {
         <View
           style={{
             flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <View
             style={{
-              width: '100%',
+              width: "100%",
               maxWidth: 440,
               backgroundColor: Colors.white,
               borderRadius: 12,
               paddingHorizontal: isDesktop ? 28 : 24,
               paddingVertical: isDesktop ? 30 : 26,
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.08,
               shadowRadius: 10,
@@ -181,18 +184,18 @@ export default function LoginScreen() {
             }}
           >
             {/* Logo & title */}
-            <View style={{ alignItems: 'center', marginBottom: 20 }}>
+            <View style={{ alignItems: "center", marginBottom: 20 }}>
               <Image
                 source={logoNameImage}
-                style={{ height: 42, resizeMode: 'contain', marginBottom: 10 }}
+                style={{ height: 42, resizeMode: "contain", marginBottom: 10 }}
               />
               <Text
                 style={{
                   fontSize: 16,
-                  fontWeight: '700',
+                  fontWeight: "700",
                   color: Colors.textHeading,
                   letterSpacing: 0.5,
-                  textTransform: 'uppercase',
+                  textTransform: "uppercase",
                 }}
               >
                 Đăng nhập hệ thống
@@ -204,11 +207,13 @@ export default function LoginScreen() {
               value={username}
               onChangeText={(text) => {
                 setUsername(text);
-                setUsernameError('');
+                setUsernameError("");
               }}
               placeholder="admin, GV001, SV001"
               error={usernameError || undefined}
-              success={username.trim().length > 0 && !usernameError ? true : undefined}
+              success={
+                username.trim().length > 0 && !usernameError ? true : undefined
+              }
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="next"
@@ -219,11 +224,13 @@ export default function LoginScreen() {
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
-                setPasswordError('');
+                setPasswordError("");
               }}
               placeholder="Nhập mật khẩu"
               error={passwordError || undefined}
-              success={password.trim().length > 0 && !passwordError ? true : undefined}
+              success={
+                password.trim().length > 0 && !passwordError ? true : undefined
+              }
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
@@ -243,7 +250,7 @@ export default function LoginScreen() {
                 style={{
                   fontSize: 13,
                   color: Colors.textSecondary,
-                  textAlign: 'center',
+                  textAlign: "center",
                   marginBottom: 8,
                 }}
               >
@@ -258,14 +265,37 @@ export default function LoginScreen() {
                   borderColor: Colors.border,
                 }}
               >
-                <Text style={{ fontSize: 13, color: Colors.textSecondary, lineHeight: 20, marginBottom: 4 }}>
-                  <Text style={{ fontWeight: '600' }}>Admin:</Text> admin / admin123
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: Colors.textSecondary,
+                    lineHeight: 20,
+                    marginBottom: 4,
+                  }}
+                >
+                  <Text style={{ fontWeight: "600" }}>Admin:</Text> admin /
+                  admin123
                 </Text>
-                <Text style={{ fontSize: 13, color: Colors.textSecondary, lineHeight: 20, marginBottom: 4 }}>
-                  <Text style={{ fontWeight: '600' }}>Giảng viên:</Text> GV001 / teacher123
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: Colors.textSecondary,
+                    lineHeight: 20,
+                    marginBottom: 4,
+                  }}
+                >
+                  <Text style={{ fontWeight: "600" }}>Giảng viên:</Text> GV001 /
+                  teacher123
                 </Text>
-                <Text style={{ fontSize: 13, color: Colors.textSecondary, lineHeight: 20 }}>
-                  <Text style={{ fontWeight: '600' }}>Sinh viên:</Text> SV001 / student123
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: Colors.textSecondary,
+                    lineHeight: 20,
+                  }}
+                >
+                  <Text style={{ fontWeight: "600" }}>Sinh viên:</Text> SV001 /
+                  student123
                 </Text>
               </View>
             </View>
