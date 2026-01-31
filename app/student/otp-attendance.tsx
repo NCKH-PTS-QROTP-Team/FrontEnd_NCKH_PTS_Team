@@ -7,26 +7,132 @@ import {
   TouchableOpacity,
   Platform,
   useWindowDimensions,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { Colors } from "@/constants/colors";
+import { otpService, attendanceService, faceService } from "@/apis";
+import { getStudentIdFromToken } from "@/apis/utils/jwt";
+import { AttendanceMethod } from "@/apis/types/attendance.types";
+import Toast, { useToast } from "@/components/Toast";
+import { CameraView, useCameraPermissions } from "expo-camera";
+
+interface SessionInfo {
+  id: string;
+  classId: string;
+  classCode: string;
+  className: string;
+  subjectId: string;
+  subjectName: string;
+}
 
 export default function OTPAttendanceScreen() {
   const router = useRouter();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-const [loading, setLoading] = useState(false);
-  const [countdown, setCountdown] = useState(300); // 5 minutes
+  const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(300);
+  const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [capturingFace, setCapturingFace] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const cameraRef = useRef<CameraView>(null);
+  const [permission, requestPermission] = useCameraPermissions();
+  const { toast, showToast, hideToast } = useToast();
 
+  // Load active session on mount
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
+    loadActiveSession();
   }, []);
+
+  // Countdown timer
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [countdown]);
+
+  // Refresh OTP info periodically
+  useEffect(() => {
+    if (currentSessionId) {
+      const interval = setInterval(() => {
+        refreshOTPInfo();
+      }, 5000); // Refresh every 5 seconds
+      return () => clearInterval(interval);
+    }
+  }, [currentSessionId]);
+
+  const loadActiveSession = async () => {
+    try {
+      const studentId = await getStudentIdFromToken();
+      if (!studentId) {
+        showToast("Không tìm thấy thông tin sinh viên", "error");
+        return;
+      }
+
+      // Lấy active sessions
+      const sessions = await attendanceService.getSessions({
+        status: "ACTIVE",
+      });
+
+      // Tìm session OTP active
+      const otpSession = sessions.find(
+        (s) => s.method === AttendanceMethod.OTP && s.status === "ACTIVE"
+      );
+
+      if (!otpSession) {
+        showToast("Không có phiên điểm danh OTP nào đang hoạt động", "error");
+        return;
+      }
+
+      setSessionInfo({
+        id: otpSession.id,
+        classId: otpSession.classId,
+        classCode: otpSession.classCode || "",
+        className: otpSession.className || "",
+        subjectId: otpSession.subjectId,
+        subjectName: otpSession.subjectName || "",
+      });
+      setCurrentSessionId(otpSession.id);
+
+      // Load OTP info
+      await refreshOTPInfo();
+    } catch (error: any) {
+      console.error("Error loading active session:", error);
+      showToast(
+        error.message || "Không thể tải thông tin phiên điểm danh",
+        "error"
+      );
+    }
+  };
+
+  const refreshOTPInfo = async () => {
+    if (!currentSessionId) return;
+
+    try {
+      const otpInfo = await otpService.getInfo(currentSessionId);
+      if (otpInfo && otpInfo.remainingSeconds !== undefined) {
+        setCountdown(otpInfo.remainingSeconds);
+      } else {
+        setCountdown(0);
+      }
+    } catch (error) {
+      // OTP expired or not found
+      setCountdown(0);
+    }
+  };
 
   const handleChange = (text: string, index: number) => {
     const newOtp = [...otp];
@@ -39,21 +145,113 @@ const [loading, setLoading] = useState(false);
   };
 
   const handleKeyPress = (e: any, index: number) => {
-if (e.nativeEvent.key === "Backspace" && !otp[index] && index > 0) {
-inputRefs.current[index - 1]?.focus();
+    if (e.nativeEvent.key === "Backspace" && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
     }
   };
 
-  const handleSubmit = () => {
-const otpCode = otp.join("");
-if (otpCode.length !== 6) return;
+  const handleSubmit = async () => {
+    const otpCode = otp.join("");
+    if (otpCode.length !== 6) return;
+
+    if (!currentSessionId) {
+      showToast("Không tìm thấy phiên điểm danh", "error");
+      return;
+    }
+
+    // Hiển thị camera để capture face
+    if (!permission?.granted) {
+      const result = await requestPermission();
+      if (!result.granted) {
+        showToast("Cần quyền truy cập camera để điểm danh", "error");
+        return;
+      }
+    }
+
+    setShowCamera(true);
+  };
+
+  const handleCaptureFace = async () => {
+    if (!cameraRef.current) {
+      showToast("Camera chưa sẵn sàng", "error");
+      return;
+    }
+
+    setCapturingFace(true);
+    try {
+      // Capture photo từ camera
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!photo.base64) {
+        showToast("Không thể capture ảnh", "error");
+        setCapturingFace(false);
+        return;
+      }
+
+      // Extract face encoding
+      const encodingResult = await faceService.extractEncodingFromCamera(
+        photo.base64
+      );
+
+      if (!encodingResult.faceEncoding || encodingResult.faceEncoding.length === 0) {
+        showToast("Không phát hiện khuôn mặt. Vui lòng thử lại.", "error");
+        setCapturingFace(false);
+        return;
+      }
+
+      // Submit attendance với face encoding
+      await submitAttendance(encodingResult.faceEncoding);
+    } catch (error: any) {
+      console.error("Error capturing face:", error);
+      showToast(
+        error.message || "Không thể xử lý ảnh. Vui lòng thử lại.",
+        "error"
+      );
+    } finally {
+      setCapturingFace(false);
+      setShowCamera(false);
+    }
+  };
+
+  const submitAttendance = async (faceEncoding: number[]) => {
+    const otpCode = otp.join("");
+    if (!currentSessionId) return;
 
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const studentId = await getStudentIdFromToken();
+      if (!studentId) {
+        showToast("Không tìm thấy thông tin sinh viên", "error");
+        setLoading(false);
+        return;
+      }
+
+      // Tạo attendance record với face encoding
+      const record = await attendanceService.createRecord({
+        sessionId: currentSessionId,
+        studentId: studentId,
+        method: AttendanceMethod.OTP,
+        otpCode: otpCode,
+        faceEncoding: faceEncoding,
+      });
+
+      showToast("Điểm danh thành công!", "success");
+      
+      setTimeout(() => {
+        router.back();
+      }, 1500);
+    } catch (error: any) {
+      console.error("Error submitting attendance:", error);
+      showToast(
+        error.message || "Điểm danh thất bại. Vui lòng thử lại.",
+        "error"
+      );
+    } finally {
       setLoading(false);
-alert("Điểm danh thành công!");
-router.back();
-    }, 1000);
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -169,10 +367,12 @@ Hết thời gian điểm danh
                   marginBottom: 4,
                 }}
               >
-                Lập trình cơ bản
+                {sessionInfo?.subjectName || "Chưa có phiên điểm danh"}
               </Text>
               <Text style={{ fontSize: 14, lineHeight: 20, color: "#4B5563" }}>
-CS101 • Phòng A102
+                {sessionInfo
+                  ? `${sessionInfo.classCode} • ${sessionInfo.className}`
+                  : "Vui lòng đợi giảng viên tạo phiên điểm danh"}
               </Text>
             </View>
 
@@ -233,8 +433,13 @@ style={[
               title={isExpired ? "Hết thời gian" : "Xác nhận"}
               onPress={handleSubmit}
               loading={loading}
-disabled={otp.join("").length !== 6 || isExpired}
-/>
+              disabled={
+                otp.join("").length !== 6 ||
+                isExpired ||
+                !currentSessionId ||
+                !sessionInfo
+              }
+            />
           </View>
 
           {/* Help Text */}
@@ -265,8 +470,107 @@ disabled={otp.join("").length !== 6 || isExpired}
           </View>
         </View>
       </ScrollView>
-</SafeAreaView>
-);
+      
+      {/* Camera Modal for Face Capture */}
+      {showCamera && permission?.granted && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "#000",
+            zIndex: 1000,
+          }}
+        >
+          <CameraView
+            ref={cameraRef}
+            style={{ flex: 1 }}
+            facing="front"
+          >
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: "transparent",
+                justifyContent: "flex-end",
+                padding: 24,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: "rgba(0,0,0,0.5)",
+                  borderRadius: 16,
+                  padding: 24,
+                  marginBottom: 24,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#FFF",
+                    fontSize: 16,
+                    fontWeight: "600",
+                    marginBottom: 8,
+                    textAlign: "center",
+                  }}
+                >
+                  Xác thực khuôn mặt
+                </Text>
+                <Text
+                  style={{
+                    color: "#FFF",
+                    fontSize: 14,
+                    textAlign: "center",
+                    marginBottom: 20,
+                  }}
+                >
+                  Đặt khuôn mặt vào khung và nhấn chụp
+                </Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: 12,
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <TouchableOpacity
+                      onPress={() => setShowCamera(false)}
+                      style={{
+                        backgroundColor: "#6B7280",
+                        paddingVertical: 14,
+                        paddingHorizontal: 24,
+                        borderRadius: 12,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text style={{ color: "#FFF", fontWeight: "600" }}>
+                        Hủy
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <PrimaryButton
+                      title={capturingFace ? "Đang xử lý..." : "Chụp"}
+                      onPress={handleCaptureFace}
+                      loading={capturingFace}
+                    />
+                  </View>
+                </View>
+              </View>
+            </View>
+          </CameraView>
+        </View>
+      )}
+
+      {/* Toast Notification */}
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+      />
+    </SafeAreaView>
+  );
 }
 
 // Updated: 2026-01-02 13:16:08

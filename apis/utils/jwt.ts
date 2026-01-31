@@ -112,3 +112,21 @@ export async function getRoleFromToken(): Promise<string | null> {
   }
 }
 
+/**
+ * Lấy teacherId từ JWT token hiện tại
+ */
+export async function getTeacherIdFromToken(): Promise<string | null> {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      return null;
+    }
+
+    const decoded = decodeJWT(token);
+    return decoded?.teacherId || null;
+  } catch (error) {
+    console.error('Error getting teacherId from token:', error);
+    return null;
+  }
+}
+

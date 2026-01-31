@@ -5,15 +5,35 @@ import {
   ScrollView,
   useWindowDimensions,
   Platform,
+  Alert,
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { PrimaryButton } from "@/components/PrimaryButton";
+import { otpService, attendanceService } from "@/apis";
+import { getTeacherIdFromToken } from "@/apis/utils/jwt";
+import { AttendanceMethod } from "@/apis/types/attendance.types";
+import Toast, { useToast } from "@/components/Toast";
+
+interface SessionInfo {
+  id: string;
+  classId: string;
+  classCode: string;
+  className: string;
+  subjectId: string;
+  subjectName: string;
+}
 
 export default function GenerateOTPScreen() {
   const [otp, setOtp] = useState("");
   const [countdown, setCountdown] = useState(300);
   const [isActive, setIsActive] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const { toast, showToast, hideToast } = useToast();
+  
   const isWeb = Platform.OS === "web";
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
@@ -23,23 +43,135 @@ export default function GenerateOTPScreen() {
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 32 : isTablet ? 24 : 16;
 
+  // Load active session on mount
+  useEffect(() => {
+    loadActiveSession();
+  }, []);
+
+  // Countdown timer
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isActive && countdown > 0) {
       timer = setInterval(() => {
-        setCountdown((prev) => prev - 1);
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            setIsActive(false);
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
-    } else if (countdown === 0) {
-      setIsActive(false);
     }
     return () => clearInterval(timer);
   }, [isActive, countdown]);
 
-  const generateOTP = () => {
-    const newOTP = Math.floor(100000 + Math.random() * 900000).toString();
-    setOtp(newOTP);
-    setCountdown(300);
-    setIsActive(true);
+  // Refresh OTP info periodically
+  useEffect(() => {
+    if (currentSessionId && isActive) {
+      const interval = setInterval(() => {
+        refreshOTPInfo();
+      }, 5000); // Refresh every 5 seconds
+      return () => clearInterval(interval);
+    }
+  }, [currentSessionId, isActive]);
+
+  const loadActiveSession = async () => {
+    try {
+      const teacherId = await getTeacherIdFromToken();
+      if (!teacherId) {
+        showToast("Không tìm thấy thông tin giảng viên", "error");
+        return;
+      }
+
+      // Lấy active sessions của teacher
+      const sessions = await attendanceService.getSessions({
+        status: "ACTIVE",
+      });
+      
+      // Tìm session OTP của teacher
+      const otpSession = sessions.find(
+        (s) => s.method === AttendanceMethod.OTP && s.status === "ACTIVE"
+      );
+
+      if (otpSession) {
+        setSessionInfo({
+          id: otpSession.id,
+          classId: otpSession.classId,
+          classCode: otpSession.classCode || "",
+          className: otpSession.className || "",
+          subjectId: otpSession.subjectId,
+          subjectName: otpSession.subjectName || "",
+        });
+        setCurrentSessionId(otpSession.id);
+        
+        // Load current OTP if exists
+        try {
+          const otpResponse = await otpService.getCurrent(otpSession.id);
+          if (otpResponse) {
+            setOtp(otpResponse.code);
+            setCountdown(otpResponse.remainingSeconds || 300);
+            setIsActive(true);
+          }
+        } catch (error) {
+          // No OTP yet
+        }
+      }
+    } catch (error: any) {
+      console.error("Error loading active session:", error);
+      // Không hiển thị error nếu chưa có session
+    }
+  };
+
+  const refreshOTPInfo = async () => {
+    if (!currentSessionId) return;
+    
+    try {
+      const otpResponse = await otpService.getCurrent(currentSessionId);
+      if (otpResponse && otpResponse.remainingSeconds !== undefined) {
+        setCountdown(otpResponse.remainingSeconds);
+        if (otpResponse.remainingSeconds <= 0) {
+          setIsActive(false);
+        }
+      }
+    } catch (error) {
+      // OTP expired or not found
+      setIsActive(false);
+    }
+  };
+
+  const generateOTP = async () => {
+    if (!currentSessionId) {
+      showToast("Vui lòng tạo phiên điểm danh trước", "error");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const teacherId = await getTeacherIdFromToken();
+      if (!teacherId) {
+        showToast("Không tìm thấy thông tin giảng viên", "error");
+        setLoading(false);
+        return;
+      }
+
+      const otpResponse = await otpService.generate({
+        sessionId: currentSessionId,
+        teacherId: teacherId,
+      });
+
+      setOtp(otpResponse.code);
+      setCountdown(otpResponse.remainingSeconds || 300);
+      setIsActive(true);
+      showToast("Tạo mã OTP thành công!", "success");
+    } catch (error: any) {
+      console.error("Error generating OTP:", error);
+      showToast(
+        error.message || "Không thể tạo mã OTP. Vui lòng thử lại.",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -113,7 +245,7 @@ export default function GenerateOTPScreen() {
                     marginBottom: 16,
                   }}
                 >
-                  Lập trình cơ bản
+                  {sessionInfo?.subjectName || "Chưa chọn lớp"}
                 </Text>
                 <View style={{ gap: 8 }}>
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -127,7 +259,7 @@ export default function GenerateOTPScreen() {
                       }}
                     />
                     <Text style={{ fontSize: 14, color: "#4B5563" }}>
-                      CS101
+                      {sessionInfo?.classCode || "N/A"}
                     </Text>
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -141,23 +273,23 @@ export default function GenerateOTPScreen() {
                       }}
                     />
                     <Text style={{ fontSize: 14, color: "#4B5563" }}>
-                      Phòng A102
+                      {sessionInfo?.className || "N/A"}
                     </Text>
                   </View>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  {!sessionInfo && (
                     <View
                       style={{
-                        width: 4,
-                        height: 4,
-                        borderRadius: 2,
-                        backgroundColor: "#3FA9F5",
-                        marginRight: 8,
+                        backgroundColor: "#FEF3C7",
+                        borderRadius: 8,
+                        padding: 12,
+                        marginTop: 12,
                       }}
-                    />
-                    <Text style={{ fontSize: 14, color: "#4B5563" }}>
-                      08:00 - 10:00
-                    </Text>
-                  </View>
+                    >
+                      <Text style={{ fontSize: 13, color: "#92400E" }}>
+                        Vui lòng tạo phiên điểm danh OTP từ danh sách lớp
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 {/* Instructions moved here for desktop */}
@@ -342,6 +474,8 @@ export default function GenerateOTPScreen() {
             <PrimaryButton
               title={isActive ? "Tạo mã mới" : "Tạo mã OTP"}
               onPress={generateOTP}
+              loading={loading}
+              disabled={!currentSessionId}
             />
           </View>
 
@@ -373,6 +507,14 @@ export default function GenerateOTPScreen() {
           )}
         </View>
       </ScrollView>
+      
+      {/* Toast Notification */}
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+      />
     </SafeAreaView>
   );
 }
