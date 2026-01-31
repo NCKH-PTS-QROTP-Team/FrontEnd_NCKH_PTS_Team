@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 
 interface WeeklyCalendarProps {
   selectedDate?: Date;
@@ -34,9 +34,9 @@ export default function WeeklyCalendar({
         activeOpacity={0.7}
         onPress={() => onDateSelect?.(date)}
         style={{
-          width: 52,
+          flex: 1,
           paddingVertical: 12,
-          paddingHorizontal: 8,
+          paddingHorizontal: 4,
           borderRadius: 12,
           backgroundColor: isSelected ? "#3FA9F5" : "#F9FAFB",
           alignItems: "center",
@@ -93,13 +93,14 @@ export default function WeeklyCalendar({
         elevation: 3,
       }}
     >
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 8 }}
+      <View
+        style={{
+          flexDirection: "row",
+          gap: 8,
+        }}
       >
         {weekDays}
-      </ScrollView>
+      </View>
     </View>
   );
 }

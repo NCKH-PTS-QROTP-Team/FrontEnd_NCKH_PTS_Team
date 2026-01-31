@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,19 +10,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { mockSchedules } from "@/constants/mockData";
 import { Colors } from "@/constants/colors";
+import WeeklyCalendar from "@/components/WeeklyCalendar";
+
 export default function ScheduleScreen() {
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
 
-const contentMaxWidth = isDesktop ? 800 : "100%";
-const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+  const contentMaxWidth = isDesktop ? 800 : "100%";
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const cardPadding = isDesktop ? 24 : 16;
 
-  // Get current date
-  const today = new Date();
-const weekdays = [
+  // Get selected date info
+  const weekdays = [
     "Chủ nhật",
     "Thứ Hai",
     "Thứ Ba",
@@ -31,11 +33,16 @@ const weekdays = [
     "Thứ Sáu",
     "Thứ Bảy",
   ];
-  const dayName = weekdays[today.getDay()];
-  const dateStr = `${dayName}, ${String(today.getDate()).padStart(
+  const dayName = weekdays[selectedDate.getDay()];
+  const dateStr = `${dayName}, ${String(selectedDate.getDate()).padStart(
     2,
-    "0"
-  )}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
+    "0",
+  )}/${String(selectedDate.getMonth() + 1).padStart(2, "0")}/${selectedDate.getFullYear()}`;
+
+  // Filter schedules by selected date (for now, show all - you can add date filtering logic)
+  const filteredSchedules = mockSchedules;
+  const today = new Date();
+  const isToday = selectedDate.toDateString() === today.toDateString();
 
   return (
     <SafeAreaView
@@ -48,18 +55,26 @@ const weekdays = [
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal,
-paddingVertical: isDesktop ? 24 : 20,
+          paddingVertical: isDesktop ? 24 : 20,
           paddingBottom: isDesktop ? 32 : 24,
         }}
         showsVerticalScrollIndicator={false}
       >
-<View
+        <View
           style={{
             maxWidth: contentMaxWidth,
             width: "100%",
             alignSelf: "center",
           }}
         >
+          {/* Weekly Calendar */}
+          <View style={{ marginBottom: isDesktop ? 24 : 20 }}>
+            <WeeklyCalendar
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+            />
+          </View>
+
           {/* Date Header */}
           <View
             style={{
@@ -84,7 +99,7 @@ paddingVertical: isDesktop ? 24 : 20,
                 marginBottom: 4,
               }}
             >
-              Hôm nay
+              {isToday ? "Hôm nay" : "Ngày đã chọn"}
             </Text>
             <Text
               style={{
@@ -94,12 +109,12 @@ paddingVertical: isDesktop ? 24 : 20,
                 color: Colors.textHeading,
               }}
             >
-{dateStr}
+              {dateStr}
             </Text>
           </View>
 
           {/* Schedule List */}
-<Text
+          <Text
             style={{
               fontSize: isMobile ? 16 : 18,
               lineHeight: isMobile ? 24 : 28,
@@ -112,7 +127,7 @@ paddingVertical: isDesktop ? 24 : 20,
           </Text>
 
           <View>
-            {mockSchedules.length === 0 ? (
+            {filteredSchedules.length === 0 ? (
               <View
                 style={{
                   backgroundColor: Colors.white,
@@ -144,11 +159,11 @@ paddingVertical: isDesktop ? 24 : 20,
                     color: Colors.textSecondary,
                   }}
                 >
-Hôm nay bạn không có buổi học nào
+                  Không có lịch học {isToday ? "hôm nay" : "ngày này"}
                 </Text>
               </View>
             ) : (
-              mockSchedules.map((schedule, index) => (
+              filteredSchedules.map((schedule, index) => (
                 <TouchableOpacity
                   key={schedule.id}
                   activeOpacity={0.95}
@@ -156,8 +171,8 @@ Hôm nay bạn không có buổi học nào
                     backgroundColor: Colors.white,
                     borderRadius: 12,
                     padding: cardPadding,
-marginBottom:
-                      index < mockSchedules.length - 1
+                    marginBottom:
+                      index < filteredSchedules.length - 1
                         ? isDesktop
                           ? 12
                           : 10
@@ -165,14 +180,14 @@ marginBottom:
                     borderWidth: 1,
                     borderColor: Colors.border,
                     shadowColor: "#000",
-shadowOffset: { width: 0, height: 2 },
+                    shadowOffset: { width: 0, height: 2 },
                     shadowOpacity: 0.05,
                     shadowRadius: 8,
                     elevation: 2,
                   }}
                 >
                   {/* Course Name */}
-<Text
+                  <Text
                     style={{
                       fontSize: isMobile ? 16 : 18,
                       lineHeight: isMobile ? 24 : 28,
@@ -181,11 +196,11 @@ shadowOffset: { width: 0, height: 2 },
                       marginBottom: isMobile ? 6 : 8,
                     }}
                   >
-{schedule.courseName}
+                    {schedule.courseName}
                   </Text>
 
                   {/* Teacher */}
-<Text
+                  <Text
                     style={{
                       fontSize: isMobile ? 13 : 14,
                       lineHeight: isMobile ? 20 : 21,
@@ -193,11 +208,11 @@ shadowOffset: { width: 0, height: 2 },
                       marginBottom: isMobile ? 10 : 12,
                     }}
                   >
-{schedule.teacher}
+                    {schedule.teacher}
                   </Text>
 
                   {/* Time & Room */}
-<View
+                  <View
                     style={{ flexDirection: "row", alignItems: "flex-start" }}
                   >
                     {/* Blue vertical line */}
@@ -230,7 +245,7 @@ shadowOffset: { width: 0, height: 2 },
                           color: Colors.textSecondary,
                         }}
                       >
-Phòng: {schedule.room}
+                        Phòng: {schedule.room}
                       </Text>
                     </View>
                   </View>
@@ -240,6 +255,6 @@ Phòng: {schedule.room}
           </View>
         </View>
       </ScrollView>
-</SafeAreaView>
-);
+    </SafeAreaView>
+  );
 }
