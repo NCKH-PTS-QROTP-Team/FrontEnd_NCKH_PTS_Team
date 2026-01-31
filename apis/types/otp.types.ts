@@ -15,6 +15,7 @@ export interface OTPResponse {
   code: string;
   expiresAt: string;
   createdAt: string;
+  remainingSeconds?: number; // Thời gian còn lại (seconds)
 }
 
 /**
