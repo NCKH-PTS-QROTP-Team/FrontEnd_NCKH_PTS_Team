@@ -6,7 +6,17 @@ import { Platform } from 'react-native';
 // Sử dụng IP local của máy tính chạy backend thay vì localhost cho mobile
 // Để tìm IP: chạy lệnh 'ipconfig' (Windows) hoặc 'ifconfig' (Mac/Linux)
 const getApiBaseUrl = () => {
-  if (__DEV__) {
+  // Ưu tiên: Environment variable (cho production hoặc custom config)
+  if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+  
+  // Development mode hoặc khi serve từ dist folder
+  if (__DEV__ || (typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || 
+       window.location.hostname === '127.0.0.1' ||
+       window.location.hostname.startsWith('192.168.') ||
+       window.location.hostname.startsWith('10.')))) {
     if (Platform.OS === 'web') {
       return 'http://localhost:8080/api';
     } else if (Platform.OS === 'android') {
@@ -18,10 +28,30 @@ const getApiBaseUrl = () => {
       return 'http://localhost:8080/api';
     }
   }
+  
+  // Production fallback - CHỈ dùng khi thực sự deploy production
+  // Nếu chạy local nhưng build production, vẫn dùng localhost
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // Nếu đang chạy local (localhost, 127.0.0.1, local IP), dùng localhost
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || 
+        hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
+      return 'http://localhost:8080/api';
+    }
+  }
+  
+  // Production URL - CHỈ dùng khi thực sự deploy lên production domain
   return 'https://your-production-api.com/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
+
+// Debug: Log API URL để kiểm tra
+if (typeof window !== 'undefined') {
+  console.log('🌐 API Base URL:', API_BASE_URL);
+  console.log('🌐 Current hostname:', window.location.hostname);
+  console.log('🌐 __DEV__:', __DEV__);
+}
 
 // Tạo axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -32,8 +62,9 @@ const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// Token storage key
+// Storage keys
 const TOKEN_KEY = 'auth_token';
+const CURRENT_USER_KEY = 'current_user';
 
 /**
  * Lưu token vào secure storage
@@ -79,6 +110,50 @@ export const getAuthToken = async (): Promise<string | null> => {
  */
 export const removeAuthToken = async (): Promise<void> => {
   await setAuthToken(null);
+  await setCurrentUserProfile(null);
+};
+
+/**
+ * Lưu thông tin user hiện tại (để header web/mobile dùng chung)
+ */
+export const setCurrentUserProfile = async (user: any | null): Promise<void> => {
+  try {
+    if (user) {
+      const json = JSON.stringify(user);
+      if (Platform.OS === 'web') {
+        localStorage.setItem(CURRENT_USER_KEY, json);
+      } else {
+        await SecureStore.setItemAsync(CURRENT_USER_KEY, json);
+      }
+    } else {
+      if (Platform.OS === 'web') {
+        localStorage.removeItem(CURRENT_USER_KEY);
+      } else {
+        await SecureStore.deleteItemAsync(CURRENT_USER_KEY);
+      }
+    }
+  } catch (error) {
+    console.error('Error saving current user profile:', error);
+  }
+};
+
+/**
+ * Đọc thông tin user hiện tại
+ */
+export const getCurrentUserProfile = async (): Promise<any | null> => {
+  try {
+    let json: string | null;
+    if (Platform.OS === 'web') {
+      json = localStorage.getItem(CURRENT_USER_KEY);
+    } else {
+      json = await SecureStore.getItemAsync(CURRENT_USER_KEY);
+    }
+    if (!json) return null;
+    return JSON.parse(json);
+  } catch (error) {
+    console.error('Error getting current user profile:', error);
+    return null;
+  }
 };
 
 // Request interceptor - Thêm token vào header

@@ -11,9 +11,30 @@ class SocketClient {
 
   constructor() {
     // Base URL cho socket - Socket.IO chạy trên port 9092 (configurable trong backend)
-    this.baseURL = __DEV__
-      ? 'http://localhost:9092' // Socket port riêng để tránh conflict
-      : 'https://your-production-api.com';
+    // Ưu tiên: Environment variable
+    if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_SOCKET_URL) {
+      this.baseURL = process.env.EXPO_PUBLIC_SOCKET_URL;
+    } else if (__DEV__ || (typeof window !== 'undefined' && 
+        (window.location.hostname === 'localhost' || 
+         window.location.hostname === '127.0.0.1' ||
+         window.location.hostname.startsWith('192.168.') ||
+         window.location.hostname.startsWith('10.')))) {
+      // Development hoặc local serve
+      this.baseURL = 'http://localhost:9092'; // Socket port riêng để tránh conflict
+    } else if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      // Nếu đang chạy local, dùng localhost
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || 
+          hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
+        this.baseURL = 'http://localhost:9092';
+      } else {
+        // Production
+        this.baseURL = 'https://your-production-api.com';
+      }
+    } else {
+      // Fallback
+      this.baseURL = __DEV__ ? 'http://localhost:9092' : 'https://your-production-api.com';
+    }
   }
 
   /**

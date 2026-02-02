@@ -7,21 +7,125 @@ import {
   Platform,
   useWindowDimensions,
   ImageBackground,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { mockSchedules } from "@/constants/mockData";
+import { BookIcon, SchoolIcon } from "@/components/Icons";
 import WeeklySchedule from "@/components/WeeklySchedule";
+import { scheduleService, attendanceService } from "@/apis";
+import { getStudentIdFromToken } from "@/apis/utils/jwt";
+import Toast, { useToast } from "@/components/Toast";
+import type { Schedule } from "@/apis/services/schedule.service";
+
+interface TodaySchedule {
+  id: string;
+  subjectName: string;
+  teacherName: string;
+  time: string;
+  room: string;
+  status: string;
+}
 
 export default function StudentHomeScreen() {
   const router = useRouter();
   const { width: windowWidth } = useWindowDimensions();
-  const todaySchedules = mockSchedules.filter((s) => s.status !== "completed");
   const isWeb = Platform.OS === "web";
+  const { showToast } = useToast();
 
-  // State cho carousel lịch học
+  // State
+  const [loading, setLoading] = useState(true);
+  const [todaySchedules, setTodaySchedules] = useState<TodaySchedule[]>([]);
+  const [attendanceStats, setAttendanceStats] = useState({
+    totalSessions: 0,
+    present: 0,
+    absent: 0,
+    attendanceRate: 0,
+  });
   const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0);
+
+  // Load data từ backend
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      console.log("🔄 Loading dashboard data...");
+      
+      const studentId = await getStudentIdFromToken();
+      console.log("📝 StudentId:", studentId);
+      
+      // Load schedules (không cần studentId)
+      let allSchedules: Schedule[] = [];
+      try {
+        console.log("📅 Loading schedules...");
+        allSchedules = await scheduleService.getSchedules();
+        console.log("✅ Loaded schedules:", allSchedules.length);
+      } catch (error: any) {
+        console.error("❌ Error loading schedules:", error);
+        showToast("Không thể tải lịch học", "error");
+      }
+
+      // Load attendance records (cần studentId)
+      let allRecords: any[] = [];
+      if (studentId) {
+        try {
+          console.log("📊 Loading attendance records for student:", studentId);
+          allRecords = await attendanceService.getRecords({ studentId });
+          console.log("✅ Loaded records:", allRecords.length);
+        } catch (error: any) {
+          console.error("❌ Error loading records:", error);
+          // Không hiển thị toast vì có thể không có records
+        }
+      } else {
+        console.warn("⚠️ No studentId, skipping attendance records");
+      }
+
+      // Filter schedules cho hôm nay
+      const today = new Date();
+      const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay(); // Convert Sunday (0) to 7
+      console.log("📆 Today is day:", dayOfWeek);
+      
+      const todayScheds = allSchedules
+        .filter((s: Schedule) => s.dayOfWeek === dayOfWeek)
+        .map((s: Schedule) => ({
+          id: s.id,
+          courseName: s.subjectName, // Map subjectName to courseName for UI
+          subjectName: s.subjectName,
+          teacher: s.teacherName, // Map teacherName to teacher for UI
+          teacherName: s.teacherName,
+          time: `${s.startTime} - ${s.endTime}`,
+          room: s.room,
+          status: "upcoming",
+        }));
+
+      console.log("📚 Today schedules:", todayScheds.length);
+      setTodaySchedules(todayScheds);
+
+      // Tính attendance stats
+      const totalSessions = allRecords.length;
+      const present = allRecords.filter((r: any) => r.status === "PRESENT").length;
+      const absent = totalSessions - present;
+      const attendanceRate = totalSessions > 0 ? Math.round((present / totalSessions) * 100) : 0;
+
+      console.log("📈 Stats:", { totalSessions, present, absent, attendanceRate });
+      setAttendanceStats({
+        totalSessions,
+        present,
+        absent,
+        attendanceRate,
+      });
+    } catch (error: any) {
+      console.error("❌ Error loading dashboard:", error);
+      showToast("Không thể tải dữ liệu: " + (error.message || "Lỗi không xác định"), "error");
+    } finally {
+      setLoading(false);
+      console.log("✅ Dashboard loading complete");
+    }
+  };
 
   // Auto-rotate lịch học mỗi 3 giây
   useEffect(() => {
@@ -35,6 +139,8 @@ export default function StudentHomeScreen() {
 
     return () => clearInterval(interval);
   }, [todaySchedules.length]);
+
+  // Không hiển thị full-screen loading, chỉ hiển thị indicator nhỏ trong content
 
   // Responsive breakpoints - Dynamic based on window size
   const isDesktop = windowWidth >= 1024;
@@ -65,6 +171,191 @@ export default function StudentHomeScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Banner - Full width with padding */}
+        <View
+          style={{
+            width: "100%",
+            paddingHorizontal: padding,
+            marginBottom: isMobile ? 20 : 32,
+            alignSelf: "stretch",
+          }}
+        >
+          <View
+            style={{
+              maxWidth: contentMaxWidth,
+              width: "100%",
+              alignSelf: "center",
+              flexShrink: 0,
+            }}
+          >
+            {/* Welcome Card - Modern Design */}
+            <View
+              style={{
+                width: "100%",
+                borderRadius: 16,
+                backgroundColor: "#FFFFFF",
+                borderWidth: 1,
+                borderColor: "#E5E7EB",
+                overflow: "hidden",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 8,
+                elevation: 2,
+              }}
+            >
+            {/* Gradient Header */}
+            <View
+              style={[
+                {
+                  backgroundColor: "#3FA9F5",
+                  padding: isDesktop ? 32 : isMobile ? 20 : 24,
+                  paddingBottom: isDesktop ? 24 : isMobile ? 16 : 20,
+                  overflow: "hidden",
+                  borderTopLeftRadius: 16,
+                  borderTopRightRadius: 16,
+                },
+                isWeb && ({
+                  background: "linear-gradient(135deg, #3FA9F5 0%, #2563EB 100%)",
+                } as any),
+              ]}
+            >
+              <View
+                style={{
+                  flexDirection: isDesktop ? "row" : "column",
+                  justifyContent: "space-between",
+                  alignItems: isDesktop ? "center" : "flex-start",
+                  width: "100%",
+                }}
+              >
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: isDesktop ? 32 : isMobile ? 22 : 26,
+                      fontWeight: "700",
+                      marginBottom: 8,
+                    }}
+                  >
+                    Xin chào!
+                  </Text>
+                  {loading ? (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                      <Text
+                        style={{
+                          color: "#FFFFFF",
+                          opacity: 0.95,
+                          fontSize: isDesktop ? 16 : isMobile ? 14 : 15,
+                          lineHeight: isDesktop ? 24 : isMobile ? 20 : 22,
+                        }}
+                      >
+                        Đang tải dữ liệu...
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        opacity: 0.95,
+                        fontSize: isDesktop ? 16 : isMobile ? 14 : 15,
+                        lineHeight: isDesktop ? 24 : isMobile ? 20 : 22,
+                      }}
+                    >
+                      {todaySchedules.length > 0 
+                        ? `Hôm nay bạn có ${todaySchedules.length} buổi học`
+                        : "Hôm nay bạn không có lịch học"}
+                    </Text>
+                  )}
+                </View>
+                {isDesktop && (
+                  <View
+                    style={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: 40,
+                      backgroundColor: "rgba(255, 255, 255, 0.2)",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <SchoolIcon size={40} color="#FFFFFF" />
+                  </View>
+                )}
+              </View>
+            </View>
+            
+            {/* Action Section */}
+            <View
+              style={{
+                padding: isDesktop ? 24 : isMobile ? 16 : 20,
+                flexDirection: isDesktop ? "row" : "column",
+                justifyContent: "space-between",
+                alignItems: isDesktop ? "center" : "stretch",
+                gap: isMobile ? 12 : 16,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => router.push("/student/schedule")}
+                style={{
+                  backgroundColor: "#3FA9F5",
+                  borderRadius: 10,
+                  paddingVertical: isMobile ? 12 : 14,
+                  paddingHorizontal: isDesktop ? 24 : isMobile ? 20 : 22,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  flex: isDesktop ? 0 : 1,
+                  minWidth: isDesktop ? 180 : "100%",
+                }}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={{
+                    fontSize: isDesktop ? 15 : isMobile ? 14 : 15,
+                    fontWeight: "600",
+                    color: "#FFFFFF",
+                  }}
+                >
+                  Xem lịch học
+                </Text>
+                <Text style={{ fontSize: 16, color: "#FFFFFF" }}>→</Text>
+              </TouchableOpacity>
+              
+              {todaySchedules.length > 0 && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    paddingVertical: isMobile ? 8 : 10,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: "#10B981",
+                    }}
+                  />
+                  <Text
+                    style={{
+                      fontSize: isDesktop ? 14 : isMobile ? 13 : 14,
+                      color: "#6B7280",
+                      fontWeight: "500",
+                    }}
+                  >
+                    {todaySchedules.length} buổi học sắp tới
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+          </View>
+        </View>
+
         {/* Content with padding */}
         <View
           style={{
@@ -74,73 +365,6 @@ export default function StudentHomeScreen() {
             paddingHorizontal: padding,
           }}
         >
-          {/* Welcome Card */}
-          <ImageBackground
-            source={require("@/assets/student_banner.png")}
-            style={{
-              width: "100%",
-              minHeight: isDesktop ? 220 : isMobile ? 140 : 180,
-              borderRadius: 12,
-              overflow: "hidden",
-              marginBottom: isMobile ? 20 : 32,
-            }}
-            imageStyle={{
-              borderRadius: 12,
-            }}
-            resizeMode="cover"
-          >
-            <View
-              style={{
-                flex: 1,
-                padding: isDesktop ? 32 : isMobile ? 20 : 24,
-                // backgroundColor: "rgba(63, 169, 245, 0.85)",
-              }}
-            >
-              <Text
-                style={{
-                  color: "#FFFFFF",
-                  fontSize: isDesktop ? 28 : isMobile ? 20 : 24,
-                  fontWeight: "700",
-                  marginBottom: 8,
-                }}
-              >
-                Xin chào!
-              </Text>
-              <Text
-                style={{
-                  color: "#FFFFFF",
-                  opacity: 0.9,
-                  fontSize: isDesktop ? 16 : isMobile ? 14 : 15,
-                  marginBottom: isDesktop ? 20 : isMobile ? 12 : 16,
-                }}
-              >
-                Hôm nay bạn có {todaySchedules.length} buổi học
-              </Text>
-              <TouchableOpacity
-                onPress={() => router.push("/student/schedule")}
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: 8,
-                  width: isDesktop ? 150 : isMobile ? 120 : 140,
-                  height: isMobile ? 40 : 44,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "600",
-                    color: "#3FA9F5",
-                  }}
-                >
-                  Xem lịch học →
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </ImageBackground>
-
           {/* Today's Schedule - Single card with auto-rotate */}
           <View style={{ marginBottom: isMobile ? 20 : 24 }}>
             <View
@@ -182,7 +406,7 @@ export default function StudentHomeScreen() {
             </View>
             {todaySchedules.length > 0 ? (
               <TouchableOpacity
-                onPress={() => router.push("/student/otp-attendance")}
+                onPress={() => router.push("/student/schedule")}
                 style={{
                   backgroundColor: "#FFFFFF",
                   borderRadius: isMobile ? 8 : 12,
@@ -207,7 +431,9 @@ export default function StudentHomeScreen() {
                     marginBottom: 4,
                   }}
                 >
-                  {todaySchedules[currentScheduleIndex]?.courseName || ""}
+                  {todaySchedules[currentScheduleIndex]?.courseName || 
+                   todaySchedules[currentScheduleIndex]?.subjectName || 
+                   "Không có thông tin"}
                 </Text>
                 <Text
                   style={{
@@ -217,7 +443,9 @@ export default function StudentHomeScreen() {
                     marginBottom: isMobile ? 8 : 12,
                   }}
                 >
-                  {todaySchedules[currentScheduleIndex]?.teacher || ""}
+                  Giảng viên: {todaySchedules[currentScheduleIndex]?.teacher || 
+                               todaySchedules[currentScheduleIndex]?.teacherName || 
+                               "N/A"}
                 </Text>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <View
@@ -499,7 +727,7 @@ export default function StudentHomeScreen() {
                       marginBottom: 4,
                     }}
                   >
-                    12
+                    {attendanceStats.totalSessions}
                   </Text>
                   <Text
                     style={{
@@ -535,7 +763,7 @@ export default function StudentHomeScreen() {
                       marginBottom: 4,
                     }}
                   >
-                    10
+                    {attendanceStats.present}
                   </Text>
                   <Text
                     style={{
@@ -571,7 +799,7 @@ export default function StudentHomeScreen() {
                       marginBottom: 4,
                     }}
                   >
-                    0
+                    {attendanceStats.absent}
                   </Text>
                   <Text
                     style={{
@@ -607,7 +835,7 @@ export default function StudentHomeScreen() {
                       marginBottom: 4,
                     }}
                   >
-                    84%
+                    {attendanceStats.attendanceRate}%
                   </Text>
                   <Text
                     style={{
