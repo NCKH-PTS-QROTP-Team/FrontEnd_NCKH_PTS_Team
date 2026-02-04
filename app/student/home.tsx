@@ -105,9 +105,32 @@ export default function StudentHomeScreen() {
       console.log("📚 Today schedules:", todayScheds.length);
       setTodaySchedules(todayScheds);
 
-      // Tính attendance stats
-      const totalSessions = allRecords.length;
-      const present = allRecords.filter((r: any) => r.status === "PRESENT").length;
+      // Tính attendance stats cho "tuần này" (logic app học tập)
+      // Tuần tính từ Thứ 2 -> Chủ nhật theo VN
+      const now = new Date();
+      const todayDow = now.getDay() === 0 ? 7 : now.getDay(); // 1-7, Thứ 2 = 1, Chủ nhật = 7
+
+      const startOfWeek = new Date(now);
+      startOfWeek.setHours(0, 0, 0, 0);
+      // Lùi về Thứ 2 của tuần hiện tại
+      startOfWeek.setDate(now.getDate() - (todayDow - 1));
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      const weeklyRecords = allRecords.filter((r: any) => {
+        const dateStr = r.attendedAt || r.createdAt;
+        if (!dateStr) return false;
+
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return false;
+
+        return d >= startOfWeek && d <= endOfWeek;
+      });
+
+      const totalSessions = weeklyRecords.length;
+      const present = weeklyRecords.filter((r: any) => r.status === "PRESENT").length;
       const absent = totalSessions - present;
       const attendanceRate = totalSessions > 0 ? Math.round((present / totalSessions) * 100) : 0;
 
