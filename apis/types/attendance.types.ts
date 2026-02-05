@@ -67,13 +67,22 @@ export interface AttendanceSessionRequest {
 export interface AttendanceSessionResponse {
   id: string;
   classId: string;
+  classCode?: string;
   className: string;
   subjectId: string;
   subjectName: string;
+  teacherId?: string;
+  teacherName?: string;
   scheduleId?: string;
   startTime: string;
   endTime?: string;
+  scheduledStartTime?: string;
   status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  method?: AttendanceMethod;
+  present?: number;
+  late?: number;
+  absent?: number;
+  total?: number;
   description?: string;
   createdAt: string;
 }

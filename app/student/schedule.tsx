@@ -1,19 +1,35 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   useWindowDimensions,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { mockSchedules } from "@/constants/mockData";
 import { Colors } from "@/constants/colors";
 import WeeklyCalendar from "@/components/WeeklyCalendar";
+import { CalendarIcon } from "@/components/Icons";
+import { scheduleService } from "@/apis";
+import type { Schedule as ApiSchedule } from "@/apis/services/schedule.service";
+
+interface DayScheduleItem {
+  id: string;
+  courseName: string;
+  teacher: string;
+  time: string;
+  room: string;
+}
 
 export default function ScheduleScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedView, setSelectedView] = useState<"all" | "class" | "exam">(
+    "all",
+  );
+  const [loading, setLoading] = useState(true);
+  const [daySchedules, setDaySchedules] = useState<DayScheduleItem[]>([]);
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
@@ -39,10 +55,62 @@ export default function ScheduleScreen() {
     "0",
   )}/${String(selectedDate.getMonth() + 1).padStart(2, "0")}/${selectedDate.getFullYear()}`;
 
-  // Filter schedules by selected date (for now, show all - you can add date filtering logic)
-  const filteredSchedules = mockSchedules;
   const today = new Date();
   const isToday = selectedDate.toDateString() === today.toDateString();
+
+  // Helper: convert Date -> yyyy-MM-dd
+  const toIsoDate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  // Load schedules từ backend cho ngày đã chọn
+  useEffect(() => {
+    const loadSchedulesForDate = async () => {
+      try {
+        setLoading(true);
+
+        const dateOnly = toIsoDate(selectedDate);
+
+        const params: {
+          scheduleType?: "CLASS" | "EXAM";
+          fromDate?: string;
+          toDate?: string;
+        } = {
+          fromDate: dateOnly,
+          toDate: dateOnly,
+        };
+
+        if (selectedView === "class") {
+          params.scheduleType = "CLASS";
+        } else if (selectedView === "exam") {
+          params.scheduleType = "EXAM";
+        }
+
+        const apiSchedules: ApiSchedule[] =
+          await scheduleService.getSchedules(params);
+
+        const mapped: DayScheduleItem[] = apiSchedules.map((s) => ({
+          id: s.id,
+          courseName: s.subjectName,
+          teacher: s.teacherName,
+          time: `${s.startTime} - ${s.endTime}`,
+          room: s.room,
+        }));
+
+        setDaySchedules(mapped);
+      } catch (error) {
+        console.error("Error loading schedules for date:", error);
+        setDaySchedules([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSchedulesForDate();
+  }, [selectedDate, selectedView]);
 
   return (
     <SafeAreaView
@@ -67,6 +135,7 @@ export default function ScheduleScreen() {
             alignSelf: "center",
           }}
         >
+          {/* Weekly Calendar (ngày trong tuần) */}
           {/* Weekly Calendar */}
           <View style={{ marginBottom: isDesktop ? 24 : 20 }}>
             <WeeklyCalendar
@@ -75,7 +144,7 @@ export default function ScheduleScreen() {
             />
           </View>
 
-          {/* Date Header */}
+          {/* Date Header + tabs lọc lịch */}
           <View
             style={{
               backgroundColor: Colors.white,
@@ -89,28 +158,119 @@ export default function ScheduleScreen() {
               shadowOpacity: 0.05,
               shadowRadius: 8,
               elevation: 2,
+              gap: 12,
             }}
           >
-            <Text
+            {/* Date text */}
+            <View>
+              <Text
+                style={{
+                  fontSize: isMobile ? 12 : 14,
+                  lineHeight: isMobile ? 18 : 20,
+                  color: Colors.textLight,
+                  marginBottom: 4,
+                }}
+              >
+                {isToday ? "Hôm nay" : "Ngày đã chọn"}
+              </Text>
+              <Text
+                style={{
+                  fontSize: isMobile ? 20 : isDesktop ? 24 : 22,
+                  lineHeight: isMobile ? 28 : isDesktop ? 32 : 30,
+                  fontWeight: "700",
+                  color: Colors.textHeading,
+                }}
+              >
+                {dateStr}
+              </Text>
+            </View>
+
+            {/* Tabs lọc: Tất cả / Lịch học / Lịch thi */}
+            <View
               style={{
-                fontSize: isMobile ? 12 : 14,
-                lineHeight: isMobile ? 18 : 20,
-                color: Colors.textLight,
-                marginBottom: 4,
+                flexDirection: isMobile ? "column" : "row",
+                alignItems: isMobile ? "flex-start" : "center",
+                justifyContent: "space-between",
+                gap: 10,
               }}
             >
-              {isToday ? "Hôm nay" : "Ngày đã chọn"}
-            </Text>
-            <Text
-              style={{
-                fontSize: isMobile ? 20 : isDesktop ? 24 : 22,
-                lineHeight: isMobile ? 28 : isDesktop ? 32 : 30,
-                fontWeight: "700",
-                color: Colors.textHeading,
-              }}
-            >
-              {dateStr}
-            </Text>
+              <View
+                style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedView("all")}
+                  style={{
+                    paddingHorizontal: isMobile ? 12 : 16,
+                    paddingVertical: isMobile ? 6 : 8,
+                    borderRadius: 999,
+                    backgroundColor:
+                      selectedView === "all" ? Colors.primary : "#F3F4F6",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: isMobile ? 12 : 13,
+                      fontWeight: "600",
+                      color:
+                        selectedView === "all" ? Colors.white : Colors.textLight,
+                    }}
+                  >
+                    Tất cả
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedView("class")}
+                  style={{
+                    paddingHorizontal: isMobile ? 12 : 16,
+                    paddingVertical: isMobile ? 6 : 8,
+                    borderRadius: 999,
+                    backgroundColor:
+                      selectedView === "class" ? Colors.primary : "#F3F4F6",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: isMobile ? 12 : 13,
+                      fontWeight: "600",
+                      color:
+                        selectedView === "class"
+                          ? Colors.white
+                          : Colors.textLight,
+                    }}
+                  >
+                    Lịch học
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedView("exam")}
+                  style={{
+                    paddingHorizontal: isMobile ? 12 : 16,
+                    paddingVertical: isMobile ? 6 : 8,
+                    borderRadius: 999,
+                    backgroundColor:
+                      selectedView === "exam" ? Colors.primary : "#F3F4F6",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: isMobile ? 12 : 13,
+                      fontWeight: "600",
+                      color:
+                        selectedView === "exam"
+                          ? Colors.white
+                          : Colors.textLight,
+                    }}
+                  >
+                    Lịch thi
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
 
           {/* Schedule List */}
@@ -127,7 +287,32 @@ export default function ScheduleScreen() {
           </Text>
 
           <View>
-            {filteredSchedules.length === 0 ? (
+            {loading ? (
+              <View
+                style={{
+                  backgroundColor: Colors.white,
+                  borderRadius: 12,
+                  padding: cardPadding,
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingVertical: 32,
+                  flexDirection: "row",
+                  gap: 8,
+                }}
+              >
+                <ActivityIndicator size="small" color={Colors.primary} />
+                <Text
+                  style={{
+                    fontSize: isMobile ? 14 : 16,
+                    color: Colors.textSecondary,
+                  }}
+                >
+                  Đang tải lịch học...
+                </Text>
+              </View>
+            ) : daySchedules.length === 0 ? (
               <View
                 style={{
                   backgroundColor: Colors.white,
@@ -140,7 +325,9 @@ export default function ScheduleScreen() {
                   paddingVertical: 40,
                 }}
               >
-                <Text style={{ fontSize: 48, marginBottom: 12 }}>📅</Text>
+                <View style={{ marginBottom: 12 }}>
+                  <CalendarIcon size={40} color={Colors.primary} />
+                </View>
                 <Text
                   style={{
                     fontSize: isMobile ? 14 : 16,
@@ -163,7 +350,7 @@ export default function ScheduleScreen() {
                 </Text>
               </View>
             ) : (
-              filteredSchedules.map((schedule, index) => (
+              daySchedules.map((schedule, index) => (
                 <TouchableOpacity
                   key={schedule.id}
                   activeOpacity={0.95}
@@ -172,7 +359,7 @@ export default function ScheduleScreen() {
                     borderRadius: 12,
                     padding: cardPadding,
                     marginBottom:
-                      index < filteredSchedules.length - 1
+                      index < daySchedules.length - 1
                         ? isDesktop
                           ? 12
                           : 10

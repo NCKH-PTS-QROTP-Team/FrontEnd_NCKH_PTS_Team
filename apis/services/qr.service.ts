@@ -1,9 +1,9 @@
 import apiClient from '../config/apiClient';
 import { ApiResponse } from '../types/api.types';
 import {
-  QRGenerateRequest,
-  QRResponse,
-  QRVerifyRequest,
+  GenerateQRRequest,
+  QRCodeResponse,
+  VerifyQRRequest,
 } from '../types/qr.types';
 
 /**
@@ -11,10 +11,12 @@ import {
  */
 export const qrService = {
   /**
-   * Tạo QR code cho session
+   * Tạo QR code mới cho session
    */
-  generate: async (request: QRGenerateRequest): Promise<QRResponse> => {
-    const response = await apiClient.post<ApiResponse<QRResponse>>(
+  generateQR: async (
+    request: GenerateQRRequest
+  ): Promise<QRCodeResponse> => {
+    const response = await apiClient.post<ApiResponse<QRCodeResponse>>(
       '/qr/generate',
       request
     );
@@ -22,19 +24,31 @@ export const qrService = {
   },
 
   /**
-   * Lấy QR code hiện tại của session
+   * Lấy QR code ACTIVE hiện tại của session
    */
-  getCurrent: async (sessionId: string): Promise<QRResponse> => {
-    const response = await apiClient.get<ApiResponse<QRResponse>>(
+  getCurrentQR: async (sessionId: string): Promise<QRCodeResponse> => {
+    const response = await apiClient.get<ApiResponse<QRCodeResponse>>(
       `/qr/session/${sessionId}`
     );
     return response.data.data;
   },
 
   /**
-   * Verify QR token
+   * Lấy danh sách tất cả QR codes của session
    */
-  verify: async (request: QRVerifyRequest): Promise<boolean> => {
+  getQRCodesBySession: async (
+    sessionId: string
+  ): Promise<QRCodeResponse[]> => {
+    const response = await apiClient.get<ApiResponse<QRCodeResponse[]>>(
+      `/qr/session/${sessionId}/all`
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Verify QR code
+   */
+  verifyQR: async (request: VerifyQRRequest): Promise<boolean> => {
     const response = await apiClient.post<ApiResponse<boolean>>(
       '/qr/verify',
       request
@@ -42,4 +56,3 @@ export const qrService = {
     return response.data.data;
   },
 };
-

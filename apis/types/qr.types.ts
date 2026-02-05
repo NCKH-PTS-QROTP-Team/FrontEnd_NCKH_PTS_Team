@@ -1,27 +1,37 @@
 /**
- * QR Generate Request
+ * QR Code Status enum
  */
-export interface QRGenerateRequest {
-  sessionId: string;
-  teacherId: string;
+export enum QRStatus {
+  ACTIVE = 'ACTIVE',
+  EXPIRED = 'EXPIRED',
 }
 
 /**
- * QR Response
+ * Generate QR Code Request
  */
-export interface QRResponse {
+export interface GenerateQRRequest {
+  sessionId: string;
+  teacherId?: string;
+  expiryMinutes?: number; // Thời hạn QR code (phút), mặc định 5 phút
+}
+
+/**
+ * QR Code Response
+ */
+export interface QRCodeResponse {
   id: string;
   sessionId: string;
   token: string;
   expiresAt: string;
+  status: QRStatus;
   createdAt: string;
+  updatedAt: string;
 }
 
 /**
- * QR Verify Request
+ * Verify QR Code Request
  */
-export interface QRVerifyRequest {
+export interface VerifyQRRequest {
   sessionId: string;
   token: string;
 }
-

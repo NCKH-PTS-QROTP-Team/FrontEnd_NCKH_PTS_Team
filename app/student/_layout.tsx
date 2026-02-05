@@ -156,13 +156,11 @@ export default function StudentLayout() {
     );
   }
 
-  // On web, wrap with AppLayout
+  // On web, wrap with AppLayout - user info sẽ tự fetch từ API
   return (
     <AppLayout
       menuItems={menuItems}
       userRole="student"
-      userName="Nguyễn Văn An"
-      userEmail="nguyenvanan@student.edu.vn"
     >
       {stackContent}
     </AppLayout>

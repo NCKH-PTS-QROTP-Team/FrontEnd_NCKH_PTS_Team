@@ -5,6 +5,7 @@ export enum UserRole {
   ADMIN = 'ADMIN',
   TEACHER = 'TEACHER',
   STUDENT = 'STUDENT',
+  ACADEMIC_STAFF = 'ACADEMIC_STAFF',
 }
 
 /**

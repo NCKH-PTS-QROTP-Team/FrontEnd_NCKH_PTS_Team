@@ -7,8 +7,10 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build:web": "expo export:web",
-    "build:web:fast": "NODE_ENV=production expo export:web --clear"
+    "build:web": "expo export --platform web && node scripts/fix-web-paths.js",
+    "build:web:clear": "expo export --platform web --clear && node scripts/fix-web-paths.js",
+    "serve:dist": "node scripts/serve-dist.js",
+    "serve:dist:8081": "PORT=8081 node scripts/serve-dist.js"
   },
   "dependencies": {
     "axios": "^1.13.3",
@@ -29,7 +31,9 @@
     "react-native-svg": "15.12.1",
     "react-native-web": "^0.21.0",
     "socket.io-client": "^4.8.3",
-    "tailwindcss": "3.3.2"
+    "tailwindcss": "3.3.2",
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

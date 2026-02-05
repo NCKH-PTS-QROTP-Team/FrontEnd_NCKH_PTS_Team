@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Platform,
   useWindowDimensions,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -14,12 +15,20 @@ import { StatusBar } from "expo-status-bar";
 import { StatsCard } from "@/components/StatsCard";
 import Tabs from "@/components/Tabs";
 import WeeklyCalendar from "@/components/WeeklyCalendar";
-import {
-  mockStats,
-  mockTeacherSchedules,
-  TeacherSchedule,
-} from "@/constants/mockData";
 import { Colors } from "@/constants/colors";
+import { scheduleService, attendanceService } from "@/apis";
+import { getTeacherIdFromToken } from "@/apis/utils/jwt";
+import Toast, { useToast } from "@/components/Toast";
+import type { Schedule } from "@/apis/services/schedule.service";
+
+interface TeacherSchedule {
+  id: string;
+  subjectName: string;
+  className: string;
+  time: string;
+  room: string;
+  dayOfWeek: number;
+}
 
 export default function TeacherDashboardScreen() {
   const router = useRouter();
@@ -28,15 +37,84 @@ export default function TeacherDashboardScreen() {
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
+  const { showToast } = useToast();
 
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"overview" | "schedule">(
     "overview",
   );
+  const [teacherSchedules, setTeacherSchedules] = useState<TeacherSchedule[]>([]);
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    presentToday: 0,
+    absentToday: 0,
+    attendanceRate: 0,
+  });
 
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const quickActionWidth = isDesktop ? "48%" : "100%";
   const [currentWeek, setCurrentWeek] = useState(new Date());
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const teacherId = await getTeacherIdFromToken();
+      
+      if (!teacherId) {
+        console.warn("No teacherId found, using empty data");
+        setLoading(false);
+        return;
+      }
+
+      // Load schedules và sessions song song
+      const [allSchedules, todaySessions] = await Promise.all([
+        scheduleService.getSchedules({ teacherId }).catch(() => []),
+        attendanceService.getSessions({ status: "ACTIVE" }).catch(() => []),
+      ]);
+
+      // Convert schedules to TeacherSchedule format
+      const schedules = allSchedules.map((s: Schedule) => ({
+        id: s.id,
+        subjectName: s.subjectName,
+        className: s.className,
+        time: `${s.startTime} - ${s.endTime}`,
+        room: s.room,
+        dayOfWeek: s.dayOfWeek,
+      }));
+
+      setTeacherSchedules(schedules);
+
+      // Tính stats từ sessions
+      let totalStudents = 0;
+      let presentToday = 0;
+      
+      for (const session of todaySessions) {
+        const records = await attendanceService.getRecords({ sessionId: session.id }).catch(() => []);
+        totalStudents += records.length;
+        presentToday += records.filter((r: any) => r.status === "PRESENT").length;
+      }
+
+      const absentToday = totalStudents - presentToday;
+      const attendanceRate = totalStudents > 0 ? Math.round((presentToday / totalStudents) * 100) : 0;
+
+      setStats({
+        totalStudents,
+        presentToday,
+        absentToday,
+        attendanceRate,
+      });
+    } catch (error: any) {
+      console.error("Error loading dashboard:", error);
+      showToast("Không thể tải dữ liệu", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Helper to determine period from time string (e.g., "08:00 - 10:00")
   const getPeriod = (time: string): "morning" | "afternoon" | "evening" => {
@@ -87,7 +165,7 @@ export default function TeacherDashboardScreen() {
   const scheduleByDayPeriod: {
     [day: string]: { [period: string]: TeacherSchedule[] };
   } = {};
-  mockTeacherSchedules.forEach((schedule) => {
+  teacherSchedules.forEach((schedule) => {
     const dayName = getDayName(schedule.dayOfWeek);
     const period = getPeriod(schedule.time);
 
@@ -103,6 +181,18 @@ export default function TeacherDashboardScreen() {
     }
     scheduleByDayPeriod[dayName][period].push(schedule);
   });
+
+  if (loading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }} edges={["top"]}>
+        <StatusBar style="dark" />
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color="#3FA9F5" />
+          <Text style={{ marginTop: 16, color: "#6B7280" }}>Đang tải dữ liệu...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const renderOverview = () => (
     <>
@@ -325,7 +415,7 @@ export default function TeacherDashboardScreen() {
                     marginBottom: 4,
                   }}
                 >
-                  {mockStats.totalStudents}
+                  {stats.totalStudents}
                 </Text>
                 <Text
                   style={{
@@ -363,7 +453,7 @@ export default function TeacherDashboardScreen() {
                     marginBottom: 4,
                   }}
                 >
-                  {mockStats.presentToday}
+                  {stats.presentToday}
                 </Text>
                 <Text
                   style={{
@@ -401,7 +491,7 @@ export default function TeacherDashboardScreen() {
                     marginBottom: 4,
                   }}
                 >
-                  {mockStats.absentToday}
+                  {stats.absentToday}
                 </Text>
                 <Text
                   style={{
@@ -435,7 +525,7 @@ export default function TeacherDashboardScreen() {
                     marginBottom: 4,
                   }}
                 >
-                  {mockStats.attendanceRate}%
+                  {stats.attendanceRate}%
                 </Text>
                 <Text
                   style={{
@@ -977,7 +1067,7 @@ export default function TeacherDashboardScreen() {
           </View>
         </ScrollView>
 
-        {mockTeacherSchedules.length === 0 && (
+        {teacherSchedules.length === 0 && (
           <View
             style={{
               backgroundColor: Colors.white,

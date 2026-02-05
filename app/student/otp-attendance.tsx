@@ -38,10 +38,27 @@ export default function OTPAttendanceScreen() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [capturingFace, setCapturingFace] = useState(false);
+  const [faceResult, setFaceResult] = useState<"idle" | "success" | "error">(
+    "idle",
+  );
+  const [faceRetryCooldown, setFaceRetryCooldown] = useState(0);
+  const [faceVerified, setFaceVerified] = useState(false);
+  const [verifiedFaceEncoding, setVerifiedFaceEncoding] = useState<
+    number[] | null
+  >(null);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const { toast, showToast, hideToast } = useToast();
+
+  // Cooldown sau khi xác thực thất bại để tránh spam
+  useEffect(() => {
+    if (faceRetryCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setFaceRetryCooldown((prev) => (prev > 1 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [faceRetryCooldown]);
 
   // Load active session on mount
   useEffect(() => {
@@ -150,6 +167,33 @@ export default function OTPAttendanceScreen() {
     }
   };
 
+  const handleStartFaceVerification = async () => {
+    if (!currentSessionId) {
+      showToast("Không tìm thấy phiên điểm danh", "error");
+      return;
+    }
+
+    if (faceRetryCooldown > 0) {
+      showToast(
+        `Vui lòng chờ ${faceRetryCooldown}s trước khi thử xác thực lại.`,
+        "warning",
+      );
+      return;
+    }
+
+    // Hiển thị camera để capture face
+    if (!permission?.granted) {
+      const result = await requestPermission();
+      if (!result.granted) {
+        showToast("Cần quyền truy cập camera để xác thực Face ID", "error");
+        return;
+      }
+    }
+
+    setFaceResult("idle");
+    setShowCamera(true);
+  };
+
   const handleSubmit = async () => {
     const otpCode = otp.join("");
     if (otpCode.length !== 6) return;
@@ -159,16 +203,17 @@ export default function OTPAttendanceScreen() {
       return;
     }
 
-    // Hiển thị camera để capture face
-    if (!permission?.granted) {
-      const result = await requestPermission();
-      if (!result.granted) {
-        showToast("Cần quyền truy cập camera để điểm danh", "error");
-        return;
-      }
+    // Bắt buộc phải xác thực face trước
+    if (!faceVerified || !verifiedFaceEncoding) {
+      showToast(
+        "Vui lòng xác thực Face ID trước khi điểm danh bằng OTP.",
+        "error",
+      );
+      return;
     }
 
-    setShowCamera(true);
+    // Face đã xác thực → gửi điểm danh với OTP + encoding đã lưu
+    await submitAttendance();
   };
 
   const handleCaptureFace = async () => {
@@ -178,6 +223,7 @@ export default function OTPAttendanceScreen() {
     }
 
     setCapturingFace(true);
+    setFaceResult("idle");
     try {
       // Capture photo từ camera
       const photo = await cameraRef.current.takePictureAsync({
@@ -191,32 +237,91 @@ export default function OTPAttendanceScreen() {
         return;
       }
 
-      // Extract face encoding
-      const encodingResult = await faceService.extractEncodingFromCamera(
-        photo.base64
-      );
+      const base64Image = `data:image/jpeg;base64,${photo.base64}`;
 
-      if (!encodingResult.faceEncoding || encodingResult.faceEncoding.length === 0) {
-        showToast("Không phát hiện khuôn mặt. Vui lòng thử lại.", "error");
+      // Lấy studentId để verify face với dữ liệu đã đăng ký trong DB
+      const studentId = await getStudentIdFromToken();
+      if (!studentId) {
+        showToast("Không tìm thấy thông tin sinh viên", "error");
         setCapturingFace(false);
         return;
       }
 
-      // Submit attendance với face encoding
-      await submitAttendance(encodingResult.faceEncoding);
+      // Bước 1: Verify face từ camera (so với face đã đăng ký)
+      const verifyResult = await faceService.verifyFromCamera({
+        studentId,
+        base64Image,
+      });
+
+      if (!verifyResult.isMatch) {
+        showToast(
+          verifyResult.message ||
+            "Face không khớp với face đã đăng ký. Vui lòng thử lại.",
+          "error",
+        );
+        setCapturingFace(false);
+        setFaceResult("error");
+        setFaceRetryCooldown(5);
+        return;
+      }
+
+      // Bước 2: Extract encoding từ ảnh đã verify (giống QR code)
+      const encodingResult = await faceService.extractEncodingFromCamera(
+        base64Image,
+      );
+
+      if (
+        !encodingResult.faceEncoding ||
+        encodingResult.faceEncoding.length === 0
+      ) {
+        showToast("Không phát hiện khuôn mặt. Vui lòng thử lại.", "error");
+        setCapturingFace(false);
+        setFaceResult("error");
+        setFaceRetryCooldown(5);
+        return;
+      }
+
+      // Face khớp, lưu encoding (giống QR code)
+      setFaceResult("success");
+      setFaceVerified(true);
+      setVerifiedFaceEncoding(encodingResult.faceEncoding);
+
+      showToast(
+        "Xác thực Face ID thành công. Bây giờ hãy nhập OTP để hoàn tất điểm danh.",
+        "success",
+      );
     } catch (error: any) {
       console.error("Error capturing face:", error);
-      showToast(
-        error.message || "Không thể xử lý ảnh. Vui lòng thử lại.",
-        "error"
-      );
+      
+      // Lấy message từ nhiều nguồn (ErrorResponse có message và detail)
+      let errorMessage = "Không thể xử lý ảnh. Vui lòng thử lại.";
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.detail) {
+        // detail chứa message chi tiết từ backend
+        errorMessage = error.response.data.detail;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.data?.detail) {
+        errorMessage = error.response.data.data.detail;
+      } else if (error?.response?.data?.data?.message) {
+        errorMessage = error.response.data.data.message;
+      }
+      
+      showToast(errorMessage, "error");
+      setFaceResult("error");
+      setFaceRetryCooldown(5);
     } finally {
       setCapturingFace(false);
       setShowCamera(false);
     }
   };
 
-  const submitAttendance = async (faceEncoding: number[]) => {
+  const submitAttendance = async () => {
+    if (!faceVerified || !verifiedFaceEncoding) {
+      showToast("Vui lòng xác thực Face ID trước khi điểm danh bằng OTP.", "error");
+      return;
+    }
     const otpCode = otp.join("");
     if (!currentSessionId) return;
 
@@ -229,13 +334,13 @@ export default function OTPAttendanceScreen() {
         return;
       }
 
-      // Tạo attendance record với face encoding
+      // Tạo attendance record với face encoding đã xác thực
       const record = await attendanceService.createRecord({
         sessionId: currentSessionId,
         studentId: studentId,
         method: AttendanceMethod.OTP,
         otpCode: otpCode,
-        faceEncoding: faceEncoding,
+        faceEncoding: verifiedFaceEncoding,
       });
 
       showToast("Điểm danh thành công!", "success");
@@ -268,6 +373,10 @@ return `${mins}:${secs.toString().padStart(2, "0")}`;
 const contentMaxWidth = isDesktop ? 500 : "100%";
 const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const otpInputSpacing = isDesktop ? 50 : isTablet ? 30 : 20;
+  const isWeb = Platform.OS === "web";
+  const scanBoxSize = isWeb
+    ? Math.min(width * 0.7, 420)
+    : Math.min(width * 0.8, 320);
 
   return (
 <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
@@ -376,8 +485,60 @@ Hết thời gian điểm danh
               </Text>
             </View>
 
-            {/* OTP Input */}
-            <View style={{ marginBottom: 24 }}>
+              {/* Face Verification Status */}
+              <View
+                style={{
+                  backgroundColor: faceVerified ? "#ECFDF5" : "#EFF6FF",
+                  borderRadius: 12,
+                  padding: 16,
+                  marginBottom: 20,
+                  borderWidth: 1,
+                  borderColor: faceVerified ? "#6EE7B7" : "#BFDBFE",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 14,
+                    lineHeight: 20,
+                    fontWeight: "600",
+                    color: faceVerified ? "#065F46" : "#1D4ED8",
+                    marginBottom: 6,
+                  }}
+                >
+                  {faceVerified
+                    ? "Face ID đã được xác thực"
+                    : "Bước 1: Xác thực Face ID"}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    lineHeight: 18,
+                    color: "#4B5563",
+                  }}
+                >
+                  {faceVerified
+                    ? "Bạn có thể tiếp tục nhập mã OTP để hoàn tất điểm danh."
+                    : "Vui lòng xác thực Face ID trước, sau đó mới nhập OTP để điểm danh."}
+                </Text>
+                {!faceVerified && (
+                  <View style={{ marginTop: 10 }}>
+                    <PrimaryButton
+                      title={
+                        faceRetryCooldown > 0
+                          ? `Chờ ${faceRetryCooldown}s để xác thực lại`
+                          : "Bắt đầu xác thực Face ID"
+                      }
+                      onPress={
+                        faceRetryCooldown > 0 ? undefined : handleStartFaceVerification
+                      }
+                      disabled={faceRetryCooldown > 0}
+                    />
+                  </View>
+                )}
+              </View>
+
+              {/* OTP Input */}
+              <View style={{ marginBottom: 24 }}>
 <Text
                 style={{
                   fontSize: 16,
@@ -408,7 +569,7 @@ value={digit}
                     onKeyPress={(e) => handleKeyPress(e, index)}
                     maxLength={1}
                     keyboardType="number-pad"
-                    editable={!isExpired}
+                    editable={faceVerified && !isExpired}
 style={[
                       {
                         width: 50,
@@ -430,10 +591,17 @@ style={[
             </View>
 
             <PrimaryButton
-              title={isExpired ? "Hết thời gian" : "Xác nhận"}
+              title={
+                !faceVerified
+                  ? "Vui lòng xác thực Face ID trước"
+                  : isExpired
+                  ? "Hết thời gian"
+                  : "Xác nhận"
+              }
               onPress={handleSubmit}
               loading={loading}
               disabled={
+                !faceVerified ||
                 otp.join("").length !== 6 ||
                 isExpired ||
                 !currentSessionId ||
@@ -443,7 +611,7 @@ style={[
           </View>
 
           {/* Help Text */}
-<View
+          <View
             style={{
               backgroundColor: "#FEF3C7",
               borderRadius: 12,
@@ -464,14 +632,24 @@ style={[
               Hướng dẫn:
             </Text>
             <Text style={{ fontSize: 14, lineHeight: 20, color: "#78350F" }}>
-              Nhập mã OTP 6 số mà giảng viên hiển thị trên lớp để hoàn tất điểm
-              danh.
-</Text>
+              Bước 1: Nhập mã OTP 6 số mà giảng viên hiển thị trên lớp.
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                lineHeight: 20,
+                color: "#78350F",
+                marginTop: 4,
+              }}
+            >
+              Bước 2: Hệ thống sẽ mở camera để xác thực Face ID. Chỉ khi face
+              khớp với dữ liệu đã đăng ký thì điểm danh mới thành công.
+            </Text>
           </View>
         </View>
       </ScrollView>
       
-      {/* Camera Modal for Face Capture */}
+      {/* Camera Modal for Face Capture (giống UI quét QR) */}
       {showCamera && permission?.granted && (
         <View
           style={{
@@ -484,78 +662,209 @@ style={[
             zIndex: 1000,
           }}
         >
-          <CameraView
-            ref={cameraRef}
-            style={{ flex: 1 }}
-            facing="front"
-          >
+          <CameraView ref={cameraRef} style={{ flex: 1 }} facing="front">
             <View
               style={{
                 flex: 1,
                 backgroundColor: "transparent",
-                justifyContent: "flex-end",
-                padding: 24,
+                justifyContent: "space-between",
+                padding: 20,
               }}
             >
+              {/* Header */}
               <View
                 style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                   backgroundColor: "rgba(0,0,0,0.5)",
-                  borderRadius: 16,
-                  padding: 24,
-                  marginBottom: 24,
+                  borderRadius: 12,
+                  padding: 16,
                 }}
               >
                 <Text
                   style={{
-                    color: "#FFF",
+                    color: "#FFFFFF",
                     fontSize: 16,
                     fontWeight: "600",
-                    marginBottom: 8,
-                    textAlign: "center",
                   }}
                 >
-                  Xác thực khuôn mặt
+                  Xác thực Face ID
                 </Text>
-                <Text
-                  style={{
-                    color: "#FFF",
-                    fontSize: 14,
-                    textAlign: "center",
-                    marginBottom: 20,
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowCamera(false);
+                    setCapturingFace(false);
                   }}
                 >
-                  Đặt khuôn mặt vào khung và nhấn chụp
-                </Text>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    gap: 12,
-                  }}
-                >
-                  <View style={{ flex: 1 }}>
-                    <TouchableOpacity
-                      onPress={() => setShowCamera(false)}
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: 16,
+                      fontWeight: "600",
+                    }}
+                  >
+                    ✕
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Scanning Area Indicator */}
+              <View
+                style={{
+                  alignSelf: "center",
+                  width: scanBoxSize,
+                  height: scanBoxSize,
+                  borderWidth: 3,
+                  borderColor:
+                    capturingFace && faceResult === "idle"
+                      ? "#3FA9F5"
+                      : "#FFFFFF",
+                  borderStyle: "dashed",
+                  borderRadius: 12,
+                  backgroundColor: "transparent",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {/* Đang xác thực */}
+                {capturingFace && faceResult === "idle" && (
+                  <View
+                    style={{
+                      backgroundColor: "rgba(0,0,0,0.7)",
+                      borderRadius: 8,
+                      padding: 16,
+                    }}
+                  >
+                    <Text
                       style={{
-                        backgroundColor: "#6B7280",
-                        paddingVertical: 14,
-                        paddingHorizontal: 24,
-                        borderRadius: 12,
-                        alignItems: "center",
+                        color: "#FFFFFF",
+                        fontSize: 14,
+                        marginBottom: 8,
+                        textAlign: "center",
                       }}
                     >
-                      <Text style={{ color: "#FFF", fontWeight: "600" }}>
-                        Hủy
-                      </Text>
-                    </TouchableOpacity>
+                      Đang xác thực...
+                    </Text>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <PrimaryButton
-                      title={capturingFace ? "Đang xử lý..." : "Chụp"}
-                      onPress={handleCaptureFace}
-                      loading={capturingFace}
-                    />
+                )}
+
+                {/* Thành công */}
+                {!capturingFace && faceResult === "success" && (
+                  <View
+                    style={{
+                      backgroundColor: "rgba(16, 185, 129, 0.9)",
+                      borderRadius: 8,
+                      padding: 16,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 40,
+                        textAlign: "center",
+                        marginBottom: 4,
+                      }}
+                    >
+                      ✅
+                    </Text>
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        marginTop: 4,
+                        fontSize: 14,
+                        fontWeight: "600",
+                        textAlign: "center",
+                      }}
+                    >
+                      Xác thực thành công
+                    </Text>
                   </View>
-                </View>
+                )}
+
+                {/* Thất bại */}
+                {!capturingFace && faceResult === "error" && (
+                  <View
+                    style={{
+                      backgroundColor: "rgba(239, 68, 68, 0.9)",
+                      borderRadius: 8,
+                      padding: 16,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 40,
+                        textAlign: "center",
+                        marginBottom: 4,
+                      }}
+                    >
+                      ✖
+                    </Text>
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        marginTop: 4,
+                        fontSize: 14,
+                        fontWeight: "600",
+                        textAlign: "center",
+                      }}
+                    >
+                      Xác thực thất bại. Vui lòng đưa mặt lại gần và rõ hơn.
+                    </Text>
+                  </View>
+                )}
+
+                {/* Nút chụp ảnh mặc định */}
+                {!capturingFace && faceResult === "idle" && (
+                  <TouchableOpacity
+                    onPress={
+                      faceRetryCooldown > 0 ? undefined : handleCaptureFace
+                    }
+                    style={{
+                      backgroundColor:
+                        faceRetryCooldown > 0
+                          ? "rgba(156, 163, 175, 0.9)"
+                          : "rgba(59, 130, 246, 0.9)",
+                      borderRadius: 8,
+                      padding: 16,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        fontSize: 14,
+                        fontWeight: "600",
+                        textAlign: "center",
+                      }}
+                    >
+                      {faceRetryCooldown > 0
+                        ? `Vui lòng chờ ${faceRetryCooldown}s`
+                        : "Chụp ảnh để xác thực"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Instructions */}
+              <View
+                style={{
+                  backgroundColor: "rgba(0,0,0,0.5)",
+                  borderRadius: 12,
+                  padding: 16,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#FFFFFF",
+                    fontSize: 14,
+                    lineHeight: 20,
+                    textAlign: "center",
+                  }}
+                >
+                  Nhấn nút để chụp ảnh xác thực Face ID. Đảm bảo khuôn mặt rõ,
+                  không che mắt và nằm trong khung.
+                </Text>
               </View>
             </View>
           </CameraView>
