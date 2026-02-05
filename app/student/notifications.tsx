@@ -1,100 +1,132 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useFocusEffect } from 'expo-router';
 import Card from '@/components/Card';
 import { Colors } from '@/constants/colors';
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'success' | 'warning' | 'error' | 'info';
-  time: string;
-  isRead: boolean;
-}
-
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    title: 'OTP sắp hết hạn',
-    message: 'OTP cho buổi học Lập trình cơ bản sẽ hết hạn trong 30 giây',
-    type: 'warning',
-    time: '2 phút trước',
-    isRead: false,
-  },
-  {
-    id: '2',
-    title: 'Điểm danh thành công',
-    message: 'Bạn đã điểm danh thành công cho môn Cơ sở dữ liệu',
-    type: 'success',
-    time: '1 giờ trước',
-    isRead: false,
-  },
-  {
-    id: '3',
-    title: 'Điểm danh thất bại',
-    message: 'OTP không hợp lệ. Vui lòng thử lại',
-    type: 'error',
-    time: '2 giờ trước',
-    isRead: true,
-  },
-  {
-    id: '4',
-    title: 'Buổi học sắp bắt đầu',
-    message: 'Lập trình cơ bản sẽ bắt đầu trong 15 phút tại phòng A102',
-    type: 'info',
-    time: '3 giờ trước',
-    isRead: true,
-  },
-  {
-    id: '5',
-    title: 'Cảnh báo vắng học',
-    message: 'Bạn đã vắng 3/15 buổi học môn Hệ điều hành',
-    type: 'warning',
-    time: '1 ngày trước',
-    isRead: true,
-  },
-];
+import { notificationService, NotificationResponse, NotificationType } from '@/apis';
+import Toast, { useToast } from '@/components/Toast';
 
 export default function Notifications() {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const { toast, showToast, hideToast } = useToast();
 
-  const filteredNotifications = notifications.filter(n => {
-    if (filter === 'unread') return !n.isRead;
-    return true;
-  });
+  useEffect(() => {
+    loadNotifications();
+  }, [filter]);
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  // Reload notifications khi màn hình được focus lại
+  useFocusEffect(
+    React.useCallback(() => {
+      loadNotifications();
+    }, [filter])
+  );
 
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n =>
-      n.id === id ? { ...n, isRead: true } : n
-    ));
+  const loadNotifications = async () => {
+    try {
+      setLoading(true);
+
+      let data: NotificationResponse[];
+      if (filter === 'unread') {
+        data = await notificationService.getUnreadNotifications();
+      } else {
+        data = await notificationService.getNotifications();
+      }
+      
+      setNotifications(data);
+      
+      // Load unread count
+      const count = await notificationService.getUnreadCount();
+      setUnreadCount(count);
+    } catch (error: any) {
+      console.error("Error loading notifications:", error);
+      showToast(
+        error?.response?.data?.detail || error?.response?.data?.message || "Không thể tải thông báo",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Vừa xong';
+    if (diffMins < 60) return `${diffMins} phút trước`;
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    if (diffDays < 7) return `${diffDays} ngày trước`;
+    return date.toLocaleDateString('vi-VN');
   };
 
-  const getNotificationIcon = (type: string) => {
+  const mapNotificationType = (type: NotificationType): 'success' | 'warning' | 'error' | 'info' => {
+    switch (type) {
+      case NotificationType.SUCCESS:
+        return 'success';
+      case NotificationType.WARNING:
+        return 'warning';
+      case NotificationType.ERROR:
+        return 'error';
+      case NotificationType.INFO:
+      default:
+        return 'info';
+    }
+  };
+
+  const markAsRead = async (id: string) => {
+    try {
+      await notificationService.markAsRead(id);
+      // Reload notifications
+      await loadNotifications();
+    } catch (error: any) {
+      console.error("Error marking as read:", error);
+      showToast(
+        error?.response?.data?.detail || error?.response?.data?.message || "Không thể đánh dấu đã đọc",
+        "error"
+      );
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      // Reload notifications
+      await loadNotifications();
+    } catch (error: any) {
+      console.error("Error marking all as read:", error);
+      showToast(
+        error?.response?.data?.detail || error?.response?.data?.message || "Không thể đánh dấu tất cả đã đọc",
+        "error"
+      );
+    }
+  };
+
+  const getNotificationIcon = (type: NotificationType) => {
     const icons = {
-      success: '✓',
-      warning: '⚠',
-      error: '✕',
-      info: 'ℹ',
+      [NotificationType.SUCCESS]: '✓',
+      [NotificationType.WARNING]: '⚠',
+      [NotificationType.ERROR]: '✕',
+      [NotificationType.INFO]: 'ℹ',
     };
-    return icons[type as keyof typeof icons] || 'ℹ';
+    return icons[type] || 'ℹ';
   };
 
-  const getNotificationColor = (type: string) => {
+  const getNotificationColor = (type: NotificationType) => {
     const colors = {
-      success: Colors.success,
-      warning: Colors.warning,
-      error: Colors.error,
-      info: Colors.primary,
+      [NotificationType.SUCCESS]: Colors.success,
+      [NotificationType.WARNING]: Colors.warning,
+      [NotificationType.ERROR]: Colors.error,
+      [NotificationType.INFO]: Colors.primary,
     };
-    return colors[type as keyof typeof colors] || Colors.primary;
+    return colors[type] || Colors.primary;
   };
 
   const { width } = useWindowDimensions();
@@ -153,7 +185,14 @@ export default function Notifications() {
           </View>
 
           {/* Notifications List */}
-          {filteredNotifications.length === 0 ? (
+          {loading ? (
+            <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+              <Text style={{ marginTop: 16, color: Colors.textSecondary }}>
+                Đang tải thông báo...
+              </Text>
+            </View>
+          ) : notifications.length === 0 ? (
             <Card style={{ alignItems: 'center', paddingVertical: 32 }}>
               <Text style={{ fontSize: 36, lineHeight: 44, marginBottom: 12 }}>📭</Text>
               <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '500', marginBottom: 4, color: Colors.text }}>
@@ -164,10 +203,10 @@ export default function Notifications() {
               </Text>
             </Card>
           ) : (
-            filteredNotifications.map((notification) => (
+            notifications.map((notification) => (
               <Card
                 key={notification.id}
-                onPress={() => markAsRead(notification.id)}
+                onPress={() => !notification.isRead && markAsRead(notification.id)}
                 style={{
                   marginBottom: 12,
                   backgroundColor: notification.isRead ? Colors.white : '#E0F2FE',
@@ -221,7 +260,7 @@ export default function Notifications() {
                     </Text>
 
                     <Text style={{ fontSize: 12, lineHeight: 16, color: Colors.textSecondary }}>
-                      {notification.time}
+                      {formatTime(notification.createdAt)}
                     </Text>
                   </View>
                 </View>
@@ -231,8 +270,14 @@ export default function Notifications() {
 
         </View>
       </ScrollView>
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+      />
     </View>
   );
 }
 
-// Updated: 2026-01-02 13:16:08
+// Updated: 2026-02-05

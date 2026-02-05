@@ -217,12 +217,23 @@ export default function QRAttendanceScreen() {
       }, 1200);
     } catch (error: any) {
       console.error("Error verifying face:", error);
-      showToast(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Không thể xác thực face. Vui lòng thử lại sau 5 giây.",
-        "error",
-      );
+      
+      // Lấy message từ nhiều nguồn (ErrorResponse có message và detail)
+      let errorMessage = "Không thể xác thực face. Vui lòng thử lại sau 5 giây.";
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.detail) {
+        // detail chứa message chi tiết từ backend
+        errorMessage = error.response.data.detail;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.data?.detail) {
+        errorMessage = error.response.data.data.detail;
+      } else if (error?.response?.data?.data?.message) {
+        errorMessage = error.response.data.data.message;
+      }
+      
+      showToast(errorMessage, "error");
       setFaceVerifying(false);
       setFaceResult("error");
        // Lỗi kỹ thuật cũng áp cooldown để tránh spam server

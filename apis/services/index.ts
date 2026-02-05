@@ -3,6 +3,7 @@
  */
 export * from './auth.service';
 export * from './face.service';
+export * from './notification.service';
 export * from './otp.service';
 export * from './qr.service';
 export * from './attendance.service';

@@ -50,6 +50,7 @@ export interface FaceVerifyResponse {
   isMatch: boolean;
   similarity: number; // 0.0 - 1.0
   message: string;
+  faceEncoding?: number[]; // Face encoding đã extract (optional, để tái sử dụng)
 }
 
 /**

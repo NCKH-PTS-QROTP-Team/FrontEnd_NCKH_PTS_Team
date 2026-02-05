@@ -265,7 +265,7 @@ export default function OTPAttendanceScreen() {
         return;
       }
 
-      // Bước 2: Extract encoding để lưu kèm attendance record (giống QR)
+      // Bước 2: Extract encoding từ ảnh đã verify (giống QR code)
       const encodingResult = await faceService.extractEncodingFromCamera(
         base64Image,
       );
@@ -281,7 +281,7 @@ export default function OTPAttendanceScreen() {
         return;
       }
 
-      // Lưu trạng thái face đã xác thực + encoding để dùng khi gửi OTP
+      // Face khớp, lưu encoding (giống QR code)
       setFaceResult("success");
       setFaceVerified(true);
       setVerifiedFaceEncoding(encodingResult.faceEncoding);
@@ -292,12 +292,23 @@ export default function OTPAttendanceScreen() {
       );
     } catch (error: any) {
       console.error("Error capturing face:", error);
-      showToast(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Không thể xử lý ảnh. Vui lòng thử lại.",
-        "error",
-      );
+      
+      // Lấy message từ nhiều nguồn (ErrorResponse có message và detail)
+      let errorMessage = "Không thể xử lý ảnh. Vui lòng thử lại.";
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.detail) {
+        // detail chứa message chi tiết từ backend
+        errorMessage = error.response.data.detail;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.data?.detail) {
+        errorMessage = error.response.data.data.detail;
+      } else if (error?.response?.data?.data?.message) {
+        errorMessage = error.response.data.data.message;
+      }
+      
+      showToast(errorMessage, "error");
       setFaceResult("error");
       setFaceRetryCooldown(5);
     } finally {
