@@ -51,7 +51,8 @@ export const attendanceService = {
   getSessions: async (params?: {
     classId?: string;
     subjectId?: string;
-    status?: string;
+    teacherId?: string;
+    active?: boolean;
   }): Promise<AttendanceSessionResponse[]> => {
     const response = await apiClient.get<ApiResponse<AttendanceSessionResponse[]>>(
       '/attendance-sessions',

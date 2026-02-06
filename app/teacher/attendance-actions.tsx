@@ -11,7 +11,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/colors";
-import { HashIcon, QrCodeIcon } from "@/components/Icons";
+import {
+  HashIcon,
+  QrCodeIcon,
+  ChevronRightIcon,
+  InfoIcon,
+} from "@/components/Icons";
 
 export default function AttendanceActionsScreen() {
   const router = useRouter();
@@ -181,11 +186,15 @@ export default function AttendanceActionsScreen() {
                 paddingHorizontal: 24,
                 backgroundColor: Colors.primary,
                 borderRadius: 12,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
               }}
             >
               <Text style={{ color: Colors.white, fontWeight: "600" }}>
-                Bắt đầu →
+                Bắt đầu
               </Text>
+              <ChevronRightIcon size={16} color={Colors.white} />
             </View>
           </TouchableOpacity>
         ) : (
@@ -239,11 +248,15 @@ export default function AttendanceActionsScreen() {
                 paddingHorizontal: 24,
                 backgroundColor: "#10B981",
                 borderRadius: 12,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
               }}
             >
               <Text style={{ color: Colors.white, fontWeight: "600" }}>
-                Bắt đầu →
+                Bắt đầu
               </Text>
+              <ChevronRightIcon size={16} color={Colors.white} />
             </View>
           </TouchableOpacity>
         )}
@@ -259,16 +272,25 @@ export default function AttendanceActionsScreen() {
             borderColor: "#FDE68A",
           }}
         >
-          <Text
+          <View
             style={{
-              fontSize: 14,
-              fontWeight: "600",
-              color: "#92400E",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
               marginBottom: 8,
             }}
           >
-            💡 Hướng dẫn:
-          </Text>
+            <InfoIcon size={16} color="#92400E" />
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: "#92400E",
+              }}
+            >
+              Hướng dẫn
+            </Text>
+          </View>
           <Text style={{ fontSize: 13, color: "#78350F", lineHeight: 20 }}>
             {activeTab === "otp"
               ? "1. Nhấn 'Bắt đầu' để tạo mã OTP\n2. Hiển thị mã trên màn hình cho sinh viên\n3. Sinh viên nhập mã để điểm danh\n4. Mã có hiệu lực trong 5 phút"

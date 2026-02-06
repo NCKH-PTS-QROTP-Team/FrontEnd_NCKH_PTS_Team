@@ -14,12 +14,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { QRViewer } from "@/components/QRViewer";
-import { qrService, attendanceService } from "@/apis";
+import { qrService, attendanceService, scheduleService } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
 import { QRStatus } from "@/apis/types/qr.types";
 import type { AttendanceSessionResponse } from "@/apis/types/attendance.types";
 import { Colors } from "@/constants/colors";
+import type { Schedule } from "@/apis/services/schedule.service";
+import { CalendarIcon, LocationIcon } from "@/components/Icons";
 
 export default function GenerateQRScreen() {
   const { width } = useWindowDimensions();
@@ -36,12 +38,15 @@ export default function GenerateQRScreen() {
   const [qrHistory, setQrHistory] = useState<any[]>([]);
   const [expiryMinutes, setExpiryMinutes] = useState<string>("5");
   const [loadingQR, setLoadingQR] = useState(false);
+  const [todaySchedules, setTodaySchedules] = useState<Schedule[]>([]);
+  const [timeLeft, setTimeLeft] = useState<string | null>(null);
 
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 32 : isTablet ? 24 : 16;
 
   useEffect(() => {
     loadSessions();
+    loadTodaySchedules();
   }, []);
 
   useEffect(() => {
@@ -51,17 +56,44 @@ export default function GenerateQRScreen() {
     }
   }, [selectedSession]);
 
+  // Đếm ngược thời gian còn lại của QR hiện tại theo thời gian thực
+  useEffect(() => {
+    if (!currentQR || !currentQR.expiresAt) {
+      setTimeLeft(null);
+      return;
+    }
+
+    const updateTime = () => {
+      const now = new Date();
+      const expiry = new Date(currentQR.expiresAt);
+      const diff = expiry.getTime() - now.getTime();
+
+      if (diff <= 0 || currentQR.status !== QRStatus.ACTIVE) {
+        setTimeLeft("Đã hết hạn");
+        return;
+      }
+
+      const minutes = Math.floor(diff / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${minutes}:${seconds.toString().padStart(2, "0")}`);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentQR]);
+
   const loadSessions = async () => {
     try {
       setLoading(true);
       const teacherId = await getTeacherIdFromToken();
       const allSessions = await attendanceService.getSessions({
-        status: "ACTIVE",
+        teacherId,
+        active: true,
       });
-      // Filter sessions by teacher
-      const mySessions = allSessions.filter(
-        (s) => s.status === "ACTIVE"
-      );
+      // Filter sessions by teacher & phương thức QR (nếu cần)
+      const mySessions = allSessions.filter((s) => s.status === "ACTIVE");
       setSessions(mySessions);
       if (mySessions.length > 0 && !selectedSession) {
         setSelectedSession(mySessions[0]);
@@ -71,6 +103,28 @@ export default function GenerateQRScreen() {
       showToast("Không thể tải danh sách phiên điểm danh", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTodaySchedules = async () => {
+    try {
+      const teacherId = await getTeacherIdFromToken();
+      if (!teacherId) return;
+
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const dd = String(today.getDate()).padStart(2, "0");
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+
+      const schedules = await scheduleService.getSchedules({
+        teacherId,
+        fromDate: dateStr,
+        toDate: dateStr,
+      });
+      setTodaySchedules(schedules);
+    } catch (error) {
+      console.warn("Không tải được lịch dạy hôm nay (QR):", error);
     }
   };
 
@@ -132,6 +186,62 @@ export default function GenerateQRScreen() {
     }
   };
 
+  const handleCreateSessionFromSchedule = async (schedule: Schedule) => {
+    try {
+      const teacherId = await getTeacherIdFromToken();
+      if (!teacherId) {
+        showToast("Không tìm thấy thông tin giảng viên", "error");
+        return;
+      }
+
+      const existing = await attendanceService.getSessions({
+        classId: schedule.classId,
+      });
+
+      const qrSession = existing.find(
+        (s) => s.method === "QR" && s.status === "ACTIVE",
+      );
+      const anyActive = existing.find((s) => s.status === "ACTIVE");
+
+      let session = qrSession;
+
+      if (!qrSession) {
+        // Nếu đã có phiên điểm danh ACTIVE (OTP hoặc loại khác) thì không tạo thêm
+        if (anyActive) {
+          showToast(
+            "Lớp này đang có phiên điểm danh đang hoạt động. Vui lòng kết thúc phiên đó trước khi tạo QR mới.",
+            "error",
+          );
+          return;
+        }
+
+        session = await attendanceService.createSession({
+          classId: schedule.classId,
+          subjectId: schedule.subjectId,
+          teacherId,
+          method: "QR",
+          // Không gửi scheduledStartTime để tránh lỗi parse thời gian
+        });
+      }
+
+      if (!session) return;
+
+      setSelectedSession(session);
+      setCurrentQR(null);
+      setQrHistory([]);
+      showToast(
+        "Đã chọn môn từ lịch dạy. Bạn có thể tạo QR Code cho phiên này.",
+        "success",
+      );
+    } catch (error: any) {
+      console.error("Error creating QR session from schedule:", error);
+      showToast(
+        error.message || "Không thể tạo phiên điểm danh từ lịch dạy.",
+        "error",
+      );
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString("vi-VN", {
@@ -189,6 +299,111 @@ export default function GenerateQRScreen() {
             alignSelf: "center",
           }}
         >
+          {/* Gợi ý từ lịch dạy hôm nay */}
+          {todaySchedules.length > 0 && (
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 12,
+                padding: 20,
+                marginBottom: 24,
+                borderWidth: 1,
+                borderColor: Colors.border,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "600",
+                  color: Colors.textHeading,
+                  marginBottom: 12,
+                }}
+              >
+                Lịch dạy hôm nay
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={{ flexDirection: "row", gap: 12 }}>
+                  {todaySchedules.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      onPress={() => handleCreateSessionFromSchedule(item)}
+                      style={{
+                        padding: 12,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: Colors.border,
+                        backgroundColor: Colors.gray50,
+                        minWidth: 220,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          fontWeight: "600",
+                          color: Colors.textHeading,
+                          marginBottom: 4,
+                        }}
+                      >
+                        {item.subjectName}
+                      </Text>
+                      <Text
+                        style={{ fontSize: 12, color: Colors.textSecondary }}
+                      >
+                        {item.className}
+                      </Text>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginTop: 8,
+                        }}
+                      >
+                        <CalendarIcon size={14} color={Colors.textSecondary} />
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: Colors.textSecondary,
+                            marginLeft: 6,
+                          }}
+                        >
+                          {item.startTime} - {item.endTime}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginTop: 4,
+                        }}
+                      >
+                        <LocationIcon size={14} color={Colors.textSecondary} />
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: Colors.textSecondary,
+                            marginLeft: 6,
+                          }}
+                        >
+                          Phòng {item.room}
+                        </Text>
+                      </View>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: Colors.primary,
+                          fontWeight: "600",
+                          marginTop: 8,
+                        }}
+                      >
+                        Chọn để tạo phiên QR
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          )}
+
           {/* Session Selection */}
           <View
             style={{
@@ -458,8 +673,8 @@ export default function GenerateQRScreen() {
                             fontWeight: "600",
                           }}
                         >
-                          {currentQR.status === QRStatus.ACTIVE
-                            ? `Còn hạn: ${getTimeRemaining(currentQR.expiresAt)}`
+                          {currentQR.status === QRStatus.ACTIVE && timeLeft
+                            ? `Còn hạn: ${timeLeft}`
                             : "Đã hết hạn"}
                         </Text>
                       </View>
@@ -522,20 +737,68 @@ export default function GenerateQRScreen() {
                 </View>
               </View>
 
-              {/* Generate Button */}
+              {/* Actions: tạo QR + kết thúc phiên */}
               <View
                 style={{
-                  maxWidth: isDesktop ? 400 : "100%",
+                  maxWidth: isDesktop ? 480 : "100%",
                   alignSelf: "center",
                   width: "100%",
                   marginBottom: 24,
+                  flexDirection: isDesktop ? "row" : "column",
+                  gap: 12,
                 }}
               >
-                <PrimaryButton
-                  title={currentQR ? "Tạo mã mới" : "Tạo QR Code"}
-                  onPress={handleGenerateQR}
-                  loading={loadingQR}
-                />
+                <View style={{ flex: 1 }}>
+                  <PrimaryButton
+                    title={currentQR ? "Tạo mã mới" : "Tạo QR Code"}
+                    onPress={handleGenerateQR}
+                    loading={loadingQR}
+                  />
+                </View>
+
+                {selectedSession && (
+                  <TouchableOpacity
+                    style={{
+                      paddingVertical: 12,
+                      paddingHorizontal: 16,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: Colors.white,
+                    }}
+                    onPress={async () => {
+                      try {
+                        await attendanceService.completeSession(
+                          selectedSession.id,
+                        );
+                        setSelectedSession(null);
+                        setCurrentQR(null);
+                        setQrHistory([]);
+                        await loadSessions();
+                        showToast("Đã kết thúc phiên điểm danh.", "success");
+                      } catch (error: any) {
+                        console.error("Error completing session:", error);
+                        showToast(
+                          error?.response?.data?.message ||
+                            "Không thể kết thúc phiên điểm danh.",
+                          "error",
+                        );
+                      }
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "600",
+                        color: Colors.text,
+                      }}
+                    >
+                      Kết thúc phiên
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               {/* QR History */}
