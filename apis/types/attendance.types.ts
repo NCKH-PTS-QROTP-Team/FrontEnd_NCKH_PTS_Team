@@ -50,15 +50,15 @@ export interface AttendanceRecordResponse {
 }
 
 /**
- * Attendance Session Request
+ * Attendance Session Request (align with backend AttendanceSessionDTO.Request)
  */
 export interface AttendanceSessionRequest {
   classId: string;
   subjectId: string;
-  scheduleId?: string;
-  startTime: string;
-  endTime?: string;
-  description?: string;
+  teacherId: string;
+  method: AttendanceMethod;
+  // Thời gian bắt đầu theo lịch học (HH:mm), optional
+  scheduledStartTime?: string;
 }
 
 /**

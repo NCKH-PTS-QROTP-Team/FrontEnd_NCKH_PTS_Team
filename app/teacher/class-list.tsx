@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,126 +10,35 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { StudentCard } from "@/components/StudentCard";
 import { Colors } from "@/constants/colors";
-import Card from "@/components/Card";
-import Badge from "@/components/Badge";
 import PrimaryButton from "@/components/PrimaryButton";
-import { CalendarIcon, UsersIcon } from "@/components/Icons";
+import { CalendarIcon, UsersIcon, LocationIcon, CloseIcon } from "@/components/Icons";
+import { classService, reportService, scheduleService } from "@/apis";
+import { getTeacherIdFromToken } from "@/apis/utils/jwt";
+import Toast, { useToast } from "@/components/Toast";
+import type { Class } from "@/apis/services/class.service";
+import type { ClassAttendanceReport, StudentAttendanceReport } from "@/apis/services/report.service";
+import type { Schedule } from "@/apis/services/schedule.service";
 
-// Mock data cho các lớp học
-const mockClasses = [
-  {
-    id: 1,
-    code: "CS101",
-    name: "Lập trình cơ bản",
-    subject: "Khoa học máy tính",
-    schedule: "Thứ 2, 7:00 - 9:00",
-    room: "A101",
-    totalStudents: 45,
-    presentCount: 38,
-    lateCount: 5,
-    absentCount: 2,
-    attendanceRate: 84,
-    students: [
-      { id: 1, name: "Nguyễn Văn A", studentId: "SV001", status: "present" },
-      { id: 2, name: "Trần Thị B", studentId: "SV002", status: "present" },
-      { id: 3, name: "Lê Văn C", studentId: "SV003", status: "late" },
-      { id: 4, name: "Phạm Thị D", studentId: "SV004", status: "absent" },
-      { id: 5, name: "Hoàng Văn E", studentId: "SV005", status: "present" },
-    ],
-  },
-  {
-    id: 2,
-    code: "CS201",
-    name: "Cấu trúc dữ liệu",
-    subject: "Khoa học máy tính",
-    schedule: "Thứ 3, 9:00 - 11:00",
-    room: "B202",
-    totalStudents: 40,
-    presentCount: 35,
-    lateCount: 3,
-    absentCount: 2,
-    attendanceRate: 88,
-    students: [
-      { id: 6, name: "Đỗ Văn F", studentId: "SV006", status: "present" },
-      { id: 7, name: "Vũ Thị G", studentId: "SV007", status: "present" },
-      { id: 8, name: "Bùi Văn H", studentId: "SV008", status: "late" },
-      { id: 9, name: "Ngô Thị I", studentId: "SV009", status: "present" },
-    ],
-  },
-  {
-    id: 3,
-    code: "CS301",
-    name: "Cơ sở dữ liệu",
-    subject: "Khoa học máy tính",
-    schedule: "Thứ 4, 13:00 - 15:00",
-    room: "C303",
-    totalStudents: 38,
-    presentCount: 30,
-    lateCount: 4,
-    absentCount: 4,
-    attendanceRate: 79,
-    students: [
-      { id: 10, name: "Lý Văn J", studentId: "SV010", status: "present" },
-      { id: 11, name: "Đinh Thị K", studentId: "SV011", status: "absent" },
-      { id: 12, name: "Phan Văn L", studentId: "SV012", status: "late" },
-    ],
-  },
-  {
-    id: 4,
-    code: "CS401",
-    name: "Lập trình Web",
-    subject: "Khoa học máy tính",
-    schedule: "Thứ 5, 15:00 - 17:00",
-    room: "D404",
-    totalStudents: 42,
-    presentCount: 40,
-    lateCount: 2,
-    absentCount: 0,
-    attendanceRate: 95,
-    students: [
-      { id: 13, name: "Trịnh Văn M", studentId: "SV013", status: "present" },
-      { id: 14, name: "Mai Thị N", studentId: "SV014", status: "present" },
-      { id: 15, name: "Dương Văn O", studentId: "SV015", status: "late" },
-    ],
-  },
-  {
-    id: 5,
-    code: "CS501",
-    name: "Trí tuệ nhân tạo",
-    subject: "Khoa học máy tính",
-    schedule: "Thứ 6, 7:00 - 9:00",
-    room: "E505",
-    totalStudents: 35,
-    presentCount: 32,
-    lateCount: 2,
-    absentCount: 1,
-    attendanceRate: 91,
-    students: [
-      { id: 16, name: "Cao Văn P", studentId: "SV016", status: "present" },
-      { id: 17, name: "Tô Thị Q", studentId: "SV017", status: "present" },
-      { id: 18, name: "Hồ Văn R", studentId: "SV018", status: "absent" },
-    ],
-  },
-  {
-    id: 6,
-    code: "CS102",
-    name: "Lập trình hướng đối tượng",
-    subject: "Khoa học máy tính",
-    schedule: "Thứ 2, 13:00 - 15:00",
-    room: "F101",
-    totalStudents: 44,
-    presentCount: 36,
-    lateCount: 6,
-    absentCount: 2,
-    attendanceRate: 82,
-    students: [
-      { id: 19, name: "Võ Văn S", studentId: "SV019", status: "present" },
-      { id: 20, name: "Tạ Thị T", studentId: "SV020", status: "late" },
-    ],
-  },
-];
+interface TeacherClassCard {
+  id: string;
+  code: string;
+  name: string;
+  subject?: string;
+  scheduleText: string;
+  room?: string;
+  totalStudents: number;
+  presentCount: number;
+  lateCount: number;
+  absentCount: number;
+  attendanceRate: number;
+}
+
+interface SummaryStats {
+  totalClasses: number;
+  totalStudents: number;
+  averageRate: number;
+}
 
 export default function ClassListScreen() {
   const isWeb = Platform.OS === "web";
@@ -137,37 +46,171 @@ export default function ClassListScreen() {
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
+  const { showToast } = useToast();
 
-  const [selectedClass, setSelectedClass] = useState<
-    (typeof mockClasses)[0] | null
-  >(null);
+  const [classes, setClasses] = useState<TeacherClassCard[]>([]);
+  const [summary, setSummary] = useState<SummaryStats>({
+    totalClasses: 0,
+    totalStudents: 0,
+    averageRate: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  const [selectedClass, setSelectedClass] = useState<TeacherClassCard | null>(
+    null,
+  );
+  const [students, setStudents] = useState<StudentAttendanceReport[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const paddingVertical = isMobile ? 16 : 24;
 
-  const handleClassPress = (classItem: (typeof mockClasses)[0]) => {
+  useEffect(() => {
+    loadClasses();
+  }, []);
+
+  const getDayLabel = (dayOfWeek?: number) => {
+    const map: Record<number, string> = {
+      1: "Thứ 2",
+      2: "Thứ 3",
+      3: "Thứ 4",
+      4: "Thứ 5",
+      5: "Thứ 6",
+      6: "Thứ 7",
+      7: "Chủ nhật",
+    };
+    return dayOfWeek ? map[dayOfWeek] || "" : "";
+  };
+
+  const formatSchedule = (schedule?: Schedule) => {
+    if (!schedule) return "Chưa có lịch dạy";
+    const dayLabel = getDayLabel(schedule.dayOfWeek);
+    if (schedule.startTime && schedule.endTime) {
+      return `${dayLabel}, ${schedule.startTime} - ${schedule.endTime}`;
+    }
+    return dayLabel || "Chưa có lịch dạy";
+  };
+
+  const loadClasses = async () => {
+    try {
+      setLoading(true);
+      const teacherId = await getTeacherIdFromToken();
+      if (!teacherId) {
+        console.warn("No teacherId found for class list");
+        setLoading(false);
+        return;
+      }
+
+      const [classList, classReports, teacherSchedules] = await Promise.all([
+        classService.getClasses(teacherId).catch(() => [] as Class[]),
+        reportService.getClassReports().catch(
+          () => [] as ClassAttendanceReport[],
+        ),
+        scheduleService
+          .getSchedules({ teacherId })
+          .catch(() => [] as Schedule[]),
+      ]);
+
+      const teacherClassIds = new Set(classList.map((c) => c.id));
+
+      const reportMap = new Map<string, ClassAttendanceReport>();
+      classReports
+        .filter((r) => teacherClassIds.has(r.classId))
+        .forEach((r) => {
+          reportMap.set(r.classId, r);
+        });
+
+      const scheduleMap = new Map<string, Schedule[]>();
+      teacherSchedules.forEach((s) => {
+        if (!teacherClassIds.has(s.classId)) return;
+        const arr = scheduleMap.get(s.classId) || [];
+        arr.push(s);
+        scheduleMap.set(s.classId, arr);
+      });
+
+      const cards: TeacherClassCard[] = classList.map((cls) => {
+        const report = reportMap.get(cls.id);
+        const schedules = scheduleMap.get(cls.id) || [];
+        const primarySchedule = schedules[0];
+
+        const totalStudents = cls.studentCount || 0;
+        const totalPresent = report?.totalPresent || 0;
+        const totalAbsent = report?.totalAbsent || 0;
+        const totalLate = report?.totalLate || 0;
+        const attendanceRate = report
+          ? Math.round(report.attendanceRate)
+          : 0;
+
+        return {
+          id: cls.id,
+          code: cls.code,
+          name: cls.name,
+          subject: cls.subjectName,
+          scheduleText: formatSchedule(primarySchedule),
+          room: primarySchedule?.room,
+          totalStudents,
+          presentCount: totalPresent,
+          lateCount: totalLate,
+          absentCount: totalAbsent,
+          attendanceRate,
+        };
+      });
+
+      setClasses(cards);
+
+      const totalClasses = cards.length;
+      const totalStudents = cards.reduce(
+        (sum, c) => sum + (c.totalStudents || 0),
+        0,
+      );
+      const averageRate =
+        totalClasses > 0
+          ? Math.round(
+              cards.reduce((sum, c) => sum + (c.attendanceRate || 0), 0) /
+                totalClasses,
+            )
+          : 0;
+
+      setSummary({
+        totalClasses,
+        totalStudents,
+        averageRate,
+      });
+
+      console.log("[ClassList] classes =", cards);
+    } catch (error) {
+      console.error("Error loading teacher classes:", error);
+      showToast("Không thể tải danh sách lớp", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClassPress = (classItem: TeacherClassCard) => {
     setSelectedClass(classItem);
     setModalVisible(true);
+    loadStudentReports(classItem.id);
+  };
+
+  const loadStudentReports = async (classId: string) => {
+    try {
+      setStudentsLoading(true);
+      const reports = await reportService.getStudentReports(classId);
+      setStudents(reports);
+      console.log("[ClassList] student reports for class", classId, reports);
+    } catch (error) {
+      console.error("Error loading student reports:", error);
+      showToast("Không thể tải danh sách sinh viên", "error");
+    } finally {
+      setStudentsLoading(false);
+    }
   };
 
   const handleCloseModal = () => {
     setModalVisible(false);
     setTimeout(() => setSelectedClass(null), 300);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "present":
-        return { variant: "success" as const, label: "Có mặt" };
-      case "late":
-        return { variant: "warning" as const, label: "Muộn" };
-      case "absent":
-        return { variant: "error" as const, label: "Vắng" };
-      default:
-        return { variant: "neutral" as const, label: "Chưa điểm danh" };
-    }
   };
 
   return (
@@ -177,6 +220,17 @@ export default function ClassListScreen() {
     >
       <StatusBar style="dark" />
 
+      {loading ? (
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: Colors.textSecondary }}>Đang tải dữ liệu...</Text>
+        </View>
+      ) : (
       <ScrollView
         contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
         showsVerticalScrollIndicator={false}
@@ -246,7 +300,7 @@ export default function ClassListScreen() {
                       marginBottom: 4,
                     }}
                   >
-                    {mockClasses.length}
+                    {summary.totalClasses}
                   </Text>
                   <Text
                     style={{
@@ -284,7 +338,7 @@ export default function ClassListScreen() {
                       marginBottom: 4,
                     }}
                   >
-                    {mockClasses.reduce((sum, c) => sum + c.totalStudents, 0)}
+                    {summary.totalStudents}
                   </Text>
                   <Text
                     style={{
@@ -321,12 +375,7 @@ export default function ClassListScreen() {
                       marginBottom: 4,
                     }}
                   >
-                    {Math.round(
-                      mockClasses.reduce(
-                        (sum, c) => sum + c.attendanceRate,
-                        0,
-                      ) / mockClasses.length,
-                    )}
+                    {summary.averageRate}
                     %
                   </Text>
                   <Text
@@ -352,7 +401,7 @@ export default function ClassListScreen() {
               marginHorizontal: -8,
             }}
           >
-            {mockClasses.map((classItem) => (
+            {classes.map((classItem) => (
               <View
                 key={classItem.id}
                 style={{
@@ -497,7 +546,7 @@ export default function ClassListScreen() {
                           textAlign: "center",
                         }}
                       >
-                        📍
+                        <LocationIcon size={14} color="#6B7280" />
                       </Text>
                       <Text
                         style={{
@@ -625,6 +674,7 @@ export default function ClassListScreen() {
           </View>
         </View>
       </ScrollView>
+      )}
 
       {/* Detail Modal */}
       <Modal
@@ -694,7 +744,7 @@ export default function ClassListScreen() {
                   marginLeft: 12,
                 }}
               >
-                <Text style={{ fontSize: 18, color: Colors.gray700 }}>✕</Text>
+                <CloseIcon size={18} color={Colors.gray700} />
               </TouchableOpacity>
             </View>
 
@@ -728,7 +778,7 @@ export default function ClassListScreen() {
                         marginBottom: 4,
                       }}
                     >
-                      {selectedClass?.presentCount}
+                      {selectedClass?.presentCount ?? 0}
                     </Text>
                     <Text style={{ fontSize: 12, color: Colors.success }}>
                       Có mặt
@@ -752,7 +802,7 @@ export default function ClassListScreen() {
                         marginBottom: 4,
                       }}
                     >
-                      {selectedClass?.lateCount}
+                      {selectedClass?.lateCount ?? 0}
                     </Text>
                     <Text style={{ fontSize: 12, color: Colors.warning }}>
                       Muộn
@@ -776,7 +826,7 @@ export default function ClassListScreen() {
                         marginBottom: 4,
                       }}
                     >
-                      {selectedClass?.absentCount}
+                      {selectedClass?.absentCount ?? 0}
                     </Text>
                     <Text style={{ fontSize: 12, color: Colors.error }}>
                       Vắng
@@ -794,49 +844,81 @@ export default function ClassListScreen() {
                   marginBottom: 16,
                 }}
               >
-                Danh sách sinh viên ({selectedClass?.students.length})
+                Danh sách sinh viên{" "}
+                {studentsLoading
+                  ? "(đang tải...)"
+                  : `(${students.length} sinh viên)`}
               </Text>
 
-              {selectedClass?.students.map((student) => {
-                const badge = getStatusBadge(student.status);
-                return (
-                  <View
-                    key={student.id}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: 12,
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: 8,
-                      marginBottom: 8,
-                      borderWidth: 1,
-                      borderColor: Colors.border,
-                    }}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text
+              {!studentsLoading &&
+                students.map((student) => {
+                  const rate = Math.round(student.attendanceRate || 0);
+                  const rateColor =
+                    rate >= 90
+                      ? Colors.success
+                      : rate >= 75
+                        ? Colors.warning
+                        : Colors.error;
+                  return (
+                    <View
+                      key={student.studentId}
+                      style={{
+                        padding: 12,
+                        backgroundColor: "#FFFFFF",
+                        borderRadius: 8,
+                        marginBottom: 8,
+                        borderWidth: 1,
+                        borderColor: Colors.border,
+                      }}
+                    >
+                      <View
                         style={{
-                          fontSize: 14,
-                          fontWeight: "600",
-                          color: Colors.text,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "space-between",
                           marginBottom: 4,
                         }}
                       >
-                        {student.name}
-                      </Text>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: "600",
+                            color: Colors.text,
+                          }}
+                        >
+                          {student.studentName}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontWeight: "600",
+                            color: rateColor,
+                          }}
+                        >
+                          {rate}%
+                        </Text>
+                      </View>
                       <Text
-                        style={{ fontSize: 12, color: Colors.textSecondary }}
+                        style={{
+                          fontSize: 12,
+                          color: Colors.textSecondary,
+                          marginBottom: 4,
+                        }}
                       >
                         MSSV: {student.studentId}
                       </Text>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: Colors.textSecondary,
+                        }}
+                      >
+                        Đi học: {student.presentCount} • Vắng:{" "}
+                        {student.absentCount} • Muộn: {student.lateCount}
+                      </Text>
                     </View>
-                    <Badge variant={badge.variant} size="small">
-                      {badge.label}
-                    </Badge>
-                  </View>
-                );
-              })}
+                  );
+                })}
             </ScrollView>
 
             {/* Modal Footer */}

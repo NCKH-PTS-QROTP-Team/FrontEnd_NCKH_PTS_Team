@@ -24,6 +24,7 @@ export interface ClassAttendanceReport {
   totalStudents: number;
   totalPresent: number;
   totalAbsent: number;
+  totalLate: number;
   attendanceRate: number;
 }
 

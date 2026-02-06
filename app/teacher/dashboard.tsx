@@ -12,7 +12,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { StatsCard } from "@/components/StatsCard";
 import Tabs from "@/components/Tabs";
 import WeeklyCalendar from "@/components/WeeklyCalendar";
 import { Colors } from "@/constants/colors";
@@ -20,14 +19,22 @@ import { scheduleService, attendanceService } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
 import type { Schedule } from "@/apis/services/schedule.service";
+import {
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  InfoIcon,
+} from "@/components/Icons";
 
 interface TeacherSchedule {
   id: string;
+  subjectCode?: string;
   subjectName: string;
   className: string;
   time: string;
   room: string;
   dayOfWeek: number;
+  studentCount?: number;
 }
 
 export default function TeacherDashboardScreen() {
@@ -58,7 +65,26 @@ export default function TeacherDashboardScreen() {
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [currentWeek]);
+
+  const getWeekRangeISO = () => {
+    const startDate = new Date(currentWeek);
+    // Move to Monday
+    startDate.setDate(startDate.getDate() - startDate.getDay() + 1);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6); // Sunday
+
+    const formatISO = (d: Date) =>
+      `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d
+        .getDate()
+        .toString()
+        .padStart(2, "0")}`;
+
+    return {
+      fromDate: formatISO(startDate),
+      toDate: formatISO(endDate),
+    };
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -71,15 +97,28 @@ export default function TeacherDashboardScreen() {
         return;
       }
 
-      // Load schedules và sessions song song
+      const { fromDate, toDate } = getWeekRangeISO();
+
+      // Load schedules (theo tuần hiện tại) và sessions song song
       const [allSchedules, todaySessions] = await Promise.all([
-        scheduleService.getSchedules({ teacherId }).catch(() => []),
-        attendanceService.getSessions({ status: "ACTIVE" }).catch(() => []),
+        scheduleService
+          .getSchedules({ teacherId, fromDate, toDate })
+          .catch(() => []),
+        attendanceService
+          .getSessions({ teacherId, active: true })
+          .catch(() => []),
       ]);
 
-      // Convert schedules to TeacherSchedule format
+      // Debug logs để xem data thực tế từ backend
+      console.log("[TeacherDashboard] teacherId =", teacherId);
+      console.log("[TeacherDashboard] week range =", { fromDate, toDate });
+      console.log("[TeacherDashboard] schedules from API =", allSchedules);
+      console.log("[TeacherDashboard] sessions from API =", todaySessions);
+
+      // Convert schedules to TeacherSchedule format (dữ liệu từ DB)
       const schedules = allSchedules.map((s: Schedule) => ({
         id: s.id,
+        subjectCode: s.subjectCode,
         subjectName: s.subjectName,
         className: s.className,
         time: `${s.startTime} - ${s.endTime}`,
@@ -95,6 +134,7 @@ export default function TeacherDashboardScreen() {
       
       for (const session of todaySessions) {
         const records = await attendanceService.getRecords({ sessionId: session.id }).catch(() => []);
+        console.log("[TeacherDashboard] records for session", session.id, "=", records);
         totalStudents += records.length;
         presentToday += records.filter((r: any) => r.status === "PRESENT").length;
       }
@@ -103,6 +143,13 @@ export default function TeacherDashboardScreen() {
       const attendanceRate = totalStudents > 0 ? Math.round((presentToday / totalStudents) * 100) : 0;
 
       setStats({
+        totalStudents,
+        presentToday,
+        absentToday,
+        attendanceRate,
+      });
+
+      console.log("[TeacherDashboard] computed stats =", {
         totalStudents,
         presentToday,
         absentToday,
@@ -719,7 +766,7 @@ export default function TeacherDashboardScreen() {
                   marginBottom: isMobile ? 3 : 4,
                 }}
               >
-                {item.courseName}
+                {item.subjectName}
               </Text>
               <Text
                 style={{
@@ -729,7 +776,7 @@ export default function TeacherDashboardScreen() {
                   marginBottom: isMobile ? 2 : 3,
                 }}
               >
-                {item.courseCode}
+                {item.subjectCode}
               </Text>
               <Text
                 style={{
@@ -804,15 +851,10 @@ export default function TeacherDashboardScreen() {
               minWidth: 44, // Touch-friendly minimum
             }}
           >
-            <Text
-              style={{
-                fontSize: isMobile ? 18 : 16,
-                color: Colors.gray700,
-                fontWeight: "600",
-              }}
-            >
-              ←
-            </Text>
+            <ChevronLeftIcon
+              size={isMobile ? 20 : 18}
+              color={Colors.gray700}
+            />
           </TouchableOpacity>
 
           <Text
@@ -842,15 +884,10 @@ export default function TeacherDashboardScreen() {
               minWidth: 44, // Touch-friendly minimum
             }}
           >
-            <Text
-              style={{
-                fontSize: isMobile ? 18 : 16,
-                color: Colors.gray700,
-                fontWeight: "600",
-              }}
-            >
-              →
-            </Text>
+            <ChevronRightIcon
+              size={isMobile ? 20 : 18}
+              color={Colors.gray700}
+            />
           </TouchableOpacity>
         </View>
 
@@ -868,7 +905,7 @@ export default function TeacherDashboardScreen() {
               gap: 8,
             }}
           >
-            <Text style={{ fontSize: 20 }}>👉</Text>
+            <InfoIcon size={20} color="#1E40AF" />
             <Text style={{ fontSize: 12, color: "#1E40AF", flex: 1 }}>
               Vuốt sang ngang để xem lịch các ngày khác
             </Text>
@@ -1081,7 +1118,7 @@ export default function TeacherDashboardScreen() {
               marginTop: 12,
             }}
           >
-            <Text style={{ fontSize: 48, marginBottom: 12 }}>📅</Text>
+            <CalendarIcon size={48} color={Colors.primary} />
             <Text
               style={{
                 fontSize: isMobile ? 14 : 16,
