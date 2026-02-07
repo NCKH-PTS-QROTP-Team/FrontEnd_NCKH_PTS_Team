@@ -4,9 +4,20 @@ import { Platform } from 'react-native';
 
 // Base URL - có thể config từ env
 // Sử dụng IP local của máy tính chạy backend thay vì localhost cho mobile
-// Để tìm IP: chạy lệnh 'ipconfig' (Windows) hoặc 'ifconfig' (Mac/Linux)
+// 
+// 📌 HƯỚNG DẪN TÌM IP:
+// - Windows: chạy lệnh 'ipconfig' → tìm "IPv4 Address" (không phải 127.0.0.1)
+// - Mac/Linux: chạy lệnh 'ifconfig' → tìm "inet" (không phải 127.0.0.1)
+// - Hoặc dùng environment variable: EXPO_PUBLIC_API_URL=http://YOUR_IP:8080/api
+//
+// ⚠️ LƯU Ý:
+// - Điện thoại và máy tính PHẢI cùng mạng Wi-Fi
+// - Backend phải đang chạy trên IP đó (port 8080)
+// - Firewall có thể chặn kết nối, cần allow port 8080
 const getApiBaseUrl = () => {
   // Ưu tiên: Environment variable (cho production hoặc custom config)
+  // Có thể set trong .env hoặc .env.local:
+  // EXPO_PUBLIC_API_URL=http://192.168.1.12:8080/api
   if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
@@ -21,11 +32,17 @@ const getApiBaseUrl = () => {
       return 'http://localhost:8080/api';
     } else if (Platform.OS === 'android') {
       // 10.0.2.2 là địa chỉ đặc biệt cho Android Emulator trỏ về localhost của máy host
-      // Nếu dùng thiết bị thật, thay bằng IP của máy: http://192.168.1.81:8080/api
-      return 'http://192.168.1.81:8080/api';
-    } else {
+      // Nếu dùng thiết bị thật, thay bằng IP của máy tính chạy backend
+      // Để tìm IP: chạy lệnh 'ipconfig' (Windows) hoặc 'ifconfig' (Mac/Linux)
+      // Lấy IP từ IPv4 Address (không phải 127.0.0.1)
+      return 'http://192.168.1.12:8080/api';
+    } else if (Platform.OS === 'ios') {
       // iOS Simulator có thể dùng localhost
-      return 'http://localhost:8080/api';
+      // iOS thiết bị thật cần IP của máy tính (giống Android)
+      return 'http://192.168.1.12:8080/api';
+    } else {
+      // Fallback cho các platform khác
+      return 'http://192.168.1.12:8080/api';
     }
   }
   
@@ -203,8 +220,12 @@ apiClient.interceptors.response.use(
     }
 
     // Handle server errors
+    // Backend trả về ErrorResponse với field 'detail' chứa message chi tiết
+    // Ưu tiên lấy từ detail, sau đó mới lấy từ message
+    const errorData = error.response.data as any;
     const errorMessage = 
-      (error.response.data as any)?.message || 
+      errorData?.detail ||  // Message chi tiết từ backend (ưu tiên)
+      errorData?.message || 
       error.message || 
       'Đã xảy ra lỗi không xác định';
     

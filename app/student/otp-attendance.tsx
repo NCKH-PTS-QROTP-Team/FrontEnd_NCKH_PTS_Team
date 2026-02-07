@@ -8,6 +8,7 @@ import {
   Platform,
   useWindowDimensions,
   Alert,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -46,6 +47,9 @@ export default function OTPAttendanceScreen() {
   const [verifiedFaceEncoding, setVerifiedFaceEncoding] = useState<
     number[] | null
   >(null);
+  const [faceDetected, setFaceDetected] = useState(false);
+  const [faceTooFar, setFaceTooFar] = useState(false);
+  const detectIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
@@ -59,6 +63,40 @@ export default function OTPAttendanceScreen() {
     }, 1000);
     return () => clearInterval(timer);
   }, [faceRetryCooldown]);
+
+  // Animation nhẹ nhàng cho khung scan (thay thế detect realtime)
+  // Chỉ dùng animation cho transform (native driver) để tránh conflict
+  // Opacity và shadow dùng giá trị tĩnh để tránh lỗi
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Tạo animation pulse nhẹ nhàng cho khung scan khi đang mở camera
+  useEffect(() => {
+    if (showCamera && !capturingFace && !faceVerified) {
+      // Pulse animation (nhấp nháy nhẹ) - chỉ dùng native driver cho transform
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.05,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseAnimation.start();
+
+      return () => {
+        pulseAnimation.stop();
+        pulseAnim.setValue(1);
+      };
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [showCamera, capturingFace, faceVerified]);
 
   // Load active session on mount
   useEffect(() => {
@@ -101,7 +139,7 @@ export default function OTPAttendanceScreen() {
 
       // Lấy active sessions
       const sessions = await attendanceService.getSessions({
-        status: "ACTIVE",
+        active: true,
       });
 
       // Tìm session OTP active
@@ -181,13 +219,25 @@ export default function OTPAttendanceScreen() {
       return;
     }
 
-    // Hiển thị camera để capture face
-    if (!permission?.granted) {
-      const result = await requestPermission();
-      if (!result.granted) {
-        showToast("Cần quyền truy cập camera để xác thực Face ID", "error");
-        return;
+    // Trên web, permission có thể hoạt động khác, chỉ check trên mobile
+    if (!isWeb) {
+      // Mobile (Expo): Kiểm tra và request permission nếu chưa có hoặc chưa được grant
+      if (!permission || !permission.granted) {
+        console.log('📷 [Mobile] Requesting camera permission...');
+        const result = await requestPermission();
+        console.log('📷 [Mobile] Permission result:', result);
+        
+        if (!result.granted) {
+          showToast("Cần quyền truy cập camera để xác thực Face ID", "error");
+          return;
+        }
+        
+        // Permission đã được grant, tiếp tục
+        console.log('✅ [Mobile] Camera permission granted');
       }
+    } else {
+      // Web: Permission thường được xử lý tự động bởi browser
+      console.log('🌐 [Web] Skipping permission check, browser will handle it');
     }
 
     setFaceResult("idle");
@@ -226,9 +276,14 @@ export default function OTPAttendanceScreen() {
     setFaceResult("idle");
     try {
       // Capture photo từ camera
+      // Tăng quality lên tối đa (1.0) để cải thiện nhận diện mặt trên mobile
+      // Mobile thường có độ phân giải thấp hơn web, cần quality cao hơn
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
+        quality: 1.0, // Maximum quality để tăng similarity trên mobile
         base64: true,
+        skipProcessing: false, // Đảm bảo xử lý đầy đủ
+        exif: false, // Tắt EXIF để giảm kích thước nhưng không ảnh hưởng chất lượng
+        // Không set width/height để giữ nguyên resolution của camera
       });
 
       if (!photo.base64) {
@@ -291,23 +346,30 @@ export default function OTPAttendanceScreen() {
         "success",
       );
     } catch (error: any) {
-      console.error("Error capturing face:", error);
+      // Không log ERROR cho lỗi user input (face không tìm thấy, face quá xa, etc.)
+      // Chỉ log để debug nếu cần
+      if (__DEV__) {
+        console.log("Face capture error:", error);
+      }
       
       // Lấy message từ nhiều nguồn (ErrorResponse có message và detail)
+      // Backend trả về ErrorResponse với field 'detail' chứa message chi tiết
       let errorMessage = "Không thể xử lý ảnh. Vui lòng thử lại.";
-      if (error?.message) {
-        errorMessage = error.message;
-      } else if (error?.response?.data?.detail) {
-        // detail chứa message chi tiết từ backend
+      
+      // Ưu tiên lấy từ detail (message chi tiết từ backend)
+      if (error?.response?.data?.detail) {
         errorMessage = error.response.data.detail;
       } else if (error?.response?.data?.message) {
         errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
       } else if (error?.response?.data?.data?.detail) {
         errorMessage = error.response.data.data.detail;
       } else if (error?.response?.data?.data?.message) {
         errorMessage = error.response.data.data.message;
       }
       
+      // Hiển thị toast với message từ backend (đồng bộ web và app)
       showToast(errorMessage, "error");
       setFaceResult("error");
       setFaceRetryCooldown(5);
@@ -528,9 +590,7 @@ Hết thời gian điểm danh
                           ? `Chờ ${faceRetryCooldown}s để xác thực lại`
                           : "Bắt đầu xác thực Face ID"
                       }
-                      onPress={
-                        faceRetryCooldown > 0 ? undefined : handleStartFaceVerification
-                      }
+                      onPress={handleStartFaceVerification}
                       disabled={faceRetryCooldown > 0}
                     />
                   </View>
@@ -650,7 +710,8 @@ style={[
       </ScrollView>
       
       {/* Camera Modal for Face Capture (giống UI quét QR) */}
-      {showCamera && permission?.granted && (
+      {/* Trên web, không cần check permission.granted vì browser tự xử lý */}
+      {showCamera && (isWeb || permission?.granted) && (
         <View
           style={{
             position: "absolute",
@@ -662,15 +723,20 @@ style={[
             zIndex: 1000,
           }}
         >
-          <CameraView ref={cameraRef} style={{ flex: 1 }} facing="front">
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: "transparent",
-                justifyContent: "space-between",
-                padding: 20,
-              }}
-            >
+          <CameraView ref={cameraRef} style={{ flex: 1 }} facing="front" />
+          {/* Overlay UI - dùng absolute positioning thay vì children */}
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "transparent",
+              justifyContent: "space-between",
+              padding: 20,
+            }}
+          >
               {/* Header */}
               <View
                 style={{
@@ -709,8 +775,8 @@ style={[
                 </TouchableOpacity>
               </View>
 
-              {/* Scanning Area Indicator */}
-              <View
+              {/* Scanning Area Indicator với animation nhẹ nhàng */}
+              <Animated.View
                 style={{
                   alignSelf: "center",
                   width: scanBoxSize,
@@ -725,6 +791,14 @@ style={[
                   backgroundColor: "transparent",
                   alignItems: "center",
                   justifyContent: "center",
+                  transform: [{ scale: !capturingFace && !faceVerified ? pulseAnim : 1 }],
+                  // Dùng giá trị tĩnh cho opacity và shadow để tránh conflict với native driver
+                  opacity: 1,
+                  shadowColor: !capturingFace && !faceVerified ? "#FFFFFF" : "transparent",
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: !capturingFace && !faceVerified ? 0.3 : 0,
+                  shadowRadius: 20,
+                  elevation: !capturingFace && !faceVerified ? 10 : 0,
                 }}
               >
                 {/* Đang xác thực */}
@@ -818,9 +892,8 @@ style={[
                 {/* Nút chụp ảnh mặc định */}
                 {!capturingFace && faceResult === "idle" && (
                   <TouchableOpacity
-                    onPress={
-                      faceRetryCooldown > 0 ? undefined : handleCaptureFace
-                    }
+                    onPress={handleCaptureFace}
+                    disabled={faceRetryCooldown > 0}
                     style={{
                       backgroundColor:
                         faceRetryCooldown > 0
@@ -844,7 +917,7 @@ style={[
                     </Text>
                   </TouchableOpacity>
                 )}
-              </View>
+              </Animated.View>
 
               {/* Instructions */}
               <View
@@ -862,12 +935,10 @@ style={[
                     textAlign: "center",
                   }}
                 >
-                  Nhấn nút để chụp ảnh xác thực Face ID. Đảm bảo khuôn mặt rõ,
-                  không che mắt và nằm trong khung.
+                  📸 Đưa khuôn mặt vào khung, đảm bảo ánh sáng đủ và nhấn nút để chụp ảnh xác thực Face ID. Đảm bảo khuôn mặt rõ, không che mắt và nằm trong khung.
                 </Text>
               </View>
-            </View>
-          </CameraView>
+          </View>
         </View>
       )}
 

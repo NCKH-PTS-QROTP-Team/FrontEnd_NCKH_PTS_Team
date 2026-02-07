@@ -371,10 +371,12 @@ export default function RegisterFaceScreen() {
         setDetecting(true);
 
         // Capture frame nhỏ để detect (quality thấp để nhanh)
+        // Tăng quality để cải thiện nhận diện mặt
         const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.3,
+          quality: 0.5, // Quality thấp cho realtime detection (nhanh)
+          skipProcessing: true, // Skip processing để detect nhanh hơn
+          exif: false,
           base64: true,
-          skipProcessing: true,
         });
 
         if (!photo.base64) {
@@ -524,10 +526,13 @@ export default function RegisterFaceScreen() {
       }
 
       // Capture photo chất lượng cao
+      // Tăng quality lên tối đa (1.0) để cải thiện nhận diện mặt trên mobile
+      // Mobile thường có độ phân giải thấp hơn web, cần quality cao hơn
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
-        base64: true,
+        quality: 1.0, // Maximum quality để tăng similarity trên mobile
         skipProcessing: false, // Đảm bảo image được process đầy đủ
+        exif: false,
+        base64: true,
       });
 
       if (!photo.base64) {

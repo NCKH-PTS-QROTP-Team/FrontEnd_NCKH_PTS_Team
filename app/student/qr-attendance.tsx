@@ -7,6 +7,7 @@ import {
   Platform,
   useWindowDimensions,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -46,6 +47,7 @@ export default function QRAttendanceScreen() {
   );
   const [faceRetryCooldown, setFaceRetryCooldown] = useState(0);
   const [faceVerifiedEncoding, setFaceVerifiedEncoding] = useState<number[] | null>(null);
+  const detectIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const { showToast } = useToast();
@@ -71,6 +73,40 @@ export default function QRAttendanceScreen() {
     }, 1000);
     return () => clearInterval(timer);
   }, [faceRetryCooldown]);
+
+  // Animation nhẹ nhàng cho khung scan (thay thế detect realtime)
+  // Chỉ dùng animation cho transform (native driver) để tránh conflict
+  // Opacity và shadow dùng giá trị tĩnh để tránh lỗi
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Tạo animation pulse nhẹ nhàng cho khung scan khi đang ở bước face-verification
+  useEffect(() => {
+    if (showCamera && step === "face-verification" && !faceVerifying && !faceVerified) {
+      // Pulse animation (nhấp nháy nhẹ) - chỉ dùng native driver cho transform
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.05,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseAnimation.start();
+
+      return () => {
+        pulseAnimation.stop();
+        pulseAnim.setValue(1);
+      };
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [showCamera, step, faceVerifying, faceVerified]);
 
   // Check face registration and load session on mount
   useEffect(() => {
@@ -101,7 +137,7 @@ export default function QRAttendanceScreen() {
 
       // Load active session
       const sessions = await attendanceService.getSessions({
-        status: "ACTIVE",
+        active: true,
       });
 
       // Tìm session QR active
@@ -127,25 +163,44 @@ export default function QRAttendanceScreen() {
     } catch (error: any) {
       console.error("Error checking face registration:", error);
       showToast("Không thể tải thông tin phiên điểm danh", "error");
+      // Đảm bảo loading được reset ngay cả khi có lỗi
+      setStep("face-verification"); // Vẫn cho phép user thử xác thực face
     } finally {
       setLoading(false);
     }
   };
 
   const handleStartFaceVerification = async () => {
-    if (!permission) {
-      const result = await requestPermission();
-      if (!result.granted) {
-        showToast("Cần quyền truy cập camera để xác thực face", "error");
-        return;
-      }
-    }
-
-    if (!permission?.granted) {
-      showToast("Cần quyền truy cập camera để xác thực face", "error");
+    console.log('🚀 handleStartFaceVerification called');
+    console.log('📊 State check - loading:', loading, 'faceVerifying:', faceVerifying, 'permission:', permission, 'isWeb:', isWeb);
+    
+    if (loading || faceVerifying) {
+      console.warn('⚠️ Button is disabled, ignoring press');
       return;
     }
 
+    // Trên web, permission có thể hoạt động khác, chỉ check trên mobile
+    if (!isWeb) {
+      // Mobile (Expo): Kiểm tra và request permission nếu chưa có hoặc chưa được grant
+      if (!permission || !permission.granted) {
+        console.log('📷 [Mobile] Requesting camera permission...');
+        const result = await requestPermission();
+        console.log('📷 [Mobile] Permission result:', result);
+        
+        if (!result.granted) {
+          showToast("Cần quyền truy cập camera để xác thực face", "error");
+          return;
+        }
+        
+        // Permission đã được grant, tiếp tục
+        console.log('✅ [Mobile] Camera permission granted');
+      }
+    } else {
+      // Web: Permission thường được xử lý tự động bởi browser
+      console.log('🌐 [Web] Skipping permission check, browser will handle it');
+    }
+
+    console.log('✅ Opening camera...');
     // Mở camera, chờ người dùng nhấn nút "Chụp ảnh để xác thực"
     setShowCamera(true);
     setFaceVerifying(false);
@@ -157,13 +212,28 @@ export default function QRAttendanceScreen() {
 
     try {
       setFaceVerifying(true);
+      // Tăng quality lên tối đa (1.0) để cải thiện nhận diện mặt trên mobile
+      // Mobile thường có độ phân giải thấp hơn web, cần quality cao hơn
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
+        quality: 1.0, // Maximum quality để tăng similarity trên mobile
         base64: true,
+        skipProcessing: false, // Đảm bảo xử lý đầy đủ
+        exif: false, // Tắt EXIF để giảm kích thước nhưng không ảnh hưởng chất lượng
+        // Không set width/height để giữ nguyên resolution của camera
       });
 
       if (!photo?.base64) {
         throw new Error("Không thể chụp ảnh");
+      }
+
+      // Log để debug: kiểm tra kích thước ảnh
+      if (__DEV__) {
+        console.log('📸 Photo info:', {
+          width: photo.width,
+          height: photo.height,
+          base64Length: photo.base64?.length,
+          uri: photo.uri,
+        });
       }
 
       // Verify face
@@ -216,23 +286,30 @@ export default function QRAttendanceScreen() {
         setStep("qr-scanning");
       }, 1200);
     } catch (error: any) {
-      console.error("Error verifying face:", error);
+      // Không log ERROR cho lỗi user input (face không tìm thấy, face quá xa, etc.)
+      // Chỉ log để debug nếu cần
+      if (__DEV__) {
+        console.log("Face verification error:", error);
+      }
       
       // Lấy message từ nhiều nguồn (ErrorResponse có message và detail)
+      // Backend trả về ErrorResponse với field 'detail' chứa message chi tiết
       let errorMessage = "Không thể xác thực face. Vui lòng thử lại sau 5 giây.";
-      if (error?.message) {
-        errorMessage = error.message;
-      } else if (error?.response?.data?.detail) {
-        // detail chứa message chi tiết từ backend
+      
+      // Ưu tiên lấy từ detail (message chi tiết từ backend)
+      if (error?.response?.data?.detail) {
         errorMessage = error.response.data.detail;
       } else if (error?.response?.data?.message) {
         errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
       } else if (error?.response?.data?.data?.detail) {
         errorMessage = error.response.data.data.detail;
       } else if (error?.response?.data?.data?.message) {
         errorMessage = error.response.data.data.message;
       }
       
+      // Hiển thị toast với message từ backend (đồng bộ web và app)
       showToast(errorMessage, "error");
       setFaceVerifying(false);
       setFaceResult("error");
@@ -251,17 +328,16 @@ export default function QRAttendanceScreen() {
       return;
     }
 
-    if (!permission) {
-      const result = await requestPermission();
-      if (!result.granted) {
-        showToast("Cần quyền truy cập camera để quét QR code", "error");
-        return;
+    // Trên web, permission có thể hoạt động khác, chỉ check trên mobile
+    if (!isWeb) {
+      // Mobile (Expo): Kiểm tra và request permission nếu chưa có hoặc chưa được grant
+      if (!permission || !permission.granted) {
+        const result = await requestPermission();
+        if (!result.granted) {
+          showToast("Cần quyền truy cập camera để quét QR code", "error");
+          return;
+        }
       }
-    }
-
-    if (!permission?.granted) {
-      showToast("Cần quyền truy cập camera để quét QR code", "error");
-      return;
     }
 
     setShowCamera(true);
@@ -402,7 +478,7 @@ export default function QRAttendanceScreen() {
           <CameraView
             ref={cameraRef}
             style={{ flex: 1 }}
-            facing="back"
+            facing={step === "face-verification" ? "front" : "back"}
             barcodeScannerSettings={
               step === "qr-scanning"
                 ? {
@@ -415,15 +491,20 @@ export default function QRAttendanceScreen() {
                 ? handleBarCodeScanned
                 : undefined
             }
+          />
+          {/* Overlay UI - dùng absolute positioning thay vì children */}
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "transparent",
+              justifyContent: "space-between",
+              padding: 20,
+            }}
           >
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: "transparent",
-                justifyContent: "space-between",
-                padding: 20,
-              }}
-            >
               {/* Header */}
               <View
                 style={{
@@ -459,8 +540,8 @@ export default function QRAttendanceScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Scanning Area Indicator */}
-              <View
+              {/* Scanning Area Indicator với animation nhẹ nhàng */}
+              <Animated.View
                 style={{
                   alignSelf: "center",
                   width: scanBoxSize,
@@ -479,6 +560,14 @@ export default function QRAttendanceScreen() {
                   backgroundColor: "transparent",
                   alignItems: "center",
                   justifyContent: "center",
+                  transform: [{ scale: step === "face-verification" && !faceVerifying && !faceVerified ? pulseAnim : 1 }],
+                  // Dùng giá trị tĩnh cho opacity và shadow để tránh conflict với native driver
+                  opacity: 1,
+                  shadowColor: step === "face-verification" && !faceVerifying && !faceVerified ? "#FFFFFF" : "transparent",
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: step === "face-verification" && !faceVerifying && !faceVerified ? 0.3 : 0,
+                  shadowRadius: 20,
+                  elevation: step === "face-verification" && !faceVerifying && !faceVerified ? 10 : 0,
                 }}
               >
                 {/* Face verifying spinner */}
@@ -624,7 +713,7 @@ export default function QRAttendanceScreen() {
                     </Text>
                   </View>
                 )}
-              </View>
+              </Animated.View>
 
               {/* Instructions */}
               <View
@@ -642,7 +731,7 @@ export default function QRAttendanceScreen() {
                   }}
                 >
                   {step === "face-verification"
-                    ? "Nhấn nút để chụp ảnh xác thực face"
+                    ? "📸 Đưa khuôn mặt vào khung, đảm bảo ánh sáng đủ và nhấn nút để chụp ảnh xác thực"
                     : scanning
                     ? "Hướng camera vào QR code"
                     : scanned
@@ -650,8 +739,7 @@ export default function QRAttendanceScreen() {
                     : "Nhấn để bắt đầu quét"}
                 </Text>
               </View>
-            </View>
-          </CameraView>
+          </View>
         </View>
       ) : (
         <ScrollView
@@ -829,7 +917,10 @@ export default function QRAttendanceScreen() {
 
                   <PrimaryButton
                     title="Bắt đầu xác thực Face ID"
-                    onPress={handleStartFaceVerification}
+                    onPress={() => {
+                      console.log('🔘 Button pressed! loading:', loading, 'faceVerifying:', faceVerifying);
+                      handleStartFaceVerification();
+                    }}
                     disabled={loading || faceVerifying}
                     loading={faceVerifying}
                   />
