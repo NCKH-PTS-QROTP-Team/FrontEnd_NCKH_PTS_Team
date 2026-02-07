@@ -20,6 +20,7 @@ import { AttendanceMethod } from "@/apis/types/attendance.types";
 import Toast, { useToast } from "@/components/Toast";
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from "expo-camera";
 import { useSocket } from "@/apis/socket/SocketProvider";
+import { CheckCircleIcon, CloseIcon, UserIcon } from "@/components/Icons";
 
 interface SessionInfo {
   id: string;
@@ -825,15 +826,7 @@ export default function QRAttendanceScreen() {
                     : "Quét QR Code"}
                 </Text>
                 <TouchableOpacity onPress={handleCancel}>
-                  <Text
-                    style={{
-                      color: "#FFFFFF",
-                      fontSize: 16,
-                      fontWeight: "600",
-                    }}
-                  >
-                    ✕
-                  </Text>
+                  <CloseIcon size={24} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
 
@@ -902,15 +895,7 @@ export default function QRAttendanceScreen() {
                         alignItems: "center",
                       }}
                     >
-                      <Text
-                        style={{
-                          fontSize: 40,
-                          textAlign: "center",
-                          marginBottom: 4,
-                        }}
-                      >
-                        ✅
-                      </Text>
+                      <CheckCircleIcon size={40} color="#FFFFFF" />
                       <Text
                         style={{
                           color: "#FFFFFF",
@@ -994,9 +979,10 @@ export default function QRAttendanceScreen() {
                       backgroundColor: "rgba(16, 185, 129, 0.9)",
                       borderRadius: 8,
                       padding: 16,
+                      alignItems: "center",
                     }}
                   >
-                    <Text style={{ fontSize: 40, textAlign: "center" }}>✅</Text>
+                    <CheckCircleIcon size={40} color="#FFFFFF" />
                     <Text
                       style={{
                         color: "#FFFFFF",
@@ -1301,16 +1287,7 @@ export default function QRAttendanceScreen() {
                       marginBottom: 16,
                     }}
                   >
-                    <Text
-                      style={{
-                        fontSize: 36,
-                        lineHeight: 44,
-                        fontWeight: "bold",
-                        color: "#6B7280",
-                      }}
-                    >
-                          👤
-                    </Text>
+                    <UserIcon size={36} color="#6B7280" />
                   </View>
                   <Text
                     style={{
@@ -1378,7 +1355,9 @@ export default function QRAttendanceScreen() {
                       alignItems: "center",
                     }}
                   >
-                    <Text style={{ fontSize: 20, marginRight: 8 }}>✅</Text>
+                    <View style={{ marginRight: 8 }}>
+                      <CheckCircleIcon size={20} color="#047857" />
+                    </View>
                     <View style={{ flex: 1 }}>
                       <Text
                         style={{
@@ -1485,7 +1464,9 @@ export default function QRAttendanceScreen() {
                   alignItems: "center",
                 }}
               >
-                <Text style={{ fontSize: 60, marginBottom: 16 }}>✅</Text>
+                <View style={{ marginBottom: 16 }}>
+                  <CheckCircleIcon size={60} color="#047857" />
+                </View>
                   <Text
                     style={{
                     fontSize: 20,

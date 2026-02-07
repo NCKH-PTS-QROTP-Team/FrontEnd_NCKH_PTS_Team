@@ -21,6 +21,7 @@ import { AttendanceMethod } from "@/apis/types/attendance.types";
 import Toast, { useToast } from "@/components/Toast";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useSocket } from "@/apis/socket/SocketProvider";
+import { CloseIcon } from "@/components/Icons";
 
 interface SessionInfo {
   id: string;
@@ -957,15 +958,7 @@ style={[
                     setCapturingFace(false);
                   }}
                 >
-                  <Text
-                    style={{
-                      color: "#FFFFFF",
-                      fontSize: 16,
-                      fontWeight: "600",
-                    }}
-                  >
-                    ✕
-                  </Text>
+                  <CloseIcon size={24} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
 
