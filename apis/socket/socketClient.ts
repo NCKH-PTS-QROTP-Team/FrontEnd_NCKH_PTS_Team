@@ -49,15 +49,16 @@ class SocketClient {
     const token = await getAuthToken();
 
     // Tạo socket connection với auth token
+    // Tắt reconnection để tránh spam error khi server socket không chạy
     this.socket = io(this.baseURL, {
       auth: {
         token: token || undefined,
       },
       transports: ['websocket', 'polling'],
-      reconnection: true,
+      reconnection: false, // Tắt auto-reconnect để tránh spam error
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 0, // Không tự động reconnect
     });
 
     // Event listeners
@@ -71,13 +72,18 @@ class SocketClient {
       this.isConnected = false;
     });
 
-    this.socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
+    // Track error để tránh spam log
+    let lastErrorTime = 0;
+    const ERROR_LOG_INTERVAL = 5000; // Chỉ log error mỗi 5 giây
+
+    // Tắt log error để tránh spam (socket không bắt buộc, chỉ dùng cho realtime face detection)
+    this.socket.on('connect_error', () => {
+      // Tắt log error vì socket không bắt buộc
       this.isConnected = false;
     });
 
-    this.socket.on('error', (error) => {
-      console.error('Socket error:', error);
+    this.socket.on('error', () => {
+      // Tắt log error vì socket không bắt buộc
     });
 
     return this.socket;

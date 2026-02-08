@@ -21,6 +21,7 @@ import Toast, { useToast } from "@/components/Toast";
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from "expo-camera";
 import { useSocket } from "@/apis/socket/SocketProvider";
 import { CheckCircleIcon, CloseIcon, UserIcon } from "@/components/Icons";
+import { getFriendlyError } from "@/utils/errorMessages";
 
 interface SessionInfo {
   id: string;
@@ -62,7 +63,7 @@ export default function QRAttendanceScreen() {
   const detectIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
-  const { showToast } = useToast();
+  const { toast, showToast, hideToast } = useToast();
   const { socket, isConnected, connect, disconnect, emit, on, off } = useSocket();
   const { width, height } = useWindowDimensions();
   const [previewLayout, setPreviewLayout] = useState<{ width: number; height: number }>({
@@ -97,7 +98,8 @@ export default function QRAttendanceScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // Socket realtime detection cho face, eyes, smiles
-  const useSocketForDetection = true; // Bật socket detection
+  // Tạm tắt vì server socket chưa chạy (có thể bật lại sau)
+  const useSocketForDetection = false; // Tắt socket detection để tránh error spam
   const FACE_BOX_SMOOTHING_ALPHA = 0.65;
   const faceBoxRef = useRef<FaceDetection | null>(null);
 
@@ -590,24 +592,10 @@ export default function QRAttendanceScreen() {
         console.log("Face verification error:", error);
       }
       
-      // Lấy message từ nhiều nguồn (ErrorResponse có message và detail)
-      // Backend trả về ErrorResponse với field 'detail' chứa message chi tiết
-      let errorMessage = "Không thể xác thực face. Vui lòng thử lại sau 5 giây.";
+      // Lấy message thân thiện từ error (tự động map error message thành message dễ hiểu)
+      const errorMessage = getFriendlyError(error);
       
-      // Ưu tiên lấy từ detail (message chi tiết từ backend)
-      if (error?.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      } else if (error?.response?.data?.data?.detail) {
-        errorMessage = error.response.data.data.detail;
-      } else if (error?.response?.data?.data?.message) {
-        errorMessage = error.response.data.data.message;
-      }
-      
-      // Hiển thị toast với message từ backend (đồng bộ web và app)
+      // Hiển thị toast với message thân thiện (đồng bộ web và app)
       showToast(errorMessage, "error");
       setFaceVerifying(false);
       setFaceResult("error");
@@ -1520,6 +1508,12 @@ export default function QRAttendanceScreen() {
         </View>
       </ScrollView>
       )}
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+      />
     </SafeAreaView>
   );
 }

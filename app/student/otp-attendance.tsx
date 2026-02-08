@@ -19,6 +19,7 @@ import { otpService, attendanceService, faceService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import { AttendanceMethod } from "@/apis/types/attendance.types";
 import Toast, { useToast } from "@/components/Toast";
+import { getFriendlyError } from "@/utils/errorMessages";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useSocket } from "@/apis/socket/SocketProvider";
 import { CloseIcon } from "@/components/Icons";
@@ -548,24 +549,10 @@ export default function OTPAttendanceScreen() {
         console.log("Face capture error:", error);
       }
       
-      // Lấy message từ nhiều nguồn (ErrorResponse có message và detail)
-      // Backend trả về ErrorResponse với field 'detail' chứa message chi tiết
-      let errorMessage = "Không thể xử lý ảnh. Vui lòng thử lại.";
+      // Lấy message thân thiện từ error (tự động map error message thành message dễ hiểu)
+      const errorMessage = getFriendlyError(error);
       
-      // Ưu tiên lấy từ detail (message chi tiết từ backend)
-      if (error?.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      } else if (error?.response?.data?.data?.detail) {
-        errorMessage = error.response.data.data.detail;
-      } else if (error?.response?.data?.data?.message) {
-        errorMessage = error.response.data.data.message;
-      }
-      
-      // Hiển thị toast với message từ backend (đồng bộ web và app)
+      // Hiển thị toast với message thân thiện (đồng bộ web và app)
       showToast(errorMessage, "error");
       setFaceResult("error");
       setFaceRetryCooldown(5);
@@ -608,10 +595,9 @@ export default function OTPAttendanceScreen() {
       }, 1500);
     } catch (error: any) {
       console.error("Error submitting attendance:", error);
-      showToast(
-        error.message || "Điểm danh thất bại. Vui lòng thử lại.",
-        "error"
-      );
+      // Lấy message thân thiện từ error
+      const errorMessage = getFriendlyError(error);
+      showToast(errorMessage, "error");
     } finally {
       setLoading(false);
     }
