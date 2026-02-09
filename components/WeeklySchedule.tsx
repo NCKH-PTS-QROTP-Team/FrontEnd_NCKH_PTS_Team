@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Platform, useWindowDimensions, ActivityIndicator, Animated } from 'react-native';
 import { Colors } from '@/constants/colors';
-import { scheduleService, userService } from '@/apis';
+import { scheduleService } from '@/apis';
 import { getStudentIdFromToken } from '@/apis/utils/jwt';
 import type { Schedule } from '@/apis/services/schedule.service';
-import { UserRole } from '@/apis';
 
 interface ScheduleItem {
   id: string;
@@ -154,15 +153,21 @@ export default function WeeklySchedule() {
       const studentId = await getStudentIdFromToken();
       let classId: string | undefined;
 
-      // Tìm classId của sinh viên từ userService
+      // Tìm classId của sinh viên từ API /users/me (cho phép tất cả user roles)
+      // Nếu không lấy được, sẽ load toàn bộ lịch (không filter theo class)
       if (studentId) {
         try {
-          const students = await userService.getUsers(UserRole.STUDENT);
-          const me = students.find(s => s.studentId === studentId);
-          classId = me?.classId;
-          console.log('👨‍🎓 Current student classId:', classId);
+          // Gọi API /users/me để lấy thông tin đầy đủ (bao gồm classId)
+          const { authService } = await import('@/apis');
+          const currentUser = await authService.getCurrentUser();
+          if (currentUser?.classId) {
+            classId = currentUser.classId;
+            console.log('👨‍🎓 Current student classId:', classId);
+          } else {
+            console.log('⚠️ Không có classId, sẽ load toàn bộ lịch');
+          }
         } catch (err) {
-          console.warn('⚠️ Không lấy được danh sách sinh viên, sẽ load toàn bộ lịch:', err);
+          console.warn('⚠️ Không lấy được classId, sẽ load toàn bộ lịch:', err);
         }
       }
 
