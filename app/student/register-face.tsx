@@ -124,6 +124,8 @@ export default function RegisterFaceScreen() {
   
   // Enable socket khi backend đã có socket server (port 8081)
   const useSocketForDetection = false; // Tạm tắt để dùng API fallback
+  // Auto-capture: chỉ bật trên web, mobile sẽ chụp thủ công để tránh chớp màn hình
+  const enableAutoCapture = Platform.OS === "web";
 
   const getGuideRect = (previewW: number, previewH: number) => {
     // Match UI guide frame: top 25%, left/right 10%, aspectRatio 0.75
@@ -342,14 +344,14 @@ export default function RegisterFaceScreen() {
         const finalHeight = Math.max(40, Math.min(scaledHeight, previewH - finalY));
         
         // Scale eyes và smiles nếu có từ socket response
-        const scaledEyes = face.eyes?.map(eye => ({
+        const scaledEyes = face.eyes?.map((eye: { x: number; y: number; width: number; height: number }) => ({
           x: Math.max(0, Math.min(eye.x * scaleX + offsetX, previewW - 20)),
           y: Math.max(0, Math.min(eye.y * scaleY + offsetY + headerOffsetY, previewH - 20)),
           width: Math.max(10, Math.min(eye.width * scaleX, previewW)),
           height: Math.max(10, Math.min(eye.height * scaleY, previewH)),
         })) || [];
         
-        const scaledSmiles = face.smiles?.map(smile => ({
+        const scaledSmiles = face.smiles?.map((smile: { x: number; y: number; width: number; height: number }) => ({
           x: Math.max(0, Math.min(smile.x * scaleX + offsetX, previewW - 20)),
           y: Math.max(0, Math.min(smile.y * scaleY + offsetY + headerOffsetY, previewH - 20)),
           width: Math.max(10, Math.min(smile.width * scaleX, previewW)),
@@ -661,6 +663,9 @@ export default function RegisterFaceScreen() {
 
   // Auto-capture kiểu ngân hàng: khi face "ready" ổn định -> đếm ngược -> chụp
   useEffect(() => {
+    // Trên mobile (Expo), tắt auto-capture để tránh camera bị tắt/bật liên tục gây chớp màn
+    if (!enableAutoCapture) return;
+
     if (!cameraActive || capturing) return;
 
     // Nếu mất điều kiện ready thì hủy countdown
@@ -694,7 +699,7 @@ export default function RegisterFaceScreen() {
         return prev - 1;
       });
     }, 1000);
-  }, [cameraActive, capturing, isReadyToCapture, countdown]);
+  }, [cameraActive, capturing, isReadyToCapture, countdown, enableAutoCapture]);
 
   // Reset UI state khi đổi step / tắt camera
   useEffect(() => {

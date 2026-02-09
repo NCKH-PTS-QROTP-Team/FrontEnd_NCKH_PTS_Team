@@ -38,6 +38,7 @@ export interface User {
   role: UserRole;
   studentId?: string;
   teacherId?: string;
+  classId?: string; // match UserDTO.Response.classId
   isActive: boolean;
   createdAt: string;
 }

@@ -15,9 +15,9 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { Colors } from "@/constants/colors";
-import { otpService, attendanceService, faceService } from "@/apis";
+import { otpService, attendanceService, faceService, authService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
-import { AttendanceMethod } from "@/apis/types/attendance.types";
+import { AttendanceMethod, AttendanceSessionResponse } from "@/apis/types/attendance.types";
 import Toast, { useToast } from "@/components/Toast";
 import { getFriendlyError } from "@/utils/errorMessages";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -48,8 +48,9 @@ export default function OTPAttendanceScreen() {
   const router = useRouter();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
-  const [countdown, setCountdown] = useState(300);
+  const [countdown, setCountdown] = useState(0);
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
+  const [availableSessions, setAvailableSessions] = useState<AttendanceSessionResponse[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [capturingFace, setCapturingFace] = useState(false);
@@ -316,15 +317,19 @@ export default function OTPAttendanceScreen() {
     return () => clearInterval(timer);
   }, [countdown]);
 
-  // Refresh OTP info periodically
+  // Refresh OTP info định kỳ, nhưng CHỈ sau khi đã xác thực face thành công
   useEffect(() => {
-    if (currentSessionId) {
-      const interval = setInterval(() => {
-        refreshOTPInfo();
-      }, 5000); // Refresh every 5 seconds
-      return () => clearInterval(interval);
-    }
-  }, [currentSessionId]);
+    if (!currentSessionId || !faceVerified) return;
+
+    // Khi vừa faceVerified, load ngay thông tin OTP lần đầu
+    refreshOTPInfo();
+
+    const interval = setInterval(() => {
+      refreshOTPInfo();
+    }, 5000); // Refresh every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [currentSessionId, faceVerified]);
 
   const loadActiveSession = async () => {
     try {
@@ -334,33 +339,50 @@ export default function OTPAttendanceScreen() {
         return;
       }
 
-      // Lấy active sessions
+      // Lấy thông tin user hiện tại để biết lớp của sinh viên
+      const currentUser = await authService.getCurrentUser();
+      if (!currentUser?.classId) {
+        showToast("Không tìm thấy thông tin lớp học của bạn", "error");
+        return;
+      }
+
+      // Lấy active sessions của đúng lớp học
       const sessions = await attendanceService.getSessions({
+        classId: currentUser.classId,
         active: true,
       });
 
-      // Tìm session OTP active
-      const otpSession = sessions.find(
+      // Lưu danh sách session để sinh viên có thể chọn môn cần điểm danh
+      setAvailableSessions(sessions);
+
+      // Tìm các session OTP ACTIVE của lớp đó
+      const otpSessions = sessions.filter(
         (s) => s.method === AttendanceMethod.OTP && s.status === "ACTIVE"
       );
 
-      if (!otpSession) {
+      if (otpSessions.length === 0) {
         showToast("Không có phiên điểm danh OTP nào đang hoạt động", "error");
         return;
       }
 
-      setSessionInfo({
-        id: otpSession.id,
-        classId: otpSession.classId,
-        classCode: otpSession.classCode || "",
-        className: otpSession.className || "",
-        subjectId: otpSession.subjectId,
-        subjectName: otpSession.subjectName || "",
+      // Mặc định chọn buổi mới nhất theo createdAt
+      otpSessions.sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
       });
-      setCurrentSessionId(otpSession.id);
 
-      // Load OTP info
-      await refreshOTPInfo();
+      const defaultSession = otpSessions[0];
+
+      setSessionInfo({
+        id: defaultSession.id,
+        classId: defaultSession.classId,
+        classCode: defaultSession.classCode || "",
+        className: defaultSession.className || "",
+        subjectId: defaultSession.subjectId,
+        subjectName: defaultSession.subjectName || "",
+      });
+      setCurrentSessionId(defaultSession.id);
     } catch (error: any) {
       console.error("Error loading active session:", error);
       showToast(
@@ -691,8 +713,8 @@ Hết thời gian điểm danh
               )}
             </View>
 
-            {/* Course Info */}
-<View
+            {/* Course Info + Session Selector */}
+            <View
               style={{
                 backgroundColor: "#E0F2FE",
                 borderRadius: 12,
@@ -705,11 +727,64 @@ Hết thời gian điểm danh
                   fontSize: 14,
                   lineHeight: 20,
                   color: "#6B7280",
-                  marginBottom: 4,
+                  marginBottom: 8,
                 }}
               >
                 Môn học
               </Text>
+
+              {availableSessions.length > 1 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ marginBottom: 12 }}
+                >
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    {availableSessions
+                      .filter((s) => s.method === AttendanceMethod.OTP && s.status === "ACTIVE")
+                      .map((s) => {
+                        const isSelected = sessionInfo?.id === s.id;
+                        return (
+                          <TouchableOpacity
+                            key={s.id}
+                            onPress={async () => {
+                              setSessionInfo({
+                                id: s.id,
+                                classId: s.classId,
+                                classCode: s.classCode || "",
+                                className: s.className || "",
+                                subjectId: s.subjectId,
+                                subjectName: s.subjectName || "",
+                              });
+                              setCurrentSessionId(s.id);
+                              setOtp(["", "", "", "", "", ""]);
+                              await refreshOTPInfo();
+                            }}
+                            style={{
+                              paddingHorizontal: 12,
+                              paddingVertical: 6,
+                              borderRadius: 999,
+                              borderWidth: 1,
+                              borderColor: isSelected ? Colors.primary : "#BFDBFE",
+                              backgroundColor: isSelected ? "#1D4ED8" : "#EFF6FF",
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: isSelected ? "#FFFFFF" : "#1D4ED8",
+                                fontWeight: "500",
+                              }}
+                            >
+                              {s.subjectName}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                  </View>
+                </ScrollView>
+              )}
+
               <Text
                 style={{
                   fontSize: 18,

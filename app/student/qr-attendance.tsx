@@ -14,9 +14,9 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { Colors } from "@/constants/colors";
-import { qrService, attendanceService, faceService } from "@/apis";
+import { qrService, attendanceService, faceService, authService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
-import { AttendanceMethod } from "@/apis/types/attendance.types";
+import { AttendanceMethod, AttendanceSessionResponse } from "@/apis/types/attendance.types";
 import Toast, { useToast } from "@/components/Toast";
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from "expo-camera";
 import { useSocket } from "@/apis/socket/SocketProvider";
@@ -50,6 +50,7 @@ export default function QRAttendanceScreen() {
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
+  const [availableSessions, setAvailableSessions] = useState<AttendanceSessionResponse[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [faceVerified, setFaceVerified] = useState(false);
@@ -435,30 +436,53 @@ export default function QRAttendanceScreen() {
         return;
       }
 
-      // Load active session
+      // Lấy thông tin user hiện tại để biết lớp của sinh viên
+      const currentUser = await authService.getCurrentUser();
+      if (!currentUser?.classId) {
+        showToast("Không tìm thấy thông tin lớp học của bạn", "error");
+        return;
+      }
+
+      // Load active session của đúng lớp học
       const sessions = await attendanceService.getSessions({
+        classId: currentUser.classId,
         active: true,
       });
 
-      // Tìm session QR active
-      const qrSession = sessions.find(
+      // Lưu lại danh sách session để cho sinh viên chọn môn cần điểm danh
+      setAvailableSessions(sessions);
+
+      // Lọc các session QR đang ACTIVE
+      const qrSessions = sessions.filter(
         (s) => s.method === AttendanceMethod.QR && s.status === "ACTIVE"
       );
 
-      if (!qrSession) {
+      if (qrSessions.length === 0) {
+        // Không có phiên QR nào đang hoạt động cho lớp này
+        // Đưa UI thoát khỏi trạng thái "checking" để hiện message thân thiện
+        setStep("face-verification");
         showToast("Không có phiên điểm danh QR nào đang hoạt động", "error");
         return;
       }
 
-      setSessionInfo({
-        id: qrSession.id,
-        classId: qrSession.classId,
-        classCode: qrSession.className,
-        className: qrSession.className,
-        subjectId: qrSession.subjectId,
-        subjectName: qrSession.subjectName,
+      // Mặc định chọn buổi mới nhất theo createdAt (sinh viên vẫn có thể đổi lựa chọn)
+      qrSessions.sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
       });
-      setCurrentSessionId(qrSession.id);
+
+      const defaultSession = qrSessions[0];
+
+      setSessionInfo({
+        id: defaultSession.id,
+        classId: defaultSession.classId,
+        classCode: defaultSession.classCode || defaultSession.className,
+        className: defaultSession.className,
+        subjectId: defaultSession.subjectId,
+        subjectName: defaultSession.subjectName,
+      });
+      setCurrentSessionId(defaultSession.id);
       setStep("face-verification");
     } catch (error: any) {
       console.error("Error checking face registration:", error);
@@ -1176,12 +1200,66 @@ export default function QRAttendanceScreen() {
                 style={{
                   fontSize: 14,
                   lineHeight: 20,
-                  color: "#6B7280",
-                  marginBottom: 4,
+                  color: "#065F46",
+                  marginBottom: 8,
                 }}
               >
                 Môn học
               </Text>
+
+              {availableSessions.length > 1 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ marginBottom: 12 }}
+                >
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    {availableSessions
+                      .filter((s) => s.method === AttendanceMethod.QR && s.status === "ACTIVE")
+                      .map((s) => {
+                        const isSelected = sessionInfo?.id === s.id;
+                        return (
+                          <TouchableOpacity
+                            key={s.id}
+                            onPress={() => {
+                              setSessionInfo({
+                                id: s.id,
+                                classId: s.classId,
+                                classCode: s.classCode || s.className,
+                                className: s.className,
+                                subjectId: s.subjectId,
+                                subjectName: s.subjectName,
+                              });
+                              setCurrentSessionId(s.id);
+                              setFaceVerified(false);
+                              setFaceVerifiedEncoding(null);
+                              setStep("face-verification");
+                            }}
+                            style={{
+                              paddingHorizontal: 12,
+                              paddingVertical: 6,
+                              borderRadius: 999,
+                              borderWidth: 1,
+                              borderColor: isSelected ? "#10B981" : "#A7F3D0",
+                              backgroundColor: isSelected ? "#10B981" : "#ECFDF5",
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: isSelected ? "#FFFFFF" : "#047857",
+                                fontWeight: "500",
+                              }}
+                            >
+                              {s.subjectName}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                  </View>
+                </ScrollView>
+              )}
+
               <Text
                 style={{
                   fontSize: 18,
@@ -1191,10 +1269,10 @@ export default function QRAttendanceScreen() {
                   marginBottom: 4,
                 }}
               >
-                  {sessionInfo.subjectName}
+                {sessionInfo.subjectName}
               </Text>
               <Text style={{ fontSize: 14, lineHeight: 20, color: "#4B5563" }}>
-                  {sessionInfo.className}
+                {sessionInfo.className}
               </Text>
             </View>
           </View>

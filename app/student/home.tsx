@@ -58,11 +58,23 @@ export default function StudentHomeScreen() {
       const studentId = await getStudentIdFromToken();
       console.log("📝 StudentId:", studentId);
       
-      // Load schedules (không cần studentId)
+      // Load schedules theo lớp của sinh viên để dashboard chỉ hiển thị môn của lớp đó
       let allSchedules: Schedule[] = [];
       try {
         console.log("📅 Loading schedules...");
-        allSchedules = await scheduleService.getSchedules();
+        if (studentId) {
+          // Lấy thông tin user hiện tại để biết classId
+          const currentUser = await authService.getCurrentUser();
+          if (currentUser?.classId) {
+            allSchedules = await scheduleService.getSchedules({
+              classId: currentUser.classId,
+            });
+          } else {
+            allSchedules = await scheduleService.getSchedules();
+          }
+        } else {
+          allSchedules = await scheduleService.getSchedules();
+        }
         console.log("✅ Loaded schedules:", allSchedules.length);
       } catch (error: any) {
         console.error("❌ Error loading schedules:", error);
