@@ -3,6 +3,7 @@ import { Stack, useRouter, usePathname } from "expo-router";
 import { Platform, View } from "react-native";
 import AppLayout from "@/components/AppLayout";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { ChatBox } from "@/components/ChatBox";
 import {
   HomeIcon,
   ClipboardIcon,
@@ -145,19 +146,23 @@ centerButton={{
             onPress: () => router.push("/teacher/attendance-actions"),
           }}
 />
+        <ChatBox />
       </View>
     );
   }
 
   // On web, wrap with AppLayout
   return (
-    <AppLayout
-      menuItems={menuItems}
-      userRole="teacher"
-      userName="Trần Thị Bình"
-      userEmail="tranthib@teacher.edu.vn"
-    >
-      {stackContent}
-    </AppLayout>
+    <>
+      <AppLayout
+        menuItems={menuItems}
+        userRole="teacher"
+        userName="Trần Thị Bình"
+        userEmail="tranthib@teacher.edu.vn"
+      >
+        {stackContent}
+      </AppLayout>
+      <ChatBox />
+    </>
   );
 }

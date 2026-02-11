@@ -3,6 +3,7 @@ import { Stack, useRouter, usePathname } from "expo-router";
 import { Platform, View } from "react-native";
 import AppLayout from "@/components/AppLayout";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { ChatBox } from "@/components/ChatBox";
 import {
   HomeIcon,
   CalendarIcon,
@@ -152,17 +153,21 @@ export default function StudentLayout() {
             onPress: () => router.push("/student/attendance-actions"),
           }}
         />
+        <ChatBox />
       </View>
     );
   }
 
   // On web, wrap with AppLayout - user info sẽ tự fetch từ API
   return (
-    <AppLayout
-      menuItems={menuItems}
-      userRole="student"
-    >
-      {stackContent}
-    </AppLayout>
+    <>
+      <AppLayout
+        menuItems={menuItems}
+        userRole="student"
+      >
+        {stackContent}
+      </AppLayout>
+      <ChatBox />
+    </>
   );
 }
