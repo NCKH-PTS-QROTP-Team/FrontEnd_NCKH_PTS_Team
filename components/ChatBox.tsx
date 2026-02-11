@@ -12,6 +12,15 @@ import {
   Keyboard,
 } from "react-native";
 import { Colors } from "@/constants/colors";
+import { getRoleFromToken, getUserIdFromToken } from "@/apis/utils/jwt";
+import { getCurrentUserProfile } from "@/apis/config/apiClient";
+
+const CHAT_SERVICE_URL =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1")
+    ? "http://localhost:8091"
+    : "http://192.168.1.12:8091"; // TODO: đổi IP này thành IP máy chạy AI/chat-service khi test trên device
 
 interface Message {
   id: string;
@@ -38,10 +47,38 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [currentRole, setCurrentRole] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentName, setCurrentName] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const { width } = useWindowDimensions();
   const isWeb = Platform.OS === "web";
   const isMobile = width < 768;
+
+  // Load role, userId, display name sau khi user đã login
+  useEffect(() => {
+    let isMounted = true;
+
+    (async () => {
+      try {
+        const [role, userId, profile] = await Promise.all([
+          getRoleFromToken(),
+          getUserIdFromToken(),
+          getCurrentUserProfile(),
+        ]);
+        if (!isMounted) return;
+        setCurrentRole(role);
+        setCurrentUserId(userId);
+        setCurrentName(profile?.name ?? null);
+      } catch (error) {
+        console.error("Không lấy được role/userId/profile:", error);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Listen to keyboard events on mobile
   useEffect(() => {
@@ -101,20 +138,50 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
     setInputText("");
     setIsLoading(true);
 
-    // Simulate API call
     try {
-      setTimeout(() => {
-        const botMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text: "Cảm ơn bạn đã liên hệ! Tính năng chat đang được phát triển. Vui lòng thử lại sau.",
-          sender: "bot",
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, botMessage]);
-        setIsLoading(false);
-      }, 1000);
+      const response = await fetch(`${CHAT_SERVICE_URL}/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: userMessage.text,
+          sessionId: "fe-default",
+          role: currentRole ?? "UNKNOWN",
+          userId: currentUserId,
+          display_name: currentName,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data: { answer?: string; intent?: string } = await response.json();
+
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text:
+          data.answer ??
+          "Chat-service không trả về nội dung. Vui lòng kiểm tra lại service AI/chat-service.",
+        sender: "bot",
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error("Chat error:", error);
+      const botMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        text:
+          "Không kết nối được tới AI/chat-service. Hãy kiểm tra:\n" +
+          "- Service đã được chạy với `uvicorn app.main:app --port 8091` chưa?\n" +
+          "- IP/port trong CHAT_SERVICE_URL đã đúng chưa?",
+        sender: "bot",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botMessage]);
+    } finally {
       setIsLoading(false);
     }
   };
