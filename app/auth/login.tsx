@@ -77,6 +77,9 @@ export default function LoginScreen() {
             case "student":
               router.replace("/student/home" as any);
               break;
+            case "department":
+              router.replace("/department/dashboard" as any);
+              break;
             default:
               showToast("Vai trò không hợp lệ", "error");
           }
@@ -130,6 +133,9 @@ export default function LoginScreen() {
               break;
             case "student":
               router.replace("/student/home" as any);
+              break;
+            case "department":
+              router.replace("/department/dashboard" as any);
               break;
           }
         }, 500);
@@ -209,7 +215,7 @@ export default function LoginScreen() {
                 setUsername(text);
                 setUsernameError("");
               }}
-              placeholder="admin, GV001, SV001"
+              placeholder="admin, GVK001, GV001, SV001"
               error={usernameError || undefined}
               success={
                 username.trim().length > 0 && !usernameError ? true : undefined
@@ -275,6 +281,17 @@ export default function LoginScreen() {
                 >
                   <Text style={{ fontWeight: "600" }}>Admin:</Text> admin /
                   admin123
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: Colors.textSecondary,
+                    lineHeight: 20,
+                    marginBottom: 4,
+                  }}
+                >
+                  <Text style={{ fontWeight: "600" }}>Giáo vụ khoa:</Text> GVK001 /
+                  department123
                 </Text>
                 <Text
                   style={{

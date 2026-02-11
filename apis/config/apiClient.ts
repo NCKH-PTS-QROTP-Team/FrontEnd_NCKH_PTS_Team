@@ -11,8 +11,8 @@ const getApiBaseUrl = () => {
       return 'http://localhost:8080/api';
     } else if (Platform.OS === 'android') {
       // 10.0.2.2 là địa chỉ đặc biệt cho Android Emulator trỏ về localhost của máy host
-      // Nếu dùng thiết bị thật, thay bằng IP của máy: http://192.168.1.81:8080/api
-      return 'http://192.168.1.81:8080/api';
+      // Nếu dùng thiết bị thật, thay bằng IP của máy: http://192.168.1.11:8080/api
+      return 'http://192.168.1.11:8080/api';
     } else {
       // iOS Simulator có thể dùng localhost
       return 'http://localhost:8080/api';
@@ -106,15 +106,15 @@ apiClient.interceptors.response.use(
     // Handle 401 Unauthorized - Token expired hoặc invalid
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       // Xóa token và redirect về login
       await removeAuthToken();
-      
+
       // Emit event để logout (có thể dùng với context hoặc event emitter)
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('auth:logout'));
       }
-      
+
       return Promise.reject(error);
     }
 
@@ -128,11 +128,11 @@ apiClient.interceptors.response.use(
     }
 
     // Handle server errors
-    const errorMessage = 
-      (error.response.data as any)?.message || 
-      error.message || 
+    const errorMessage =
+      (error.response.data as any)?.message ||
+      error.message ||
       'Đã xảy ra lỗi không xác định';
-    
+
     return Promise.reject({
       message: errorMessage,
       status: error.response.status,
