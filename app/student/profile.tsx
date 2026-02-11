@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -19,21 +20,81 @@ import {
   LogoutIcon,
   ChevronRightIcon,
 } from "@/components/Icons";
+import { authService, attendanceService } from "@/apis";
+import { getStudentIdFromToken } from "@/apis/utils/jwt";
+import Toast, { useToast } from "@/components/Toast";
 
 export default function StudentProfileScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  const { showToast } = useToast();
 
-  const handleLogout = () => {
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const [attendanceStats, setAttendanceStats] = useState({
+    attendanceRate: 0,
+    totalSessions: 0,
+  });
+
+  useEffect(() => {
+    loadProfileData();
+  }, []);
+
+  const loadProfileData = async () => {
+    try {
+      setLoading(true);
+
+      // Load user info
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
+
+      // Load attendance stats
+      const studentId = await getStudentIdFromToken();
+      if (studentId) {
+        try {
+          const records = await attendanceService.getRecords({ studentId });
+          
+          // Tính tỷ lệ điểm danh
+          const totalSessions = records.length;
+          const presentCount = records.filter(
+            (r: any) => r.status === "PRESENT" || r.status === "LATE"
+          ).length;
+          const attendanceRate =
+            totalSessions > 0
+              ? Math.round((presentCount / totalSessions) * 100)
+              : 0;
+
+          setAttendanceStats({
+            attendanceRate,
+            totalSessions,
+          });
+        } catch (error) {
+          console.error("Error loading attendance stats:", error);
+        }
+      }
+    } catch (error: any) {
+      console.error("Error loading profile:", error);
+      showToast("Không thể tải thông tin tài khoản", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
     Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
       { text: "Hủy", style: "cancel" },
       {
         text: "Đăng xuất",
         style: "destructive",
-        onPress: () => {
-          // Handle logout logic
-          router.replace("/auth/login");
+        onPress: async () => {
+          try {
+            await authService.logout();
+            router.replace("/auth/login");
+          } catch (error) {
+            console.error("Logout error:", error);
+            router.replace("/auth/login");
+          }
         },
       },
     ]);
@@ -76,129 +137,153 @@ export default function StudentProfileScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Profile Card */}
-        <View
-          style={{
-            backgroundColor: Colors.white,
-            borderRadius: 16,
-            padding: 24,
-            marginBottom: 16,
-            alignItems: "center",
-            borderWidth: 1,
-            borderColor: Colors.border,
-          }}
-        >
+        {loading ? (
           <View
             style={{
-              width: 80,
-              height: 80,
-              borderRadius: 40,
-              backgroundColor: Colors.primary + "20",
+              flex: 1,
               alignItems: "center",
               justifyContent: "center",
-              marginBottom: 16,
+              paddingVertical: 48,
             }}
           >
-            <UserIcon size={40} color={Colors.primary} />
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text
+              style={{
+                fontSize: 14,
+                color: Colors.textSecondary,
+                marginTop: 16,
+              }}
+            >
+              Đang tải thông tin...
+            </Text>
           </View>
-          <Text
-            style={{
-              fontSize: 20,
-              fontWeight: "bold",
-              color: Colors.textHeading,
-              marginBottom: 4,
-            }}
-          >
-            Nguyễn Văn An
-          </Text>
-          <Text
-            style={{
-              fontSize: 14,
-              color: Colors.textSecondary,
-              marginBottom: 2,
-            }}
-          >
-            MSSV: 2021123456
-          </Text>
-          <Text
-            style={{
-              fontSize: 14,
-              color: Colors.textSecondary,
-            }}
-          >
-            nguyenvanan@student.edu.vn
-          </Text>
-        </View>
+        ) : (
+          <>
+            {/* Profile Card */}
+            <View
+              style={{
+                backgroundColor: Colors.white,
+                borderRadius: 16,
+                padding: 24,
+                marginBottom: 16,
+                alignItems: "center",
+                borderWidth: 1,
+                borderColor: Colors.border,
+              }}
+            >
+              <View
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 40,
+                  backgroundColor: Colors.primary + "20",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <UserIcon size={40} color={Colors.primary} />
+              </View>
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: "bold",
+                  color: Colors.textHeading,
+                  marginBottom: 4,
+                }}
+              >
+                {user?.name || "N/A"}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: Colors.textSecondary,
+                  marginBottom: 2,
+                }}
+              >
+                MSSV: {user?.studentId || "N/A"}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: Colors.textSecondary,
+                }}
+              >
+                {user?.email || "N/A"}
+              </Text>
+            </View>
 
-        {/* Stats Grid */}
-        <View
-          style={{
-            flexDirection: "row",
-            gap: 12,
-            marginBottom: 16,
-          }}
-        >
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: Colors.white,
-              borderRadius: 12,
-              padding: 16,
-              borderWidth: 1,
-              borderColor: Colors.border,
-              alignItems: "center",
-            }}
-          >
-            <Text
+            {/* Stats Grid */}
+            <View
               style={{
-                fontSize: 12,
-                color: Colors.textSecondary,
-                marginBottom: 8,
+                flexDirection: "row",
+                gap: 12,
+                marginBottom: 16,
               }}
             >
-              Tỷ lệ điểm danh
-            </Text>
-            <Text
-              style={{
-                fontSize: 28,
-                fontWeight: "bold",
-                color: "#10B981",
-              }}
-            >
-              95%
-            </Text>
-          </View>
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: Colors.white,
-              borderRadius: 12,
-              padding: 16,
-              borderWidth: 1,
-              borderColor: Colors.border,
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                color: Colors.textSecondary,
-                marginBottom: 8,
-              }}
-            >
-              Tổng môn học
-            </Text>
-            <Text
-              style={{
-                fontSize: 28,
-                fontWeight: "bold",
-                color: Colors.primary,
-              }}
-            >
-              8
-            </Text>
-          </View>
-        </View>
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: Colors.white,
+                  borderRadius: 12,
+                  padding: 16,
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: Colors.textSecondary,
+                    marginBottom: 8,
+                  }}
+                >
+                  Tỷ lệ điểm danh
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 28,
+                    fontWeight: "bold",
+                    color: "#10B981",
+                  }}
+                >
+                  {attendanceStats.attendanceRate}%
+                </Text>
+              </View>
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: Colors.white,
+                  borderRadius: 12,
+                  padding: 16,
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: Colors.textSecondary,
+                    marginBottom: 8,
+                  }}
+                >
+                  Tổng buổi điểm danh
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 28,
+                    fontWeight: "bold",
+                    color: Colors.primary,
+                  }}
+                >
+                  {attendanceStats.totalSessions}
+                </Text>
+              </View>
+            </View>
+          </>
+        )}
 
         {/* Menu Items */}
         <View
@@ -440,6 +525,14 @@ export default function StudentProfileScreen() {
           Phiên bản 1.0.0
         </Text>
       </ScrollView>
+
+      {/* Toast Notification */}
+      <Toast
+        visible={false}
+        message=""
+        type="success"
+        onHide={() => {}}
+      />
     </SafeAreaView>
   );
 }

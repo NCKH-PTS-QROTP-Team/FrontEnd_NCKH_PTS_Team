@@ -14,7 +14,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { BookIcon, SchoolIcon } from "@/components/Icons";
 import WeeklySchedule from "@/components/WeeklySchedule";
-import { scheduleService, attendanceService } from "@/apis";
+import { scheduleService, attendanceService, authService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
 import type { Schedule } from "@/apis/services/schedule.service";
@@ -36,6 +36,7 @@ export default function StudentHomeScreen() {
 
   // State
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState<string>("");
   const [todaySchedules, setTodaySchedules] = useState<TodaySchedule[]>([]);
   const [attendanceStats, setAttendanceStats] = useState({
     totalSessions: 0,
@@ -58,13 +59,18 @@ export default function StudentHomeScreen() {
       const studentId = await getStudentIdFromToken();
       console.log("📝 StudentId:", studentId);
       
+      // Lấy thông tin user hiện tại để lấy tên và classId
+      const currentUser = await authService.getCurrentUser();
+      if (currentUser?.name) {
+        setUserName(currentUser.name);
+      }
+      
       // Load schedules theo lớp của sinh viên để dashboard chỉ hiển thị môn của lớp đó
       let allSchedules: Schedule[] = [];
       try {
         console.log("📅 Loading schedules...");
         if (studentId) {
-          // Lấy thông tin user hiện tại để biết classId
-          const currentUser = await authService.getCurrentUser();
+          // Sử dụng classId từ currentUser đã lấy ở trên
           if (currentUser?.classId) {
             allSchedules = await scheduleService.getSchedules({
               classId: currentUser.classId,
@@ -272,7 +278,7 @@ export default function StudentHomeScreen() {
                       marginBottom: 8,
                     }}
                   >
-                    Xin chào!
+                    Xin chào {userName ? userName : ""}!
                   </Text>
                   {loading ? (
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
