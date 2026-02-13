@@ -12,7 +12,7 @@ import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/colors";
 import WeeklyCalendar from "@/components/WeeklyCalendar";
 import { CalendarIcon } from "@/components/Icons";
-import { scheduleService } from "@/apis";
+import { scheduleService, authService } from "@/apis";
 import type { Schedule as ApiSchedule } from "@/apis/services/schedule.service";
 
 interface DayScheduleItem {
@@ -74,14 +74,23 @@ export default function ScheduleScreen() {
 
         const dateOnly = toIsoDate(selectedDate);
 
+        // Lấy thông tin user hiện tại để biết classId
+        const currentUser = await authService.getCurrentUser();
+        
         const params: {
           scheduleType?: "CLASS" | "EXAM";
           fromDate?: string;
           toDate?: string;
+          classId?: string;
         } = {
           fromDate: dateOnly,
           toDate: dateOnly,
         };
+
+        // Filter theo lớp của sinh viên
+        if (currentUser?.classId) {
+          params.classId = currentUser.classId;
+        }
 
         if (selectedView === "class") {
           params.scheduleType = "CLASS";

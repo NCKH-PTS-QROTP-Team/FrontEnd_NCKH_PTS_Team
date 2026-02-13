@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,25 +6,114 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { attendanceService } from "@/apis";
+import { getTeacherIdFromToken } from "@/apis/utils/jwt";
+import Toast, { useToast } from "@/components/Toast";
 
 export default function ReportsScreen() {
   const isWeb = Platform.OS === "web";
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
+  const { showToast } = useToast();
 
   const contentMaxWidth = isDesktop ? 900 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const isMobile = width < 768;
 
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalSessions: 0,
+    present: 0,
+    late: 0,
+    absent: 0,
+  });
+
+  useEffect(() => {
+    loadReportData();
+  }, []);
+
+  const loadReportData = async () => {
+    try {
+      setLoading(true);
+      const teacherId = await getTeacherIdFromToken();
+      
+      if (!teacherId) {
+        showToast("Không tìm thấy thông tin giảng viên", "error");
+        setLoading(false);
+        return;
+      }
+
+      // Lấy tất cả sessions của giảng viên (cả ACTIVE và COMPLETED)
+      const allSessions = await attendanceService.getSessions({ teacherId });
+      
+      // Lấy tất cả records của các sessions này
+      let totalPresent = 0;
+      let totalLate = 0;
+      let totalAbsent = 0;
+      let totalSessions = allSessions.length;
+
+      for (const session of allSessions) {
+        try {
+          const records = await attendanceService.getRecords({ sessionId: session.id });
+          
+          records.forEach((record: any) => {
+            if (record.status === "PRESENT") {
+              totalPresent++;
+            } else if (record.status === "LATE") {
+              totalLate++;
+            } else if (record.status === "ABSENT") {
+              totalAbsent++;
+            }
+          });
+        } catch (error) {
+          console.error(`Error loading records for session ${session.id}:`, error);
+        }
+      }
+
+      setStats({
+        totalSessions,
+        present: totalPresent,
+        late: totalLate,
+        absent: totalAbsent,
+      });
+    } catch (error: any) {
+      console.error("Error loading report data:", error);
+      showToast("Không thể tải dữ liệu báo cáo", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const statsData = [
-    { value: "156", label: "Tổng buổi", color: "#3FA9F5", bgColor: "#EFF6FF" },
-    { value: "128", label: "Có mặt", color: "#10B981", bgColor: "#ECFDF5" },
-    { value: "18", label: "Đi muộn", color: "#F59E0B", bgColor: "#FEF3C7" },
-    { value: "10", label: "Vắng", color: "#EF4444", bgColor: "#FEE2E2" },
+    { 
+      value: stats.totalSessions.toString(), 
+      label: "Tổng buổi", 
+      color: "#3FA9F5", 
+      bgColor: "#EFF6FF" 
+    },
+    { 
+      value: stats.present.toString(), 
+      label: "Có mặt", 
+      color: "#10B981", 
+      bgColor: "#ECFDF5" 
+    },
+    { 
+      value: stats.late.toString(), 
+      label: "Đi muộn", 
+      color: "#F59E0B", 
+      bgColor: "#FEF3C7" 
+    },
+    { 
+      value: stats.absent.toString(), 
+      label: "Vắng", 
+      color: "#EF4444", 
+      bgColor: "#FEE2E2" 
+    },
   ];
 
   return (
@@ -70,55 +159,76 @@ export default function ReportsScreen() {
             >
               Tổng quan học kỳ
             </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                marginHorizontal: -8,
-              }}
-            >
-              {statsData.map((stat, index) => (
-                <View
-                  key={index}
+            {loading ? (
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingVertical: 48,
+                }}
+              >
+                <ActivityIndicator size="large" color="#3FA9F5" />
+                <Text
                   style={{
-                    width: isMobile ? "50%" : "25%",
-                    paddingHorizontal: 8,
-                    marginBottom: isMobile ? 16 : 0,
+                    fontSize: 14,
+                    color: "#6B7280",
+                    marginTop: 16,
                   }}
                 >
+                  Đang tải dữ liệu...
+                </Text>
+              </View>
+            ) : (
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  marginHorizontal: -8,
+                }}
+              >
+                {statsData.map((stat, index) => (
                   <View
+                    key={index}
                     style={{
-                      backgroundColor: stat.bgColor,
-                      borderRadius: 12,
-                      padding: 16,
-                      alignItems: "center",
+                      width: isMobile ? "50%" : "25%",
+                      paddingHorizontal: 8,
+                      marginBottom: isMobile ? 16 : 0,
                     }}
                   >
-                    <Text
+                    <View
                       style={{
-                        fontSize: 32,
-                        lineHeight: 40,
-                        fontWeight: "bold",
-                        color: stat.color,
-                        marginBottom: 4,
+                        backgroundColor: stat.bgColor,
+                        borderRadius: 12,
+                        padding: 16,
+                        alignItems: "center",
                       }}
                     >
-                      {stat.value}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        lineHeight: 20,
-                        color: "#6B7280",
-                        textAlign: "center",
-                      }}
-                    >
-                      {stat.label}
-                    </Text>
+                      <Text
+                        style={{
+                          fontSize: 32,
+                          lineHeight: 40,
+                          fontWeight: "bold",
+                          color: stat.color,
+                          marginBottom: 4,
+                        }}
+                      >
+                        {stat.value}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          lineHeight: 20,
+                          color: "#6B7280",
+                          textAlign: "center",
+                        }}
+                      >
+                        {stat.label}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* Chart Placeholder */}
@@ -357,6 +467,14 @@ export default function ReportsScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Toast Notification */}
+      <Toast
+        visible={false}
+        message=""
+        type="success"
+        onHide={() => {}}
+      />
     </SafeAreaView>
   );
 }

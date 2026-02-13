@@ -215,7 +215,7 @@ export default function LoginScreen() {
                 setUsername(text);
                 setUsernameError("");
               }}
-              placeholder="admin, GV001, SV001"
+              placeholder="Nhập tên đăng nhập"
               error={usernameError || undefined}
               success={
                 username.trim().length > 0 && !usernameError ? true : undefined
@@ -250,61 +250,6 @@ export default function LoginScreen() {
               loading={loading}
               disabled={!username.trim() || !password.trim()}
             />
-            {/* Demo Accounts */}
-            <View style={{ marginTop: 18 }}>
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: Colors.textSecondary,
-                  textAlign: "center",
-                  marginBottom: 8,
-                }}
-              >
-                Tài khoản demo
-              </Text>
-              <View
-                style={{
-                  padding: 12,
-                  borderRadius: 8,
-                  backgroundColor: Colors.surface,
-                  borderWidth: 1,
-                  borderColor: Colors.border,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: Colors.textSecondary,
-                    lineHeight: 20,
-                    marginBottom: 4,
-                  }}
-                >
-                  <Text style={{ fontWeight: "600" }}>Admin:</Text> admin /
-                  admin123
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: Colors.textSecondary,
-                    lineHeight: 20,
-                    marginBottom: 4,
-                  }}
-                >
-                  <Text style={{ fontWeight: "600" }}>Giảng viên:</Text> GV001 /
-                  teacher123
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: Colors.textSecondary,
-                    lineHeight: 20,
-                  }}
-                >
-                  <Text style={{ fontWeight: "600" }}>Sinh viên:</Text> SV001 /
-                  student123
-                </Text>
-              </View>
-            </View>
           </View>
         </View>
       </ScrollView>

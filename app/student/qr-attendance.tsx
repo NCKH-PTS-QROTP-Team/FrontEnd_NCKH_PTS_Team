@@ -14,11 +14,14 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { Colors } from "@/constants/colors";
-import { qrService, attendanceService, faceService } from "@/apis";
+import { qrService, attendanceService, faceService, authService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
-import { AttendanceMethod } from "@/apis/types/attendance.types";
+import { AttendanceMethod, AttendanceSessionResponse } from "@/apis/types/attendance.types";
 import Toast, { useToast } from "@/components/Toast";
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from "expo-camera";
+import { useSocket } from "@/apis/socket/SocketProvider";
+import { CheckCircleIcon, CloseIcon, UserIcon } from "@/components/Icons";
+import { getFriendlyError } from "@/utils/errorMessages";
 
 interface SessionInfo {
   id: string;
@@ -31,6 +34,15 @@ interface SessionInfo {
 
 type Step = "checking" | "face-verification" | "qr-scanning" | "completed";
 
+interface FaceDetection {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  eyes?: Array<{ x: number; y: number; width: number; height: number }>;
+  smiles?: Array<{ x: number; y: number; width: number; height: number }>;
+}
+
 export default function QRAttendanceScreen() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("checking");
@@ -38,6 +50,7 @@ export default function QRAttendanceScreen() {
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
+  const [availableSessions, setAvailableSessions] = useState<AttendanceSessionResponse[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [faceVerified, setFaceVerified] = useState(false);
@@ -47,12 +60,18 @@ export default function QRAttendanceScreen() {
   );
   const [faceRetryCooldown, setFaceRetryCooldown] = useState(0);
   const [faceVerifiedEncoding, setFaceVerifiedEncoding] = useState<number[] | null>(null);
+  const [faceDetected, setFaceDetected] = useState<FaceDetection | null>(null);
   const detectIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
-  const { showToast } = useToast();
-
-  const { width } = useWindowDimensions();
+  const { toast, showToast, hideToast } = useToast();
+  const { socket, isConnected, connect, disconnect, emit, on, off } = useSocket();
+  const { width, height } = useWindowDimensions();
+  const [previewLayout, setPreviewLayout] = useState<{ width: number; height: number }>({
+    width,
+    height,
+  });
+  const lastImageDimensions = useRef<{ width: number; height: number } | null>(null);
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const isWeb = Platform.OS === "web";
@@ -78,6 +97,182 @@ export default function QRAttendanceScreen() {
   // Chỉ dùng animation cho transform (native driver) để tránh conflict
   // Opacity và shadow dùng giá trị tĩnh để tránh lỗi
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Socket realtime detection cho face, eyes, smiles
+  // Tạm tắt vì server socket chưa chạy (có thể bật lại sau)
+  const useSocketForDetection = false; // Tắt socket detection để tránh error spam
+  const FACE_BOX_SMOOTHING_ALPHA = 0.65;
+  const faceBoxRef = useRef<FaceDetection | null>(null);
+
+  // Connect socket khi camera mở và ở bước face-verification
+  useEffect(() => {
+    if (useSocketForDetection && showCamera && step === "face-verification" && !isConnected) {
+      connect();
+    }
+  }, [showCamera, step, isConnected, useSocketForDetection]);
+
+  // Listen socket events cho face detection results
+  useEffect(() => {
+    if (!isConnected || !useSocketForDetection || step !== "face-verification") return;
+
+    const handleFaceDetection = (data: any) => {
+      if (!data) return;
+      
+      if (data.faces && data.faces.length > 0) {
+        const face = data.faces[0];
+        
+        const previewW = previewLayout.width || width;
+        const previewH = previewLayout.height || height;
+        const imgWidth = data.imageWidth || lastImageDimensions.current?.width || previewW;
+        const imgHeight = data.imageHeight || lastImageDimensions.current?.height || previewH;
+        
+        if (!imgWidth || !imgHeight || imgWidth <= 0 || imgHeight <= 0) {
+          return;
+        }
+        
+        const imageAspectRatio = imgWidth / imgHeight;
+        const screenAspectRatio = previewW / previewH;
+        
+        let scaleX, scaleY, offsetX, offsetY;
+        
+        if (Platform.OS === 'web') {
+          if (imageAspectRatio > screenAspectRatio) {
+            scaleX = previewW / imgWidth;
+            scaleY = scaleX;
+            offsetX = 0;
+            offsetY = (previewH - imgHeight * scaleY) / 2;
+          } else {
+            scaleY = previewH / imgHeight;
+            scaleX = scaleY;
+            offsetX = (previewW - imgWidth * scaleX) / 2;
+            offsetY = 0;
+          }
+        } else {
+          scaleX = previewW / imgWidth;
+          scaleY = previewH / imgHeight;
+          offsetX = 0;
+          offsetY = 0;
+        }
+        
+        if (!isFinite(scaleX) || !isFinite(scaleY) || scaleX <= 0 || scaleY <= 0) {
+          return;
+        }
+        
+        let scaledX = face.x * scaleX + offsetX;
+        let scaledY = face.y * scaleY + offsetY;
+        let scaledWidth = face.width * scaleX;
+        let scaledHeight = face.height * scaleY;
+        
+        const paddingFactor = 0.35;
+        const paddingX = scaledWidth * paddingFactor;
+        const paddingY = scaledHeight * paddingFactor;
+        scaledX -= paddingX;
+        scaledY -= paddingY;
+        scaledWidth += paddingX * 2;
+        scaledHeight += paddingY * 2;
+        
+        if (!isFinite(scaledX) || !isFinite(scaledY) || !isFinite(scaledWidth) || !isFinite(scaledHeight)) {
+          return;
+        }
+        
+        const headerOffsetY = 0;
+        const finalX = Math.max(0, Math.min(scaledX, previewW - 20));
+        const finalY = Math.max(0, Math.min(scaledY + headerOffsetY, previewH - 20));
+        const finalWidth = Math.max(40, Math.min(scaledWidth, previewW - finalX));
+        const finalHeight = Math.max(40, Math.min(scaledHeight, previewH - finalY));
+        
+        // Scale eyes và smiles
+        const scaledEyes = face.eyes?.map((eye: { x: number; y: number; width: number; height: number }) => ({
+          x: Math.max(0, Math.min(eye.x * scaleX + offsetX, previewW - 20)),
+          y: Math.max(0, Math.min(eye.y * scaleY + offsetY + headerOffsetY, previewH - 20)),
+          width: Math.max(10, Math.min(eye.width * scaleX, previewW)),
+          height: Math.max(10, Math.min(eye.height * scaleY, previewH)),
+        })) || [];
+        
+        const scaledSmiles = face.smiles?.map((smile: { x: number; y: number; width: number; height: number }) => ({
+          x: Math.max(0, Math.min(smile.x * scaleX + offsetX, previewW - 20)),
+          y: Math.max(0, Math.min(smile.y * scaleY + offsetY + headerOffsetY, previewH - 20)),
+          width: Math.max(10, Math.min(smile.width * scaleX, previewW)),
+          height: Math.max(10, Math.min(smile.height * scaleY, previewH)),
+        })) || [];
+        
+        // Smoothing
+        const prev = faceBoxRef.current;
+        const smoothed: FaceDetection = prev
+          ? {
+              x: prev.x * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalX * FACE_BOX_SMOOTHING_ALPHA,
+              y: prev.y * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalY * FACE_BOX_SMOOTHING_ALPHA,
+              width: prev.width * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalWidth * FACE_BOX_SMOOTHING_ALPHA,
+              height: prev.height * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalHeight * FACE_BOX_SMOOTHING_ALPHA,
+              eyes: scaledEyes,
+              smiles: scaledSmiles,
+            }
+          : {
+              x: finalX,
+              y: finalY,
+              width: finalWidth,
+              height: finalHeight,
+              eyes: scaledEyes,
+              smiles: scaledSmiles,
+            };
+        
+        faceBoxRef.current = smoothed;
+        setFaceDetected(smoothed);
+      } else {
+        setFaceDetected(null);
+        faceBoxRef.current = null;
+      }
+    };
+
+    on('face:detected', handleFaceDetection);
+
+    return () => {
+      off('face:detected', handleFaceDetection);
+    };
+  }, [isConnected, useSocketForDetection, step, previewLayout, width, height]);
+
+  // Send frames to socket for detection
+  useEffect(() => {
+    if (!showCamera || step !== "face-verification" || !isConnected || !useSocketForDetection || faceVerifying) {
+      return;
+    }
+
+    const sendFrame = async () => {
+      if (!cameraRef.current) return;
+      
+      try {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.3, // Low quality cho realtime
+          base64: true,
+          skipProcessing: true,
+          exif: false,
+        });
+
+        if (photo.base64) {
+          lastImageDimensions.current = {
+            width: photo.width || width,
+            height: photo.height || height,
+          };
+          
+          emit('face:detect', {
+            base64Image: `data:image/jpeg;base64,${photo.base64}`,
+          });
+        }
+      } catch (error) {
+        // Silent fail cho realtime detection
+      }
+    };
+
+    const interval = setInterval(sendFrame, 150); // ~6-7 FPS
+    detectIntervalRef.current = interval;
+
+    return () => {
+      if (detectIntervalRef.current) {
+        clearInterval(detectIntervalRef.current);
+        detectIntervalRef.current = null;
+      }
+    };
+  }, [showCamera, step, isConnected, useSocketForDetection, faceVerifying, width, height, emit]);
 
   // Tạo animation pulse nhẹ nhàng cho khung scan khi đang ở bước face-verification
   useEffect(() => {
@@ -108,6 +303,112 @@ export default function QRAttendanceScreen() {
     }
   }, [showCamera, step, faceVerifying, faceVerified]);
 
+  // Connect socket khi mở camera face verification
+  useEffect(() => {
+    if (showCamera && step === "face-verification" && !isConnected) {
+      connect();
+    }
+    return () => {
+      if (isConnected && !showCamera) {
+        disconnect();
+      }
+    };
+  }, [showCamera, step, isConnected]);
+
+  // Socket realtime face detection (chỉ khi face-verification)
+  useEffect(() => {
+    if (!isConnected || !showCamera || step !== "face-verification" || faceVerifying || faceVerified) {
+      return;
+    }
+
+    const sendFrame = async () => {
+      if (!cameraRef.current || faceVerifying || faceVerified) return;
+      
+      try {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.3, // Low quality cho realtime detection
+          base64: true,
+          skipProcessing: true,
+        });
+
+        if (photo?.base64) {
+          emit("face:detect", { base64Image: photo.base64 });
+        }
+      } catch (error) {
+        // Silent fail cho realtime detection
+      }
+    };
+
+    const interval = setInterval(sendFrame, 200); // Mỗi 200ms
+    detectIntervalRef.current = interval;
+
+    return () => {
+      if (detectIntervalRef.current) {
+        clearInterval(detectIntervalRef.current);
+        detectIntervalRef.current = null;
+      }
+    };
+  }, [isConnected, showCamera, step, faceVerifying, faceVerified, emit]);
+
+  // Listen socket events cho face detection results
+  useEffect(() => {
+    if (!isConnected || step !== "face-verification") return;
+
+    const handleFaceDetection = (data: any) => {
+      if (!data || faceVerifying || faceVerified) return;
+      
+      if (data.faces && data.faces.length > 0) {
+        const face = data.faces[0];
+        const previewW = previewLayout.width || width;
+        const previewH = previewLayout.height || height;
+        const imgWidth = data.imageWidth || previewW;
+        const imgHeight = data.imageHeight || previewH;
+        
+        if (!imgWidth || !imgHeight || imgWidth <= 0 || imgHeight <= 0) return;
+        
+        const scaleX = previewW / imgWidth;
+        const scaleY = previewH / imgHeight;
+        
+        if (!isFinite(scaleX) || !isFinite(scaleY) || scaleX <= 0 || scaleY <= 0) return;
+        
+        const scaledX = face.x * scaleX;
+        const scaledY = face.y * scaleY;
+        const scaledW = face.width * scaleX;
+        const scaledH = face.height * scaleY;
+        
+        const scaledEyes = face.eyes?.map((eye: any) => ({
+          x: eye.x * scaleX,
+          y: eye.y * scaleY,
+          width: eye.width * scaleX,
+          height: eye.height * scaleY,
+        })) || [];
+        
+        const scaledSmiles = face.smiles?.map((smile: { x: number; y: number; width: number; height: number }) => ({
+          x: smile.x * scaleX,
+          y: smile.y * scaleY,
+          width: smile.width * scaleX,
+          height: smile.height * scaleY,
+        })) || [];
+        
+        setFaceDetected({
+          x: Math.max(0, Math.min(scaledX, previewW - 20)),
+          y: Math.max(0, Math.min(scaledY, previewH - 20)),
+          width: Math.max(40, Math.min(scaledW, previewW)),
+          height: Math.max(40, Math.min(scaledH, previewH)),
+          eyes: scaledEyes,
+          smiles: scaledSmiles,
+        });
+      } else {
+        setFaceDetected(null);
+      }
+    };
+
+    on("face:detected", handleFaceDetection);
+    return () => {
+      off("face:detected", handleFaceDetection);
+    };
+  }, [isConnected, step, faceVerifying, faceVerified, previewLayout, width, height, on, off]);
+
   // Check face registration and load session on mount
   useEffect(() => {
     checkFaceRegistrationAndLoadSession();
@@ -129,36 +430,59 @@ export default function QRAttendanceScreen() {
       } catch (error: any) {
         // Face chưa đăng ký, redirect tới trang đăng ký
         showToast("Bạn chưa đăng ký face ID. Vui lòng đăng ký trước khi điểm danh", "error");
-        setTimeout(() => {
+    setTimeout(() => {
           router.replace("/student/register-face");
         }, 2000);
         return;
       }
 
-      // Load active session
+      // Lấy thông tin user hiện tại để biết lớp của sinh viên
+      const currentUser = await authService.getCurrentUser();
+      if (!currentUser?.classId) {
+        showToast("Không tìm thấy thông tin lớp học của bạn", "error");
+        return;
+      }
+
+      // Load active session của đúng lớp học
       const sessions = await attendanceService.getSessions({
+        classId: currentUser.classId,
         active: true,
       });
 
-      // Tìm session QR active
-      const qrSession = sessions.find(
+      // Lưu lại danh sách session để cho sinh viên chọn môn cần điểm danh
+      setAvailableSessions(sessions);
+
+      // Lọc các session QR đang ACTIVE
+      const qrSessions = sessions.filter(
         (s) => s.method === AttendanceMethod.QR && s.status === "ACTIVE"
       );
 
-      if (!qrSession) {
+      if (qrSessions.length === 0) {
+        // Không có phiên QR nào đang hoạt động cho lớp này
+        // Đưa UI thoát khỏi trạng thái "checking" để hiện message thân thiện
+        setStep("face-verification");
         showToast("Không có phiên điểm danh QR nào đang hoạt động", "error");
         return;
       }
 
-      setSessionInfo({
-        id: qrSession.id,
-        classId: qrSession.classId,
-        classCode: qrSession.className,
-        className: qrSession.className,
-        subjectId: qrSession.subjectId,
-        subjectName: qrSession.subjectName,
+      // Mặc định chọn buổi mới nhất theo createdAt (sinh viên vẫn có thể đổi lựa chọn)
+      qrSessions.sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
       });
-      setCurrentSessionId(qrSession.id);
+
+      const defaultSession = qrSessions[0];
+
+      setSessionInfo({
+        id: defaultSession.id,
+        classId: defaultSession.classId,
+        classCode: defaultSession.classCode || defaultSession.className,
+        className: defaultSession.className,
+        subjectId: defaultSession.subjectId,
+        subjectName: defaultSession.subjectName,
+      });
+      setCurrentSessionId(defaultSession.id);
       setStep("face-verification");
     } catch (error: any) {
       console.error("Error checking face registration:", error);
@@ -292,24 +616,10 @@ export default function QRAttendanceScreen() {
         console.log("Face verification error:", error);
       }
       
-      // Lấy message từ nhiều nguồn (ErrorResponse có message và detail)
-      // Backend trả về ErrorResponse với field 'detail' chứa message chi tiết
-      let errorMessage = "Không thể xác thực face. Vui lòng thử lại sau 5 giây.";
+      // Lấy message thân thiện từ error (tự động map error message thành message dễ hiểu)
+      const errorMessage = getFriendlyError(error);
       
-      // Ưu tiên lấy từ detail (message chi tiết từ backend)
-      if (error?.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      } else if (error?.response?.data?.data?.detail) {
-        errorMessage = error.response.data.data.detail;
-      } else if (error?.response?.data?.data?.message) {
-        errorMessage = error.response.data.data.message;
-      }
-      
-      // Hiển thị toast với message từ backend (đồng bộ web và app)
+      // Hiển thị toast với message thân thiện (đồng bộ web và app)
       showToast(errorMessage, "error");
       setFaceVerifying(false);
       setFaceResult("error");
@@ -348,7 +658,7 @@ export default function QRAttendanceScreen() {
   const handleBarCodeScanned = async ({ data }: BarcodeScanningResult) => {
     if (scanned || !currentSessionId || !faceVerified || !faceVerifiedEncoding) return;
 
-    setScanned(true);
+      setScanned(true);
     setScanning(false);
 
     try {
@@ -438,30 +748,30 @@ export default function QRAttendanceScreen() {
   }
 
   if (!sessionInfo) {
-    return (
-      <SafeAreaView
-        style={{ flex: 1, backgroundColor: "#F9FAFB" }}
-        edges={["top"]}
-      >
-        <StatusBar style="dark" />
-        <View
-          style={{
+  return (
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#F9FAFB" }}
+      edges={["top"]}
+    >
+      <StatusBar style="dark" />
+      <View
+        style={{
             flex: 1,
             alignItems: "center",
             justifyContent: "center",
             padding: 24,
-          }}
-        >
-          <Text
-            style={{
+        }}
+      >
+        <Text
+          style={{
               fontSize: 16,
               color: "#6B7280",
-              textAlign: "center",
-            }}
-          >
+            textAlign: "center",
+          }}
+        >
             Không có phiên điểm danh QR nào đang hoạt động
-          </Text>
-        </View>
+        </Text>
+      </View>
       </SafeAreaView>
     );
   }
@@ -528,15 +838,7 @@ export default function QRAttendanceScreen() {
                     : "Quét QR Code"}
                 </Text>
                 <TouchableOpacity onPress={handleCancel}>
-                  <Text
-                    style={{
-                      color: "#FFFFFF",
-                      fontSize: 16,
-                      fontWeight: "600",
-                    }}
-                  >
-                    ✕
-                  </Text>
+                  <CloseIcon size={24} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
 
@@ -605,15 +907,7 @@ export default function QRAttendanceScreen() {
                         alignItems: "center",
                       }}
                     >
-                      <Text
-                        style={{
-                          fontSize: 40,
-                          textAlign: "center",
-                          marginBottom: 4,
-                        }}
-                      >
-                        ✅
-                      </Text>
+                      <CheckCircleIcon size={40} color="#FFFFFF" />
                       <Text
                         style={{
                           color: "#FFFFFF",
@@ -697,9 +991,10 @@ export default function QRAttendanceScreen() {
                       backgroundColor: "rgba(16, 185, 129, 0.9)",
                       borderRadius: 8,
                       padding: 16,
+                      alignItems: "center",
                     }}
                   >
-                    <Text style={{ fontSize: 40, textAlign: "center" }}>✅</Text>
+                    <CheckCircleIcon size={40} color="#FFFFFF" />
                     <Text
                       style={{
                         color: "#FFFFFF",
@@ -714,6 +1009,131 @@ export default function QRAttendanceScreen() {
                   </View>
                 )}
               </Animated.View>
+
+              {/* Face Detection Box - chỉ hiển thị khi ở bước face-verification */}
+              {step === "face-verification" && faceDetected && (
+                <>
+                  {/* Face box */}
+                  <View
+                    style={{
+                      position: "absolute",
+                      left: faceDetected.x,
+                      top: faceDetected.y,
+                      width: faceDetected.width,
+                      height: faceDetected.height,
+                      borderWidth: Platform.OS === "web" ? 2.5 : 3,
+                      borderColor: Colors.primary,
+                      borderRadius: 12,
+                      backgroundColor: Platform.OS === "web" ? "rgba(59, 130, 246, 0.05)" : "transparent",
+                      shadowColor: Colors.primary,
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowOpacity: Platform.OS === "web" ? 0.3 : 0.5,
+                      shadowRadius: Platform.OS === "web" ? 8 : 12,
+                      elevation: Platform.OS === "android" ? 8 : 0,
+                    }}
+                  >
+                    {/* Corner indicators */}
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: -2,
+                        left: -2,
+                        width: Platform.OS === "web" ? 16 : 20,
+                        height: Platform.OS === "web" ? 16 : 20,
+                        borderTopWidth: Platform.OS === "web" ? 3 : 4,
+                        borderLeftWidth: Platform.OS === "web" ? 3 : 4,
+                        borderColor: Colors.primary,
+                        borderTopLeftRadius: 8,
+                      }}
+                    />
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: -2,
+                        right: -2,
+                        width: Platform.OS === "web" ? 16 : 20,
+                        height: Platform.OS === "web" ? 16 : 20,
+                        borderTopWidth: Platform.OS === "web" ? 3 : 4,
+                        borderRightWidth: Platform.OS === "web" ? 3 : 4,
+                        borderColor: Colors.primary,
+                        borderTopRightRadius: 8,
+                      }}
+                    />
+                    <View
+                      style={{
+                        position: "absolute",
+                        bottom: -2,
+                        left: -2,
+                        width: Platform.OS === "web" ? 16 : 20,
+                        height: Platform.OS === "web" ? 16 : 20,
+                        borderBottomWidth: Platform.OS === "web" ? 3 : 4,
+                        borderLeftWidth: Platform.OS === "web" ? 3 : 4,
+                        borderColor: Colors.primary,
+                        borderBottomLeftRadius: 8,
+                      }}
+                    />
+                    <View
+                      style={{
+                        position: "absolute",
+                        bottom: -2,
+                        right: -2,
+                        width: Platform.OS === "web" ? 16 : 20,
+                        height: Platform.OS === "web" ? 16 : 20,
+                        borderBottomWidth: Platform.OS === "web" ? 3 : 4,
+                        borderRightWidth: Platform.OS === "web" ? 3 : 4,
+                        borderColor: Colors.primary,
+                        borderBottomRightRadius: 8,
+                      }}
+                    />
+                  </View>
+
+                  {/* Eye Detection Boxes */}
+                  {faceDetected.eyes?.map((eye, index) => (
+                    <View
+                      key={`eye-${index}`}
+                      style={{
+                        position: "absolute",
+                        left: eye.x,
+                        top: eye.y,
+                        width: eye.width,
+                        height: eye.height,
+                        borderWidth: Platform.OS === "web" ? 1.5 : 2,
+                        borderColor: "#00B4D8",
+                        borderRadius: Math.min(eye.width, eye.height) * 0.3,
+                        backgroundColor: Platform.OS === "web" ? "rgba(0, 180, 216, 0.08)" : "transparent",
+                        shadowColor: "#00B4D8",
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowOpacity: Platform.OS === "web" ? 0.2 : 0.4,
+                        shadowRadius: Platform.OS === "web" ? 4 : 6,
+                        elevation: Platform.OS === "android" ? 4 : 0,
+                      }}
+                    />
+                  ))}
+
+                  {/* Smile Detection Boxes */}
+                  {faceDetected.smiles?.map((smile, index) => (
+                    <View
+                      key={`smile-${index}`}
+                      style={{
+                        position: "absolute",
+                        left: smile.x,
+                        top: smile.y,
+                        width: smile.width,
+                        height: smile.height,
+                        borderWidth: Platform.OS === "web" ? 1.5 : 2,
+                        borderColor: "#FFD60A",
+                        borderRadius: Math.min(smile.width, smile.height) * 0.3,
+                        backgroundColor: Platform.OS === "web" ? "rgba(255, 214, 10, 0.08)" : "transparent",
+                        shadowColor: "#FFD60A",
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowOpacity: Platform.OS === "web" ? 0.2 : 0.4,
+                        shadowRadius: Platform.OS === "web" ? 4 : 6,
+                        elevation: Platform.OS === "android" ? 4 : 0,
+                      }}
+                    />
+                  ))}
+                </>
+              )}
 
               {/* Instructions */}
               <View
@@ -742,85 +1162,139 @@ export default function QRAttendanceScreen() {
           </View>
         </View>
       ) : (
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
-          showsVerticalScrollIndicator={false}
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View
+          style={{
+            maxWidth: contentMaxWidth,
+            width: "100%",
+            alignSelf: "center",
+          }}
         >
+          {/* Course Info */}
           <View
             style={{
-              maxWidth: contentMaxWidth,
-              width: "100%",
-              alignSelf: "center",
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 24,
+              borderWidth: 1,
+              borderColor: "#E5E7EB",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 8,
+              elevation: 3,
             }}
           >
-            {/* Course Info */}
             <View
               style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 16,
-                padding: 20,
-                marginBottom: 24,
-                borderWidth: 1,
-                borderColor: "#E5E7EB",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 3,
+                backgroundColor: "#D1FAE5",
+                borderRadius: 12,
+                padding: 16,
               }}
             >
-              <View
+              <Text
                 style={{
-                  backgroundColor: "#D1FAE5",
-                  borderRadius: 12,
-                  padding: 16,
+                  fontSize: 14,
+                  lineHeight: 20,
+                  color: "#065F46",
+                  marginBottom: 8,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 14,
-                    lineHeight: 20,
-                    color: "#6B7280",
-                    marginBottom: 4,
-                  }}
+                Môn học
+              </Text>
+
+              {availableSessions.length > 1 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ marginBottom: 12 }}
                 >
-                  Môn học
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 18,
-                    lineHeight: 28,
-                    fontWeight: "bold",
-                    color: "#111827",
-                    marginBottom: 4,
-                  }}
-                >
-                  {sessionInfo.subjectName}
-                </Text>
-                <Text style={{ fontSize: 14, lineHeight: 20, color: "#4B5563" }}>
-                  {sessionInfo.className}
-                </Text>
-              </View>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    {availableSessions
+                      .filter((s) => s.method === AttendanceMethod.QR && s.status === "ACTIVE")
+                      .map((s) => {
+                        const isSelected = sessionInfo?.id === s.id;
+                        return (
+                          <TouchableOpacity
+                            key={s.id}
+                            onPress={() => {
+                              setSessionInfo({
+                                id: s.id,
+                                classId: s.classId,
+                                classCode: s.classCode || s.className,
+                                className: s.className,
+                                subjectId: s.subjectId,
+                                subjectName: s.subjectName,
+                              });
+                              setCurrentSessionId(s.id);
+                              setFaceVerified(false);
+                              setFaceVerifiedEncoding(null);
+                              setStep("face-verification");
+                            }}
+                            style={{
+                              paddingHorizontal: 12,
+                              paddingVertical: 6,
+                              borderRadius: 999,
+                              borderWidth: 1,
+                              borderColor: isSelected ? "#10B981" : "#A7F3D0",
+                              backgroundColor: isSelected ? "#10B981" : "#ECFDF5",
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: isSelected ? "#FFFFFF" : "#047857",
+                                fontWeight: "500",
+                              }}
+                            >
+                              {s.subjectName}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                  </View>
+                </ScrollView>
+              )}
+
+              <Text
+                style={{
+                  fontSize: 18,
+                  lineHeight: 28,
+                  fontWeight: "bold",
+                  color: "#111827",
+                  marginBottom: 4,
+                }}
+              >
+                {sessionInfo.subjectName}
+              </Text>
+              <Text style={{ fontSize: 14, lineHeight: 20, color: "#4B5563" }}>
+                {sessionInfo.className}
+              </Text>
             </View>
+          </View>
 
             {step === "face-verification" && (
               <>
                 {/* Face Verification Card */}
-                <View
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    borderRadius: 16,
-                    padding: 24,
-                    marginBottom: 24,
-                    borderWidth: 1,
-                    borderColor: "#E5E7EB",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 8,
-                    elevation: 3,
-                  }}
-                >
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              borderWidth: 1,
+              borderColor: "#E5E7EB",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
                   <View
                     style={{
                       backgroundColor: "#FEF3C7",
@@ -850,69 +1324,60 @@ export default function QRAttendanceScreen() {
                     </Text>
                   </View>
 
+            <View
+              style={{
+                backgroundColor: "#F9FAFB",
+                borderRadius: 16,
+                aspectRatio: 1,
+                maxWidth: isDesktop ? 400 : "100%",
+                alignSelf: "center",
+                width: "100%",
+                borderWidth: 3,
+                      borderColor: "#E5E7EB",
+                borderStyle: "dashed",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 24,
+                padding: isDesktop ? 24 : 16,
+              }}
+            >
+                <View style={{ alignItems: "center" }}>
                   <View
                     style={{
-                      backgroundColor: "#F9FAFB",
+                      width: 80,
+                      height: 80,
+                      backgroundColor: "#F3F4F6",
                       borderRadius: 16,
-                      aspectRatio: 1,
-                      maxWidth: isDesktop ? 400 : "100%",
-                      alignSelf: "center",
-                      width: "100%",
-                      borderWidth: 3,
-                      borderColor: "#E5E7EB",
-                      borderStyle: "dashed",
                       alignItems: "center",
                       justifyContent: "center",
-                      marginBottom: 24,
-                      padding: isDesktop ? 24 : 16,
+                      marginBottom: 16,
                     }}
                   >
-                    <View style={{ alignItems: "center" }}>
-                      <View
-                        style={{
-                          width: 80,
-                          height: 80,
-                          backgroundColor: "#F3F4F6",
-                          borderRadius: 16,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          marginBottom: 16,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 36,
-                            lineHeight: 44,
-                            fontWeight: "bold",
-                            color: "#6B7280",
-                          }}
-                        >
-                          👤
-                        </Text>
-                      </View>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          lineHeight: 24,
-                          fontWeight: "600",
-                          color: "#111827",
-                          marginBottom: 8,
-                          textAlign: "center",
-                        }}
-                      >
+                    <UserIcon size={36} color="#6B7280" />
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      lineHeight: 24,
+                      fontWeight: "600",
+                      color: "#111827",
+                      marginBottom: 8,
+                      textAlign: "center",
+                    }}
+                  >
                         Xác thực Face ID
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          lineHeight: 20,
-                          color: "#6B7280",
-                          textAlign: "center",
-                        }}
-                      >
-                        Nhấn nút bên dưới để bắt đầu
-                      </Text>
-                    </View>
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: "#6B7280",
+                      textAlign: "center",
+                    }}
+                  >
+                    Nhấn nút bên dưới để bắt đầu
+                  </Text>
+                </View>
                   </View>
 
                   <PrimaryButton
@@ -956,7 +1421,9 @@ export default function QRAttendanceScreen() {
                       alignItems: "center",
                     }}
                   >
-                    <Text style={{ fontSize: 20, marginRight: 8 }}>✅</Text>
+                    <View style={{ marginRight: 8 }}>
+                      <CheckCircleIcon size={20} color="#047857" />
+                    </View>
                     <View style={{ flex: 1 }}>
                       <Text
                         style={{
@@ -996,52 +1463,52 @@ export default function QRAttendanceScreen() {
                       padding: isDesktop ? 24 : 16,
                     }}
                   >
-                    <View style={{ alignItems: "center" }}>
-                      <View
-                        style={{
-                          width: 80,
-                          height: 80,
+                <View style={{ alignItems: "center" }}>
+                  <View
+                    style={{
+                      width: 80,
+                      height: 80,
                           backgroundColor: "#F3F4F6",
-                          borderRadius: 16,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          marginBottom: 16,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 36,
-                            lineHeight: 44,
-                            fontWeight: "bold",
+                      borderRadius: 16,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: 16,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 36,
+                        lineHeight: 44,
+                        fontWeight: "bold",
                             color: "#6B7280",
-                          }}
-                        >
+                      }}
+                    >
                           QR
-                        </Text>
-                      </View>
-                      <Text
-                        style={{
-                          fontSize: 16,
-                          lineHeight: 24,
-                          fontWeight: "600",
+                    </Text>
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      lineHeight: 24,
+                      fontWeight: "600",
                           color: "#111827",
-                          marginBottom: 8,
+                      marginBottom: 8,
                           textAlign: "center",
-                        }}
-                      >
+                    }}
+                  >
                         Sẵn sàng quét QR
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          lineHeight: 20,
-                          color: "#6B7280",
-                          textAlign: "center",
-                        }}
-                      >
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: "#6B7280",
+                      textAlign: "center",
+                    }}
+                  >
                         Nhấn nút bên dưới để bắt đầu
-                      </Text>
-                    </View>
+                  </Text>
+                </View>
                   </View>
 
                   <PrimaryButton
@@ -1063,18 +1530,20 @@ export default function QRAttendanceScreen() {
                   alignItems: "center",
                 }}
               >
-                <Text style={{ fontSize: 60, marginBottom: 16 }}>✅</Text>
-                <Text
-                  style={{
+                <View style={{ marginBottom: 16 }}>
+                  <CheckCircleIcon size={60} color="#047857" />
+                </View>
+                  <Text
+                    style={{
                     fontSize: 20,
-                    fontWeight: "600",
+                      fontWeight: "600",
                     color: "#047857",
-                    marginBottom: 8,
-                  }}
-                >
+                      marginBottom: 8,
+                    }}
+                  >
                   Điểm danh thành công!
-                </Text>
-                <Text
+                  </Text>
+                  <Text
                   style={{
                     fontSize: 14,
                     color: "#065F46",
@@ -1082,41 +1551,47 @@ export default function QRAttendanceScreen() {
                   }}
                 >
                   Bạn đã điểm danh thành công cho môn học này
-                </Text>
-              </View>
-            )}
+                  </Text>
+                </View>
+              )}
 
-            {/* Help Text */}
-            <View
-              style={{
-                backgroundColor: "#E0F2FE",
-                borderRadius: 12,
-                padding: 16,
-                borderWidth: 1,
-                borderColor: "#BFDBFE",
+          {/* Help Text */}
+          <View
+            style={{
+              backgroundColor: "#E0F2FE",
+              borderRadius: 12,
+              padding: 16,
+              borderWidth: 1,
+              borderColor: "#BFDBFE",
                 marginTop: 24,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                lineHeight: 20,
+                fontWeight: "600",
+                color: "#1E40AF",
+                marginBottom: 8,
               }}
             >
-              <Text
-                style={{
-                  fontSize: 14,
-                  lineHeight: 20,
-                  fontWeight: "600",
-                  color: "#1E40AF",
-                  marginBottom: 8,
-                }}
-              >
-                Hướng dẫn:
-              </Text>
-              <Text style={{ fontSize: 14, lineHeight: 20, color: "#1E3A8A" }}>
+              Hướng dẫn:
+            </Text>
+            <Text style={{ fontSize: 14, lineHeight: 20, color: "#1E3A8A" }}>
                 {step === "face-verification"
                   ? "1. Nhấn 'Bắt đầu xác thực Face ID' và chụp ảnh để xác thực\n2. Sau khi xác thực thành công, bạn sẽ được chuyển tới bước quét QR code"
                   : "Nhấn 'Bắt đầu quét QR Code' và hướng camera vào QR code mà giảng viên hiển thị để hoàn tất điểm danh."}
-              </Text>
-            </View>
+            </Text>
           </View>
-        </ScrollView>
+        </View>
+      </ScrollView>
       )}
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+      />
     </SafeAreaView>
   );
 }

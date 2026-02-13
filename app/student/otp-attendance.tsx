@@ -15,11 +15,14 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { Colors } from "@/constants/colors";
-import { otpService, attendanceService, faceService } from "@/apis";
+import { otpService, attendanceService, faceService, authService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
-import { AttendanceMethod } from "@/apis/types/attendance.types";
+import { AttendanceMethod, AttendanceSessionResponse } from "@/apis/types/attendance.types";
 import Toast, { useToast } from "@/components/Toast";
+import { getFriendlyError } from "@/utils/errorMessages";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { useSocket } from "@/apis/socket/SocketProvider";
+import { CloseIcon } from "@/components/Icons";
 
 interface SessionInfo {
   id: string;
@@ -30,12 +33,24 @@ interface SessionInfo {
   subjectName: string;
 }
 
+interface FaceDetection {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  eyes?: Array<{ x: number; y: number; width: number; height: number }>;
+  smiles?: Array<{ x: number; y: number; width: number; height: number }>;
+}
+
+const FACE_BOX_SMOOTHING_ALPHA = 0.65; // 0..1 (cao hơn = mượt hơn nhưng trễ hơn)
+
 export default function OTPAttendanceScreen() {
   const router = useRouter();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
-  const [countdown, setCountdown] = useState(300);
+  const [countdown, setCountdown] = useState(0);
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
+  const [availableSessions, setAvailableSessions] = useState<AttendanceSessionResponse[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [capturingFace, setCapturingFace] = useState(false);
@@ -47,13 +62,21 @@ export default function OTPAttendanceScreen() {
   const [verifiedFaceEncoding, setVerifiedFaceEncoding] = useState<
     number[] | null
   >(null);
-  const [faceDetected, setFaceDetected] = useState(false);
+  const [faceDetected, setFaceDetected] = useState<FaceDetection | null>(null);
   const [faceTooFar, setFaceTooFar] = useState(false);
   const detectIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const cameraRef = useRef<CameraView>(null);
+  const faceBoxRef = useRef<FaceDetection | null>(null);
+  const lastImageDimensions = useRef<{ width: number; height: number } | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const { toast, showToast, hideToast } = useToast();
+  const { socket, isConnected, connect, disconnect, emit, on, off } = useSocket();
+  const { width, height } = useWindowDimensions();
+  const [previewLayout] = useState<{ width: number; height: number }>({
+    width,
+    height,
+  });
 
   // Cooldown sau khi xác thực thất bại để tránh spam
   useEffect(() => {
@@ -98,6 +121,181 @@ export default function OTPAttendanceScreen() {
     }
   }, [showCamera, capturingFace, faceVerified]);
 
+  // Connect socket khi camera mở
+  useEffect(() => {
+    if (showCamera && !isConnected) {
+      connect();
+    }
+    return () => {
+      if (isConnected && !showCamera) {
+        disconnect();
+      }
+    };
+  }, [showCamera, isConnected]);
+
+  // Listen socket events cho face detection results
+  useEffect(() => {
+    if (!isConnected || !showCamera || capturingFace || faceVerified) return;
+
+    const handleFaceDetection = (data: any) => {
+      if (!data) return;
+      
+      if (data.faces && data.faces.length > 0) {
+        const face = data.faces[0];
+        
+        const previewW = previewLayout.width || width;
+        const previewH = previewLayout.height || height;
+        const imgWidth = data.imageWidth || lastImageDimensions.current?.width || previewW;
+        const imgHeight = data.imageHeight || lastImageDimensions.current?.height || previewH;
+        
+        if (!imgWidth || !imgHeight || imgWidth <= 0 || imgHeight <= 0) {
+          return;
+        }
+        
+        const imageAspectRatio = imgWidth / imgHeight;
+        const screenAspectRatio = previewW / previewH;
+        
+        let scaleX, scaleY, offsetX, offsetY;
+        
+        if (Platform.OS === 'web') {
+          if (imageAspectRatio > screenAspectRatio) {
+            scaleX = previewW / imgWidth;
+            scaleY = scaleX;
+            offsetX = 0;
+            offsetY = (previewH - imgHeight * scaleY) / 2;
+          } else {
+            scaleY = previewH / imgHeight;
+            scaleX = scaleY;
+            offsetX = (previewW - imgWidth * scaleX) / 2;
+            offsetY = 0;
+          }
+        } else {
+          scaleX = previewW / imgWidth;
+          scaleY = previewH / imgHeight;
+          offsetX = 0;
+          offsetY = 0;
+        }
+        
+        if (!isFinite(scaleX) || !isFinite(scaleY) || scaleX <= 0 || scaleY <= 0) {
+          return;
+        }
+        
+        let scaledX = face.x * scaleX + offsetX;
+        let scaledY = face.y * scaleY + offsetY;
+        let scaledWidth = face.width * scaleX;
+        let scaledHeight = face.height * scaleY;
+        
+        const paddingFactor = 0.35;
+        const paddingX = scaledWidth * paddingFactor;
+        const paddingY = scaledHeight * paddingFactor;
+        scaledX -= paddingX;
+        scaledY -= paddingY;
+        scaledWidth += paddingX * 2;
+        scaledHeight += paddingY * 2;
+        
+        if (!isFinite(scaledX) || !isFinite(scaledY) || !isFinite(scaledWidth) || !isFinite(scaledHeight)) {
+          return;
+        }
+        
+        const headerOffsetY = 0;
+        const finalX = Math.max(0, Math.min(scaledX, previewW - 20));
+        const finalY = Math.max(0, Math.min(scaledY + headerOffsetY, previewH - 20));
+        const finalWidth = Math.max(40, Math.min(scaledWidth, previewW - finalX));
+        const finalHeight = Math.max(40, Math.min(scaledHeight, previewH - finalY));
+        
+        // Scale eyes và smiles
+        const scaledEyes = face.eyes?.map((eye: { x: number; y: number; width: number; height: number }) => ({
+          x: Math.max(0, Math.min(eye.x * scaleX + offsetX, previewW - 20)),
+          y: Math.max(0, Math.min(eye.y * scaleY + offsetY + headerOffsetY, previewH - 20)),
+          width: Math.max(10, Math.min(eye.width * scaleX, previewW)),
+          height: Math.max(10, Math.min(eye.height * scaleY, previewH)),
+        })) || [];
+        
+        const scaledSmiles = face.smiles?.map((smile: { x: number; y: number; width: number; height: number }) => ({
+          x: Math.max(0, Math.min(smile.x * scaleX + offsetX, previewW - 20)),
+          y: Math.max(0, Math.min(smile.y * scaleY + offsetY + headerOffsetY, previewH - 20)),
+          width: Math.max(10, Math.min(smile.width * scaleX, previewW)),
+          height: Math.max(10, Math.min(smile.height * scaleY, previewH)),
+        })) || [];
+        
+        // Smoothing
+        const prev = faceBoxRef.current;
+        const smoothed: FaceDetection = prev
+          ? {
+              x: prev.x * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalX * FACE_BOX_SMOOTHING_ALPHA,
+              y: prev.y * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalY * FACE_BOX_SMOOTHING_ALPHA,
+              width: prev.width * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalWidth * FACE_BOX_SMOOTHING_ALPHA,
+              height: prev.height * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalHeight * FACE_BOX_SMOOTHING_ALPHA,
+              eyes: scaledEyes,
+              smiles: scaledSmiles,
+            }
+          : {
+              x: finalX,
+              y: finalY,
+              width: finalWidth,
+              height: finalHeight,
+              eyes: scaledEyes,
+              smiles: scaledSmiles,
+            };
+        
+        faceBoxRef.current = smoothed;
+        setFaceDetected(smoothed);
+      } else {
+        setFaceDetected(null);
+        faceBoxRef.current = null;
+      }
+    };
+
+    on('face:detected', handleFaceDetection);
+
+    return () => {
+      off('face:detected', handleFaceDetection);
+    };
+  }, [isConnected, showCamera, capturingFace, faceVerified, previewLayout, width, height]);
+
+  // Send frames to socket for detection
+  useEffect(() => {
+    if (!showCamera || !isConnected || capturingFace || faceVerified) {
+      return;
+    }
+
+    const sendFrame = async () => {
+      if (!cameraRef.current) return;
+      
+      try {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.3, // Low quality cho realtime
+          base64: true,
+          skipProcessing: true,
+          exif: false,
+        });
+
+        if (photo.base64) {
+          lastImageDimensions.current = {
+            width: photo.width || width,
+            height: photo.height || height,
+          };
+          
+          emit('face:detect', {
+            base64Image: `data:image/jpeg;base64,${photo.base64}`,
+          });
+        }
+      } catch (error) {
+        // Silent fail cho realtime detection
+      }
+    };
+
+    const interval = setInterval(sendFrame, 150); // ~6-7 FPS
+    detectIntervalRef.current = interval;
+
+    return () => {
+      if (detectIntervalRef.current) {
+        clearInterval(detectIntervalRef.current);
+        detectIntervalRef.current = null;
+      }
+    };
+  }, [showCamera, isConnected, capturingFace, faceVerified, width, height, emit]);
+
   // Load active session on mount
   useEffect(() => {
     loadActiveSession();
@@ -119,15 +317,19 @@ export default function OTPAttendanceScreen() {
     return () => clearInterval(timer);
   }, [countdown]);
 
-  // Refresh OTP info periodically
+  // Refresh OTP info định kỳ, nhưng CHỈ sau khi đã xác thực face thành công
   useEffect(() => {
-    if (currentSessionId) {
-      const interval = setInterval(() => {
-        refreshOTPInfo();
-      }, 5000); // Refresh every 5 seconds
-      return () => clearInterval(interval);
-    }
-  }, [currentSessionId]);
+    if (!currentSessionId || !faceVerified) return;
+
+    // Khi vừa faceVerified, load ngay thông tin OTP lần đầu
+    refreshOTPInfo();
+
+    const interval = setInterval(() => {
+      refreshOTPInfo();
+    }, 5000); // Refresh every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [currentSessionId, faceVerified]);
 
   const loadActiveSession = async () => {
     try {
@@ -137,33 +339,50 @@ export default function OTPAttendanceScreen() {
         return;
       }
 
-      // Lấy active sessions
+      // Lấy thông tin user hiện tại để biết lớp của sinh viên
+      const currentUser = await authService.getCurrentUser();
+      if (!currentUser?.classId) {
+        showToast("Không tìm thấy thông tin lớp học của bạn", "error");
+        return;
+      }
+
+      // Lấy active sessions của đúng lớp học
       const sessions = await attendanceService.getSessions({
+        classId: currentUser.classId,
         active: true,
       });
 
-      // Tìm session OTP active
-      const otpSession = sessions.find(
+      // Lưu danh sách session để sinh viên có thể chọn môn cần điểm danh
+      setAvailableSessions(sessions);
+
+      // Tìm các session OTP ACTIVE của lớp đó
+      const otpSessions = sessions.filter(
         (s) => s.method === AttendanceMethod.OTP && s.status === "ACTIVE"
       );
 
-      if (!otpSession) {
+      if (otpSessions.length === 0) {
         showToast("Không có phiên điểm danh OTP nào đang hoạt động", "error");
         return;
       }
 
-      setSessionInfo({
-        id: otpSession.id,
-        classId: otpSession.classId,
-        classCode: otpSession.classCode || "",
-        className: otpSession.className || "",
-        subjectId: otpSession.subjectId,
-        subjectName: otpSession.subjectName || "",
+      // Mặc định chọn buổi mới nhất theo createdAt
+      otpSessions.sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
       });
-      setCurrentSessionId(otpSession.id);
 
-      // Load OTP info
-      await refreshOTPInfo();
+      const defaultSession = otpSessions[0];
+
+      setSessionInfo({
+        id: defaultSession.id,
+        classId: defaultSession.classId,
+        classCode: defaultSession.classCode || "",
+        className: defaultSession.className || "",
+        subjectId: defaultSession.subjectId,
+        subjectName: defaultSession.subjectName || "",
+      });
+      setCurrentSessionId(defaultSession.id);
     } catch (error: any) {
       console.error("Error loading active session:", error);
       showToast(
@@ -352,24 +571,10 @@ export default function OTPAttendanceScreen() {
         console.log("Face capture error:", error);
       }
       
-      // Lấy message từ nhiều nguồn (ErrorResponse có message và detail)
-      // Backend trả về ErrorResponse với field 'detail' chứa message chi tiết
-      let errorMessage = "Không thể xử lý ảnh. Vui lòng thử lại.";
+      // Lấy message thân thiện từ error (tự động map error message thành message dễ hiểu)
+      const errorMessage = getFriendlyError(error);
       
-      // Ưu tiên lấy từ detail (message chi tiết từ backend)
-      if (error?.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
-      } else if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      } else if (error?.response?.data?.data?.detail) {
-        errorMessage = error.response.data.data.detail;
-      } else if (error?.response?.data?.data?.message) {
-        errorMessage = error.response.data.data.message;
-      }
-      
-      // Hiển thị toast với message từ backend (đồng bộ web và app)
+      // Hiển thị toast với message thân thiện (đồng bộ web và app)
       showToast(errorMessage, "error");
       setFaceResult("error");
       setFaceRetryCooldown(5);
@@ -412,10 +617,9 @@ export default function OTPAttendanceScreen() {
       }, 1500);
     } catch (error: any) {
       console.error("Error submitting attendance:", error);
-      showToast(
-        error.message || "Điểm danh thất bại. Vui lòng thử lại.",
-        "error"
-      );
+      // Lấy message thân thiện từ error
+      const errorMessage = getFriendlyError(error);
+      showToast(errorMessage, "error");
     } finally {
       setLoading(false);
     }
@@ -428,7 +632,6 @@ return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
   const isExpired = countdown === 0;
-  const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
 
@@ -510,8 +713,8 @@ Hết thời gian điểm danh
               )}
             </View>
 
-            {/* Course Info */}
-<View
+            {/* Course Info + Session Selector */}
+            <View
               style={{
                 backgroundColor: "#E0F2FE",
                 borderRadius: 12,
@@ -524,11 +727,64 @@ Hết thời gian điểm danh
                   fontSize: 14,
                   lineHeight: 20,
                   color: "#6B7280",
-                  marginBottom: 4,
+                  marginBottom: 8,
                 }}
               >
                 Môn học
               </Text>
+
+              {availableSessions.length > 1 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ marginBottom: 12 }}
+                >
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    {availableSessions
+                      .filter((s) => s.method === AttendanceMethod.OTP && s.status === "ACTIVE")
+                      .map((s) => {
+                        const isSelected = sessionInfo?.id === s.id;
+                        return (
+                          <TouchableOpacity
+                            key={s.id}
+                            onPress={async () => {
+                              setSessionInfo({
+                                id: s.id,
+                                classId: s.classId,
+                                classCode: s.classCode || "",
+                                className: s.className || "",
+                                subjectId: s.subjectId,
+                                subjectName: s.subjectName || "",
+                              });
+                              setCurrentSessionId(s.id);
+                              setOtp(["", "", "", "", "", ""]);
+                              await refreshOTPInfo();
+                            }}
+                            style={{
+                              paddingHorizontal: 12,
+                              paddingVertical: 6,
+                              borderRadius: 999,
+                              borderWidth: 1,
+                              borderColor: isSelected ? Colors.primary : "#BFDBFE",
+                              backgroundColor: isSelected ? "#1D4ED8" : "#EFF6FF",
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                color: isSelected ? "#FFFFFF" : "#1D4ED8",
+                                fontWeight: "500",
+                              }}
+                            >
+                              {s.subjectName}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                  </View>
+                </ScrollView>
+              )}
+
               <Text
                 style={{
                   fontSize: 18,
@@ -763,15 +1019,7 @@ style={[
                     setCapturingFace(false);
                   }}
                 >
-                  <Text
-                    style={{
-                      color: "#FFFFFF",
-                      fontSize: 16,
-                      fontWeight: "600",
-                    }}
-                  >
-                    ✕
-                  </Text>
+                  <CloseIcon size={24} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
 
@@ -918,6 +1166,131 @@ style={[
                   </TouchableOpacity>
                 )}
               </Animated.View>
+
+              {/* Face Detection Box với mắt/miệng */}
+              {faceDetected && (
+                <>
+                  {/* Face box */}
+                  <View
+                    style={{
+                      position: "absolute",
+                      left: faceDetected.x,
+                      top: faceDetected.y,
+                      width: faceDetected.width,
+                      height: faceDetected.height,
+                      borderWidth: Platform.OS === "web" ? 2.5 : 3,
+                      borderColor: Colors.primary,
+                      borderRadius: 12,
+                      backgroundColor: Platform.OS === "web" ? "rgba(59, 130, 246, 0.05)" : "transparent",
+                      shadowColor: Colors.primary,
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowOpacity: Platform.OS === "web" ? 0.3 : 0.5,
+                      shadowRadius: Platform.OS === "web" ? 8 : 12,
+                      elevation: Platform.OS === "android" ? 8 : 0,
+                    }}
+                  >
+                    {/* Corner indicators */}
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: -2,
+                        left: -2,
+                        width: Platform.OS === "web" ? 16 : 20,
+                        height: Platform.OS === "web" ? 16 : 20,
+                        borderTopWidth: Platform.OS === "web" ? 3 : 4,
+                        borderLeftWidth: Platform.OS === "web" ? 3 : 4,
+                        borderColor: Colors.primary,
+                        borderTopLeftRadius: 8,
+                      }}
+                    />
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: -2,
+                        right: -2,
+                        width: Platform.OS === "web" ? 16 : 20,
+                        height: Platform.OS === "web" ? 16 : 20,
+                        borderTopWidth: Platform.OS === "web" ? 3 : 4,
+                        borderRightWidth: Platform.OS === "web" ? 3 : 4,
+                        borderColor: Colors.primary,
+                        borderTopRightRadius: 8,
+                      }}
+                    />
+                    <View
+                      style={{
+                        position: "absolute",
+                        bottom: -2,
+                        left: -2,
+                        width: Platform.OS === "web" ? 16 : 20,
+                        height: Platform.OS === "web" ? 16 : 20,
+                        borderBottomWidth: Platform.OS === "web" ? 3 : 4,
+                        borderLeftWidth: Platform.OS === "web" ? 3 : 4,
+                        borderColor: Colors.primary,
+                        borderBottomLeftRadius: 8,
+                      }}
+                    />
+                    <View
+                      style={{
+                        position: "absolute",
+                        bottom: -2,
+                        right: -2,
+                        width: Platform.OS === "web" ? 16 : 20,
+                        height: Platform.OS === "web" ? 16 : 20,
+                        borderBottomWidth: Platform.OS === "web" ? 3 : 4,
+                        borderRightWidth: Platform.OS === "web" ? 3 : 4,
+                        borderColor: Colors.primary,
+                        borderBottomRightRadius: 8,
+                      }}
+                    />
+                  </View>
+
+                  {/* Eye Detection Boxes */}
+                  {faceDetected.eyes?.map((eye, index) => (
+                    <View
+                      key={`eye-${index}`}
+                      style={{
+                        position: "absolute",
+                        left: eye.x,
+                        top: eye.y,
+                        width: eye.width,
+                        height: eye.height,
+                        borderWidth: Platform.OS === "web" ? 1.5 : 2,
+                        borderColor: "#00B4D8",
+                        borderRadius: Math.min(eye.width, eye.height) * 0.3,
+                        backgroundColor: Platform.OS === "web" ? "rgba(0, 180, 216, 0.08)" : "transparent",
+                        shadowColor: "#00B4D8",
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowOpacity: Platform.OS === "web" ? 0.2 : 0.4,
+                        shadowRadius: Platform.OS === "web" ? 4 : 6,
+                        elevation: Platform.OS === "android" ? 4 : 0,
+                      }}
+                    />
+                  ))}
+
+                  {/* Smile Detection Boxes */}
+                  {faceDetected.smiles?.map((smile, index) => (
+                    <View
+                      key={`smile-${index}`}
+                      style={{
+                        position: "absolute",
+                        left: smile.x,
+                        top: smile.y,
+                        width: smile.width,
+                        height: smile.height,
+                        borderWidth: Platform.OS === "web" ? 1.5 : 2,
+                        borderColor: "#FFD60A",
+                        borderRadius: Math.min(smile.width, smile.height) * 0.3,
+                        backgroundColor: Platform.OS === "web" ? "rgba(255, 214, 10, 0.08)" : "transparent",
+                        shadowColor: "#FFD60A",
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowOpacity: Platform.OS === "web" ? 0.2 : 0.4,
+                        shadowRadius: Platform.OS === "web" ? 4 : 6,
+                        elevation: Platform.OS === "android" ? 4 : 0,
+                      }}
+                    />
+                  ))}
+                </>
+              )}
 
               {/* Instructions */}
               <View
