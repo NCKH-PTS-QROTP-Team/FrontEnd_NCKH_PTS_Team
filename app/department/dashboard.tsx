@@ -7,10 +7,11 @@ import {
     TouchableOpacity,
     Dimensions,
     RefreshControl,
+    Image,
+    ImageBackground,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
@@ -34,6 +35,7 @@ interface QuickAction {
 export default function DepartmentDashboard() {
     const router = useRouter();
     const [refreshing, setRefreshing] = useState(false);
+    const [greeting, setGreeting] = useState('');
     const [stats, setStats] = useState<StatCard[]>([
         {
             id: '1',
@@ -68,6 +70,18 @@ export default function DepartmentDashboard() {
             trend: '+15%',
         },
     ]);
+
+    // Get greeting based on time
+    useEffect(() => {
+        const hour = new Date().getHours();
+        if (hour < 12) {
+            setGreeting('Chào buổi sáng');
+        } else if (hour < 18) {
+            setGreeting('Chào buổi chiều');
+        } else {
+            setGreeting('Chào buổi tối');
+        }
+    }, []);
 
     const quickActions: QuickAction[] = [
         {
@@ -129,18 +143,19 @@ export default function DepartmentDashboard() {
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
         >
-            {/* Header Section */}
-            <LinearGradient
-                colors={['#2563eb', '#1d4ed8']}
-                style={styles.header}
-            >
-                <View style={styles.headerContent}>
-                    <Text style={styles.headerTitle}>Chào mừng đến Giáo vụ khoa</Text>
-                    <Text style={styles.headerSubtitle}>
-                        Quản lý toàn diện hoạt động đào tạo
-                    </Text>
-                </View>
-            </LinearGradient>
+            {/* Banner Header */}
+            <View style={styles.bannerWrapper}>
+                <ImageBackground
+                    source={require('@/assets/department_banner.png')}
+                    style={styles.bannerContainer}
+                    imageStyle={styles.bannerImage}
+                    resizeMode="contain"
+                >
+                    <View style={styles.bannerOverlay}>
+                        <Text style={styles.greetingText}>{greeting} 👋</Text>
+                    </View>
+                </ImageBackground>
+            </View>
 
             {/* Statistics Cards */}
             <View style={styles.statsContainer}>
@@ -251,22 +266,45 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f8fafc',
     },
-    header: {
-        paddingHorizontal: 20,
-        paddingVertical: 30,
+    bannerWrapper: {
+        overflow: 'hidden',
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
+        marginBottom: 0,
+    },
+    bannerContainer: {
+        height: 180,
+        width: '100%',
+    },
+    bannerImage: {
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
     },
-    headerContent: {
+    bannerOverlay: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'flex-start',
+        paddingHorizontal: 20,
+        paddingTop: 20,
+    },
+    bannerContent: {
         marginTop: 10,
     },
-    headerTitle: {
-        fontSize: 26,
+    greetingText: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#fff',
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
+    },
+    bannerTitle: {
+        fontSize: 28,
         fontWeight: 'bold',
         color: '#fff',
-        marginBottom: 8,
+        marginBottom: 6,
     },
-    headerSubtitle: {
+    bannerSubtitle: {
         fontSize: 15,
         color: '#e0e7ff',
     },
