@@ -35,53 +35,103 @@ interface QuickAction {
 export default function DepartmentDashboard() {
     const router = useRouter();
     const [refreshing, setRefreshing] = useState(false);
-    const [greeting, setGreeting] = useState('');
+    const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<StatCard[]>([
         {
             id: '1',
             title: 'Tổng sinh viên',
-            value: '1,234',
+            value: '0',
             icon: 'people',
             color: '#3b82f6',
-            trend: '+12%',
+            trend: '',
         },
         {
             id: '2',
             title: 'Giảng viên',
-            value: '89',
+            value: '0',
             icon: 'person',
             color: '#8b5cf6',
-            trend: '+5%',
+            trend: '',
         },
         {
             id: '3',
             title: 'Lớp học',
-            value: '45',
+            value: '0',
             icon: 'school',
             color: '#ec4899',
-            trend: '+8%',
+            trend: '',
         },
         {
             id: '4',
             title: 'Khóa học',
-            value: '156',
+            value: '0',
             icon: 'book',
             color: '#f59e0b',
-            trend: '+15%',
+            trend: '',
         },
     ]);
-
-    // Get greeting based on time
+    // Fetch stats from API
     useEffect(() => {
-        const hour = new Date().getHours();
-        if (hour < 12) {
-            setGreeting('Chào buổi sáng');
-        } else if (hour < 18) {
-            setGreeting('Chào buổi chiều');
-        } else {
-            setGreeting('Chào buổi tối');
-        }
+        fetchStats();
     }, []);
+
+    const fetchStats = async () => {
+        try {
+            setLoading(true);
+            const { statsService } = await import('@/apis/statsService');
+            const data = await statsService.getDepartmentStats();
+            console.log('📊 Stats data received:', data);
+            // Update stats with real data
+            setStats([
+                {
+                    id: '1',
+                    title: 'Tổng sinh viên',
+                    value: (data.totalStudents ?? 0).toLocaleString(),
+                    icon: 'people',
+                    color: '#3b82f6',
+                    trend: data.studentTrend || '',
+                },
+                {
+                    id: '2',
+                    title: 'Giảng viên',
+                    value: (data.totalTeachers ?? 0).toLocaleString(),
+                    icon: 'person',
+                    color: '#8b5cf6',
+                    trend: data.teacherTrend || '',
+                },
+                {
+                    id: '3',
+                    title: 'Lớp học',
+                    value: (data.totalClasses ?? 0).toLocaleString(),
+                    icon: 'school',
+                    color: '#ec4899',
+                    trend: data.classTrend || '',
+                },
+                {
+                    id: '4',
+                    title: 'Khóa học',
+                    value: (data.totalSubjects ?? 0).toLocaleString(),
+                    icon: 'book',
+                    color: '#f59e0b',
+                    trend: data.subjectTrend || '',
+                },
+            ]);
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+            // Keep default values on error
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Responsive columns for stats grid
+    const getStatsColumns = () => {
+        if (width < 360) return 1; // Very small phones - 1 column
+        if (width < 768) return 2; // Mobile - 2x2 grid
+        return 4; // Tablet & Desktop - 1 row with 4 cards
+    };
+
+    const statsColumns = getStatsColumns();
 
     const quickActions: QuickAction[] = [
         {
@@ -128,12 +178,10 @@ export default function DepartmentDashboard() {
         },
     ];
 
-    const onRefresh = React.useCallback(() => {
+    const onRefresh = React.useCallback(async () => {
         setRefreshing(true);
-        // Simulate API call
-        setTimeout(() => {
-            setRefreshing(false);
-        }, 2000);
+        await fetchStats();
+        setRefreshing(false);
     }, []);
 
     return (
@@ -150,11 +198,7 @@ export default function DepartmentDashboard() {
                     style={styles.bannerContainer}
                     imageStyle={styles.bannerImage}
                     resizeMode="contain"
-                >
-                    <View style={styles.bannerOverlay}>
-                        <Text style={styles.greetingText}>{greeting} 👋</Text>
-                    </View>
-                </ImageBackground>
+                />
             </View>
 
             {/* Statistics Cards */}
@@ -162,7 +206,17 @@ export default function DepartmentDashboard() {
                 <Text style={styles.sectionTitle}>Thống kê tổng quan</Text>
                 <View style={styles.statsGrid}>
                     {stats.map((stat) => (
-                        <View key={stat.id} style={styles.statCard}>
+                        <View
+                            key={stat.id}
+                            style={[
+                                styles.statCard,
+                                {
+                                    flex: statsColumns === 1 ? 1 : 0,
+                                    flexBasis: statsColumns === 1 ? '100%' : `${(100 / statsColumns) - 2}%`,
+                                    minWidth: statsColumns === 1 ? undefined : 150,
+                                }
+                            ]}
+                        >
                             <View
                                 style={[
                                     styles.statIconContainer,
@@ -280,34 +334,6 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
     },
-    bannerOverlay: {
-        flex: 1,
-        justifyContent: 'flex-start',
-        alignItems: 'flex-start',
-        paddingHorizontal: 20,
-        paddingTop: 20,
-    },
-    bannerContent: {
-        marginTop: 10,
-    },
-    greetingText: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: '#fff',
-        textShadowColor: 'rgba(0, 0, 0, 0.3)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 3,
-    },
-    bannerTitle: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#fff',
-        marginBottom: 6,
-    },
-    bannerSubtitle: {
-        fontSize: 15,
-        color: '#e0e7ff',
-    },
     statsContainer: {
         padding: 20,
     },
@@ -320,14 +346,13 @@ const styles = StyleSheet.create({
     statsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'space-between',
+        gap: 12,
     },
     statCard: {
-        width: (width - 60) / 2,
         backgroundColor: '#fff',
         borderRadius: 16,
         padding: 16,
-        marginBottom: 16,
+        marginBottom: 4,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
