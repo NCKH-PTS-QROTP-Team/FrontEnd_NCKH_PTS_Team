@@ -7,15 +7,15 @@ import { Avatar } from './Avatar';
 interface UserProfileDropdownProps {
   userName: string;
   userAvatar?: string;
-  userRole?: 'student' | 'teacher' | 'admin';
+  userRole?: 'student' | 'teacher' | 'admin' | 'department';
   userEmail?: string;
 }
 
-export default function UserProfileDropdown({ 
-  userName, 
-  userAvatar, 
+export default function UserProfileDropdown({
+  userName,
+  userAvatar,
   userRole = 'student',
-  userEmail 
+  userEmail
 }: UserProfileDropdownProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -41,8 +41,8 @@ export default function UserProfileDropdown({
       'Bạn có chắc muốn đăng xuất?',
       [
         { text: 'Hủy', style: 'cancel' },
-        { 
-          text: 'Đăng xuất', 
+        {
+          text: 'Đăng xuất',
           style: 'destructive',
           onPress: () => router.replace('/auth/login')
         }
@@ -57,6 +57,8 @@ export default function UserProfileDropdown({
       router.push('/student/home');
     } else if (userRole === 'teacher') {
       router.push('/teacher/dashboard');
+    } else if (userRole === 'department') {
+      router.push('/department/profile');
     } else {
       router.push('/admin/dashboard');
     }
@@ -74,6 +76,7 @@ export default function UserProfileDropdown({
       case 'student': return 'Sinh viên';
       case 'teacher': return 'Giảng viên';
       case 'admin': return 'Quản trị viên';
+      case 'department': return 'Giáo vụ khoa';
       default: return '';
     }
   };
@@ -106,16 +109,16 @@ export default function UserProfileDropdown({
         } as any)}
       >
         {/* Avatar */}
-        <Avatar 
+        <Avatar
           name={userName}
           src={userAvatar}
           size="small"
           bordered
         />
-        
+
         {/* User Name */}
-        <Text 
-          style={{ 
+        <Text
+          style={{
             marginLeft: 10,
             fontSize: 14,
             fontWeight: '600',
@@ -126,10 +129,10 @@ export default function UserProfileDropdown({
         >
           {userName}
         </Text>
-        
+
         {/* Dropdown Arrow */}
-        <Text 
-          style={{ 
+        <Text
+          style={{
             marginLeft: 8,
             fontSize: 12,
             color: '#6B7280',
@@ -177,17 +180,17 @@ export default function UserProfileDropdown({
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-              <Avatar 
+              <Avatar
                 name={userName}
                 src={userAvatar}
                 size="medium"
                 bordered
               />
               <View style={{ marginLeft: 12, flex: 1 }}>
-                <Text 
-                  style={{ 
-                    fontSize: 15, 
-                    fontWeight: '700', 
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontWeight: '700',
                     color: '#111827',
                     marginBottom: 2,
                   }}
@@ -211,9 +214,9 @@ export default function UserProfileDropdown({
               </View>
             </View>
             {userEmail && (
-              <Text 
-                style={{ 
-                  fontSize: 13, 
+              <Text
+                style={{
+                  fontSize: 13,
                   color: '#6B7280',
                   marginTop: 4,
                 }}
