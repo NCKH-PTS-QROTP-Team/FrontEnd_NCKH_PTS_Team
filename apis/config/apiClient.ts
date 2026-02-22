@@ -17,7 +17,7 @@ import { Platform } from 'react-native';
 const getApiBaseUrl = () => {
   // Ưu tiên: Environment variable (cho production hoặc custom config)
   // Có thể set trong .env hoặc .env.local:
-  // EXPO_PUBLIC_API_URL=http://192.168.1.12:8080/api
+  // EXPO_PUBLIC_API_URL=http://192.168.1.7:8080/api
   if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
@@ -35,14 +35,14 @@ const getApiBaseUrl = () => {
       // Nếu dùng thiết bị thật, thay bằng IP của máy tính chạy backend
       // Để tìm IP: chạy lệnh 'ipconfig' (Windows) hoặc 'ifconfig' (Mac/Linux)
       // Lấy IP từ IPv4 Address (không phải 127.0.0.1)
-      return 'http://192.168.1.12:8080/api';
+      return 'http://192.168.1.7:8080/api';
     } else if (Platform.OS === 'ios') {
       // iOS Simulator có thể dùng localhost
       // iOS thiết bị thật cần IP của máy tính (giống Android)
-      return 'http://192.168.1.12:8080/api';
+      return 'http://192.168.1.7:8080/api';
     } else {
       // Fallback cho các platform khác
-      return 'http://192.168.1.12:8080/api';
+      return 'http://192.168.1.7:8080/api';
     }
   }
   
@@ -69,6 +69,9 @@ if (typeof window !== 'undefined') {
   console.log('🌐 Current hostname:', window.location.hostname);
   console.log('🌐 __DEV__:', __DEV__);
 }
+
+// Export để native download file (cần full URL cho fetch)
+export const getExportBaseUrl = () => apiClient.defaults.baseURL || API_BASE_URL;
 
 // Tạo axios instance
 const apiClient: AxiosInstance = axios.create({

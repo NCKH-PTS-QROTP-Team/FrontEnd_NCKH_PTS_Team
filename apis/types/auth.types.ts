@@ -39,6 +39,8 @@ export interface User {
   studentId?: string;
   teacherId?: string;
   classId?: string; // match UserDTO.Response.classId
+  /** Lớp đã đăng ký (1 SV nhiều môn). Có khi gọi /me. */
+  enrolledClassIds?: string[];
   isActive: boolean;
   createdAt: string;
 }

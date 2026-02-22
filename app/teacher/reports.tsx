@@ -10,9 +10,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { attendanceService } from "@/apis";
+import { attendanceService, reportService } from "@/apis";
+import { getAuthToken } from "@/apis/config/apiClient";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 
 export default function ReportsScreen() {
   const isWeb = Platform.OS === "web";
@@ -26,6 +29,7 @@ export default function ReportsScreen() {
   const isMobile = width < 768;
 
   const [loading, setLoading] = useState(true);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [stats, setStats] = useState({
     totalSessions: 0,
     present: 0,
@@ -86,6 +90,62 @@ export default function ReportsScreen() {
       showToast("Không thể tải dữ liệu báo cáo", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      setExportingExcel(true);
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        const blob = await reportService.exportExcel();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Bao_cao_diem_danh_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("Đã tải file Excel thành công", "success");
+      } else {
+        const token = await getAuthToken();
+        if (!token) {
+          showToast("Vui lòng đăng nhập để tải file", "error");
+          return;
+        }
+        const url = reportService.getExportExcelUrl();
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const arrayBuffer = await response.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = "";
+        const chunkSize = 8192;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+        }
+        const filename = `Bao_cao_diem_danh_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+        await FileSystem.writeAsStringAsync(fileUri, btoa(binary), {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            dialogTitle: "Lưu file Excel",
+          });
+          showToast("Đã mở hộp thoại lưu/chia sẻ file", "success");
+        } else {
+          showToast("Thiết bị không hỗ trợ chia sẻ file", "error");
+        }
+      }
+    } catch (error: any) {
+      console.error("Export Excel error:", error);
+      showToast(error?.message || "Không thể xuất file Excel", "error");
+    } finally {
+      setExportingExcel(false);
     }
   };
 
@@ -332,6 +392,8 @@ export default function ReportsScreen() {
                 marginBottom: 12,
               }}
               activeOpacity={0.7}
+              onPress={handleExportExcel}
+              disabled={exportingExcel}
             >
               <View
                 style={{
@@ -352,16 +414,20 @@ export default function ReportsScreen() {
                       marginRight: 12,
                     }}
                   >
-                    <Text
-                      style={{
-                        fontSize: 20,
-                        lineHeight: 24,
-                        fontWeight: "bold",
-                        color: "#10B981",
-                      }}
-                    >
-                      =
-                    </Text>
+                    {exportingExcel ? (
+                      <ActivityIndicator size="small" color="#10B981" />
+                    ) : (
+                      <Text
+                        style={{
+                          fontSize: 20,
+                          lineHeight: 24,
+                          fontWeight: "bold",
+                          color: "#10B981",
+                        }}
+                      >
+                        =
+                      </Text>
+                    )}
                   </View>
                   <View>
                     <Text
@@ -377,7 +443,7 @@ export default function ReportsScreen() {
                     <Text
                       style={{ fontSize: 14, lineHeight: 20, color: "#6B7280" }}
                     >
-                      Danh sách điểm danh chi tiết
+                      Danh sách điểm danh chi tiết (theo lớp + theo sinh viên)
                     </Text>
                   </View>
                 </View>
@@ -389,7 +455,7 @@ export default function ReportsScreen() {
                     fontWeight: "600",
                   }}
                 >
-                  Tải về
+                  {exportingExcel ? "Đang tải..." : "Tải về"}
                 </Text>
               </View>
             </TouchableOpacity>

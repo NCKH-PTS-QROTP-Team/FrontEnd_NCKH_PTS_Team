@@ -82,13 +82,16 @@ export default function ScheduleScreen() {
           fromDate?: string;
           toDate?: string;
           classId?: string;
+          classIds?: string[];
         } = {
           fromDate: dateOnly,
           toDate: dateOnly,
         };
 
-        // Filter theo lớp của sinh viên
-        if (currentUser?.classId) {
+        // 1 SV nhiều môn: ưu tiên enrolledClassIds, không có thì classId
+        if (currentUser?.enrolledClassIds?.length) {
+          params.classIds = currentUser.enrolledClassIds;
+        } else if (currentUser?.classId) {
           params.classId = currentUser.classId;
         }
 

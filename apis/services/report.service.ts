@@ -1,4 +1,4 @@
-import apiClient from '../config/apiClient';
+import apiClient, { getExportBaseUrl } from '../config/apiClient';
 import { ApiResponse } from '../types/api.types';
 
 /**
@@ -91,6 +91,35 @@ export const reportService = {
       params: { month },
     });
     return response.data.data;
+  },
+
+  /**
+   * Tải file Excel báo cáo điểm danh.
+   * Trả về Blob để FE tạo link tải (web) hoặc lưu file (native).
+   * @param classId optional - nếu có thì sheet sinh viên chỉ gồm lớp đó
+   * @param subjectId optional - nếu có thì chỉ xuất báo cáo của môn này
+   */
+  exportExcel: async (classId?: string, subjectId?: string): Promise<Blob> => {
+    const params: Record<string, string> = {};
+    if (classId) params.classId = classId;
+    if (subjectId) params.subjectId = subjectId;
+    const response = await apiClient.get('/reports/export/excel', {
+      params: Object.keys(params).length ? params : undefined,
+      responseType: 'blob',
+    });
+    return response.data as Blob;
+  },
+
+  /**
+   * URL đầy đủ để tải file Excel (dùng cho native - fetch + save + share).
+   */
+  getExportExcelUrl: (classId?: string, subjectId?: string): string => {
+    const base = getExportBaseUrl();
+    const search = new URLSearchParams();
+    if (classId) search.set('classId', classId);
+    if (subjectId) search.set('subjectId', subjectId);
+    const qs = search.toString();
+    return `${base}/reports/export/excel${qs ? `?${qs}` : ''}`;
   },
 };
 

@@ -15,6 +15,7 @@ import { StatusBar } from "expo-status-bar";
 import Tabs from "@/components/Tabs";
 import WeeklyCalendar from "@/components/WeeklyCalendar";
 import { Colors } from "@/constants/colors";
+import { getSlotIndexFromStartTime } from "@/constants/scheduleSlots";
 import { scheduleService, attendanceService } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
@@ -163,14 +164,6 @@ export default function TeacherDashboardScreen() {
     }
   };
 
-  // Helper to determine period from time string (e.g., "08:00 - 10:00")
-  const getPeriod = (time: string): "morning" | "afternoon" | "evening" => {
-    const hour = parseInt(time.split(":")[0]);
-    if (hour < 12) return "morning";
-    if (hour < 18) return "afternoon";
-    return "evening";
-  };
-
   // Convert dayOfWeek (0=Sunday, 1=Monday, ...) to day name
   const getDayName = (dayOfWeek: number): string => {
     const days = [
@@ -208,24 +201,16 @@ export default function TeacherDashboardScreen() {
     setCurrentWeek(newDate);
   };
 
-  // Group schedules by day and period
-  const scheduleByDayPeriod: {
-    [day: string]: { [period: string]: TeacherSchedule[] };
-  } = {};
+  // Cột Sáng/Chiều/Tối như lịch thật; data theo giờ map đúng ca (tiết 1-6 sáng, 7-12 chiều, 13-15 tối)
+  const scheduleByDayPeriod: { [day: string]: { morning: TeacherSchedule[]; afternoon: TeacherSchedule[]; evening: TeacherSchedule[] } } = {};
+  const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  dayNames.forEach((d) => {
+    scheduleByDayPeriod[d] = { morning: [], afternoon: [], evening: [] };
+  });
   teacherSchedules.forEach((schedule) => {
     const dayName = getDayName(schedule.dayOfWeek);
-    const period = getPeriod(schedule.time);
-
-    if (!scheduleByDayPeriod[dayName]) {
-      scheduleByDayPeriod[dayName] = {
-        morning: [],
-        afternoon: [],
-        evening: [],
-      };
-    }
-    if (!scheduleByDayPeriod[dayName][period]) {
-      scheduleByDayPeriod[dayName][period] = [];
-    }
+    const slotIndex = getSlotIndexFromStartTime(schedule.time ?? "");
+    const period: "morning" | "afternoon" | "evening" = slotIndex <= 2 ? "morning" : slotIndex <= 5 ? "afternoon" : "evening";
     scheduleByDayPeriod[dayName][period].push(schedule);
   });
 
@@ -718,10 +703,7 @@ export default function TeacherDashboardScreen() {
     </>
   );
 
-  const renderScheduleCell = (
-    day: string,
-    period: "morning" | "afternoon" | "evening",
-  ) => {
+  const renderScheduleCell = (day: string, period: "morning" | "afternoon" | "evening") => {
     const schedules = scheduleByDayPeriod[day]?.[period] || [];
     const columnMinWidth = isMobile ? 180 : 240;
     const cellPadding = isMobile ? 8 : 10;
@@ -738,81 +720,28 @@ export default function TeacherDashboardScreen() {
           borderRightColor: Colors.border,
           borderBottomWidth: 1,
           borderBottomColor: Colors.border,
-          backgroundColor:
-            schedules && schedules.length > 0 ? Colors.white : Colors.gray50,
+          backgroundColor: schedules.length > 0 ? Colors.white : Colors.gray50,
         }}
       >
-        {schedules &&
-          schedules.length > 0 &&
-          schedules.map((item, index) => (
-            <View
-              key={item.id}
-              style={{
-                backgroundColor: "#DBEAFE",
-                borderLeftWidth: 3,
-                borderLeftColor: Colors.primary,
-                padding: isMobile ? 6 : 8,
-                borderRadius: 4,
-                marginBottom:
-                  index < schedules.length - 1 ? (isMobile ? 6 : 8) : 0,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: isMobile ? 12 : 13,
-                  fontWeight: "700",
-                  color: Colors.textHeading,
-                  lineHeight: isMobile ? 16 : 18,
-                  marginBottom: isMobile ? 3 : 4,
-                }}
-              >
-                {item.subjectName}
-              </Text>
-              <Text
-                style={{
-                  fontSize: isMobile ? 10 : 11,
-                  color: Colors.primary,
-                  lineHeight: isMobile ? 14 : 16,
-                  marginBottom: isMobile ? 2 : 3,
-                }}
-              >
-                {item.subjectCode}
-              </Text>
-              <Text
-                style={{
-                  fontSize: isMobile ? 10 : 11,
-                  color: Colors.textLight,
-                  lineHeight: isMobile ? 14 : 15,
-                  marginBottom: isMobile ? 1 : 2,
-                }}
-              >
-                {item.time}
-              </Text>
-              <Text
-                style={{
-                  fontSize: isMobile ? 10 : 11,
-                  color: Colors.textLight,
-                  lineHeight: isMobile ? 14 : 15,
-                  marginBottom: isMobile ? 1 : 2,
-                }}
-              >
-                Phòng: {item.room}
-              </Text>
-              {item.className && (
-                <Text
-                  style={{
-                    fontSize: isMobile ? 10 : 11,
-                    color: Colors.textSecondary,
-                    lineHeight: isMobile ? 14 : 15,
-                    fontWeight: "500",
-                  }}
-                >
-                  {item.className}{" "}
-                  {item.studentCount && `• ${item.studentCount} SV`}
-                </Text>
-              )}
-            </View>
-          ))}
+        {schedules.map((item, index) => (
+          <View
+            key={item.id}
+            style={{
+              backgroundColor: "#DBEAFE",
+              borderLeftWidth: 3,
+              borderLeftColor: Colors.primary,
+              padding: isMobile ? 6 : 8,
+              borderRadius: 4,
+              marginBottom: index < schedules.length - 1 ? (isMobile ? 6 : 8) : 0,
+            }}
+          >
+            <Text style={{ fontSize: isMobile ? 12 : 13, fontWeight: "700", color: Colors.textHeading, marginBottom: 2 }}>
+              {item.subjectName}
+            </Text>
+            <Text style={{ fontSize: isMobile ? 10 : 11, color: Colors.primary, marginBottom: 1 }}>{item.subjectCode}</Text>
+            <Text style={{ fontSize: isMobile ? 10 : 11, color: Colors.textLight }}>{item.time} • Phòng: {item.room}</Text>
+          </View>
+        ))}
       </View>
     );
   };
@@ -991,7 +920,7 @@ export default function TeacherDashboardScreen() {
               ))}
             </View>
 
-            {/* Morning Row */}
+            {/* Cột Sáng / Chiều / Tối như lịch thật; data map theo giờ vào đúng ca */}
             <View style={{ flexDirection: "row" }}>
               <View
                 style={{
@@ -1007,28 +936,12 @@ export default function TeacherDashboardScreen() {
                   minHeight: isMobile ? 100 : 120,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: isMobile ? 11 : periodFontSize,
-                    fontWeight: "600",
-                    color: "#92400E",
-                  }}
-                >
-                  Sáng
-                </Text>
+                <Text style={{ fontSize: isMobile ? 11 : periodFontSize, fontWeight: "600", color: "#92400E" }}>Sáng</Text>
               </View>
-              {[
-                "monday",
-                "tuesday",
-                "wednesday",
-                "thursday",
-                "friday",
-                "saturday",
-                "sunday",
-              ].map((day) => renderScheduleCell(day, "morning"))}
+              {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) =>
+                renderScheduleCell(day, "morning")
+              )}
             </View>
-
-            {/* Afternoon Row */}
             <View style={{ flexDirection: "row" }}>
               <View
                 style={{
@@ -1044,28 +957,12 @@ export default function TeacherDashboardScreen() {
                   minHeight: isMobile ? 100 : 120,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: isMobile ? 11 : periodFontSize,
-                    fontWeight: "600",
-                    color: "#92400E",
-                  }}
-                >
-                  Chiều
-                </Text>
+                <Text style={{ fontSize: isMobile ? 11 : periodFontSize, fontWeight: "600", color: "#92400E" }}>Chiều</Text>
               </View>
-              {[
-                "monday",
-                "tuesday",
-                "wednesday",
-                "thursday",
-                "friday",
-                "saturday",
-                "sunday",
-              ].map((day) => renderScheduleCell(day, "afternoon"))}
+              {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) =>
+                renderScheduleCell(day, "afternoon")
+              )}
             </View>
-
-            {/* Evening Row */}
             <View style={{ flexDirection: "row" }}>
               <View
                 style={{
@@ -1081,25 +978,11 @@ export default function TeacherDashboardScreen() {
                   minHeight: isMobile ? 100 : 120,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: isMobile ? 11 : periodFontSize,
-                    fontWeight: "600",
-                    color: "#1E3A8A",
-                  }}
-                >
-                  Tối
-                </Text>
+                <Text style={{ fontSize: isMobile ? 11 : periodFontSize, fontWeight: "600", color: "#1E3A8A" }}>Tối</Text>
               </View>
-              {[
-                "monday",
-                "tuesday",
-                "wednesday",
-                "thursday",
-                "friday",
-                "saturday",
-                "sunday",
-              ].map((day) => renderScheduleCell(day, "evening"))}
+              {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) =>
+                renderScheduleCell(day, "evening")
+              )}
             </View>
           </View>
         </ScrollView>
