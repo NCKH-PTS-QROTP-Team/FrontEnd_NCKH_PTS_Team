@@ -4,6 +4,7 @@ import { Platform, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppLayout from "@/components/AppLayout";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { ChatBox } from "@/components/ChatBox";
 import {
   HomeIcon,
   ClipboardIcon,
@@ -174,24 +175,28 @@ export default function AcademicStaffLayout() {
           activeKey={currentRoute}
           onItemPress={(route) => router.push(route as any)}
         />
+        <ChatBox />
       </SafeAreaView>
     );
   }
 
-  // On web, wrap with AppLayout
+  // On web, wrap with AppLayout + ChatBox
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#FFFFFF" }}
-      edges={["top", "left", "right"]}
-    >
-      <AppLayout
-        menuItems={menuItems}
-        userRole="academic-staff"
-        userName="Giáo vụ"
+    <>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: "#FFFFFF" }}
+        edges={["top", "left", "right"]}
       >
-        {stackContent}
-      </AppLayout>
-    </SafeAreaView>
+        <AppLayout
+          menuItems={menuItems}
+          userRole="academic-staff"
+          userName="Giáo vụ"
+        >
+          {stackContent}
+        </AppLayout>
+      </SafeAreaView>
+      <ChatBox />
+    </>
   );
 }
 

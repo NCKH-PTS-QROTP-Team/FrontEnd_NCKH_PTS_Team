@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Platform, useWindowDimensions, ActivityIndicator, Animated } from 'react-native';
 import { Colors } from '@/constants/colors';
+import { getSlotIndexFromStartTime } from '@/constants/scheduleSlots';
 import { scheduleService } from '@/apis';
 import { getStudentIdFromToken } from '@/apis/utils/jwt';
 import type { Schedule } from '@/apis/services/schedule.service';
@@ -15,12 +16,9 @@ interface ScheduleItem {
   type: 'theory' | 'practice' | 'exam' | 'makeup';
 }
 
+/** Cột giống lịch thật: Sáng (tiết 1-6), Chiều (7-12), Tối (13-15). Data map theo giờ vào đúng ca. */
 interface DaySchedule {
-  [key: string]: {
-    morning?: ScheduleItem[];
-    afternoon?: ScheduleItem[];
-    evening?: ScheduleItem[];
-  };
+  [dayName: string]: { morning?: ScheduleItem[]; afternoon?: ScheduleItem[]; evening?: ScheduleItem[] };
 }
 
 export default function WeeklySchedule() {
@@ -44,52 +42,32 @@ export default function WeeklySchedule() {
   const dayFontSize = isMobile ? 12 : 14;
   const periodFontSize = isMobile ? 12 : 14;
   
-  // Helper function to convert schedules to DaySchedule format
+  // Data theo giờ (11:00, 13:30...) → map đúng ca Sáng/Chiều/Tối (tiết 1-6 sáng, 7-12 chiều, 13-15 tối)
   const convertSchedulesToDaySchedule = (schedules: Schedule[]): DaySchedule => {
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const scheduleMap: DaySchedule = {};
-    
+    dayNames.forEach((d) => {
+      scheduleMap[d] = { morning: [], afternoon: [], evening: [] };
+    });
+
     schedules.forEach((s: Schedule) => {
-      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       const dayIndex = s.dayOfWeek === 7 ? 0 : s.dayOfWeek;
-      const dayName = dayNames[dayIndex] || 'monday';
-      
-      const startHour = parseInt(s.startTime.split(':')[0]);
-      let period: 'morning' | 'afternoon' | 'evening';
-      if (startHour < 12) {
-        period = 'morning';
-      } else if (startHour < 18) {
-        period = 'afternoon';
-      } else {
-        period = 'evening';
-      }
-      
-      if (!scheduleMap[dayName]) {
-        scheduleMap[dayName] = {};
-      }
-      if (!scheduleMap[dayName][period]) {
-        scheduleMap[dayName][period] = [];
-      }
-      
-      let itemType: 'theory' | 'practice' | 'exam' | 'makeup' = 'theory';
-      if (s.scheduleType === 'EXAM') {
-        itemType = 'exam';
-      } else if (s.scheduleType === 'CLASS') {
-        itemType = 'theory';
-      }
-      
-      const scheduleItem: ScheduleItem = {
+      const dayName = dayNames[dayIndex] ?? 'monday';
+      const slotIndex = getSlotIndexFromStartTime(s.startTime ?? '');
+      const period: 'morning' | 'afternoon' | 'evening' = slotIndex <= 2 ? 'morning' : slotIndex <= 5 ? 'afternoon' : 'evening';
+
+      const itemType: 'theory' | 'practice' | 'exam' | 'makeup' = s.scheduleType === 'EXAM' ? 'exam' : 'theory';
+      const row = scheduleMap[dayName];
+      if (row?.[period]) row[period].push({
         id: s.id,
         subject: s.subjectName,
         code: `${s.classCode} - ${s.subjectCode}`,
-        sessions: `Tiết: ${s.startTime} - ${s.endTime}`,
+        sessions: `${s.startTime ?? ''} - ${s.endTime ?? ''}`,
         room: `Phòng: ${s.room}`,
         teacher: `GV: ${s.teacherName}`,
         type: itemType,
-      };
-      
-      scheduleMap[dayName][period]!.push(scheduleItem);
+      } as ScheduleItem);
     });
-    
     return scheduleMap;
   };
   
@@ -150,27 +128,6 @@ export default function WeeklySchedule() {
       }
       console.log("📅 Loading weekly schedules...");
       
-      const studentId = await getStudentIdFromToken();
-      let classId: string | undefined;
-
-      // Tìm classId của sinh viên từ API /users/me (cho phép tất cả user roles)
-      // Nếu không lấy được, sẽ load toàn bộ lịch (không filter theo class)
-      if (studentId) {
-        try {
-          // Gọi API /users/me để lấy thông tin đầy đủ (bao gồm classId)
-          const { authService } = await import('@/apis');
-          const currentUser = await authService.getCurrentUser();
-          if (currentUser?.classId) {
-            classId = currentUser.classId;
-            console.log('👨‍🎓 Current student classId:', classId);
-          } else {
-            console.log('⚠️ Không có classId, sẽ load toàn bộ lịch');
-          }
-        } catch (err) {
-          console.warn('⚠️ Không lấy được classId, sẽ load toàn bộ lịch:', err);
-        }
-      }
-
       // Tính khoảng ngày của tuần hiện tại (fromDate, toDate - yyyy-MM-dd)
       const startDate = new Date(currentWeek);
       startDate.setDate(startDate.getDate() - startDate.getDay() + 1); // Monday
@@ -187,19 +144,29 @@ export default function WeeklySchedule() {
       const fromDate = toIsoDate(startDate);
       const toDate = toIsoDate(endDate);
 
-      // Chuẩn bị params cho backend: filter theo lớp + loại lịch (CLASS / EXAM) + khoảng ngày
       const params: {
         classId?: string;
+        classIds?: string[];
         scheduleType?: 'CLASS' | 'EXAM';
         fromDate?: string;
         toDate?: string;
-      } = {
-        fromDate,
-        toDate,
-      };
+      } = { fromDate, toDate };
 
-      if (classId) {
-        params.classId = classId;
+      // /users/me trả về enrolledClassIds (1 SV nhiều môn) hoặc classId
+      try {
+        const { authService } = await import('@/apis');
+        const currentUser = await authService.getCurrentUser();
+        if (currentUser?.enrolledClassIds?.length) {
+          params.classIds = currentUser.enrolledClassIds;
+          console.log('👨‍🎓 Student enrolledClassIds:', currentUser.enrolledClassIds.length, 'classes');
+        } else if (currentUser?.classId) {
+          params.classId = currentUser.classId;
+          console.log('👨‍🎓 Current student classId:', currentUser.classId);
+        } else {
+          console.log('⚠️ Không có classId/enrolledClassIds, sẽ load toàn bộ lịch');
+        }
+      } catch (err) {
+        console.warn('⚠️ Không lấy được user, sẽ load toàn bộ lịch:', err);
       }
 
       if (selectedView === 'class') {
@@ -273,15 +240,14 @@ export default function WeeklySchedule() {
 
   const renderScheduleCell = (day: string, period: 'morning' | 'afternoon' | 'evening') => {
     const schedules = weeklySchedule[day]?.[period] || [];
-    
     return (
-      <View 
+      <View
         key={`${day}-${period}`}
-        style={{ 
+        style={{
           flex: 1,
           minWidth: columnMinWidth,
-          minHeight: 120,
-          padding: 10,
+          minHeight: 100,
+          padding: 8,
           borderRightWidth: 1,
           borderRightColor: '#D1D5DB',
           borderBottomWidth: 1,
@@ -289,7 +255,7 @@ export default function WeeklySchedule() {
           backgroundColor: schedules.length > 0 ? '#FFFFFF' : '#FAFAFA',
         }}
       >
-        {schedules.length > 0 && schedules.map((item, index) => (
+        {schedules.map((item, idx) => (
           <View
             key={item.id}
             style={{
@@ -298,50 +264,15 @@ export default function WeeklySchedule() {
               borderLeftColor: getTypeColor(item.type),
               padding: 8,
               borderRadius: 4,
-              marginBottom: index < schedules.length - 1 ? 8 : 0,
+              marginBottom: idx < schedules.length - 1 ? 8 : 0,
             }}
           >
-            <Text style={{ 
-              fontSize: 13, 
-              fontWeight: '700', 
-              color: '#111827',
-              lineHeight: 18,
-              marginBottom: 4,
-            }}>
-              {item.subject}
-            </Text>
-            <Text style={{ 
-              fontSize: 11, 
-              color: '#3FA9F5',
-              lineHeight: 16,
-              marginBottom: 3,
-            }}>
-              {item.code}
-            </Text>
-            <Text style={{ 
-              fontSize: 11, 
-              color: '#6B7280',
-              lineHeight: 15,
-              marginBottom: 2,
-            }}>
-              {item.sessions}
-            </Text>
-            <Text style={{ 
-              fontSize: 11, 
-              color: '#6B7280',
-              lineHeight: 15,
-              marginBottom: 2,
-            }}>
-              {item.room}
-            </Text>
-            <Text style={{ 
-              fontSize: 11, 
-              color: '#374151',
-              lineHeight: 15,
-              fontWeight: '500',
-            }}>
-              {item.teacher}
-            </Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#111827', marginBottom: 2 }}>{item.subject}</Text>
+            <Text style={{ fontSize: 10, color: '#3FA9F5', marginBottom: 1 }}>{item.code}</Text>
+            <Text style={{ fontSize: 10, color: '#6B7280', marginBottom: 1 }}>{item.sessions} • {item.room}</Text>
+            {item.teacher && item.teacher.replace('GV: ', '').trim() && (
+              <Text style={{ fontSize: 10, color: '#059669', fontWeight: '500' }}>{item.teacher}</Text>
+            )}
           </View>
         ))}
       </View>
@@ -573,9 +504,9 @@ export default function WeeklySchedule() {
             ))}
           </View>
 
-          {/* Morning Row */}
+          {/* Cột giống lịch thật: Sáng (tiết 1-6), Chiều (7-12), Tối (13-15). Data map theo giờ vào đúng ca. */}
           <View style={{ flexDirection: 'row' }}>
-            <View style={{ 
+            <View style={{
               width: isMobile ? 80 : 120,
               padding: headerPadding,
               borderRightWidth: 1,
@@ -585,17 +516,16 @@ export default function WeeklySchedule() {
               backgroundColor: '#FFFBEB',
               justifyContent: 'center',
               alignItems: 'center',
+              minHeight: 100,
             }}>
               <Text style={{ fontSize: periodFontSize, fontWeight: '600', color: '#92400E' }}>Sáng</Text>
             </View>
-            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) =>
               renderScheduleCell(day, 'morning')
-            ))}
+            )}
           </View>
-
-          {/* Afternoon Row */}
           <View style={{ flexDirection: 'row' }}>
-            <View style={{ 
+            <View style={{
               width: isMobile ? 80 : 120,
               padding: headerPadding,
               borderRightWidth: 1,
@@ -605,17 +535,16 @@ export default function WeeklySchedule() {
               backgroundColor: '#FEF3C7',
               justifyContent: 'center',
               alignItems: 'center',
+              minHeight: 100,
             }}>
               <Text style={{ fontSize: periodFontSize, fontWeight: '600', color: '#92400E' }}>Chiều</Text>
             </View>
-            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) =>
               renderScheduleCell(day, 'afternoon')
-            ))}
+            )}
           </View>
-
-          {/* Evening Row */}
           <View style={{ flexDirection: 'row' }}>
-            <View style={{ 
+            <View style={{
               width: isMobile ? 80 : 120,
               padding: headerPadding,
               borderRightWidth: 1,
@@ -625,12 +554,13 @@ export default function WeeklySchedule() {
               backgroundColor: '#DBEAFE',
               justifyContent: 'center',
               alignItems: 'center',
+              minHeight: 100,
             }}>
               <Text style={{ fontSize: periodFontSize, fontWeight: '600', color: '#1E3A8A' }}>Tối</Text>
             </View>
-            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) =>
               renderScheduleCell(day, 'evening')
-            ))}
+            )}
           </View>
         </View>
       </ScrollView>

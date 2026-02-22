@@ -51,16 +51,25 @@ export interface UpdateScheduleRequest {
  */
 export const scheduleService = {
   /**
-   * Get all schedules or filter by class/teacher
+   * Get all schedules or filter by class/teacher.
+   * Student: dùng enrolledClassIds để lấy lịch nhiều môn (nhiều lớp).
    */
   getSchedules: async (params?: {
     classId?: string;
+    classIds?: string[];
     teacherId?: string;
     scheduleType?: 'CLASS' | 'EXAM';
     fromDate?: string;
     toDate?: string;
   }): Promise<Schedule[]> => {
-    const response = await apiClient.get<ApiResponse<Schedule[]>>('/schedules', { params });
+    const query: Record<string, string> = {};
+    if (params?.classIds?.length) query.classIds = params.classIds.join(',');
+    else if (params?.classId) query.classId = params.classId;
+    if (params?.teacherId) query.teacherId = params.teacherId;
+    if (params?.scheduleType) query.scheduleType = params.scheduleType;
+    if (params?.fromDate) query.fromDate = params.fromDate;
+    if (params?.toDate) query.toDate = params.toDate;
+    const response = await apiClient.get<ApiResponse<Schedule[]>>('/schedules', { params: query });
     return response.data.data;
   },
   

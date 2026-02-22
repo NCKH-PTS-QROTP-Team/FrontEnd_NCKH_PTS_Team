@@ -69,15 +69,14 @@ export default function StudentHomeScreen() {
       let allSchedules: Schedule[] = [];
       try {
         console.log("📅 Loading schedules...");
-        if (studentId) {
-          // Sử dụng classId từ currentUser đã lấy ở trên
-          if (currentUser?.classId) {
-            allSchedules = await scheduleService.getSchedules({
-              classId: currentUser.classId,
-            });
-          } else {
-            allSchedules = await scheduleService.getSchedules();
-          }
+        if (currentUser?.enrolledClassIds?.length) {
+          allSchedules = await scheduleService.getSchedules({
+            classIds: currentUser.enrolledClassIds,
+          });
+        } else if (currentUser?.classId) {
+          allSchedules = await scheduleService.getSchedules({
+            classId: currentUser.classId,
+          });
         } else {
           allSchedules = await scheduleService.getSchedules();
         }
