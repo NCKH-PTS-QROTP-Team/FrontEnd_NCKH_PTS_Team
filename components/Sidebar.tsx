@@ -51,7 +51,7 @@ export default function Sidebar({
   }
 
   const roleColors = {
-    admin: "#3FA9F5", // Primary blue
+    admin: Colors.primary,
     teacher: "#10B981", // Success green
     student: "#F59E0B", // Warning amber
   };
@@ -115,7 +115,7 @@ export default function Sidebar({
               ({
                 onMouseEnter: (e: any) => {
                   e.currentTarget.style.backgroundColor = "#F9FAFB";
-                  e.currentTarget.style.borderColor = "#3FA9F5";
+                  e.currentTarget.style.borderColor = Colors.primary;
                 },
                 onMouseLeave: (e: any) => {
                   e.currentTarget.style.backgroundColor = "#FFFFFF";
@@ -178,12 +178,12 @@ export default function Sidebar({
                       borderRadius: 8,
                       height: 48,
                       backgroundColor: isActive
-                        ? "#E0F2FE"
+                        ? "#CCFBF1"
                         : isHovered
                         ? "#F9FAFB"
                         : "transparent",
                       borderLeftWidth: isActive ? 3 : 0,
-                      borderLeftColor: isActive ? "#3FA9F5" : "transparent",
+                      borderLeftColor: isActive ? Colors.primary : "transparent",
                       justifyContent: collapsed ? "center" : "flex-start",
                     },
                     {
@@ -200,7 +200,7 @@ export default function Sidebar({
                         height: 32,
                         borderRadius: 8,
                         backgroundColor: isActive
-                          ? "#3FA9F5"
+                          ? Colors.primary
                           : isHovered
                           ? "#E5E7EB"
                           : "#F3F4F6",
@@ -223,7 +223,7 @@ export default function Sidebar({
                           flex: 1,
                           fontSize: 14,
                           fontWeight: isActive ? "600" : "400",
-                          color: isActive ? "#3FA9F5" : "#111827",
+                          color: isActive ? Colors.primary : "#111827",
                           opacity: collapsed ? 0 : 1,
                           ...(Platform.OS === "web" &&
                             ({

@@ -17,6 +17,7 @@ import WeeklySchedule from "@/components/WeeklySchedule";
 import { scheduleService, attendanceService, authService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
+import { Colors } from "@/constants/colors";
 import type { Schedule } from "@/apis/services/schedule.service";
 
 interface TodaySchedule {
@@ -248,7 +249,7 @@ export default function StudentHomeScreen() {
             <View
               style={[
                 {
-                  backgroundColor: "#3FA9F5",
+                  backgroundColor: Colors.primary,
                   padding: isDesktop ? 32 : isMobile ? 20 : 24,
                   paddingBottom: isDesktop ? 24 : isMobile ? 16 : 20,
                   overflow: "hidden",
@@ -256,7 +257,7 @@ export default function StudentHomeScreen() {
                   borderTopRightRadius: 16,
                 },
                 isWeb && ({
-                  background: "linear-gradient(135deg, #3FA9F5 0%, #2563EB 100%)",
+                  background: `linear-gradient(135deg, ${Colors.primary} 0%, ${Colors.primaryDark} 100%)`,
                 } as any),
               ]}
             >
@@ -338,7 +339,7 @@ export default function StudentHomeScreen() {
               <TouchableOpacity
                 onPress={() => router.push("/student/schedule")}
                 style={{
-                  backgroundColor: "#3FA9F5",
+                  backgroundColor: Colors.primary,
                   borderRadius: 10,
                   paddingVertical: isMobile ? 12 : 14,
                   paddingHorizontal: isDesktop ? 24 : isMobile ? 20 : 22,
@@ -436,7 +437,7 @@ export default function StudentHomeScreen() {
                         borderRadius: 4,
                         backgroundColor:
                           index === currentScheduleIndex
-                            ? "#3FA9F5"
+                            ? Colors.primary
                             : "#D1D5DB",
                       }}
                     />
@@ -492,7 +493,7 @@ export default function StudentHomeScreen() {
                     style={{
                       width: 2,
                       height: isMobile ? 20 : 24,
-                      backgroundColor: "#3FA9F5",
+                      backgroundColor: Colors.primary,
                       borderRadius: 1,
                       marginRight: isMobile ? 8 : 12,
                     }}
@@ -609,7 +610,7 @@ export default function StudentHomeScreen() {
                     style={{
                       fontSize: isDesktop ? 24 : isMobile ? 18 : 20,
                       fontWeight: "700",
-                      color: "#3FA9F5",
+                      color: Colors.primary,
                     }}
                   >
                     OTP
@@ -763,7 +764,7 @@ export default function StudentHomeScreen() {
                       fontSize: isDesktop ? 40 : isMobile ? 36 : 38,
                       lineHeight: isDesktop ? 48 : isMobile ? 44 : 46,
                       fontWeight: "bold",
-                      color: "#3FA9F5",
+                      color: Colors.primary,
                       marginBottom: 4,
                     }}
                   >
@@ -871,7 +872,7 @@ export default function StudentHomeScreen() {
                       fontSize: isDesktop ? 40 : isMobile ? 36 : 38,
                       lineHeight: isDesktop ? 48 : isMobile ? 44 : 46,
                       fontWeight: "bold",
-                      color: "#3FA9F5",
+                      color: Colors.primary,
                       marginBottom: 4,
                     }}
                   >
