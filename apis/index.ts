@@ -14,6 +14,7 @@ export * from './types/otp.types';
 export * from './types/qr.types';
 export * from './types/student.types';
 export * from './types/teacher.types';
+export * from './types/class.types';
 
 // Socket
 export { socketClient } from './socket/socketClient';
