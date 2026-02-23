@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { studentService } from '@/apis/services/student.service';
-import { StudentResponse, CreateStudentRequest } from '@/apis/types/student.types';
+import { StudentResponse, CreateStudentRequest, UpdateStudentRequest } from '@/apis/types/student.types';
 import { UserCard } from '@/components/UserCard';
 
 
@@ -131,6 +131,120 @@ function StudentDetailModal({
     );
 }
 
+// ─── Edit Student Modal ──────────────────────────────────────────────────────
+function EditStudentModal({
+    student,
+    form,
+    setForm,
+    visible,
+    saving,
+    onClose,
+    onSave,
+}: {
+    student: StudentResponse | null;
+    form: UpdateStudentRequest;
+    setForm: React.Dispatch<React.SetStateAction<UpdateStudentRequest>>;
+    visible: boolean;
+    saving: boolean;
+    onClose: () => void;
+    onSave: () => void;
+}) {
+    if (!student) return null;
+
+    const fields: { label: string; key: keyof UpdateStudentRequest; placeholder: string; keyboard?: any; secure?: boolean }[] = [
+        { label: 'Họ và tên *', key: 'name', placeholder: 'Nguyễn Văn A' },
+        { label: 'Email *', key: 'email', placeholder: 'sv@student.edu.vn', keyboard: 'email-address' },
+        { label: 'Khoa / Bộ môn', key: 'departmentName', placeholder: 'VD: Khoa CNTT' },
+    ];
+
+    return (
+        <Modal
+            animationType="slide"
+            transparent
+            visible={visible}
+            onRequestClose={onClose}
+            statusBarTranslucent
+        >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                    <View style={styles.modalHandle} />
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Chỉnh sửa sinh viên</Text>
+                        <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                            <Ionicons name="close" size={20} color="#64748b" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <ScrollView showsVerticalScrollIndicator={false}>
+                        {fields.map((field) => (
+                            <View key={field.key}>
+                                <Text style={styles.label}>{field.label}</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder={field.placeholder}
+                                    placeholderTextColor="#94a3b8"
+                                    keyboardType={field.keyboard ?? 'default'}
+                                    secureTextEntry={field.secure ?? false}
+                                    value={(form as any)[field.key] ?? ''}
+                                    onChangeText={(v) =>
+                                        setForm((prev) => ({ ...prev, [field.key]: v }))
+                                    }
+                                />
+                            </View>
+                        ))}
+
+                        {/* Active status toggle */}
+                        <Text style={styles.label}>Trạng thái</Text>
+                        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 8 }}>
+                            {[
+                                { label: 'Hoạt động', value: true, color: '#10b981' },
+                                { label: 'Tạm khóa', value: false, color: '#f59e0b' },
+                            ].map((opt) => {
+                                const active = form.isActive === opt.value;
+                                return (
+                                    <TouchableOpacity
+                                        key={String(opt.value)}
+                                        onPress={() => setForm((prev) => ({ ...prev, isActive: opt.value }))}
+                                        style={{
+                                            flex: 1,
+                                            paddingVertical: 10,
+                                            borderRadius: 10,
+                                            borderWidth: 1.5,
+                                            borderColor: active ? opt.color : '#e2e8f0',
+                                            backgroundColor: active ? opt.color + '15' : '#f8fafc',
+                                            alignItems: 'center',
+                                        }}
+                                        activeOpacity={0.75}
+                                    >
+                                        <Text style={{ color: active ? opt.color : '#94a3b8', fontWeight: '600', fontSize: 14 }}>
+                                            {opt.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+
+                        <TouchableOpacity
+                            style={[styles.submitButton, saving && { opacity: 0.65 }]}
+                            onPress={onSave}
+                            disabled={saving}
+                        >
+                            {saving ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <>
+                                    <Ionicons name="checkmark-outline" size={18} color="#fff" />
+                                    <Text style={styles.submitButtonText}>Lưu thay đổi</Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+                    </ScrollView>
+                </View>
+            </View>
+        </Modal>
+    );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function StudentsManagement() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -144,6 +258,12 @@ export default function StudentsManagement() {
     // Detail modal state
     const [detailVisible, setDetailVisible] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<StudentResponse | null>(null);
+
+    // Edit modal state
+    const [editVisible, setEditVisible] = useState(false);
+    const [editingStudent, setEditingStudent] = useState<StudentResponse | null>(null);
+    const [editForm, setEditForm] = useState<UpdateStudentRequest>({});
+    const [saving, setSaving] = useState(false);
 
     // Add-form state
     const [form, setForm] = useState<CreateStudentRequest>({
@@ -215,6 +335,40 @@ export default function StudentsManagement() {
     const handleViewDetail = (student: StudentResponse) => {
         setSelectedStudent(student);
         setDetailVisible(true);
+    };
+
+    // ── Open edit ──
+    const handleEdit = (student: StudentResponse) => {
+        setEditingStudent(student);
+        setEditForm({
+            name: student.name,
+            email: student.email,
+            departmentName: student.departmentName ?? '',
+            isActive: student.isActive,
+        });
+        setEditVisible(true);
+    };
+
+    // ── Save edit ──
+    const handleSaveEdit = async () => {
+        if (!editingStudent) return;
+        if (!editForm.name?.trim() || !editForm.email?.trim()) {
+            Alert.alert('Thiếu thông tin', 'Vui lòng nhập đầy đủ tên và email.');
+            return;
+        }
+        try {
+            setSaving(true);
+            const updated = await studentService.updateStudent(editingStudent.id, editForm);
+            setStudents((prev) =>
+                prev.map((s) => (s.id === updated.id ? updated : s))
+            );
+            setEditVisible(false);
+            Alert.alert('Thành công', 'Đã cập nhật thông tin sinh viên!');
+        } catch (err: any) {
+            Alert.alert('Lỗi', err?.message || 'Không thể cập nhật sinh viên');
+        } finally {
+            setSaving(false);
+        }
     };
 
     // ── Delete ──
@@ -385,7 +539,7 @@ export default function StudentsManagement() {
                                         label: 'Sửa',
                                         icon: 'create-outline',
                                         color: '#3b82f6',
-                                        onPress: () => { /* TODO: edit */ },
+                                        onPress: () => handleEdit(student),
                                     },
                                     {
                                         label: 'Chi tiết',
@@ -406,6 +560,17 @@ export default function StudentsManagement() {
                     <View style={{ height: 24 }} />
                 </ScrollView>
             )}
+
+            {/* ── Edit Student Modal ── */}
+            <EditStudentModal
+                student={editingStudent}
+                form={editForm}
+                setForm={setEditForm}
+                visible={editVisible}
+                saving={saving}
+                onClose={() => setEditVisible(false)}
+                onSave={handleSaveEdit}
+            />
 
             {/* ── Add Student Modal ── */}
             <Modal

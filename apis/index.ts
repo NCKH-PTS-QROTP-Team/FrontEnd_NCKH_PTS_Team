@@ -13,6 +13,7 @@ export * from './types/attendance.types';
 export * from './types/otp.types';
 export * from './types/qr.types';
 export * from './types/student.types';
+export * from './types/teacher.types';
 
 // Socket
 export { socketClient } from './socket/socketClient';

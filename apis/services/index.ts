@@ -7,4 +7,5 @@ export * from './otp.service';
 export * from './qr.service';
 export * from './attendance.service';
 export * from './student.service';
+export * from './teacher.service';
 
