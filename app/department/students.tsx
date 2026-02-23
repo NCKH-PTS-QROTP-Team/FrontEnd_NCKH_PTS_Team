@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -8,281 +8,492 @@ import {
     TextInput,
     Modal,
     Alert,
+    ActivityIndicator,
+    RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { studentService } from '@/apis/services/student.service';
+import { StudentResponse, CreateStudentRequest } from '@/apis/types/student.types';
+import { UserCard } from '@/components/UserCard';
 
-interface Student {
-    id: string;
-    studentId: string;
-    name: string;
-    email: string;
-    phone: string;
-    class: string;
-    course: string;
-    status: 'active' | 'inactive' | 'graduated';
+
+// ─── Filter Tab Config ────────────────────────────────────────────────────────
+const FILTER_TABS = [
+    { key: 'all', label: 'Tất cả', icon: 'people', color: '#3b82f6' },
+    { key: 'active', label: 'Hoạt động', icon: 'checkmark-circle', color: '#10b981' },
+    { key: 'inactive', label: 'Tạm khóa', icon: 'pause-circle', color: '#f59e0b' },
+] as const;
+
+type FilterKey = 'all' | 'active' | 'inactive';
+
+
+
+
+// ─── Empty State ──────────────────────────────────────────────────────────────
+function EmptyState({ query }: { query: string }) {
+    return (
+        <View style={styles.emptyContainer}>
+            <Ionicons name="people-outline" size={52} color="#cbd5e1" />
+            <Text style={styles.emptyTitle}>
+                {query ? 'Không tìm thấy kết quả' : 'Chưa có sinh viên'}
+            </Text>
+            <Text style={styles.emptySubtitle}>
+                {query
+                    ? `Không khớp với "${query}"`
+                    : 'Nhấn nút + để thêm sinh viên mới'}
+            </Text>
+        </View>
+    );
 }
 
-export default function StudentsManagement() {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [filterStatus, setFilterStatus] = useState<string>('all');
-    const [modalVisible, setModalVisible] = useState(false);
-    const [students, setStudents] = useState<Student[]>([
-        {
-            id: '1',
-            studentId: 'SV001',
-            name: 'Nguyễn Văn A',
-            email: 'nva@student.edu.vn',
-            phone: '0123456789',
-            class: 'CNTT-K18',
-            course: 'Khóa 18',
-            status: 'active',
-        },
-        {
-            id: '2',
-            studentId: 'SV002',
-            name: 'Trần Thị B',
-            email: 'ttb@student.edu.vn',
-            phone: '0987654321',
-            class: 'CNTT-K18',
-            course: 'Khóa 18',
-            status: 'active',
-        },
-    ]);
+// ─── Student Detail Modal ────────────────────────────────────────────────────
+function StudentDetailModal({
+    student,
+    visible,
+    onClose,
+}: {
+    student: StudentResponse | null;
+    visible: boolean;
+    onClose: () => void;
+}) {
+    if (!student) return null;
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'active':
-                return '#10b981';
-            case 'inactive':
-                return '#f59e0b';
-            case 'graduated':
-                return '#6366f1';
-            default:
-                return '#94a3b8';
-        }
-    };
+    const accent = student.isActive ? '#10b981' : '#f59e0b';
+    const initials = student.name.trim().charAt(0).toUpperCase();
 
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case 'active':
-                return 'Đang học';
-            case 'inactive':
-                return 'Tạm nghỉ';
-            case 'graduated':
-                return 'Đã tốt nghiệp';
-            default:
-                return status;
-        }
-    };
-
-    const filteredStudents = students.filter((student) => {
-        const matchesSearch =
-            student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            student.studentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            student.email.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesFilter =
-            filterStatus === 'all' || student.status === filterStatus;
-        return matchesSearch && matchesFilter;
-    });
+    const rows: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; value: string }[] = [
+        { icon: 'id-card-outline', label: 'Mã sinh viên', value: student.studentId ?? '—' },
+        { icon: 'mail-outline', label: 'Email', value: student.email },
+        { icon: 'business-outline', label: 'Khoa / Bộ môn', value: student.departmentName ?? '—' },
+        { icon: 'calendar-outline', label: 'Ngày tham gia', value: student.createdAt ? new Date(student.createdAt).toLocaleDateString('vi-VN') : '—' },
+        { icon: 'finger-print-outline', label: 'User ID', value: student.id },
+    ];
 
     return (
+        <Modal
+            animationType="slide"
+            transparent
+            visible={visible}
+            onRequestClose={onClose}
+            statusBarTranslucent
+        >
+            <View style={styles.detailOverlay}>
+                <View style={styles.detailSheet}>
+
+                    {/* Handle */}
+                    <View style={styles.detailHandle} />
+
+                    {/* Close button */}
+                    <TouchableOpacity style={styles.detailCloseBtn} onPress={onClose} activeOpacity={0.7}>
+                        <Ionicons name="close" size={18} color="#64748b" />
+                    </TouchableOpacity>
+
+                    {/* Avatar + Name header */}
+                    <View style={styles.detailHero}>
+                        <View style={[styles.detailAvatar, { backgroundColor: accent + '20' }]}>
+                            <Text style={[styles.detailAvatarText, { color: accent }]}>{initials}</Text>
+                        </View>
+                        <Text style={styles.detailName}>{student.name}</Text>
+
+                        {/* Status badge */}
+                        <View style={[styles.detailStatusBadge, { backgroundColor: accent + '18' }]}>
+                            <View style={[styles.detailStatusDot, { backgroundColor: accent }]} />
+                            <Text style={[styles.detailStatusText, { color: accent }]}>
+                                {student.isActive ? 'Đang hoạt động' : 'Tạm khóa'}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Divider */}
+                    <View style={styles.detailDivider} />
+
+                    {/* Info rows */}
+                    <ScrollView
+                        style={styles.detailScroll}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 32 }}
+                    >
+                        {rows.map((row, idx) => (
+                            <View key={idx} style={styles.detailRow}>
+                                <View style={styles.detailRowIcon}>
+                                    <Ionicons name={row.icon} size={16} color="#3b82f6" />
+                                </View>
+                                <View style={styles.detailRowContent}>
+                                    <Text style={styles.detailRowLabel}>{row.label}</Text>
+                                    <Text style={styles.detailRowValue} selectable>{row.value}</Text>
+                                </View>
+                            </View>
+                        ))}
+                    </ScrollView>
+                </View>
+            </View>
+        </Modal>
+    );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function StudentsManagement() {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterStatus, setFilterStatus] = useState<FilterKey>('all');
+    const [modalVisible, setModalVisible] = useState(false);
+    const [students, setStudents] = useState<StudentResponse[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Detail modal state
+    const [detailVisible, setDetailVisible] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState<StudentResponse | null>(null);
+
+    // Add-form state
+    const [form, setForm] = useState<CreateStudentRequest>({
+        studentId: '',
+        name: '',
+        email: '',
+        password: '',
+    });
+    const [submitting, setSubmitting] = useState(false);
+
+    // ── Fetch ──
+    const fetchStudents = useCallback(async (showRefresh = false) => {
+        try {
+            if (showRefresh) setRefreshing(true);
+            else setLoading(true);
+            setError(null);
+
+            const data = await studentService.getAllStudents();
+            setStudents(data);
+        } catch (err: any) {
+            setError(err?.message || 'Không thể tải danh sách sinh viên');
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }, []);
+
+    useEffect(() => { fetchStudents(); }, [fetchStudents]);
+
+    // ── Client-side filter & search ──
+    const filteredStudents = students.filter((s) => {
+        const matchesFilter =
+            filterStatus === 'all' ||
+            (filterStatus === 'active' && s.isActive) ||
+            (filterStatus === 'inactive' && !s.isActive);
+
+        if (!matchesFilter) return false;
+
+        if (!searchQuery) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+            s.name.toLowerCase().includes(q) ||
+            (s.studentId ?? '').toLowerCase().includes(q) ||
+            s.email.toLowerCase().includes(q)
+        );
+    });
+
+    // ── Add student ──
+    const handleAddStudent = async () => {
+        if (!form.studentId || !form.name || !form.email || !form.password) {
+            Alert.alert('Thiếu thông tin', 'Vui lòng nhập đầy đủ mã SV, tên, email và mật khẩu.');
+            return;
+        }
+        try {
+            setSubmitting(true);
+            const created = await studentService.createStudent(form);
+            setStudents((prev) => [created, ...prev]);
+            setModalVisible(false);
+            setForm({ studentId: '', name: '', email: '', password: '' });
+            Alert.alert('Thành công', 'Đã thêm sinh viên mới!');
+        } catch (err: any) {
+            Alert.alert('Lỗi', err?.message || 'Không thể thêm sinh viên');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    // ── View detail ──
+    const handleViewDetail = (student: StudentResponse) => {
+        setSelectedStudent(student);
+        setDetailVisible(true);
+    };
+
+    // ── Delete ──
+    const handleDelete = (student: StudentResponse) => {
+        Alert.alert(
+            'Xác nhận xóa',
+            `Bạn có chắc muốn xóa sinh viên "${student.name}"?`,
+            [
+                { text: 'Hủy', style: 'cancel' },
+                {
+                    text: 'Xóa',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await studentService.deleteStudent(student.id);
+                            setStudents((prev) => prev.filter((s) => s.id !== student.id));
+                        } catch (err: any) {
+                            Alert.alert('Lỗi', err?.message || 'Không thể xóa sinh viên');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    return (
         <View style={styles.container}>
-            {/* Search and Filter Bar */}
+
+            {/* ── Search + Add ── */}
             <View style={styles.searchContainer}>
                 <View style={styles.searchBar}>
-                    <Ionicons name="search" size={20} color="#94a3b8" />
+                    <Ionicons name="search" size={18} color="#94a3b8" />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Tìm kiếm sinh viên..."
+                        placeholder="Tìm theo tên, mã SV, email..."
+                        placeholderTextColor="#94a3b8"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                     />
+                    {searchQuery.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchQuery('')}>
+                            <Ionicons name="close-circle" size={18} color="#94a3b8" />
+                        </TouchableOpacity>
+                    )}
                 </View>
                 <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => setModalVisible(true)}
                 >
-                    <Ionicons name="add" size={24} color="#fff" />
+                    <Ionicons name="add" size={22} color="#fff" />
                 </TouchableOpacity>
             </View>
 
-            {/* Filter Tabs */}
+            {/* ── Filter Chips (auto-fit, no height stretch) ── */}
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={styles.filterContainer}
+                contentContainerStyle={styles.filterList}
+                style={styles.filterScroll}
             >
-                {['all', 'active', 'inactive', 'graduated'].map((status) => (
-                    <TouchableOpacity
-                        key={status}
-                        style={[
-                            styles.filterTab,
-                            filterStatus === status && styles.filterTabActive,
-                        ]}
-                        onPress={() => setFilterStatus(status)}
-                    >
-                        <Text
+                {FILTER_TABS.map((tab) => {
+                    const isActive = filterStatus === tab.key;
+                    return (
+                        <TouchableOpacity
+                            key={tab.key}
                             style={[
-                                styles.filterTabText,
-                                filterStatus === status && styles.filterTabTextActive,
+                                styles.filterChip,
+                                isActive && {
+                                    backgroundColor: tab.color,
+                                    borderColor: tab.color,
+                                },
                             ]}
+                            onPress={() => setFilterStatus(tab.key)}
+                            activeOpacity={0.75}
                         >
-                            {status === 'all'
-                                ? 'Tất cả'
-                                : status === 'active'
-                                    ? 'Đang học'
-                                    : status === 'inactive'
-                                        ? 'Tạm nghỉ'
-                                        : 'Đã tốt nghiệp'}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-
-            {/* Students List */}
-            <ScrollView style={styles.listContainer}>
-                {filteredStudents.map((student) => (
-                    <View key={student.id} style={styles.studentCard}>
-                        <View style={styles.studentHeader}>
-                            <View style={styles.avatarContainer}>
-                                <Text style={styles.avatarText}>
-                                    {student.name.charAt(0)}
-                                </Text>
-                            </View>
-                            <View style={styles.studentInfo}>
-                                <Text style={styles.studentName}>{student.name}</Text>
-                                <Text style={styles.studentId}>{student.studentId}</Text>
-                            </View>
-                            <View
+                            <Ionicons
+                                name={tab.icon as any}
+                                size={13}
+                                color={isActive ? '#fff' : tab.color}
+                                style={styles.chipIcon}
+                            />
+                            <Text
                                 style={[
-                                    styles.statusBadge,
-                                    { backgroundColor: getStatusColor(student.status) + '20' },
+                                    styles.filterChipText,
+                                    { color: isActive ? '#fff' : tab.color },
                                 ]}
                             >
-                                <Text
-                                    style={[
-                                        styles.statusText,
-                                        { color: getStatusColor(student.status) },
-                                    ]}
-                                >
-                                    {getStatusText(student.status)}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.studentDetails}>
-                            <View style={styles.detailRow}>
-                                <Ionicons name="mail-outline" size={16} color="#64748b" />
-                                <Text style={styles.detailText}>{student.email}</Text>
-                            </View>
-                            <View style={styles.detailRow}>
-                                <Ionicons name="call-outline" size={16} color="#64748b" />
-                                <Text style={styles.detailText}>{student.phone}</Text>
-                            </View>
-                            <View style={styles.detailRow}>
-                                <Ionicons name="school-outline" size={16} color="#64748b" />
-                                <Text style={styles.detailText}>
-                                    {student.class} - {student.course}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.actionButtons}>
-                            <TouchableOpacity style={styles.actionButton}>
-                                <Ionicons name="create-outline" size={20} color="#3b82f6" />
-                                <Text style={[styles.actionButtonText, { color: '#3b82f6' }]}>
-                                    Sửa
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.actionButton}>
-                                <Ionicons
-                                    name="information-circle-outline"
-                                    size={20}
-                                    color="#8b5cf6"
-                                />
-                                <Text style={[styles.actionButtonText, { color: '#8b5cf6' }]}>
-                                    Chi tiết
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.actionButton}>
-                                <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                                <Text style={[styles.actionButtonText, { color: '#ef4444' }]}>
-                                    Xóa
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                ))}
+                                {tab.label}
+                            </Text>
+                            {/* Badge count */}
+                            {tab.key !== 'all' && (
+                                <View style={[
+                                    styles.chipBadge,
+                                    { backgroundColor: isActive ? 'rgba(255,255,255,0.3)' : tab.color + '22' },
+                                ]}>
+                                    <Text style={[
+                                        styles.chipBadgeText,
+                                        { color: isActive ? '#fff' : tab.color },
+                                    ]}>
+                                        {tab.key === 'active'
+                                            ? students.filter(s => s.isActive).length
+                                            : students.filter(s => !s.isActive).length}
+                                    </Text>
+                                </View>
+                            )}
+                            {tab.key === 'all' && (
+                                <View style={[
+                                    styles.chipBadge,
+                                    { backgroundColor: isActive ? 'rgba(255,255,255,0.3)' : tab.color + '22' },
+                                ]}>
+                                    <Text style={[
+                                        styles.chipBadgeText,
+                                        { color: isActive ? '#fff' : tab.color },
+                                    ]}>
+                                        {students.length}
+                                    </Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    );
+                })}
             </ScrollView>
 
-            {/* Add Student Modal */}
+            {/* ── Content ── */}
+            {loading ? (
+                <View style={styles.centerBox}>
+                    <ActivityIndicator size="large" color="#3b82f6" />
+                    <Text style={styles.centerText}>Đang tải danh sách...</Text>
+                </View>
+            ) : error ? (
+                <View style={styles.centerBox}>
+                    <Ionicons name="cloud-offline-outline" size={48} color="#ef4444" />
+                    <Text style={[styles.centerText, { color: '#ef4444', fontWeight: '600' }]}>
+                        {error}
+                    </Text>
+                    <TouchableOpacity style={styles.retryBtn} onPress={() => fetchStudents()}>
+                        <Text style={styles.retryBtnText}>Thử lại</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <ScrollView
+                    style={styles.listContainer}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={() => fetchStudents(true)}
+                            colors={['#3b82f6']}
+                            tintColor="#3b82f6"
+                        />
+                    }
+                >
+                    {filteredStudents.length === 0 ? (
+                        <EmptyState query={searchQuery} />
+                    ) : (
+                        filteredStudents.map((student) => (
+                            <UserCard
+                                key={student.id}
+                                name={student.name}
+                                code={student.studentId ?? '—'}
+                                codeLabel="MSSV"
+                                email={student.email}
+                                isActive={student.isActive}
+                                department={student.departmentName}
+                                joinedAt={student.createdAt}
+                                actions={[
+                                    {
+                                        label: 'Sửa',
+                                        icon: 'create-outline',
+                                        color: '#3b82f6',
+                                        onPress: () => { /* TODO: edit */ },
+                                    },
+                                    {
+                                        label: 'Chi tiết',
+                                        icon: 'information-circle-outline',
+                                        color: '#8b5cf6',
+                                        onPress: () => handleViewDetail(student),
+                                    },
+                                    {
+                                        label: 'Xóa',
+                                        icon: 'trash-outline',
+                                        color: '#ef4444',
+                                        onPress: () => handleDelete(student),
+                                    },
+                                ]}
+                            />
+                        ))
+                    )}
+                    <View style={{ height: 24 }} />
+                </ScrollView>
+            )}
+
+            {/* ── Add Student Modal ── */}
             <Modal
                 animationType="slide"
-                transparent={true}
+                transparent
                 visible={modalVisible}
                 onRequestClose={() => setModalVisible(false)}
             >
-                <View style={styles.modalContainer}>
+                <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
+                        <View style={styles.modalHandle} />
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Thêm sinh viên mới</Text>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close" size={24} color="#64748b" />
+                            <TouchableOpacity
+                                onPress={() => setModalVisible(false)}
+                                style={styles.closeBtn}
+                            >
+                                <Ionicons name="close" size={20} color="#64748b" />
                             </TouchableOpacity>
                         </View>
-                        <ScrollView>
-                            <Text style={styles.label}>Mã sinh viên</Text>
-                            <TextInput style={styles.input} placeholder="VD: SV001" />
 
-                            <Text style={styles.label}>Họ và tên</Text>
-                            <TextInput style={styles.input} placeholder="Nhập họ tên" />
-
-                            <Text style={styles.label}>Email</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="email@student.edu.vn"
-                                keyboardType="email-address"
-                            />
-
-                            <Text style={styles.label}>Số điện thoại</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="0123456789"
-                                keyboardType="phone-pad"
-                            />
-
-                            <Text style={styles.label}>Lớp</Text>
-                            <TextInput style={styles.input} placeholder="VD: CNTT-K18" />
-
-                            <Text style={styles.label}>Khóa học</Text>
-                            <TextInput style={styles.input} placeholder="VD: Khóa 18" />
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            {([
+                                { label: 'Mã sinh viên *', key: 'studentId', placeholder: 'VD: SV001' },
+                                { label: 'Họ và tên *', key: 'name', placeholder: 'Nguyễn Văn A' },
+                                { label: 'Email *', key: 'email', placeholder: 'sv@student.edu.vn', keyboard: 'email-address' },
+                                { label: 'Mật khẩu *', key: 'password', placeholder: '••••••••', secure: true },
+                                { label: 'Khoa / Bộ môn', key: 'departmentName', placeholder: 'VD: Khoa CNTT' },
+                            ] as const).map((field) => (
+                                <View key={field.key}>
+                                    <Text style={styles.label}>{field.label}</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder={'placeholder' in field ? field.placeholder : ''}
+                                        placeholderTextColor="#94a3b8"
+                                        keyboardType={('keyboard' in field ? (field as any).keyboard : 'default')}
+                                        secureTextEntry={('secure' in field ? (field as any).secure : false)}
+                                        value={(form as any)[field.key] ?? ''}
+                                        onChangeText={(v) =>
+                                            setForm((prev) => ({ ...prev, [field.key]: v }))
+                                        }
+                                    />
+                                </View>
+                            ))}
 
                             <TouchableOpacity
-                                style={styles.submitButton}
-                                onPress={() => {
-                                    Alert.alert('Thành công', 'Đã thêm sinh viên mới');
-                                    setModalVisible(false);
-                                }}
+                                style={[styles.submitButton, submitting && { opacity: 0.65 }]}
+                                onPress={handleAddStudent}
+                                disabled={submitting}
                             >
-                                <Text style={styles.submitButtonText}>Thêm sinh viên</Text>
+                                {submitting ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <>
+                                        <Ionicons name="person-add-outline" size={18} color="#fff" />
+                                        <Text style={styles.submitButtonText}>Thêm sinh viên</Text>
+                                    </>
+                                )}
                             </TouchableOpacity>
                         </ScrollView>
                     </View>
                 </View>
             </Modal>
+
+            {/* ── Student Detail Modal ── */}
+            <StudentDetailModal
+                student={selectedStudent}
+                visible={detailVisible}
+                onClose={() => setDetailVisible(false)}
+            />
         </View>
     );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f8fafc',
     },
+
+    // Search
     searchContainer: {
         flexDirection: 'row',
-        padding: 16,
-        gap: 12,
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: 12,
+        gap: 10,
     },
     searchBar: {
         flex: 1,
@@ -290,190 +501,314 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#fff',
         borderRadius: 12,
-        paddingHorizontal: 16,
-        height: 48,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
+        paddingHorizontal: 14,
+        height: 44,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        gap: 8,
     },
     searchInput: {
         flex: 1,
-        marginLeft: 8,
-        fontSize: 15,
+        fontSize: 14,
         color: '#1e293b',
     },
     addButton: {
-        width: 48,
-        height: 48,
+        width: 44,
+        height: 44,
         backgroundColor: '#3b82f6',
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: '#3b82f6',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.35,
+        shadowRadius: 6,
+        elevation: 5,
     },
-    filterContainer: {
+
+    // Filter Chips
+    filterScroll: {
+        flexGrow: 0,        // Không co dãn theo trục dọc
+        flexShrink: 0,      // Không bị nén
+        marginBottom: 12,
+    },
+    filterList: {
         paddingHorizontal: 16,
-        marginBottom: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
-    filterTab: {
-        paddingHorizontal: 20,
-        paddingVertical: 10,
+    filterChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',    // ← Chìa khóa: co chiều cao theo nội dung
+        paddingHorizontal: 11,
+        paddingVertical: 6,
         borderRadius: 20,
+        borderWidth: 1.5,
+        borderColor: '#e2e8f0',
         backgroundColor: '#fff',
-        marginRight: 8,
     },
-    filterTabActive: {
-        backgroundColor: '#3b82f6',
+    chipIcon: {
+        marginRight: 4,
     },
-    filterTabText: {
-        fontSize: 14,
-        color: '#64748b',
+    filterChipText: {
+        fontSize: 13,
         fontWeight: '600',
     },
-    filterTabTextActive: {
-        color: '#fff',
+    chipBadge: {
+        marginLeft: 6,
+        minWidth: 20,
+        height: 20,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 5,
     },
+    chipBadgeText: {
+        fontSize: 11,
+        fontWeight: '700',
+    },
+
+    // List
     listContainer: {
         flex: 1,
         paddingHorizontal: 16,
     },
-    studentCard: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    studentHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    avatarContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: '#3b82f6',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    avatarText: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#fff',
-    },
-    studentInfo: {
+
+    // (Card styles moved to components/UserCard.tsx)
+
+    // Empty / Error
+    centerBox: {
         flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 60,
+        gap: 12,
     },
-    studentName: {
+    centerText: {
+        fontSize: 14,
+        color: '#64748b',
+        textAlign: 'center',
+        paddingHorizontal: 24,
+    },
+    retryBtn: {
+        backgroundColor: '#3b82f6',
+        paddingHorizontal: 22,
+        paddingVertical: 10,
+        borderRadius: 10,
+        marginTop: 4,
+    },
+    retryBtnText: {
+        color: '#fff',
+        fontWeight: '700',
+        fontSize: 14,
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        paddingVertical: 60,
+        gap: 10,
+    },
+    emptyTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1e293b',
-        marginBottom: 2,
+        color: '#475569',
     },
-    studentId: {
+    emptySubtitle: {
         fontSize: 13,
-        color: '#64748b',
+        color: '#94a3b8',
+        textAlign: 'center',
+        paddingHorizontal: 32,
     },
-    statusBadge: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-    },
-    statusText: {
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    studentDetails: {
-        gap: 8,
-        marginBottom: 12,
-        paddingLeft: 60,
-    },
-    detailRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    detailText: {
-        fontSize: 14,
-        color: '#64748b',
-    },
-    actionButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        paddingTop: 12,
-        borderTopWidth: 1,
-        borderTopColor: '#f1f5f9',
-    },
-    actionButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    actionButtonText: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    modalContainer: {
+
+    // Modal
+    modalOverlay: {
         flex: 1,
         justifyContent: 'flex-end',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(0,0,0,0.45)',
     },
     modalContent: {
         backgroundColor: '#fff',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
-        padding: 20,
-        maxHeight: '90%',
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+        maxHeight: '92%',
+    },
+    modalHandle: {
+        width: 40,
+        height: 4,
+        backgroundColor: '#e2e8f0',
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginTop: 12,
+        marginBottom: 16,
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 16,
     },
     modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
+        fontSize: 18,
+        fontWeight: '700',
         color: '#1e293b',
     },
+    closeBtn: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#f1f5f9',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     label: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '600',
-        color: '#1e293b',
-        marginBottom: 8,
-        marginTop: 12,
+        color: '#475569',
+        marginBottom: 6,
+        marginTop: 14,
     },
     input: {
         backgroundColor: '#f8fafc',
-        borderRadius: 12,
-        padding: 14,
-        fontSize: 15,
+        borderRadius: 10,
+        padding: 12,
+        fontSize: 14,
         borderWidth: 1,
         borderColor: '#e2e8f0',
+        color: '#1e293b',
     },
     submitButton: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 8,
         backgroundColor: '#3b82f6',
         borderRadius: 12,
-        padding: 16,
-        alignItems: 'center',
+        padding: 15,
         marginTop: 24,
-        marginBottom: 20,
+        marginBottom: 8,
     },
     submitButtonText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: 15,
+        fontWeight: '700',
+    },
+
+    // ── Detail Modal ──
+    detailOverlay: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    detailSheet: {
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        paddingHorizontal: 20,
+        maxHeight: '88%',
+    },
+    detailHandle: {
+        width: 40,
+        height: 4,
+        backgroundColor: '#e2e8f0',
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginTop: 12,
+        marginBottom: 8,
+    },
+    detailCloseBtn: {
+        position: 'absolute',
+        top: 16,
+        right: 20,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: '#f1f5f9',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10,
+    },
+    detailHero: {
+        alignItems: 'center',
+        paddingTop: 8,
+        paddingBottom: 20,
+        gap: 10,
+    },
+    detailAvatar: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 4,
+    },
+    detailAvatarText: {
+        fontSize: 30,
+        fontWeight: '800',
+    },
+    detailName: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1e293b',
+        textAlign: 'center',
+    },
+    detailStatusBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        borderRadius: 20,
+        gap: 6,
+    },
+    detailStatusDot: {
+        width: 7,
+        height: 7,
+        borderRadius: 4,
+    },
+    detailStatusText: {
+        fontSize: 13,
+        fontWeight: '700',
+    },
+    detailDivider: {
+        height: 1,
+        backgroundColor: '#f1f5f9',
+        marginBottom: 8,
+    },
+    detailScroll: {
+        flexGrow: 0,
+    },
+    detailRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f8fafc',
+        gap: 14,
+    },
+    detailRowIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: '#eff6ff',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    detailRowContent: {
+        flex: 1,
+    },
+    detailRowLabel: {
+        fontSize: 11,
+        color: '#94a3b8',
         fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 2,
+    },
+    detailRowValue: {
+        fontSize: 14,
+        color: '#1e293b',
+        fontWeight: '500',
     },
 });

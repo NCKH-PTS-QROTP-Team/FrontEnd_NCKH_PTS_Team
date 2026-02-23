@@ -12,6 +12,7 @@ export * from './types/face.types';
 export * from './types/attendance.types';
 export * from './types/otp.types';
 export * from './types/qr.types';
+export * from './types/student.types';
 
 // Socket
 export { socketClient } from './socket/socketClient';
