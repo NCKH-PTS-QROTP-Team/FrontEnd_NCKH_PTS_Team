@@ -9,4 +9,4 @@ export * from './attendance.service';
 export * from './student.service';
 export * from './teacher.service';
 export * from './class.service';
-
+export * from './schedule.service';
