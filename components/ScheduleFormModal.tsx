@@ -154,13 +154,14 @@ function buildGrid(year: number, month: number) {
     return cells;
 }
 
-function MiniCalendar({ selected, onSelect, label, accent, clearable, onClear }: {
+function MiniCalendar({ selected, onSelect, label, accent, clearable, onClear, zIndex = 1 }: {
     selected: string;
     onSelect: (iso: string) => void;
     label?: string;
     accent?: string;
     clearable?: boolean;
     onClear?: () => void;
+    zIndex?: number;
 }) {
     const color = accent ?? TEAL;
     const today = dateToISO(new Date());
@@ -188,8 +189,8 @@ function MiniCalendar({ selected, onSelect, label, accent, clearable, onClear }:
         : null;
 
     return (
-        <View style={{ marginTop: 4 }}>
-            {label && <Text style={fm.label}>{label}</Text>}
+        <View style={{ marginTop: 4, zIndex, elevation: zIndex, position: 'relative' }}>
+            {label && <Text style={[fm.label, { zIndex, elevation: zIndex }]}>{label}</Text>}
 
             {/* Compact trigger */}
             <TouchableOpacity
@@ -226,7 +227,7 @@ function MiniCalendar({ selected, onSelect, label, accent, clearable, onClear }:
                 <View style={[
                     mc.wrapper,
                     { borderTopLeftRadius: 0, borderTopRightRadius: 0 },
-                    { maxWidth: CAL_MAX_W, alignSelf: 'stretch' },
+                    { maxWidth: CAL_MAX_W, alignSelf: 'stretch', position: 'absolute', top: label ? 70 : 46, left: 0, zIndex: 9999, elevation: 9999 },
                 ]}>
                     {/* Nav */}
                     <View style={mc.nav}>
@@ -548,6 +549,8 @@ interface ScheduleFormModalProps {
 
 export function ScheduleFormModal({ mode, initialData, visible, onClose, onSubmit }: ScheduleFormModalProps) {
     const isAdd = mode === 'add';
+    const { width: winW } = useWindowDimensions();
+    const isLargeScreen = winW >= 600;
 
     // ── form state ──
     const today = dateToISO(new Date());
@@ -733,81 +736,92 @@ export function ScheduleFormModal({ mode, initialData, visible, onClose, onSubmi
                             {/* ── Step 4: Schedule details ── */}
                             <SectionHeader step={4} label="Thời gian & địa điểm" />
 
-                            {/* Start date picker */}
-                            <MiniCalendar
-                                label="Ngày bắt đầu *"
-                                selected={form.startDate}
-                                accent={TEAL}
-                                onSelect={(iso) => {
-                                    const dow = jsDayToBackend(new Date(iso + 'T00:00:00').getDay());
-                                    setForm((p) => ({
-                                        ...p, startDate: iso, dayOfWeek: dow,
-                                        endDate: p.endDate && p.endDate < iso ? '' : p.endDate,
-                                    }));
-                                }}
-                            />
+                            {/* Start & End dates */}
+                            <View style={{ flexDirection: isLargeScreen ? 'row' : 'column', gap: isLargeScreen ? 16 : 0, zIndex: 100, elevation: 100 }}>
+                                <View style={{ flex: isLargeScreen ? 1 : undefined, zIndex: 100, elevation: 100 }}>
+                                    <MiniCalendar
+                                        label="Ngày bắt đầu *"
+                                        selected={form.startDate}
+                                        accent={TEAL}
+                                        zIndex={100}
+                                        onSelect={(iso) => {
+                                            const dow = jsDayToBackend(new Date(iso + 'T00:00:00').getDay());
+                                            setForm((p) => ({
+                                                ...p, startDate: iso, dayOfWeek: dow,
+                                                endDate: p.endDate && p.endDate < iso ? '' : p.endDate,
+                                            }));
+                                        }}
+                                    />
+                                </View>
 
-                            {/* End date (optional) */}
-                            <MiniCalendar
-                                label="Ngày kết thúc (tùy chọn)"
-                                selected={form.endDate}
-                                accent="#8b5cf6"
-                                clearable
-                                onClear={() => setForm(p => ({ ...p, endDate: '' }))}
-                                onSelect={(iso) => setForm((p) => ({ ...p, endDate: iso }))}
-                            />
-
-                            {/* Period pickers */}
-                            <PeriodPicker
-                                label="Tiết bắt đầu *"
-                                selected={form.startPeriod}
-                                highlightColor={TEAL}
-                                onSelect={(p) => {
-                                    const t = periodToTime(p);
-                                    setForm((prev) => ({
-                                        ...prev,
-                                        startPeriod: p,
-                                        startTime: t.start,
-                                        // auto-advance endPeriod if it's less than startPeriod
-                                        endPeriod: Math.max(prev.endPeriod, p),
-                                        endTime: periodToTime(Math.max(prev.endPeriod, p)).end,
-                                    }));
-                                }}
-                            />
-                            <PeriodPicker
-                                label="Tiết kết thúc *"
-                                selected={form.endPeriod}
-                                highlightColor="#8b5cf6"
-                                onSelect={(p) => {
-                                    const t = periodToTime(p);
-                                    setForm((prev) => ({
-                                        ...prev,
-                                        endPeriod: p,
-                                        endTime: t.end,
-                                        // auto-retreat startPeriod if it's more than endPeriod
-                                        startPeriod: Math.min(prev.startPeriod, p),
-                                        startTime: periodToTime(Math.min(prev.startPeriod, p)).start,
-                                    }));
-                                }}
-                            />
-
-                            {/* Room */}
-                            <Text style={[fm.label, { marginTop: 14 }]}>Phòng học</Text>
-                            <View style={fm.roomInput}>
-                                <Ionicons name="location-outline" size={15} color="#94a3b8" />
-                                <TextInput
-                                    style={fm.roomTextInput}
-                                    placeholder="VD: A101, B202..."
-                                    placeholderTextColor="#94a3b8"
-                                    value={form.room}
-                                    onChangeText={(v) => setForm((p) => ({ ...p, room: v }))}
-                                />
+                                <View style={{ flex: isLargeScreen ? 1 : undefined, zIndex: 90, elevation: 90 }}>
+                                    <MiniCalendar
+                                        label="Ngày kết thúc (tùy chọn)"
+                                        selected={form.endDate}
+                                        accent="#8b5cf6"
+                                        clearable
+                                        zIndex={90}
+                                        onClear={() => setForm(p => ({ ...p, endDate: '' }))}
+                                        onSelect={(iso) => setForm((p) => ({ ...p, endDate: iso }))}
+                                    />
+                                </View>
                             </View>
 
-                            {/* Preview */}
-                            {(form.className || form.subjectName) && (
-                                <PreviewCard form={form} />
-                            )}
+                            {/* Spacing wrapper so the content flow isn't completely messed up since we made modals absolute */}
+                            <View style={{ zIndex: 10, elevation: 10 }}>
+
+                                {/* Period pickers */}
+                                <PeriodPicker
+                                    label="Tiết bắt đầu *"
+                                    selected={form.startPeriod}
+                                    highlightColor={TEAL}
+                                    onSelect={(p) => {
+                                        const t = periodToTime(p);
+                                        setForm((prev) => ({
+                                            ...prev,
+                                            startPeriod: p,
+                                            startTime: t.start,
+                                            // auto-advance endPeriod if it's less than startPeriod
+                                            endPeriod: Math.max(prev.endPeriod, p),
+                                            endTime: periodToTime(Math.max(prev.endPeriod, p)).end,
+                                        }));
+                                    }}
+                                />
+                                <PeriodPicker
+                                    label="Tiết kết thúc *"
+                                    selected={form.endPeriod}
+                                    highlightColor="#8b5cf6"
+                                    onSelect={(p) => {
+                                        const t = periodToTime(p);
+                                        setForm((prev) => ({
+                                            ...prev,
+                                            endPeriod: p,
+                                            endTime: t.end,
+                                            // auto-retreat startPeriod if it's more than endPeriod
+                                            startPeriod: Math.min(prev.startPeriod, p),
+                                            startTime: periodToTime(Math.min(prev.startPeriod, p)).start,
+                                        }));
+                                    }}
+                                />
+
+                                {/* Room */}
+                                <Text style={[fm.label, { marginTop: 14 }]}>Phòng học</Text>
+                                <View style={fm.roomInput}>
+                                    <Ionicons name="location-outline" size={15} color="#94a3b8" />
+                                    <TextInput
+                                        style={fm.roomTextInput}
+                                        placeholder="VD: A101, B202..."
+                                        placeholderTextColor="#94a3b8"
+                                        value={form.room}
+                                        onChangeText={(v) => setForm((p) => ({ ...p, room: v }))}
+                                    />
+                                </View>
+
+                                {/* Preview */}
+                                {(form.className || form.subjectName) && (
+                                    <PreviewCard form={form} />
+                                )}
+                            </View> {/* End spacing wrapper */}
 
                             {/* Submit */}
                             <TouchableOpacity
@@ -827,18 +841,19 @@ export function ScheduleFormModal({ mode, initialData, visible, onClose, onSubmi
                             <View style={{ height: 20 }} />
                         </ScrollView>
                     </View>
-                </View>
-            </Modal>
+                </View >
+            </Modal >
 
             {/* Class Picker */}
-            <PickerModal
+            < PickerModal
                 visible={showClassPicker}
                 title=" Chọn lớp học"
                 items={classItems}
                 selectedId={form.classId}
                 loading={loadingCls}
                 emptyText="Chưa có lớp học nào"
-                onClose={() => setShowClassPicker(false)}
+                onClose={() => setShowClassPicker(false)
+                }
                 onSelect={(item) => setForm((p) => ({ ...p, classId: item.id, className: item.primary }))}
             />
 
@@ -995,8 +1010,9 @@ const mc = StyleSheet.create({
     triggerPlaceholder: { color: '#94a3b8', fontWeight: '400' },
 
     wrapper: {
-        backgroundColor: '#f8fafc', borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e8f0',
+        backgroundColor: '#ffffff', borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e8f0',
         padding: 10, marginTop: 0,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12,
     },
     nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
     navBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: TEAL + '15', alignItems: 'center', justifyContent: 'center' },

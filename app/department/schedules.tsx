@@ -431,6 +431,8 @@ function CalendarView({
     onDelete: (sc: ScheduleResponse) => void;
 }) {
     const [selectedISO, setSelectedISO] = useState(todayISO());
+    const [page, setPage] = useState(1);
+    const PAGE_SIZE = 15;
 
     // backend dow of selected day
     const selDow = useMemo(() => {
@@ -443,6 +445,17 @@ function CalendarView({
             .sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? '')),
         [schedules, selDow]
     );
+
+    useEffect(() => {
+        setPage(1);
+    }, [selectedISO, daySchedules]);
+
+    const totalPages = Math.ceil(daySchedules.length / PAGE_SIZE);
+
+    const paginatedDaySchedules = useMemo(() => {
+        const start = (page - 1) * PAGE_SIZE;
+        return daySchedules.slice(start, start + PAGE_SIZE);
+    }, [daySchedules, page]);
 
     const selDateObj = isoToDate(selectedISO);
     const selLabel = selDateObj.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -482,14 +495,39 @@ function CalendarView({
                 ) : daySchedules.length === 0 ? (
                     <EmptyState message="Không có lịch học ngày này" />
                 ) : (
-                    daySchedules.map((sc) => (
-                        <ScheduleCard
-                            key={sc.id}
-                            sc={sc}
-                            onEdit={() => onEdit(sc)}
-                            onDelete={() => onDelete(sc)}
-                        />
-                    ))
+                    <>
+                        {paginatedDaySchedules.map((sc) => (
+                            <ScheduleCard
+                                key={sc.id}
+                                sc={sc}
+                                onEdit={() => onEdit(sc)}
+                                onDelete={() => onDelete(sc)}
+                            />
+                        ))}
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 12, marginBottom: 16 }}>
+                                <TouchableOpacity
+                                    style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }, page === 1 && { backgroundColor: '#f8fafc', elevation: 0 }]}
+                                    disabled={page === 1}
+                                    onPress={() => setPage(p => p - 1)}
+                                >
+                                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: page === 1 ? '#cbd5e1' : TEAL }}>{'<'}</Text>
+                                </TouchableOpacity>
+
+                                <Text style={{ fontSize: 13, fontWeight: '700', color: '#64748b' }}>Trang {page} / {totalPages}</Text>
+
+                                <TouchableOpacity
+                                    style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }, page === totalPages && { backgroundColor: '#f8fafc', elevation: 0 }]}
+                                    disabled={page === totalPages}
+                                    onPress={() => setPage(p => p + 1)}
+                                >
+                                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: page === totalPages ? '#cbd5e1' : TEAL }}>{'>'}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </>
                 )}
             </View>
             <View style={{ height: 32 }} />
@@ -509,6 +547,13 @@ function ListView({
     onEdit: (sc: ScheduleResponse) => void;
     onDelete: (sc: ScheduleResponse) => void;
 }) {
+    const [page, setPage] = useState(1);
+    const PAGE_SIZE = 15;
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchQuery, schedules]);
+
     const filtered = useMemo(() => {
         if (!searchQuery) return schedules;
         const q = searchQuery.toLowerCase();
@@ -521,15 +566,22 @@ function ListView({
         );
     }, [schedules, searchQuery]);
 
+    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+
+    const paginated = useMemo(() => {
+        const start = (page - 1) * PAGE_SIZE;
+        return filtered.slice(start, start + PAGE_SIZE);
+    }, [filtered, page]);
+
     const grouped = useMemo(() => {
         const g: Record<number, ScheduleResponse[]> = {};
-        filtered.forEach((sc) => {
+        paginated.forEach((sc) => {
             const d = sc.dayOfWeek ?? 2;
             if (!g[d]) g[d] = [];
             g[d].push(sc);
         });
         return g;
-    }, [filtered]);
+    }, [paginated]);
 
     const sortedDays = useMemo(() => Object.keys(grouped).map(Number).sort((a, b) => {
         // Sort 2-7 then 8 (CN last)
@@ -555,27 +607,52 @@ function ListView({
             {filtered.length === 0 ? (
                 <EmptyState message={searchQuery ? `Không tìm thấy "${searchQuery}"` : 'Chưa có lịch học nào'} />
             ) : (
-                sortedDays.map((dow) => (
-                    <View key={dow}>
-                        <View style={s.groupHeader}>
-                            <View style={[s.groupAccent, { backgroundColor: TEAL }]} />
-                            <Text style={s.groupTitle}>{DAY_LABELS[dow] ?? `Thứ ${dow}`}</Text>
-                            <View style={s.groupBadge}>
-                                <Text style={s.groupBadgeText}>{grouped[dow].length} lịch</Text>
+                <>
+                    {sortedDays.map((dow) => (
+                        <View key={dow}>
+                            <View style={s.groupHeader}>
+                                <View style={[s.groupAccent, { backgroundColor: TEAL }]} />
+                                <Text style={s.groupTitle}>{DAY_LABELS[dow] ?? `Thứ ${dow}`}</Text>
+                                <View style={s.groupBadge}>
+                                    <Text style={s.groupBadgeText}>{grouped[dow].length} lịch</Text>
+                                </View>
                             </View>
+                            {grouped[dow]
+                                .slice()
+                                .sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
+                                .map((sc) => (
+                                    <ScheduleCard
+                                        key={sc.id} sc={sc}
+                                        onEdit={() => onEdit(sc)}
+                                        onDelete={() => onDelete(sc)}
+                                    />
+                                ))}
                         </View>
-                        {grouped[dow]
-                            .slice()
-                            .sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
-                            .map((sc) => (
-                                <ScheduleCard
-                                    key={sc.id} sc={sc}
-                                    onEdit={() => onEdit(sc)}
-                                    onDelete={() => onDelete(sc)}
-                                />
-                            ))}
-                    </View>
-                ))
+                    ))}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <View style={s.paginationGroup}>
+                            <TouchableOpacity
+                                style={[s.pageBtn, page === 1 && s.pageBtnDisabled]}
+                                disabled={page === 1}
+                                onPress={() => setPage(p => p - 1)}
+                            >
+                                <Ionicons name="chevron-back" size={16} color={page === 1 ? '#cbd5e1' : TEAL} />
+                            </TouchableOpacity>
+
+                            <Text style={s.pageText}>Trang {page} / {totalPages}</Text>
+
+                            <TouchableOpacity
+                                style={[s.pageBtn, page === totalPages && s.pageBtnDisabled]}
+                                disabled={page === totalPages}
+                                onPress={() => setPage(p => p + 1)}
+                            >
+                                <Ionicons name="chevron-forward" size={16} color={page === totalPages ? '#cbd5e1' : TEAL} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </>
             )}
             <View style={{ height: 24 }} />
         </ScrollView>
@@ -910,4 +987,10 @@ const s = StyleSheet.create({
     retryText: { color: '#fff', fontWeight: '700', fontSize: 14 },
     emptyBox: { alignItems: 'center', paddingVertical: 36, gap: 10 },
     emptyTitle: { fontSize: 14, color: '#94a3b8', textAlign: 'center' },
+
+    // Pagination
+    paginationGroup: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 20 },
+    pageBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+    pageBtnDisabled: { backgroundColor: '#f8fafc', elevation: 0 },
+    pageText: { fontSize: 13, fontWeight: '700', color: '#64748b' },
 });

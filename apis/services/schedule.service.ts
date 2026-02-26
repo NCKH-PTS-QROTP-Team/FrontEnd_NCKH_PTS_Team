@@ -1,6 +1,8 @@
 import apiClient from '../config/apiClient';
 import { ApiResponse } from '../types/api.types';
 
+import { ScheduleResponse as ScheduleResponseImport, CreateScheduleRequest, UpdateScheduleRequest } from '../types/schedule.types';
+
 /**
  * Schedule Response
  */
@@ -21,35 +23,24 @@ export interface Schedule {
   date?: string; // yyyy-MM-dd
   scheduleType?: string; // "CLASS" or "EXAM"
   createdAt: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  excludedDates?: string[];
 }
 
-/**
- * Schedule Request
- */
-export interface CreateScheduleRequest {
-  classId: string;
-  subjectId: string;
-  teacherId: string;
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
-  room: string;
-}
-
-export interface UpdateScheduleRequest {
-  classId?: string;
-  subjectId?: string;
-  teacherId?: string;
-  dayOfWeek?: number;
-  startTime?: string;
-  endTime?: string;
-  room?: string;
-}
 
 /**
  * Schedule Service
  */
 export const scheduleService = {
+  /**
+   * Get all schedules
+   */
+  getAllSchedules: async (): Promise<Schedule[]> => {
+    const response = await apiClient.get<ApiResponse<Schedule[]>>('/schedules');
+    return response.data.data;
+  },
+
   /**
    * Get all schedules or filter by class/teacher.
    * Student: dùng enrolledClassIds để lấy lịch nhiều môn (nhiều lớp).

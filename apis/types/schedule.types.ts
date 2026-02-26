@@ -20,11 +20,11 @@ export interface ScheduleResponse {
     endTime: string | null;
     room: string | null;
     /** yyyy-MM-dd – first active date */
-    startDate: string | null;
+    startDate?: string | null;
     /** yyyy-MM-dd – last active date (null = open-ended) */
-    endDate: string | null;
+    endDate?: string | null;
     /** Dates of cancelled individual occurrences (yyyy-MM-dd[]) */
-    excludedDates: string[];
+    excludedDates?: string[];
     createdAt: string;
 }
 

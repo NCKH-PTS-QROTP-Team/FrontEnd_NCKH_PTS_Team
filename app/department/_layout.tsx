@@ -12,6 +12,8 @@ import {
   ChartIcon,
   UserIcon,
   CogIcon,
+  UploadIcon,
+  CheckCircleIcon,
 } from "@/components/Icons";
 import { Colors } from "@/constants/colors";
 
@@ -47,6 +49,16 @@ export default function DepartmentLayout() {
       route: "/department/schedules",
     },
     {
+      icon: <UploadIcon size={20} color="#2563eb" />,
+      label: "Import dữ liệu",
+      route: "/department/import-data",
+    },
+    {
+      icon: <CheckCircleIcon size={20} color="#2563eb" />,
+      label: "Giám sát điểm danh",
+      route: "/department/attendance",
+    },
+    {
       icon: <ChartIcon size={20} color="#2563eb" />,
       label: "Báo cáo & Thống kê",
       route: "/department/reports",
@@ -66,6 +78,8 @@ export default function DepartmentLayout() {
       <Stack.Screen name="classes" />
       <Stack.Screen name="courses" />
       <Stack.Screen name="schedules" />
+      <Stack.Screen name="import-data" />
+      <Stack.Screen name="attendance" />
       <Stack.Screen name="reports" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="profile" />

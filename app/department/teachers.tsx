@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
@@ -285,6 +285,8 @@ export default function TeachersManagement() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
+    const PAGE_SIZE = 15;
 
     // Detail modal
     const [detailVisible, setDetailVisible] = useState(false);
@@ -356,6 +358,16 @@ export default function TeachersManagement() {
             t.email.toLowerCase().includes(q)
         );
     });
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchQuery, filterStatus, teachers]);
+
+    const totalPages = Math.ceil(filteredTeachers.length / PAGE_SIZE);
+    const paginatedTeachers = useMemo(() => {
+        const start = (page - 1) * PAGE_SIZE;
+        return filteredTeachers.slice(start, start + PAGE_SIZE);
+    }, [filteredTeachers, page]);
 
     // ── Add teacher ──
     const handleAddTeacher = async () => {
@@ -553,7 +565,7 @@ export default function TeachersManagement() {
                     {filteredTeachers.length === 0 ? (
                         <EmptyState query={searchQuery} />
                     ) : (
-                        filteredTeachers.map((teacher) => (
+                        paginatedTeachers.map((teacher) => (
                             <UserCard
                                 key={teacher.id}
                                 name={teacher.name}
@@ -592,6 +604,30 @@ export default function TeachersManagement() {
                             />
                         ))
                     )}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 12, marginBottom: 16 }}>
+                            <TouchableOpacity
+                                style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }, page === 1 && { backgroundColor: '#f8fafc', elevation: 0 }]}
+                                disabled={page === 1}
+                                onPress={() => setPage(p => p - 1)}
+                            >
+                                <Text style={{ fontSize: 16, fontWeight: 'bold', color: page === 1 ? '#cbd5e1' : '#8b5cf6' }}>{'<'}</Text>
+                            </TouchableOpacity>
+
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#64748b' }}>Trang {page} / {totalPages}</Text>
+
+                            <TouchableOpacity
+                                style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }, page === totalPages && { backgroundColor: '#f8fafc', elevation: 0 }]}
+                                disabled={page === totalPages}
+                                onPress={() => setPage(p => p + 1)}
+                            >
+                                <Text style={{ fontSize: 16, fontWeight: 'bold', color: page === totalPages ? '#cbd5e1' : '#8b5cf6' }}>{'>'}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
                     <View style={{ height: 24 }} />
                 </ScrollView>
             )}
