@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -26,6 +27,8 @@ import {
   ChartIcon,
   SettingsIcon,
 } from "@/components/Icons";
+import { userService, classService, subjectService, reportService } from "@/apis";
+import Toast, { useToast } from "@/components/Toast";
 
 export default function AdminDashboard() {
   const { width } = useWindowDimensions();
@@ -33,6 +36,43 @@ export default function AdminDashboard() {
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
   const isWeb = Platform.OS === "web";
+  const { showToast } = useToast();
+
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalClasses: 0,
+    totalSubjects: 0,
+    totalSessions: 0,
+  });
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [users, classes, subjects, summary] = await Promise.all([
+        userService.getUsers().catch(() => []),
+        classService.getClasses().catch(() => []),
+        subjectService.getSubjects().catch(() => []),
+        reportService.getAttendanceSummary().catch(() => null),
+      ]);
+
+      setStats({
+        totalUsers: users.length,
+        totalClasses: classes.length,
+        totalSubjects: subjects.length,
+        totalSessions: summary?.totalSessions || 0,
+      });
+    } catch (error: any) {
+      console.error("Error loading dashboard:", error);
+      showToast("Không thể tải dữ liệu", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const contentMaxWidth = isDesktop ? 1400 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
@@ -85,37 +125,38 @@ export default function AdminDashboard() {
       route: "/admin/settings",
     },
   ];
-  const stats = [
+  const statsData = [
     {
       label: "Tổng người dùng",
-      value: "1,234",
+      value: stats.totalUsers.toString(),
       icon: <Text style={{ fontSize: 20, color: Colors.primary }}>U</Text>,
       color: Colors.primary,
     },
     {
       label: "Tổng lớp học",
-      value: "45",
+      value: stats.totalClasses.toString(),
       icon: <Text style={{ fontSize: 20, color: Colors.success }}>C</Text>,
       color: Colors.success,
     },
     {
-      label: "Buổi học hôm nay",
-      value: "23",
-      icon: <Text style={{ fontSize: 20, color: Colors.warning }}>▶</Text>,
+      label: "Tổng môn học",
+      value: stats.totalSubjects.toString(),
+      icon: <Text style={{ fontSize: 20, color: Colors.warning }}>B</Text>,
       color: Colors.warning,
     },
     {
-      label: "Tỷ lệ điểm danh",
-      value: "87%",
-      icon: <Text style={{ fontSize: 20, color: Colors.primary }}>%</Text>,
+      label: "Tổng phiên điểm danh",
+      value: stats.totalSessions.toString(),
+      icon: <Text style={{ fontSize: 20, color: Colors.primary }}>▶</Text>,
       color: Colors.primary,
     },
   ];
 
+  // Today stats sẽ được load từ reportService sau
   const todayStats = [
-    { label: "Có mặt", value: "856", color: Colors.success },
-    { label: "Muộn", value: "45", color: Colors.warning },
-    { label: "Vắng", value: "123", color: Colors.error },
+    { label: "Có mặt", value: "0", color: Colors.success },
+    { label: "Muộn", value: "0", color: Colors.warning },
+    { label: "Vắng", value: "0", color: Colors.error },
   ];
 
   const quickActions = [
@@ -162,6 +203,18 @@ export default function AdminDashboard() {
       color: "#6B7280",
     },
   ];
+
+  if (loading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }} edges={["top"]}>
+        <StatusBar style="dark" />
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color="#3FA9F5" />
+          <Text style={{ marginTop: 16, color: "#6B7280" }}>Đang tải dữ liệu...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const content = (
     <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
@@ -220,7 +273,7 @@ export default function AdminDashboard() {
                 marginHorizontal: -cardGap / 2,
               }}
             >
-              {stats.map((stat, index) => (
+              {statsData.map((stat, index) => (
                 <View
                   key={index}
                   style={{

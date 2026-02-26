@@ -11,9 +11,30 @@ class SocketClient {
 
   constructor() {
     // Base URL cho socket - Socket.IO chạy trên port 9092 (configurable trong backend)
-    this.baseURL = __DEV__
-      ? 'http://localhost:9092' // Socket port riêng để tránh conflict
-      : 'https://your-production-api.com';
+    // Ưu tiên: Environment variable
+    if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_SOCKET_URL) {
+      this.baseURL = process.env.EXPO_PUBLIC_SOCKET_URL;
+    } else if (__DEV__ || (typeof window !== 'undefined' && 
+        (window.location.hostname === 'localhost' || 
+         window.location.hostname === '127.0.0.1' ||
+         window.location.hostname.startsWith('192.168.') ||
+         window.location.hostname.startsWith('10.')))) {
+      // Development hoặc local serve
+      this.baseURL = 'http://localhost:9092'; // Socket port riêng để tránh conflict
+    } else if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      // Nếu đang chạy local, dùng localhost
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || 
+          hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
+        this.baseURL = 'http://localhost:9092';
+      } else {
+        // Production
+        this.baseURL = 'https://your-production-api.com';
+      }
+    } else {
+      // Fallback
+      this.baseURL = __DEV__ ? 'http://localhost:9092' : 'https://your-production-api.com';
+    }
   }
 
   /**
@@ -28,15 +49,16 @@ class SocketClient {
     const token = await getAuthToken();
 
     // Tạo socket connection với auth token
+    // Tắt reconnection để tránh spam error khi server socket không chạy
     this.socket = io(this.baseURL, {
       auth: {
         token: token || undefined,
       },
       transports: ['websocket', 'polling'],
-      reconnection: true,
+      reconnection: false, // Tắt auto-reconnect để tránh spam error
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 0, // Không tự động reconnect
     });
 
     // Event listeners
@@ -50,13 +72,18 @@ class SocketClient {
       this.isConnected = false;
     });
 
-    this.socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
+    // Track error để tránh spam log
+    let lastErrorTime = 0;
+    const ERROR_LOG_INTERVAL = 5000; // Chỉ log error mỗi 5 giây
+
+    // Tắt log error để tránh spam (socket không bắt buộc, chỉ dùng cho realtime face detection)
+    this.socket.on('connect_error', () => {
+      // Tắt log error vì socket không bắt buộc
       this.isConnected = false;
     });
 
-    this.socket.on('error', (error) => {
-      console.error('Socket error:', error);
+    this.socket.on('error', () => {
+      // Tắt log error vì socket không bắt buộc
     });
 
     return this.socket;

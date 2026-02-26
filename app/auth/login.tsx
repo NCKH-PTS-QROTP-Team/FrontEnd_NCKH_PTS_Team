@@ -118,10 +118,16 @@ export default function LoginScreen() {
           }),
         );
 
-        // Lưu mock token
+        // Lưu mock token + mock profile
         await authService.logout(); // Clear trước
-        const { setAuthToken } = await import("@/apis/config/apiClient");
+        const { setAuthToken, setCurrentUserProfile } = await import("@/apis/config/apiClient");
         await setAuthToken(mockToken);
+        await setCurrentUserProfile({
+          userId: mockUser.id,
+          name: mockUser.name,
+          email: mockUser.email,
+          role: mockUser.role,
+        });
 
         setTimeout(() => {
           switch (mockUser.role) {
@@ -215,7 +221,7 @@ export default function LoginScreen() {
                 setUsername(text);
                 setUsernameError("");
               }}
-              placeholder="admin, GVK001, GV001, SV001"
+              placeholder="Nhập tên đăng nhập"
               error={usernameError || undefined}
               success={
                 username.trim().length > 0 && !usernameError ? true : undefined

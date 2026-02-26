@@ -57,11 +57,8 @@ export default function RootLayout() {
         <Stack.Screen name="auth/verify-otp" />
         <Stack.Screen name="student" options={{ headerShown: false }} />
         <Stack.Screen name="admin" options={{ headerShown: false }} />
-        <Stack.Screen name="teacher/dashboard" />
-        <Stack.Screen name="teacher/generate-otp" />
-        <Stack.Screen name="teacher/generate-qr" />
-        <Stack.Screen name="teacher/class-list" />
-        <Stack.Screen name="teacher/reports" />
+        <Stack.Screen name="teacher" options={{ headerShown: false }} />
+        <Stack.Screen name="academic-staff" options={{ headerShown: false }} />
       </Stack>
     </SocketProvider>
   );

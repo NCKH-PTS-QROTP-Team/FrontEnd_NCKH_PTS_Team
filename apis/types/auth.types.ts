@@ -5,7 +5,7 @@ export enum UserRole {
   ADMIN = 'ADMIN',
   TEACHER = 'TEACHER',
   STUDENT = 'STUDENT',
-  DEPARTMENT = 'DEPARTMENT',
+  ACADEMIC_STAFF = 'ACADEMIC_STAFF',
 }
 
 /**
@@ -38,6 +38,9 @@ export interface User {
   role: UserRole;
   studentId?: string;
   teacherId?: string;
+  classId?: string; // match UserDTO.Response.classId
+  /** Lớp đã đăng ký (1 SV nhiều môn). Có khi gọi /me. */
+  enrolledClassIds?: string[];
   isActive: boolean;
   createdAt: string;
 }

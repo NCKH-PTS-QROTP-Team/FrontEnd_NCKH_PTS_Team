@@ -43,6 +43,8 @@ interface FaceDetection {
   y: number;
   width: number;
   height: number;
+  eyes?: Array<{ x: number; y: number; width: number; height: number }>;
+  smiles?: Array<{ x: number; y: number; width: number; height: number }>;
 }
 
 const FACE_BOX_SMOOTHING_ALPHA = 0.65; // 0..1 (cao hơn = mượt hơn nhưng trễ hơn)
@@ -122,6 +124,8 @@ export default function RegisterFaceScreen() {
   
   // Enable socket khi backend đã có socket server (port 8081)
   const useSocketForDetection = false; // Tạm tắt để dùng API fallback
+  // Auto-capture: chỉ bật trên web, mobile sẽ chụp thủ công để tránh chớp màn hình
+  const enableAutoCapture = Platform.OS === "web";
 
   const getGuideRect = (previewW: number, previewH: number) => {
     // Match UI guide frame: top 25%, left/right 10%, aspectRatio 0.75
@@ -339,11 +343,28 @@ export default function RegisterFaceScreen() {
         const finalWidth = Math.max(40, Math.min(scaledWidth, previewW - finalX));
         const finalHeight = Math.max(40, Math.min(scaledHeight, previewH - finalY));
         
+        // Scale eyes và smiles nếu có từ socket response
+        const scaledEyes = face.eyes?.map((eye: { x: number; y: number; width: number; height: number }) => ({
+          x: Math.max(0, Math.min(eye.x * scaleX + offsetX, previewW - 20)),
+          y: Math.max(0, Math.min(eye.y * scaleY + offsetY + headerOffsetY, previewH - 20)),
+          width: Math.max(10, Math.min(eye.width * scaleX, previewW)),
+          height: Math.max(10, Math.min(eye.height * scaleY, previewH)),
+        })) || [];
+        
+        const scaledSmiles = face.smiles?.map((smile: { x: number; y: number; width: number; height: number }) => ({
+          x: Math.max(0, Math.min(smile.x * scaleX + offsetX, previewW - 20)),
+          y: Math.max(0, Math.min(smile.y * scaleY + offsetY + headerOffsetY, previewH - 20)),
+          width: Math.max(10, Math.min(smile.width * scaleX, previewW)),
+          height: Math.max(10, Math.min(smile.height * scaleY, previewH)),
+        })) || [];
+        
         updateFaceDetection({
           x: finalX,
           y: finalY,
           width: finalWidth,
           height: finalHeight,
+          eyes: scaledEyes,
+          smiles: scaledSmiles,
         });
       } else {
         updateFaceDetection(null);
@@ -371,10 +392,12 @@ export default function RegisterFaceScreen() {
         setDetecting(true);
 
         // Capture frame nhỏ để detect (quality thấp để nhanh)
+        // Tăng quality để cải thiện nhận diện mặt
         const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.3,
+          quality: 0.5, // Quality thấp cho realtime detection (nhanh)
+          skipProcessing: true, // Skip processing để detect nhanh hơn
+          exif: false,
           base64: true,
-          skipProcessing: true,
         });
 
         if (!photo.base64) {
@@ -524,10 +547,13 @@ export default function RegisterFaceScreen() {
       }
 
       // Capture photo chất lượng cao
+      // Tăng quality lên tối đa (1.0) để cải thiện nhận diện mặt trên mobile
+      // Mobile thường có độ phân giải thấp hơn web, cần quality cao hơn
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
-        base64: true,
+        quality: 1.0, // Maximum quality để tăng similarity trên mobile
         skipProcessing: false, // Đảm bảo image được process đầy đủ
+        exif: false,
+        base64: true,
       });
 
       if (!photo.base64) {
@@ -553,6 +579,44 @@ export default function RegisterFaceScreen() {
           studentId,
           base64Image,
         });
+      }
+
+      // Lấy thông tin mắt/miệng từ extract encoding để hiển thị trên UI
+      try {
+        const encodingResult = await faceService.extractEncodingFromCamera(
+          `data:image/jpeg;base64,${photo.base64}`
+        );
+        if (encodingResult.eyes && encodingResult.smiles && encodingResult.faceX !== undefined) {
+          // Scale coordinates từ image dimensions về preview dimensions
+          const previewW = previewLayout.width || width;
+          const previewH = previewLayout.height || height;
+          const imgWidth = photo.width || previewW;
+          const imgHeight = photo.height || previewH;
+          const scaleX = previewW / imgWidth;
+          const scaleY = previewH / imgHeight;
+          
+          setFaceDetected({
+            x: encodingResult.faceX * scaleX,
+            y: encodingResult.faceY! * scaleY,
+            width: (encodingResult.faceWidth || 0) * scaleX,
+            height: (encodingResult.faceHeight || 0) * scaleY,
+            eyes: encodingResult.eyes.map(eye => ({
+              x: eye.x * scaleX,
+              y: eye.y * scaleY,
+              width: eye.width * scaleX,
+              height: eye.height * scaleY,
+            })),
+            smiles: encodingResult.smiles.map(smile => ({
+              x: smile.x * scaleX,
+              y: smile.y * scaleY,
+              width: smile.width * scaleX,
+              height: smile.height * scaleY,
+            })),
+          });
+        }
+      } catch (error) {
+        // Nếu không lấy được thông tin mắt/miệng, không sao, vẫn tiếp tục
+        console.warn("Could not get eyes/smiles info:", error);
       }
 
       // Animation fade
@@ -599,6 +663,9 @@ export default function RegisterFaceScreen() {
 
   // Auto-capture kiểu ngân hàng: khi face "ready" ổn định -> đếm ngược -> chụp
   useEffect(() => {
+    // Trên mobile (Expo), tắt auto-capture để tránh camera bị tắt/bật liên tục gây chớp màn
+    if (!enableAutoCapture) return;
+
     if (!cameraActive || capturing) return;
 
     // Nếu mất điều kiện ready thì hủy countdown
@@ -632,7 +699,7 @@ export default function RegisterFaceScreen() {
         return prev - 1;
       });
     }, 1000);
-  }, [cameraActive, capturing, isReadyToCapture, countdown]);
+  }, [cameraActive, capturing, isReadyToCapture, countdown, enableAutoCapture]);
 
   // Reset UI state khi đổi step / tắt camera
   useEffect(() => {
@@ -910,10 +977,15 @@ export default function RegisterFaceScreen() {
                   top: faceDetected.y,
                   width: faceDetected.width,
                   height: faceDetected.height,
-                  borderWidth: 3,
+                  borderWidth: Platform.OS === "web" ? 2.5 : 3,
                   borderColor: Colors.primary,
                   borderRadius: 12,
-                  backgroundColor: "transparent",
+                  backgroundColor: Platform.OS === "web" ? "rgba(59, 130, 246, 0.05)" : "transparent",
+                  shadowColor: Colors.primary,
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: Platform.OS === "web" ? 0.3 : 0.5,
+                  shadowRadius: Platform.OS === "web" ? 8 : 12,
+                  elevation: Platform.OS === "android" ? 8 : 0,
                 }}
               >
                 {/* Corner indicators */}
@@ -922,10 +994,10 @@ export default function RegisterFaceScreen() {
                     position: "absolute",
                     top: -2,
                     left: -2,
-                    width: 20,
-                    height: 20,
-                    borderTopWidth: 4,
-                    borderLeftWidth: 4,
+                    width: Platform.OS === "web" ? 16 : 20,
+                    height: Platform.OS === "web" ? 16 : 20,
+                    borderTopWidth: Platform.OS === "web" ? 3 : 4,
+                    borderLeftWidth: Platform.OS === "web" ? 3 : 4,
                     borderColor: Colors.primary,
                     borderTopLeftRadius: 8,
                   }}
@@ -935,10 +1007,10 @@ export default function RegisterFaceScreen() {
                     position: "absolute",
                     top: -2,
                     right: -2,
-                    width: 20,
-                    height: 20,
-                    borderTopWidth: 4,
-                    borderRightWidth: 4,
+                    width: Platform.OS === "web" ? 16 : 20,
+                    height: Platform.OS === "web" ? 16 : 20,
+                    borderTopWidth: Platform.OS === "web" ? 3 : 4,
+                    borderRightWidth: Platform.OS === "web" ? 3 : 4,
                     borderColor: Colors.primary,
                     borderTopRightRadius: 8,
                   }}
@@ -948,10 +1020,10 @@ export default function RegisterFaceScreen() {
                     position: "absolute",
                     bottom: -2,
                     left: -2,
-                    width: 20,
-                    height: 20,
-                    borderBottomWidth: 4,
-                    borderLeftWidth: 4,
+                    width: Platform.OS === "web" ? 16 : 20,
+                    height: Platform.OS === "web" ? 16 : 20,
+                    borderBottomWidth: Platform.OS === "web" ? 3 : 4,
+                    borderLeftWidth: Platform.OS === "web" ? 3 : 4,
                     borderColor: Colors.primary,
                     borderBottomLeftRadius: 8,
                   }}
@@ -961,16 +1033,62 @@ export default function RegisterFaceScreen() {
                     position: "absolute",
                     bottom: -2,
                     right: -2,
-                    width: 20,
-                    height: 20,
-                    borderBottomWidth: 4,
-                    borderRightWidth: 4,
+                    width: Platform.OS === "web" ? 16 : 20,
+                    height: Platform.OS === "web" ? 16 : 20,
+                    borderBottomWidth: Platform.OS === "web" ? 3 : 4,
+                    borderRightWidth: Platform.OS === "web" ? 3 : 4,
                     borderColor: Colors.primary,
                     borderBottomRightRadius: 8,
                   }}
                 />
               </View>
             )}
+
+            {/* Eye Detection Boxes */}
+            {faceDetected?.eyes?.map((eye, index) => (
+              <View
+                key={`eye-${index}`}
+                style={{
+                  position: "absolute",
+                  left: eye.x,
+                  top: eye.y,
+                  width: eye.width,
+                  height: eye.height,
+                  borderWidth: Platform.OS === "web" ? 1.5 : 2,
+                  borderColor: "#00B4D8",
+                  borderRadius: Math.min(eye.width, eye.height) * 0.3,
+                  backgroundColor: Platform.OS === "web" ? "rgba(0, 180, 216, 0.08)" : "transparent",
+                  shadowColor: "#00B4D8",
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: Platform.OS === "web" ? 0.2 : 0.4,
+                  shadowRadius: Platform.OS === "web" ? 4 : 6,
+                  elevation: Platform.OS === "android" ? 4 : 0,
+                }}
+              />
+            ))}
+
+            {/* Smile Detection Boxes */}
+            {faceDetected?.smiles?.map((smile, index) => (
+              <View
+                key={`smile-${index}`}
+                style={{
+                  position: "absolute",
+                  left: smile.x,
+                  top: smile.y,
+                  width: smile.width,
+                  height: smile.height,
+                  borderWidth: Platform.OS === "web" ? 1.5 : 2,
+                  borderColor: "#FFD60A",
+                  borderRadius: Math.min(smile.width, smile.height) * 0.3,
+                  backgroundColor: Platform.OS === "web" ? "rgba(255, 214, 10, 0.08)" : "transparent",
+                  shadowColor: "#FFD60A",
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: Platform.OS === "web" ? 0.2 : 0.4,
+                  shadowRadius: Platform.OS === "web" ? 4 : 6,
+                  elevation: Platform.OS === "android" ? 4 : 0,
+                }}
+              />
+            ))}
 
             {/* Guide Frame - Banking style */}
             <View

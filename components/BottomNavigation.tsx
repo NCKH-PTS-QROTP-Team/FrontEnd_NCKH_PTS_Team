@@ -6,6 +6,7 @@ import {
   Platform,
   Dimensions,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../constants/colors";
 interface BottomNavItem {
   key: string;
@@ -40,9 +41,21 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
 }) => {
   const [windowWidth] = useState(Dimensions.get("window").width);
   const isMobile = windowWidth < 768;
+  const insets = useSafeAreaInsets();
 
   // Hide on desktop
   if (!isMobile) return null;
+
+  // Tính toán height và padding dựa trên safe area insets
+  // Base height: 65px, thêm bottom inset để tránh home indicator
+  const baseHeight = 65;
+  // Giảm bottomPadding: chỉ dùng một phần nhỏ của insets.bottom để tránh khoảng trống lớn
+  // iOS: dùng khoảng 30% của insets.bottom, tối thiểu 2px để vẫn tránh home indicator
+  // Android: padding nhỏ 2px
+  const bottomPadding = Platform.OS === "ios" 
+    ? Math.max(insets.bottom * 0.3, 2) 
+    : 2;
+  const totalHeight = baseHeight + bottomPadding;
 
   return (
     <View
@@ -51,7 +64,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
         bottom: 0,
         left: 0,
         right: 0,
-        height: 65,
+        height: totalHeight,
         ...(Platform.OS === "web" && {
           position: "fixed" as any,
           zIndex: 999,
@@ -62,13 +75,13 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
       <View
         style={{
           position: "absolute",
-          bottom: 0,
+          bottom: bottomPadding,
           left: 0,
           right: 0,
           backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
           borderTopColor: "#F3F4F6",
-          height: 65,
+          height: baseHeight,
           flexDirection: "row",
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -2 },
@@ -136,7 +149,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
           accessibilityLabel="Điểm danh"
           style={{
             position: "absolute",
-            bottom: 35,
+            bottom: 35 + bottomPadding, // Điều chỉnh theo bottom padding
             left: "50%",
             marginLeft: -32,
             width: 64,
@@ -174,8 +187,16 @@ export const BottomNavigationSpacer: React.FC<BottomNavigationSpacerProps> = ({
 }) => {
   const [windowWidth] = useState(Dimensions.get("window").width);
   const isMobile = windowWidth < 768;
+  const insets = useSafeAreaInsets();
 
   if (!isMobile) return null;
 
-  return <View style={{ height }} />;
+  // Tính toán height bao gồm cả safe area insets
+  const baseHeight = height;
+  const bottomPadding = Platform.OS === "ios" 
+    ? Math.max(insets.bottom * 0.3, 2) 
+    : 2;
+  const totalHeight = baseHeight + bottomPadding;
+
+  return <View style={{ height: totalHeight }} />;
 };

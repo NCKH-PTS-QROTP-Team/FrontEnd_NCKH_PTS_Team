@@ -50,6 +50,27 @@ export interface FaceVerifyResponse {
   isMatch: boolean;
   similarity: number; // 0.0 - 1.0
   message: string;
+  faceEncoding?: number[]; // Face encoding đã extract (optional, để tái sử dụng)
+}
+
+/**
+ * Eye Detection Result
+ */
+export interface EyeDetectionResult {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Smile Detection Result
+ */
+export interface SmileDetectionResult {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 /**
@@ -62,6 +83,8 @@ export interface FaceEncodingResponse {
   faceY?: number;
   faceWidth?: number;
   faceHeight?: number;
+  eyes?: EyeDetectionResult[]; // Danh sách mắt được phát hiện
+  smiles?: SmileDetectionResult[]; // Danh sách miệng được phát hiện
 }
 
 /**

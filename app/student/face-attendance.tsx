@@ -65,9 +65,14 @@ export default function FaceAttendanceScreen() {
       setScanning(true);
 
       // Capture photo từ camera
+      // Tăng quality lên tối đa (1.0) để cải thiện nhận diện mặt trên mobile
+      // Mobile thường có độ phân giải thấp hơn web, cần quality cao hơn
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
+        quality: 1.0, // Maximum quality để tăng similarity trên mobile
         base64: true, // Quan trọng: lấy base64
+        skipProcessing: false, // Đảm bảo xử lý đầy đủ
+        exif: false, // Tắt EXIF để giảm kích thước
+        // Không set width/height để giữ nguyên resolution của camera
       });
 
       if (!photo.base64) {

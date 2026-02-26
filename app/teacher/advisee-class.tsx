@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,10 +14,23 @@ import Card from "@/components/Card";
 import { StatsCard } from "@/components/StatsCard";
 import Tabs from "@/components/Tabs";
 import { StudentCard } from "@/components/StudentCard";
-import { mockStudents } from "@/constants/mockData";
+import { classService } from "@/apis/services/class.service";
+import { reportService, type StudentAttendanceReport } from "@/apis/services/report.service";
+import { getTeacherIdFromToken } from "@/apis/utils/jwt";
+import Toast, { useToast } from "@/components/Toast";
 
 export default function AdviseeClass() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [loading, setLoading] = useState(false);
+  const [students, setStudents] = useState<StudentAttendanceReport[]>([]);
+  const [atRiskStudents, setAtRiskStudents] = useState<StudentAttendanceReport[]>([]);
+  const [className, setClassName] = useState<string>("Lớp chủ nhiệm");
+  const [major, setMajor] = useState<string>("");
+  const [totalStudents, setTotalStudents] = useState<number>(0);
+  const [presentToday, setPresentToday] = useState<number>(0);
+  const [attendanceRate, setAttendanceRate] = useState<number>(0);
+  const [atRiskCount, setAtRiskCount] = useState<number>(0);
+  const { toast, showToast, hideToast } = useToast();
   const isWeb = Platform.OS === "web";
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
@@ -26,18 +39,61 @@ export default function AdviseeClass() {
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const statsWidth = isDesktop ? "48%" : "100%";
 
-  const classStats = {
-    totalStudents: 45,
-    presentToday: 38,
-    absentToday: 7,
-    attendanceRate: 84.4,
-    atRisk: 5,
-  };
+  useEffect(() => {
+    loadAdvisorClassData();
+  }, []);
 
-  const atRiskStudents = mockStudents.slice(0, 3).map((student, index) => ({
-    ...student,
-    absences: [5, 7, 6][index] || 5, // Mock data for absences
-  }));
+  const loadAdvisorClassData = async () => {
+    try {
+      setLoading(true);
+      const teacherId = await getTeacherIdFromToken();
+      if (!teacherId) {
+        showToast("Không tìm thấy thông tin giảng viên", "error");
+        return;
+      }
+
+      // Lấy tất cả lớp của giảng viên, giả sử lớp chủ nhiệm là lớp đầu tiên
+      const classes = await classService.getClasses(teacherId);
+      if (!classes || classes.length === 0) {
+        showToast("Bạn chưa được phân công lớp chủ nhiệm.", "info");
+        return;
+      }
+
+      const advisorClass = classes[0];
+      setClassName(advisorClass.code);
+      setMajor(advisorClass.name);
+
+      // Lấy báo cáo điểm danh theo sinh viên cho lớp này
+      const studentReports = await reportService.getStudentReports(advisorClass.id);
+      setStudents(studentReports);
+
+      // Thống kê tổng quan
+      const total = studentReports.length;
+      setTotalStudents(total);
+
+      const atRisk = studentReports.filter((s) => s.absentCount / (s.totalSessions || 1) >= 0.2);
+      setAtRiskStudents(atRisk);
+      setAtRiskCount(atRisk.length);
+
+      const avgRate =
+        total > 0
+          ? Math.round(
+              (studentReports.reduce((sum, s) => sum + (s.attendanceRate || 0), 0) / total) * 10,
+            ) / 10
+          : 0;
+      setAttendanceRate(avgRate);
+
+      // Số có mặt hôm nay chưa có API riêng, tạm thời dùng presentCount trung bình
+      setPresentToday(
+        studentReports.reduce((sum, s) => sum + (s.presentCount || 0), 0),
+      );
+    } catch (error: any) {
+      console.error("Error loading advisor class data:", error);
+      showToast("Không thể tải dữ liệu lớp chủ nhiệm.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView
@@ -80,7 +136,7 @@ export default function AdviseeClass() {
                     marginBottom: 4,
                   }}
                 >
-                  Lớp CNTT01
+                  {className}
                 </Text>
                 <Text
                   style={{
@@ -89,7 +145,7 @@ export default function AdviseeClass() {
                     opacity: 0.9,
                   }}
                 >
-                  Công nghệ thông tin K15
+                  {major || "Lớp chủ nhiệm"}
                 </Text>
               </View>
 
@@ -136,7 +192,7 @@ export default function AdviseeClass() {
                           marginBottom: 8,
                         }}
                       >
-                        {classStats.totalStudents}
+                        {totalStudents}
                       </Text>
                       <Text
                         style={{
@@ -174,7 +230,7 @@ export default function AdviseeClass() {
                           marginBottom: 8,
                         }}
                       >
-                        {classStats.attendanceRate}%
+                        {attendanceRate}%
                       </Text>
                       <Text
                         style={{
@@ -183,7 +239,7 @@ export default function AdviseeClass() {
                           fontWeight: "500",
                         }}
                       >
-                        Tỷ lệ điểm danh
+                        Tỷ lệ điểm danh trung bình
                       </Text>
                     </View>
                   </View>
@@ -212,7 +268,7 @@ export default function AdviseeClass() {
                           marginBottom: 8,
                         }}
                       >
-                        {classStats.presentToday}
+                        {presentToday}
                       </Text>
                       <Text
                         style={{
@@ -250,7 +306,7 @@ export default function AdviseeClass() {
                           marginBottom: 8,
                         }}
                       >
-                        {classStats.atRisk}
+                        {atRiskCount}
                       </Text>
                       <Text
                         style={{
@@ -520,14 +576,22 @@ export default function AdviseeClass() {
                 className="text-sm mb-3"
                 style={{ color: Colors.textSecondary }}
               >
-                {mockStudents.length} sinh viên
+                {students.length} sinh viên
               </Text>
 
-              {mockStudents.map((student) => (
-                <View key={student.id} style={{ marginBottom: 12 }}>
+              {students.map((student) => (
+                <View key={student.studentId} style={{ marginBottom: 12 }}>
                   <StudentCard
-                    student={student}
-                    onPress={() => alert(`Chi tiết ${student.name}`)}
+                    student={{
+                      id: student.studentId,
+                      name: student.studentName,
+                      studentId: student.studentId,
+                      avatarUrl: undefined,
+                      major: undefined,
+                      className: student.className,
+                      attendanceRate: student.attendanceRate,
+                    }}
+                    onPress={() => alert(`Chi tiết ${student.studentName}`)}
                   />
                 </View>
               ))}
@@ -554,13 +618,13 @@ export default function AdviseeClass() {
                 className="text-sm mb-3"
                 style={{ color: Colors.textSecondary }}
               >
-                {classStats.atRisk} sinh viên cần quan tâm
+                {atRiskCount} sinh viên cần quan tâm
               </Text>
 
               {atRiskStudents.map((student, idx) => {
-                const totalSessions = 15;
+                const totalSessions = student.totalSessions || 1;
                 const absenceRate = Math.round(
-                  (student.absences / totalSessions) * 100,
+                  (student.absentCount / totalSessions) * 100,
                 );
                 return (
                   <View

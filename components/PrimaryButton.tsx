@@ -102,12 +102,14 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={isDisabled ? undefined : onPress}
       disabled={isDisabled}
       accessible={true}
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityState={{ disabled: isDisabled }}
+      activeOpacity={isDisabled ? 1 : 0.7}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Tăng vùng nhấn cho mobile
       style={[
         {
           borderRadius: 8,
@@ -130,8 +132,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
         getPressedStyle(),
         style,
       ]}
-      activeOpacity={0.8}
-      onPressIn={() => setIsPressed(true)}
+      onPressIn={() => !isDisabled && setIsPressed(true)}
       onPressOut={() => setIsPressed(false)}
       {...(Platform.OS === "web" &&
         ({

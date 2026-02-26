@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,19 +7,36 @@ import {
   Platform,
   useWindowDimensions,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { StatsCard } from "@/components/StatsCard";
 import Tabs from "@/components/Tabs";
 import WeeklyCalendar from "@/components/WeeklyCalendar";
-import {
-  mockStats,
-  mockTeacherSchedules,
-  TeacherSchedule,
-} from "@/constants/mockData";
 import { Colors } from "@/constants/colors";
+import { getSlotIndexFromStartTime } from "@/constants/scheduleSlots";
+import { scheduleService, attendanceService } from "@/apis";
+import { getTeacherIdFromToken } from "@/apis/utils/jwt";
+import Toast, { useToast } from "@/components/Toast";
+import type { Schedule } from "@/apis/services/schedule.service";
+import {
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  InfoIcon,
+} from "@/components/Icons";
+
+interface TeacherSchedule {
+  id: string;
+  subjectCode?: string;
+  subjectName: string;
+  className: string;
+  time: string;
+  room: string;
+  dayOfWeek: number;
+  studentCount?: number;
+}
 
 export default function TeacherDashboardScreen() {
   const router = useRouter();
@@ -28,22 +45,123 @@ export default function TeacherDashboardScreen() {
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
+  const { showToast } = useToast();
 
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"overview" | "schedule">(
     "overview",
   );
+  const [teacherSchedules, setTeacherSchedules] = useState<TeacherSchedule[]>([]);
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    presentToday: 0,
+    absentToday: 0,
+    attendanceRate: 0,
+  });
 
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const quickActionWidth = isDesktop ? "48%" : "100%";
   const [currentWeek, setCurrentWeek] = useState(new Date());
 
-  // Helper to determine period from time string (e.g., "08:00 - 10:00")
-  const getPeriod = (time: string): "morning" | "afternoon" | "evening" => {
-    const hour = parseInt(time.split(":")[0]);
-    if (hour < 12) return "morning";
-    if (hour < 18) return "afternoon";
-    return "evening";
+  useEffect(() => {
+    loadDashboardData();
+  }, [currentWeek]);
+
+  const getWeekRangeISO = () => {
+    const startDate = new Date(currentWeek);
+    // Move to Monday
+    startDate.setDate(startDate.getDate() - startDate.getDay() + 1);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6); // Sunday
+
+    const formatISO = (d: Date) =>
+      `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d
+        .getDate()
+        .toString()
+        .padStart(2, "0")}`;
+
+    return {
+      fromDate: formatISO(startDate),
+      toDate: formatISO(endDate),
+    };
+  };
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const teacherId = await getTeacherIdFromToken();
+      
+      if (!teacherId) {
+        console.warn("No teacherId found, using empty data");
+        setLoading(false);
+        return;
+      }
+
+      const { fromDate, toDate } = getWeekRangeISO();
+
+      // Load schedules (theo tuần hiện tại) và sessions song song
+      const [allSchedules, todaySessions] = await Promise.all([
+        scheduleService
+          .getSchedules({ teacherId, fromDate, toDate })
+          .catch(() => []),
+        attendanceService
+          .getSessions({ teacherId, active: true })
+          .catch(() => []),
+      ]);
+
+      // Debug logs để xem data thực tế từ backend
+      console.log("[TeacherDashboard] teacherId =", teacherId);
+      console.log("[TeacherDashboard] week range =", { fromDate, toDate });
+      console.log("[TeacherDashboard] schedules from API =", allSchedules);
+      console.log("[TeacherDashboard] sessions from API =", todaySessions);
+
+      // Convert schedules to TeacherSchedule format (dữ liệu từ DB)
+      const schedules = allSchedules.map((s: Schedule) => ({
+        id: s.id,
+        subjectCode: s.subjectCode,
+        subjectName: s.subjectName,
+        className: s.className,
+        time: `${s.startTime} - ${s.endTime}`,
+        room: s.room,
+        dayOfWeek: s.dayOfWeek,
+      }));
+
+      setTeacherSchedules(schedules);
+
+      // Tính stats từ sessions
+      let totalStudents = 0;
+      let presentToday = 0;
+      
+      for (const session of todaySessions) {
+        const records = await attendanceService.getRecords({ sessionId: session.id }).catch(() => []);
+        console.log("[TeacherDashboard] records for session", session.id, "=", records);
+        totalStudents += records.length;
+        presentToday += records.filter((r: any) => r.status === "PRESENT").length;
+      }
+
+      const absentToday = totalStudents - presentToday;
+      const attendanceRate = totalStudents > 0 ? Math.round((presentToday / totalStudents) * 100) : 0;
+
+      setStats({
+        totalStudents,
+        presentToday,
+        absentToday,
+        attendanceRate,
+      });
+
+      console.log("[TeacherDashboard] computed stats =", {
+        totalStudents,
+        presentToday,
+        absentToday,
+        attendanceRate,
+      });
+    } catch (error: any) {
+      console.error("Error loading dashboard:", error);
+      showToast("Không thể tải dữ liệu", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Convert dayOfWeek (0=Sunday, 1=Monday, ...) to day name
@@ -83,26 +201,30 @@ export default function TeacherDashboardScreen() {
     setCurrentWeek(newDate);
   };
 
-  // Group schedules by day and period
-  const scheduleByDayPeriod: {
-    [day: string]: { [period: string]: TeacherSchedule[] };
-  } = {};
-  mockTeacherSchedules.forEach((schedule) => {
+  // Cột Sáng/Chiều/Tối như lịch thật; data theo giờ map đúng ca (tiết 1-6 sáng, 7-12 chiều, 13-15 tối)
+  const scheduleByDayPeriod: { [day: string]: { morning: TeacherSchedule[]; afternoon: TeacherSchedule[]; evening: TeacherSchedule[] } } = {};
+  const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  dayNames.forEach((d) => {
+    scheduleByDayPeriod[d] = { morning: [], afternoon: [], evening: [] };
+  });
+  teacherSchedules.forEach((schedule) => {
     const dayName = getDayName(schedule.dayOfWeek);
-    const period = getPeriod(schedule.time);
-
-    if (!scheduleByDayPeriod[dayName]) {
-      scheduleByDayPeriod[dayName] = {
-        morning: [],
-        afternoon: [],
-        evening: [],
-      };
-    }
-    if (!scheduleByDayPeriod[dayName][period]) {
-      scheduleByDayPeriod[dayName][period] = [];
-    }
+    const slotIndex = getSlotIndexFromStartTime(schedule.time ?? "");
+    const period: "morning" | "afternoon" | "evening" = slotIndex <= 2 ? "morning" : slotIndex <= 5 ? "afternoon" : "evening";
     scheduleByDayPeriod[dayName][period].push(schedule);
   });
+
+  if (loading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }} edges={["top"]}>
+        <StatusBar style="dark" />
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color="#3FA9F5" />
+          <Text style={{ marginTop: 16, color: "#6B7280" }}>Đang tải dữ liệu...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const renderOverview = () => (
     <>
@@ -325,7 +447,7 @@ export default function TeacherDashboardScreen() {
                     marginBottom: 4,
                   }}
                 >
-                  {mockStats.totalStudents}
+                  {stats.totalStudents}
                 </Text>
                 <Text
                   style={{
@@ -363,7 +485,7 @@ export default function TeacherDashboardScreen() {
                     marginBottom: 4,
                   }}
                 >
-                  {mockStats.presentToday}
+                  {stats.presentToday}
                 </Text>
                 <Text
                   style={{
@@ -401,7 +523,7 @@ export default function TeacherDashboardScreen() {
                     marginBottom: 4,
                   }}
                 >
-                  {mockStats.absentToday}
+                  {stats.absentToday}
                 </Text>
                 <Text
                   style={{
@@ -435,7 +557,7 @@ export default function TeacherDashboardScreen() {
                     marginBottom: 4,
                   }}
                 >
-                  {mockStats.attendanceRate}%
+                  {stats.attendanceRate}%
                 </Text>
                 <Text
                   style={{
@@ -581,10 +703,7 @@ export default function TeacherDashboardScreen() {
     </>
   );
 
-  const renderScheduleCell = (
-    day: string,
-    period: "morning" | "afternoon" | "evening",
-  ) => {
+  const renderScheduleCell = (day: string, period: "morning" | "afternoon" | "evening") => {
     const schedules = scheduleByDayPeriod[day]?.[period] || [];
     const columnMinWidth = isMobile ? 180 : 240;
     const cellPadding = isMobile ? 8 : 10;
@@ -601,81 +720,28 @@ export default function TeacherDashboardScreen() {
           borderRightColor: Colors.border,
           borderBottomWidth: 1,
           borderBottomColor: Colors.border,
-          backgroundColor:
-            schedules && schedules.length > 0 ? Colors.white : Colors.gray50,
+          backgroundColor: schedules.length > 0 ? Colors.white : Colors.gray50,
         }}
       >
-        {schedules &&
-          schedules.length > 0 &&
-          schedules.map((item, index) => (
-            <View
-              key={item.id}
-              style={{
-                backgroundColor: "#DBEAFE",
-                borderLeftWidth: 3,
-                borderLeftColor: Colors.primary,
-                padding: isMobile ? 6 : 8,
-                borderRadius: 4,
-                marginBottom:
-                  index < schedules.length - 1 ? (isMobile ? 6 : 8) : 0,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: isMobile ? 12 : 13,
-                  fontWeight: "700",
-                  color: Colors.textHeading,
-                  lineHeight: isMobile ? 16 : 18,
-                  marginBottom: isMobile ? 3 : 4,
-                }}
-              >
-                {item.courseName}
-              </Text>
-              <Text
-                style={{
-                  fontSize: isMobile ? 10 : 11,
-                  color: Colors.primary,
-                  lineHeight: isMobile ? 14 : 16,
-                  marginBottom: isMobile ? 2 : 3,
-                }}
-              >
-                {item.courseCode}
-              </Text>
-              <Text
-                style={{
-                  fontSize: isMobile ? 10 : 11,
-                  color: Colors.textLight,
-                  lineHeight: isMobile ? 14 : 15,
-                  marginBottom: isMobile ? 1 : 2,
-                }}
-              >
-                {item.time}
-              </Text>
-              <Text
-                style={{
-                  fontSize: isMobile ? 10 : 11,
-                  color: Colors.textLight,
-                  lineHeight: isMobile ? 14 : 15,
-                  marginBottom: isMobile ? 1 : 2,
-                }}
-              >
-                Phòng: {item.room}
-              </Text>
-              {item.className && (
-                <Text
-                  style={{
-                    fontSize: isMobile ? 10 : 11,
-                    color: Colors.textSecondary,
-                    lineHeight: isMobile ? 14 : 15,
-                    fontWeight: "500",
-                  }}
-                >
-                  {item.className}{" "}
-                  {item.studentCount && `• ${item.studentCount} SV`}
-                </Text>
-              )}
-            </View>
-          ))}
+        {schedules.map((item, index) => (
+          <View
+            key={item.id}
+            style={{
+              backgroundColor: "#DBEAFE",
+              borderLeftWidth: 3,
+              borderLeftColor: Colors.primary,
+              padding: isMobile ? 6 : 8,
+              borderRadius: 4,
+              marginBottom: index < schedules.length - 1 ? (isMobile ? 6 : 8) : 0,
+            }}
+          >
+            <Text style={{ fontSize: isMobile ? 12 : 13, fontWeight: "700", color: Colors.textHeading, marginBottom: 2 }}>
+              {item.subjectName}
+            </Text>
+            <Text style={{ fontSize: isMobile ? 10 : 11, color: Colors.primary, marginBottom: 1 }}>{item.subjectCode}</Text>
+            <Text style={{ fontSize: isMobile ? 10 : 11, color: Colors.textLight }}>{item.time} • Phòng: {item.room}</Text>
+          </View>
+        ))}
       </View>
     );
   };
@@ -714,15 +780,10 @@ export default function TeacherDashboardScreen() {
               minWidth: 44, // Touch-friendly minimum
             }}
           >
-            <Text
-              style={{
-                fontSize: isMobile ? 18 : 16,
-                color: Colors.gray700,
-                fontWeight: "600",
-              }}
-            >
-              ←
-            </Text>
+            <ChevronLeftIcon
+              size={isMobile ? 20 : 18}
+              color={Colors.gray700}
+            />
           </TouchableOpacity>
 
           <Text
@@ -752,15 +813,10 @@ export default function TeacherDashboardScreen() {
               minWidth: 44, // Touch-friendly minimum
             }}
           >
-            <Text
-              style={{
-                fontSize: isMobile ? 18 : 16,
-                color: Colors.gray700,
-                fontWeight: "600",
-              }}
-            >
-              →
-            </Text>
+            <ChevronRightIcon
+              size={isMobile ? 20 : 18}
+              color={Colors.gray700}
+            />
           </TouchableOpacity>
         </View>
 
@@ -778,7 +834,7 @@ export default function TeacherDashboardScreen() {
               gap: 8,
             }}
           >
-            <Text style={{ fontSize: 20 }}>👉</Text>
+            <InfoIcon size={20} color="#1E40AF" />
             <Text style={{ fontSize: 12, color: "#1E40AF", flex: 1 }}>
               Vuốt sang ngang để xem lịch các ngày khác
             </Text>
@@ -864,7 +920,7 @@ export default function TeacherDashboardScreen() {
               ))}
             </View>
 
-            {/* Morning Row */}
+            {/* Cột Sáng / Chiều / Tối như lịch thật; data map theo giờ vào đúng ca */}
             <View style={{ flexDirection: "row" }}>
               <View
                 style={{
@@ -880,28 +936,12 @@ export default function TeacherDashboardScreen() {
                   minHeight: isMobile ? 100 : 120,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: isMobile ? 11 : periodFontSize,
-                    fontWeight: "600",
-                    color: "#92400E",
-                  }}
-                >
-                  Sáng
-                </Text>
+                <Text style={{ fontSize: isMobile ? 11 : periodFontSize, fontWeight: "600", color: "#92400E" }}>Sáng</Text>
               </View>
-              {[
-                "monday",
-                "tuesday",
-                "wednesday",
-                "thursday",
-                "friday",
-                "saturday",
-                "sunday",
-              ].map((day) => renderScheduleCell(day, "morning"))}
+              {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) =>
+                renderScheduleCell(day, "morning")
+              )}
             </View>
-
-            {/* Afternoon Row */}
             <View style={{ flexDirection: "row" }}>
               <View
                 style={{
@@ -917,28 +957,12 @@ export default function TeacherDashboardScreen() {
                   minHeight: isMobile ? 100 : 120,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: isMobile ? 11 : periodFontSize,
-                    fontWeight: "600",
-                    color: "#92400E",
-                  }}
-                >
-                  Chiều
-                </Text>
+                <Text style={{ fontSize: isMobile ? 11 : periodFontSize, fontWeight: "600", color: "#92400E" }}>Chiều</Text>
               </View>
-              {[
-                "monday",
-                "tuesday",
-                "wednesday",
-                "thursday",
-                "friday",
-                "saturday",
-                "sunday",
-              ].map((day) => renderScheduleCell(day, "afternoon"))}
+              {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) =>
+                renderScheduleCell(day, "afternoon")
+              )}
             </View>
-
-            {/* Evening Row */}
             <View style={{ flexDirection: "row" }}>
               <View
                 style={{
@@ -954,30 +978,16 @@ export default function TeacherDashboardScreen() {
                   minHeight: isMobile ? 100 : 120,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: isMobile ? 11 : periodFontSize,
-                    fontWeight: "600",
-                    color: "#1E3A8A",
-                  }}
-                >
-                  Tối
-                </Text>
+                <Text style={{ fontSize: isMobile ? 11 : periodFontSize, fontWeight: "600", color: "#1E3A8A" }}>Tối</Text>
               </View>
-              {[
-                "monday",
-                "tuesday",
-                "wednesday",
-                "thursday",
-                "friday",
-                "saturday",
-                "sunday",
-              ].map((day) => renderScheduleCell(day, "evening"))}
+              {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) =>
+                renderScheduleCell(day, "evening")
+              )}
             </View>
           </View>
         </ScrollView>
 
-        {mockTeacherSchedules.length === 0 && (
+        {teacherSchedules.length === 0 && (
           <View
             style={{
               backgroundColor: Colors.white,
@@ -991,7 +1001,7 @@ export default function TeacherDashboardScreen() {
               marginTop: 12,
             }}
           >
-            <Text style={{ fontSize: 48, marginBottom: 12 }}>📅</Text>
+            <CalendarIcon size={48} color={Colors.primary} />
             <Text
               style={{
                 fontSize: isMobile ? 14 : 16,

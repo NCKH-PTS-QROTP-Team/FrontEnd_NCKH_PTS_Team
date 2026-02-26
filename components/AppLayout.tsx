@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Platform, Text, useWindowDimensions, Image } from "react-native";
 import { useRouter } from "expo-router";
 import Sidebar from "./Sidebar";
 import NotificationDropdown from "./NotificationDropdown";
 import UserProfileDropdown from "./UserProfileDropdown";
 import { Colors } from "@/constants/colors";
+import { getCurrentUserProfile } from "@/apis/config/apiClient";
 
 // Import logo IUH
 const logoNameImage = require("@/assets/logoname.png");
@@ -39,6 +40,8 @@ export default function AppLayout({
   const isWeb = Platform.OS === "web";
   const [collapsed, setCollapsed] = useState(false);
   const { width: windowWidth } = useWindowDimensions();
+  const [currentName, setCurrentName] = useState<string | undefined>(userName);
+  const [currentEmail, setCurrentEmail] = useState<string | undefined>(userEmail);
 
   // Responsive breakpoints
   const isMobile = windowWidth < 768;
@@ -58,6 +61,33 @@ export default function AppLayout({
     student: "Sinh viên",
     department: "Giáo vụ khoa",
   };
+
+  // Tự load thông tin user hiện tại từ storage (đã lưu sau login)
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadCurrentUser() {
+      // Nếu đã có name/email từ props thì ưu tiên dùng, không gọi API nữa
+      if (userName && userEmail) return;
+
+      try {
+        const user = await getCurrentUserProfile();
+        if (!isMounted) return;
+        if (user) {
+          setCurrentName(user.name);
+          setCurrentEmail(user.email);
+        }
+      } catch (error) {
+        console.warn("Không đọc được thông tin user hiện tại từ storage:", error);
+      }
+    }
+
+    loadCurrentUser();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userName, userEmail]);
 
   // On mobile or non-web: no sidebar, just content (bottom nav handled in _layout)
   if (!isWeb || !showSidebar || isMobile) {
@@ -130,8 +160,8 @@ export default function AppLayout({
         >
           <NotificationDropdown />
           <UserProfileDropdown
-            userName={userName || roleLabels[userRole]}
-            userEmail={userEmail}
+            userName={currentName || roleLabels[userRole]}
+            userEmail={currentEmail}
             userAvatar={userAvatar}
             userRole={userRole}
           />
@@ -163,7 +193,7 @@ export default function AppLayout({
           <Sidebar
             menuItems={menuItems}
             userRole={userRole}
-            userName={userName}
+            userName={currentName}
             collapsed={collapsed}
             onToggleCollapse={() => setCollapsed(!collapsed)}
           />

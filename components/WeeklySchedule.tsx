@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Platform, useWindowDimensions } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Platform, useWindowDimensions, ActivityIndicator, Animated } from 'react-native';
 import { Colors } from '@/constants/colors';
+import { getSlotIndexFromStartTime } from '@/constants/scheduleSlots';
+import { scheduleService } from '@/apis';
+import { getStudentIdFromToken } from '@/apis/utils/jwt';
+import type { Schedule } from '@/apis/services/schedule.service';
 
 interface ScheduleItem {
   id: string;
@@ -12,104 +16,182 @@ interface ScheduleItem {
   type: 'theory' | 'practice' | 'exam' | 'makeup';
 }
 
+/** Cột giống lịch thật: Sáng (tiết 1-6), Chiều (7-12), Tối (13-15). Data map theo giờ vào đúng ca. */
 interface DaySchedule {
-  [key: string]: {
-    morning?: ScheduleItem[];
-    afternoon?: ScheduleItem[];
-    evening?: ScheduleItem[];
-  };
+  [dayName: string]: { morning?: ScheduleItem[]; afternoon?: ScheduleItem[]; evening?: ScheduleItem[] };
 }
-
-const mockWeeklySchedule: DaySchedule = {
-  'monday': {
-    afternoon: [
-      {
-        id: '1',
-        subject: 'Công nghệ mới trong phát triển ứng dụng CNTT',
-        code: 'DHKTPM18A - 420300314705',
-        sessions: 'Tiết: 7 - 9',
-        room: 'Phòng: A4.02 (A (CS1))',
-        teacher: 'GV: Tôn Long Phước',
-        type: 'theory'
-      },
-      {
-        id: '2',
-        subject: 'Kiến trúc và Thiết kế Phần mềm',
-        code: 'DHKTPM18B - 420300154902',
-        sessions: 'Tiết: 10 - 12',
-        room: 'Phòng: V4.01 (V (CS1))',
-        teacher: 'GV: Nguyễn Trọng Tiến',
-        type: 'theory'
-      }
-    ]
-  },
-  'thursday': {
-    morning: [
-      {
-        id: '3',
-        subject: 'Quản lý dự án CNTT',
-        code: 'DHKTPM18B - 420300405603',
-        sessions: 'Tiết: 4 - 6',
-        room: 'Phòng: V4.01 (V (CS1))',
-        teacher: 'GV: Đặng Thị Thu Hà',
-        type: 'theory'
-      }
-    ]
-  },
-  'friday': {
-    afternoon: [
-      {
-        id: '4',
-        subject: 'Khai thác dữ liệu và ứng dụng',
-        code: 'DHKHMT19A - 420300344303',
-        sessions: 'Tiết: 7 - 9',
-        room: 'Phòng: A4.02 (A (CS1))',
-        teacher: 'GV: Phạm Thị Thiết',
-        type: 'practice'
-      }
-    ]
-  },
-  'saturday': {
-    morning: [
-      {
-        id: '5',
-        subject: 'Quản lý dự án CNTT',
-        code: 'DHKTPM18B - 420300405603',
-        sessions: 'Tiết: 4 - 6',
-        room: 'Phòng: V7.04 (V (CS1))',
-        teacher: 'GV: Đặng Thị Thu Hà',
-        type: 'theory'
-      }
-    ],
-    afternoon: [
-      {
-        id: '6',
-        subject: 'Khai thác dữ liệu và ứng dụng',
-        code: 'DHKHMT19A - 420300344303',
-        sessions: 'Tiết: 7 - 9',
-        room: 'Phòng: A4.02 (A (CS1))',
-        teacher: 'GV: Phạm Thị Thiết',
-        type: 'practice'
-      }
-    ]
-  }
-};
 
 export default function WeeklySchedule() {
   const [selectedView, setSelectedView] = useState<'all' | 'class' | 'exam'>('all');
   const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [loading, setLoading] = useState(true);
+  const [isChangingWeek, setIsChangingWeek] = useState(false);
+  const [allSchedules, setAllSchedules] = useState<Schedule[]>([]);
+  const [weeklySchedule, setWeeklySchedule] = useState<DaySchedule>({});
+  const fadeAnim = React.useRef(new Animated.Value(1)).current;
   const { width: windowWidth } = useWindowDimensions();
   
   // Responsive breakpoints
   const isMobile = windowWidth < 768;
   const isTablet = windowWidth >= 768 && windowWidth < 1024;
-  
+
   // Responsive values
   const columnMinWidth = isMobile ? 180 : 240;
   const headerPadding = isMobile ? 10 : 14;
   const headerFontSize = isMobile ? 13 : 15;
   const dayFontSize = isMobile ? 12 : 14;
   const periodFontSize = isMobile ? 12 : 14;
+  
+  // Data theo giờ (11:00, 13:30...) → map đúng ca Sáng/Chiều/Tối (tiết 1-6 sáng, 7-12 chiều, 13-15 tối)
+  const convertSchedulesToDaySchedule = (schedules: Schedule[]): DaySchedule => {
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const scheduleMap: DaySchedule = {};
+    dayNames.forEach((d) => {
+      scheduleMap[d] = { morning: [], afternoon: [], evening: [] };
+    });
+
+    schedules.forEach((s: Schedule) => {
+      const dayIndex = s.dayOfWeek === 7 ? 0 : s.dayOfWeek;
+      const dayName = dayNames[dayIndex] ?? 'monday';
+      const slotIndex = getSlotIndexFromStartTime(s.startTime ?? '');
+      const period: 'morning' | 'afternoon' | 'evening' = slotIndex <= 2 ? 'morning' : slotIndex <= 5 ? 'afternoon' : 'evening';
+
+      const itemType: 'theory' | 'practice' | 'exam' | 'makeup' = s.scheduleType === 'EXAM' ? 'exam' : 'theory';
+      const row = scheduleMap[dayName];
+      if (row?.[period]) row[period].push({
+        id: s.id,
+        subject: s.subjectName,
+        code: `${s.classCode} - ${s.subjectCode}`,
+        sessions: `${s.startTime ?? ''} - ${s.endTime ?? ''}`,
+        room: `Phòng: ${s.room}`,
+        teacher: `GV: ${s.teacherName}`,
+        type: itemType,
+      } as ScheduleItem);
+    });
+    return scheduleMap;
+  };
+  
+  // Helper function to apply filter and update schedule
+  const applyFilter = (schedules: Schedule[], view: 'all' | 'class' | 'exam') => {
+    // Filter schedules
+    const filtered = schedules.filter((s: Schedule) => {
+      if (view === 'all') return true;
+      if (view === 'class') return s.scheduleType !== 'EXAM';
+      if (view === 'exam') return s.scheduleType === 'EXAM';
+      return true;
+    });
+    
+    // Convert filtered schedules to DaySchedule format
+    return convertSchedulesToDaySchedule(filtered);
+  };
+
+  // Load schedules từ backend
+  useEffect(() => {
+    loadSchedules();
+  }, [currentWeek]);
+
+  // Filter schedules based on selectedView and allSchedules
+  useEffect(() => {
+    if (allSchedules.length === 0 && !isChangingWeek) {
+      setWeeklySchedule({});
+      return;
+    }
+    
+    // Smooth fade transition khi đổi tuần hoặc filter
+    Animated.timing(fadeAnim, {
+      toValue: 0.4,
+      duration: 100,
+      useNativeDriver: true,
+    }).start(() => {
+      // Apply filter
+      const scheduleMap = applyFilter(allSchedules, selectedView);
+      console.log(`🔍 Filtered schedules (${selectedView}):`, Object.keys(scheduleMap).length, 'days');
+      setWeeklySchedule(scheduleMap);
+      
+      // Reset changing week flag
+      setIsChangingWeek(false);
+      
+      // Fade in animation - mượt hơn
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    });
+  }, [selectedView, allSchedules, isChangingWeek]);
+
+  const loadSchedules = async () => {
+    try {
+      // Chỉ hiển thị loading indicator lớn khi lần đầu load, không hiển thị khi đổi tuần
+      if (!isChangingWeek) {
+        setLoading(true);
+      }
+      console.log("📅 Loading weekly schedules...");
+      
+      // Tính khoảng ngày của tuần hiện tại (fromDate, toDate - yyyy-MM-dd)
+      const startDate = new Date(currentWeek);
+      startDate.setDate(startDate.getDate() - startDate.getDay() + 1); // Monday
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 6); // Sunday
+
+      const toIsoDate = (d: Date) => {
+        const year = d.getFullYear();
+        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+        const day = d.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const fromDate = toIsoDate(startDate);
+      const toDate = toIsoDate(endDate);
+
+      const params: {
+        classId?: string;
+        classIds?: string[];
+        scheduleType?: 'CLASS' | 'EXAM';
+        fromDate?: string;
+        toDate?: string;
+      } = { fromDate, toDate };
+
+      // /users/me trả về enrolledClassIds (1 SV nhiều môn) hoặc classId
+      try {
+        const { authService } = await import('@/apis');
+        const currentUser = await authService.getCurrentUser();
+        if (currentUser?.enrolledClassIds?.length) {
+          params.classIds = currentUser.enrolledClassIds;
+          console.log('👨‍🎓 Student enrolledClassIds:', currentUser.enrolledClassIds.length, 'classes');
+        } else if (currentUser?.classId) {
+          params.classId = currentUser.classId;
+          console.log('👨‍🎓 Current student classId:', currentUser.classId);
+        } else {
+          console.log('⚠️ Không có classId/enrolledClassIds, sẽ load toàn bộ lịch');
+        }
+      } catch (err) {
+        console.warn('⚠️ Không lấy được user, sẽ load toàn bộ lịch:', err);
+      }
+
+      if (selectedView === 'class') {
+        params.scheduleType = 'CLASS';
+      } else if (selectedView === 'exam') {
+        params.scheduleType = 'EXAM';
+      }
+
+      // Nếu không có scheduleType (Tất cả) thì backend trả full, FE chỉ group theo ngày/ca
+      const allSchedules = await scheduleService.getSchedules(params);
+      
+      console.log("✅ Loaded schedules:", allSchedules.length);
+      console.log("📅 Current week:", formatWeekRange());
+      
+      // Store all schedules for filtering
+      // Filter effect will automatically apply selectedView filter
+      setAllSchedules(allSchedules);
+    } catch (error: any) {
+      console.error("❌ Error loading schedules:", error);
+      setWeeklySchedule({});
+      setIsChangingWeek(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -141,30 +223,39 @@ export default function WeeklySchedule() {
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentWeek);
-    newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
-    setCurrentWeek(newDate);
+    // Smooth fade out trước khi đổi tuần
+    setIsChangingWeek(true);
+    Animated.timing(fadeAnim, {
+      toValue: 0.3,
+      duration: 150,
+      useNativeDriver: true,
+    }).start(() => {
+      // Đổi tuần sau khi fade out
+      const newDate = new Date(currentWeek);
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
+      setCurrentWeek(newDate);
+      // loadSchedules sẽ được trigger bởi useEffect, và fade in sẽ được handle bởi filter effect
+    });
   };
 
   const renderScheduleCell = (day: string, period: 'morning' | 'afternoon' | 'evening') => {
-    const schedules = mockWeeklySchedule[day]?.[period];
-    
+    const schedules = weeklySchedule[day]?.[period] || [];
     return (
-      <View 
+      <View
         key={`${day}-${period}`}
-        style={{ 
+        style={{
           flex: 1,
           minWidth: columnMinWidth,
-          minHeight: 120,
-          padding: 10,
+          minHeight: 100,
+          padding: 8,
           borderRightWidth: 1,
           borderRightColor: '#D1D5DB',
           borderBottomWidth: 1,
           borderBottomColor: '#D1D5DB',
-          backgroundColor: schedules && schedules.length > 0 ? '#FFFFFF' : '#FAFAFA',
+          backgroundColor: schedules.length > 0 ? '#FFFFFF' : '#FAFAFA',
         }}
       >
-        {schedules && schedules.length > 0 && schedules.map((item, index) => (
+        {schedules.map((item, idx) => (
           <View
             key={item.id}
             style={{
@@ -173,50 +264,15 @@ export default function WeeklySchedule() {
               borderLeftColor: getTypeColor(item.type),
               padding: 8,
               borderRadius: 4,
-              marginBottom: index < schedules.length - 1 ? 8 : 0,
+              marginBottom: idx < schedules.length - 1 ? 8 : 0,
             }}
           >
-            <Text style={{ 
-              fontSize: 13, 
-              fontWeight: '700', 
-              color: '#111827',
-              lineHeight: 18,
-              marginBottom: 4,
-            }}>
-              {item.subject}
-            </Text>
-            <Text style={{ 
-              fontSize: 11, 
-              color: '#3FA9F5',
-              lineHeight: 16,
-              marginBottom: 3,
-            }}>
-              {item.code}
-            </Text>
-            <Text style={{ 
-              fontSize: 11, 
-              color: '#6B7280',
-              lineHeight: 15,
-              marginBottom: 2,
-            }}>
-              {item.sessions}
-            </Text>
-            <Text style={{ 
-              fontSize: 11, 
-              color: '#6B7280',
-              lineHeight: 15,
-              marginBottom: 2,
-            }}>
-              {item.room}
-            </Text>
-            <Text style={{ 
-              fontSize: 11, 
-              color: '#374151',
-              lineHeight: 15,
-              fontWeight: '500',
-            }}>
-              {item.teacher}
-            </Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#111827', marginBottom: 2 }}>{item.subject}</Text>
+            <Text style={{ fontSize: 10, color: '#3FA9F5', marginBottom: 1 }}>{item.code}</Text>
+            <Text style={{ fontSize: 10, color: '#6B7280', marginBottom: 1 }}>{item.sessions} • {item.room}</Text>
+            {item.teacher && item.teacher.replace('GV: ', '').trim() && (
+              <Text style={{ fontSize: 10, color: '#059669', fontWeight: '500' }}>{item.teacher}</Text>
+            )}
           </View>
         ))}
       </View>
@@ -225,6 +281,23 @@ export default function WeeklySchedule() {
 
   return (
     <View style={{ marginBottom: 24, width: '100%' }}>
+      {/* Loading Indicator */}
+      {loading && (
+        <View style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: 12,
+          padding: 24,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 12,
+        }}>
+          <ActivityIndicator size="small" color={Colors.primary} />
+          <Text style={{ marginTop: 8, color: '#6B7280', fontSize: 13 }}>
+            Đang tải lịch học...
+          </Text>
+        </View>
+      )}
+
       {/* Header Controls */}
       <View style={{
         backgroundColor: '#FFFFFF',
@@ -255,7 +328,11 @@ export default function WeeklySchedule() {
           {/* View Filter Buttons */}
           <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
             <TouchableOpacity
-              onPress={() => setSelectedView('all')}
+              onPress={() => {
+                if (selectedView !== 'all') {
+                  setSelectedView('all');
+                }
+              }}
               style={{
                 paddingHorizontal: isMobile ? 12 : 16,
                 paddingVertical: isMobile ? 6 : 8,
@@ -272,7 +349,11 @@ export default function WeeklySchedule() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => setSelectedView('class')}
+              onPress={() => {
+                if (selectedView !== 'class') {
+                  setSelectedView('class');
+                }
+              }}
               style={{
                 paddingHorizontal: isMobile ? 12 : 16,
                 paddingVertical: isMobile ? 6 : 8,
@@ -289,7 +370,11 @@ export default function WeeklySchedule() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => setSelectedView('exam')}
+              onPress={() => {
+                if (selectedView !== 'exam') {
+                  setSelectedView('exam');
+                }
+              }}
               style={{
                 paddingHorizontal: isMobile ? 12 : 16,
                 paddingVertical: isMobile ? 6 : 8,
@@ -364,21 +449,22 @@ export default function WeeklySchedule() {
       )}
 
       {/* Schedule Table */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={Platform.OS === 'web'}
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: '#D1D5DB',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 2,
-          elevation: 1,
-        }}
-      >
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={Platform.OS === 'web'}
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#D1D5DB',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 1,
+          }}
+        >
         <View style={{ minWidth: '100%' }}>
           {/* Table Header */}
           <View style={{ flexDirection: 'row', backgroundColor: '#F9FAFB' }}>
@@ -418,9 +504,9 @@ export default function WeeklySchedule() {
             ))}
           </View>
 
-          {/* Morning Row */}
+          {/* Cột giống lịch thật: Sáng (tiết 1-6), Chiều (7-12), Tối (13-15). Data map theo giờ vào đúng ca. */}
           <View style={{ flexDirection: 'row' }}>
-            <View style={{ 
+            <View style={{
               width: isMobile ? 80 : 120,
               padding: headerPadding,
               borderRightWidth: 1,
@@ -430,17 +516,16 @@ export default function WeeklySchedule() {
               backgroundColor: '#FFFBEB',
               justifyContent: 'center',
               alignItems: 'center',
+              minHeight: 100,
             }}>
               <Text style={{ fontSize: periodFontSize, fontWeight: '600', color: '#92400E' }}>Sáng</Text>
             </View>
-            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) =>
               renderScheduleCell(day, 'morning')
-            ))}
+            )}
           </View>
-
-          {/* Afternoon Row */}
           <View style={{ flexDirection: 'row' }}>
-            <View style={{ 
+            <View style={{
               width: isMobile ? 80 : 120,
               padding: headerPadding,
               borderRightWidth: 1,
@@ -450,17 +535,16 @@ export default function WeeklySchedule() {
               backgroundColor: '#FEF3C7',
               justifyContent: 'center',
               alignItems: 'center',
+              minHeight: 100,
             }}>
               <Text style={{ fontSize: periodFontSize, fontWeight: '600', color: '#92400E' }}>Chiều</Text>
             </View>
-            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) =>
               renderScheduleCell(day, 'afternoon')
-            ))}
+            )}
           </View>
-
-          {/* Evening Row */}
           <View style={{ flexDirection: 'row' }}>
-            <View style={{ 
+            <View style={{
               width: isMobile ? 80 : 120,
               padding: headerPadding,
               borderRightWidth: 1,
@@ -470,15 +554,17 @@ export default function WeeklySchedule() {
               backgroundColor: '#DBEAFE',
               justifyContent: 'center',
               alignItems: 'center',
+              minHeight: 100,
             }}>
               <Text style={{ fontSize: periodFontSize, fontWeight: '600', color: '#1E3A8A' }}>Tối</Text>
             </View>
-            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) =>
               renderScheduleCell(day, 'evening')
-            ))}
+            )}
           </View>
         </View>
       </ScrollView>
+      </Animated.View>
 
       {/* Legend */}
       <View style={{ 

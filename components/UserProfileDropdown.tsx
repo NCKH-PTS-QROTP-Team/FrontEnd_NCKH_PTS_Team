@@ -1,7 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Platform, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Colors } from '@/constants/colors';
+import React from 'react';
+import { View, Text, Platform } from 'react-native';
 import { Avatar } from './Avatar';
 
 interface UserProfileDropdownProps {
@@ -82,31 +80,16 @@ export default function UserProfileDropdown({
   };
 
   return (
-    <View ref={dropdownRef} style={{ position: 'relative' }}>
-      {/* User Profile Button */}
-      <TouchableOpacity
-        onPress={() => setIsOpen(!isOpen)}
+    <View style={{ position: 'relative' }}>
+      {/* User Profile Display (no dropdown) */}
+      <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           paddingHorizontal: 12,
           paddingVertical: 8,
-          borderRadius: 24,
-          backgroundColor: isOpen ? '#F3F4F6' : 'transparent',
           minHeight: 44,
-          ...(Platform.OS === 'web' && {
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          } as any),
         }}
-        {...(Platform.OS === 'web' && {
-          onMouseEnter: (e: any) => {
-            if (!isOpen) e.currentTarget.style.backgroundColor = '#F9FAFB';
-          },
-          onMouseLeave: (e: any) => {
-            if (!isOpen) e.currentTarget.style.backgroundColor = 'transparent';
-          },
-        } as any)}
       >
         {/* Avatar */}
         <Avatar

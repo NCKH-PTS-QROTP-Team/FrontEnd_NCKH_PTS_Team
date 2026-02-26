@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, Platform } from 'react-native';
+import { View, Text, Animated, Platform, useWindowDimensions } from 'react-native';
 import { Colors } from '../constants/colors';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -19,8 +19,13 @@ export default function Toast({
   duration = 3000,
   onHide,
 }: ToastProps) {
+  const { width, height } = useWindowDimensions();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(-50)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current; // Bắt đầu từ dưới (50px)
+  
+  // Responsive: Desktop/Tablet/Mobile
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
 
   useEffect(() => {
     if (visible) {
@@ -30,23 +35,23 @@ export default function Toast({
           duration: 300,
           useNativeDriver: true,
         }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          tension: 65,
-          friction: 10,
-          useNativeDriver: true,
-        }),
+      Animated.spring(slideAnim, {
+        toValue: 0, // Slide từ dưới lên (50 -> 0)
+        tension: 65,
+        friction: 10,
+        useNativeDriver: true,
+      }),
       ]).start();
 
       const timer = setTimeout(() => {
-        hideToast();
+        onHide?.();
       }, duration);
 
       return () => clearTimeout(timer);
     }
-  }, [visible]);
+  }, [visible, duration, onHide]);
 
-  const hideToast = () => {
+  const handleHide = () => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -54,7 +59,7 @@ export default function Toast({
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
-        toValue: -50,
+        toValue: 50, // Slide xuống dưới khi hide (0 -> 50)
         duration: 250,
         useNativeDriver: true,
       }),
@@ -62,6 +67,8 @@ export default function Toast({
       onHide?.();
     });
   };
+
+  const hideToast = handleHide;
 
   if (!visible) return null;
 
@@ -92,18 +99,38 @@ export default function Toast({
 
   const toastStyle = getToastStyle();
 
+  // Tính toán vị trí responsive
+  const getToastPosition = () => {
+    if (Platform.OS === 'web') {
+      // Web: Hiển thị ở góc trên bên phải, xuống dưới một chút
+      return {
+        top: isDesktop ? 80 : isTablet ? 70 : 60,
+        right: isDesktop ? 32 : isTablet ? 24 : 16,
+        left: undefined,
+        maxWidth: isDesktop ? 480 : isTablet ? 420 : width - 32,
+      };
+    } else {
+      // Mobile: Hiển thị ở trên cùng, xuống dưới một chút
+      return {
+        top: 80, // Xuống dưới một chút so với trước (từ 60 -> 80)
+        right: 16,
+        left: 16,
+        maxWidth: width - 32,
+      };
+    }
+  };
+
+  const position = getToastPosition();
+
   return (
     <Animated.View
       style={[
         {
           position: 'absolute',
-          top: Platform.OS === 'web' ? 24 : 60,
-          right: Platform.OS === 'web' ? 24 : 16,
-          left: Platform.OS === 'web' ? undefined : 16,
+          ...position,
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],
           zIndex: 9999,
-          maxWidth: 420,
         },
         Platform.OS === 'web' && {
           position: 'fixed' as any,
@@ -111,34 +138,48 @@ export default function Toast({
       ]}
     >
       <View
-        className="rounded-lg p-4 flex-row items-center"
+        className="rounded-lg flex-row items-start"
         style={{
           backgroundColor: toastStyle.backgroundColor,
+          padding: isDesktop ? 16 : 14,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.3,
           shadowRadius: 8,
           elevation: 8,
+          minWidth: isDesktop ? 320 : 280,
         }}
       >
         <View
           style={{
-            width: 28,
-            height: 28,
-            borderRadius: 14,
+            width: isDesktop ? 32 : 28,
+            height: isDesktop ? 32 : 28,
+            borderRadius: isDesktop ? 16 : 14,
             backgroundColor: 'rgba(255, 255, 255, 0.3)',
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: 12,
+            marginTop: 2, // Align với text đầu tiên
           }}
         >
-          <Text style={{ color: Colors.white, fontSize: 16, fontWeight: 'bold' }}>
+          <Text style={{ 
+            color: Colors.white, 
+            fontSize: isDesktop ? 18 : 16, 
+            fontWeight: 'bold' 
+          }}>
             {toastStyle.icon}
           </Text>
         </View>
         <Text
-          className="flex-1 text-base font-medium"
-          style={{ color: Colors.white, lineHeight: 24 }}
+          className="flex-1"
+          style={{ 
+            color: Colors.white, 
+            fontSize: isDesktop ? 15 : 14,
+            lineHeight: isDesktop ? 22 : 20,
+            fontWeight: '500',
+            // Hỗ trợ multi-line
+            flexShrink: 1,
+          }}
         >
           {message}
         </Text>
