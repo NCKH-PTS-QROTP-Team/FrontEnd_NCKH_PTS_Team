@@ -77,7 +77,7 @@ export default function LoginScreen() {
             case "student":
               router.replace("/student/home" as any);
               break;
-            case "department":
+            case "academic_staff":
               router.replace("/department/dashboard" as any);
               break;
             default:
@@ -140,7 +140,7 @@ export default function LoginScreen() {
             case "student":
               router.replace("/student/home" as any);
               break;
-            case "department":
+            case "academic_staff":
               router.replace("/department/dashboard" as any);
               break;
           }
@@ -297,7 +297,7 @@ export default function LoginScreen() {
                   }}
                 >
                   <Text style={{ fontWeight: "600" }}>Giáo vụ khoa:</Text> GVK001 /
-                  department123
+                  academic123
                 </Text>
                 <Text
                   style={{

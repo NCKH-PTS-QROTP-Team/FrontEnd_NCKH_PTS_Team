@@ -38,9 +38,6 @@ const getApiBaseUrl = () => {
       // iOS Simulator có thể dùng localhost
       // iOS thiết bị thật cần IP của máy tính (giống Android)
       return 'http://192.168.1.7:8080/api';
-    } else {
-      // Fallback cho các platform khác
-      return 'http://192.168.1.7:8080/api';
     }
   }
 

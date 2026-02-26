@@ -1,6 +1,13 @@
-import React from 'react';
-import { View, Text, Platform } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, Platform, TouchableOpacity, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Avatar } from './Avatar';
+
+// Fallback Colors nếu chưa có file constants
+const Colors = {
+  primary: '#6366F1',
+  error: '#EF4444',
+};
 
 interface UserProfileDropdownProps {
   userName: string;
@@ -50,7 +57,6 @@ export default function UserProfileDropdown({
 
   const handleProfile = () => {
     setIsOpen(false);
-    // Navigate to profile page based on role
     if (userRole === 'student') {
       router.push('/student/home');
     } else if (userRole === 'teacher') {
@@ -80,9 +86,10 @@ export default function UserProfileDropdown({
   };
 
   return (
-    <View style={{ position: 'relative' }}>
-      {/* User Profile Display (no dropdown) */}
-      <View
+    <View ref={dropdownRef} style={{ position: 'relative' }}>
+      {/* Dropdown Trigger Button */}
+      <TouchableOpacity
+        onPress={() => setIsOpen(!isOpen)}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
