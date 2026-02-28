@@ -5,14 +5,13 @@ import {
     StyleSheet,
     ScrollView,
     TouchableOpacity,
-    Dimensions,
+    useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 
-const { width } = Dimensions.get('window');
-
 export default function ReportsManagement() {
+    const { width } = useWindowDimensions();
     const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('month');
 
     const chartConfig = {
@@ -111,6 +110,15 @@ export default function ReportsManagement() {
         },
     ];
 
+    const numCols = width >= 1024 ? 4 : width >= 640 ? 2 : 1;
+    const cardGap = 16;
+    const paddingTotal = 40; // paddingHorizontal 20 * 2
+    const availableWidth = width - paddingTotal;
+    const cardWidth = (availableWidth - (cardGap * (numCols - 1))) / numCols;
+
+    const reportNumCols = width >= 1024 ? 4 : width >= 768 ? 2 : 1;
+    const reportCardWidth = (availableWidth - (cardGap * (reportNumCols - 1))) / reportNumCols;
+
     return (
         <ScrollView style={styles.container}>
             {/* Period Selector */}
@@ -141,9 +149,9 @@ export default function ReportsManagement() {
 
             {/* Key Stats */}
             <View style={styles.statsContainer}>
-                <View style={styles.statsGrid}>
+                <View style={[styles.statsGrid, { gap: cardGap }]}>
                     {stats.map((stat) => (
-                        <View key={stat.id} style={styles.statCard}>
+                        <View key={stat.id} style={[styles.statCard, { width: cardWidth }]}>
                             <View
                                 style={[
                                     styles.statIconContainer,
@@ -225,57 +233,59 @@ export default function ReportsManagement() {
             {/* Quick Reports */}
             <View style={styles.reportsContainer}>
                 <Text style={styles.sectionTitle}>Báo cáo nhanh</Text>
-                <TouchableOpacity style={styles.reportCard}>
-                    <View style={styles.reportIcon}>
-                        <Ionicons name="document-text" size={24} color="#3b82f6" />
-                    </View>
-                    <View style={styles.reportInfo}>
-                        <Text style={styles.reportTitle}>Báo cáo điểm danh</Text>
-                        <Text style={styles.reportSubtitle}>
-                            Tổng hợp điểm danh theo lớp, môn học
-                        </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: cardGap }}>
+                    <TouchableOpacity style={[styles.reportCard, { width: reportCardWidth }]}>
+                        <View style={styles.reportIcon}>
+                            <Ionicons name="document-text" size={24} color="#3b82f6" />
+                        </View>
+                        <View style={styles.reportInfo}>
+                            <Text style={styles.reportTitle}>Báo cáo điểm danh</Text>
+                            <Text style={styles.reportSubtitle}>
+                                Tổng hợp điểm danh theo lớp, môn học
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+                    </TouchableOpacity>
 
-                <TouchableOpacity style={styles.reportCard}>
-                    <View style={styles.reportIcon}>
-                        <Ionicons name="stats-chart" size={24} color="#10b981" />
-                    </View>
-                    <View style={styles.reportInfo}>
-                        <Text style={styles.reportTitle}>Báo cáo kết quả học tập</Text>
-                        <Text style={styles.reportSubtitle}>
-                            Điểm số, xếp loại, tỷ lệ đỗ
-                        </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
-                </TouchableOpacity>
+                    <TouchableOpacity style={[styles.reportCard, { width: reportCardWidth }]}>
+                        <View style={styles.reportIcon}>
+                            <Ionicons name="stats-chart" size={24} color="#10b981" />
+                        </View>
+                        <View style={styles.reportInfo}>
+                            <Text style={styles.reportTitle}>Báo cáo kết quả học tập</Text>
+                            <Text style={styles.reportSubtitle}>
+                                Điểm số, xếp loại, tỷ lệ đỗ
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+                    </TouchableOpacity>
 
-                <TouchableOpacity style={styles.reportCard}>
-                    <View style={styles.reportIcon}>
-                        <Ionicons name="people" size={24} color="#8b5cf6" />
-                    </View>
-                    <View style={styles.reportInfo}>
-                        <Text style={styles.reportTitle}>Báo cáo sinh viên</Text>
-                        <Text style={styles.reportSubtitle}>
-                            Thông tin, trạng thái sinh viên
-                        </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
-                </TouchableOpacity>
+                    <TouchableOpacity style={[styles.reportCard, { width: reportCardWidth }]}>
+                        <View style={styles.reportIcon}>
+                            <Ionicons name="people" size={24} color="#8b5cf6" />
+                        </View>
+                        <View style={styles.reportInfo}>
+                            <Text style={styles.reportTitle}>Báo cáo sinh viên</Text>
+                            <Text style={styles.reportSubtitle}>
+                                Thông tin, trạng thái sinh viên
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+                    </TouchableOpacity>
 
-                <TouchableOpacity style={styles.reportCard}>
-                    <View style={styles.reportIcon}>
-                        <Ionicons name="school" size={24} color="#f59e0b" />
-                    </View>
-                    <View style={styles.reportInfo}>
-                        <Text style={styles.reportTitle}>Báo cáo giảng viên</Text>
-                        <Text style={styles.reportSubtitle}>
-                            Lịch dạy, số lượng lớp, đánh giá
-                        </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
-                </TouchableOpacity>
+                    <TouchableOpacity style={[styles.reportCard, { width: reportCardWidth }]}>
+                        <View style={styles.reportIcon}>
+                            <Ionicons name="school" size={24} color="#f59e0b" />
+                        </View>
+                        <View style={styles.reportInfo}>
+                            <Text style={styles.reportTitle}>Báo cáo giảng viên</Text>
+                            <Text style={styles.reportSubtitle}>
+                                Lịch dạy, số lượng lớp, đánh giá
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <View style={{ height: 30 }} />
@@ -328,14 +338,11 @@ const styles = StyleSheet.create({
     statsGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'space-between',
     },
     statCard: {
-        width: (width - 60) / 2,
         backgroundColor: '#fff',
         borderRadius: 16,
         padding: 16,
-        marginBottom: 16,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
@@ -399,7 +406,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderRadius: 16,
         padding: 16,
-        marginBottom: 12,
         flexDirection: 'row',
         alignItems: 'center',
         shadowColor: '#000',
