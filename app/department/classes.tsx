@@ -53,51 +53,62 @@ function EmptyState({ query }: { query: string }) {
     );
 }
 
-// ─── Semester Dropdown ────────────────────────────────────────────────────────
+// ─── Dropdown Component ─────────────────────────────────────────────────────────
 
-function SemesterDropdown({
-    visible, semesters, selected, onSelect, onClose,
+function DropdownPicker({
+    label,
+    options,
+    selectedValue,
+    onValueChange,
+    placeholder
 }: {
-    visible: boolean; semesters: string[]; selected: string;
-    onSelect: (v: string) => void; onClose: () => void;
+    label: string;
+    options: { label: string; value: string | null }[];
+    selectedValue: string | null;
+    onValueChange: (val: string | null) => void;
+    placeholder: string;
 }) {
+    const [open, setOpen] = useState(false);
+    const selectedOption = options.find(o => o.value === selectedValue);
+
     return (
-        <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-            <TouchableWithoutFeedback onPress={onClose}>
-                <View style={s.ddBackdrop} />
-            </TouchableWithoutFeedback>
-            <View style={s.ddContainer}>
-                <View style={s.ddSheet}>
-                    <View style={s.sheetHandle} />
-                    <Text style={s.ddTitle}>Chọn học kỳ</Text>
+        <View style={s.dropdownWrapper}>
+            <Text style={s.dropdownLabel}>{label}</Text>
+            <TouchableOpacity
+                style={s.dropdownButton}
+                activeOpacity={0.7}
+                onPress={() => setOpen(true)}
+            >
+                <Text style={[s.dropdownButtonText, !selectedValue && { color: '#94a3b8' }]} numberOfLines={1}>
+                    {selectedOption ? selectedOption.label : placeholder}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color="#64748b" />
+            </TouchableOpacity>
 
-                    {[
-                        { value: 'all', label: 'Tất cả học kỳ', icon: 'grid-outline' as const },
-                        ...semesters.map((sem) => ({ value: sem, label: sem, icon: 'calendar-outline' as const })),
-                    ].map(({ value, label, icon }) => (
-                        <TouchableOpacity
-                            key={value}
-                            style={[s.ddItem, selected === value && s.ddItemActive]}
-                            onPress={() => { onSelect(value); onClose(); }}
-                            activeOpacity={0.7}
-                        >
-                            <Ionicons name={icon} size={16} color={selected === value ? PINK : '#64748b'} />
-                            <Text style={[s.ddItemText, selected === value && { color: PINK, fontWeight: '700' }]}>
-                                {label}
-                            </Text>
-                            {selected === value && <Ionicons name="checkmark-circle" size={18} color={PINK} style={{ marginLeft: 'auto' }} />}
-                        </TouchableOpacity>
-                    ))}
-
-                    {semesters.length === 0 && (
-                        <Text style={{ fontSize: 13, color: '#94a3b8', textAlign: 'center', paddingVertical: 16 }}>
-                            Chưa có dữ liệu học kỳ
-                        </Text>
-                    )}
-                    <View style={{ height: 16 }} />
-                </View>
-            </View>
-        </Modal>
+            <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+                <TouchableOpacity style={s.dropdownOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
+                    <View style={s.dropdownMenu}>
+                        <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 8 }}>
+                            {options.map((opt, idx) => {
+                                const isSelected = selectedValue === opt.value;
+                                return (
+                                    <TouchableOpacity
+                                        key={idx}
+                                        style={[s.dropdownItem, isSelected && s.dropdownItemActive]}
+                                        onPress={() => { onValueChange(opt.value); setOpen(false); }}
+                                    >
+                                        <Text style={[s.dropdownItemText, isSelected && s.dropdownItemTextActive]} numberOfLines={1}>
+                                            {opt.label}
+                                        </Text>
+                                        {isSelected && <Ionicons name="checkmark" size={18} color={PINK} />}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+        </View>
     );
 }
 
@@ -537,8 +548,8 @@ function ClassFormModal({
 
 export default function ClassesManagement() {
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedSemester, setSelectedSemester] = useState('all');
-    const [dropdownVisible, setDropdownVisible] = useState(false);
+    const [selectedSemester, setSelectedSemester] = useState<string | null>(null);
+    const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
     const [classes, setClasses] = useState<ClassResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -576,8 +587,15 @@ export default function ClassesManagement() {
     useEffect(() => { fetchClasses(); }, [fetchClasses]);
 
     const semesters = getSemesters(classes);
+    const subjects = React.useMemo(() => {
+        const set = new Set<string>();
+        classes.forEach((c) => { if (c.subjectName) set.add(c.subjectName); });
+        return Array.from(set).sort();
+    }, [classes]);
+
     const filtered = classes.filter((c) => {
-        if (selectedSemester !== 'all' && c.semester !== selectedSemester) return false;
+        if (selectedSemester && c.semester !== selectedSemester) return false;
+        if (selectedSubject && c.subjectName !== selectedSubject) return false;
         if (!searchQuery) return true;
         const q = searchQuery.toLowerCase();
         return (
@@ -659,26 +677,31 @@ export default function ClassesManagement() {
             </View>
 
             {/* Filter bar */}
-            <View style={s.filterBar}>
-                <TouchableOpacity style={s.semesterBtn} onPress={() => setDropdownVisible(true)} activeOpacity={0.75}>
-                    <Ionicons name="calendar-outline" size={15} color={PINK} />
-                    <Text style={s.semesterBtnText} numberOfLines={1}>
-                        {selectedSemester === 'all' ? 'Tất cả học kỳ' : selectedSemester}
-                    </Text>
-                    <Ionicons name="chevron-down" size={14} color={PINK} />
-                </TouchableOpacity>
+            <View style={s.dropdownFiltersContainer}>
+                {semesters.length > 0 && (
+                    <DropdownPicker
+                        label="Học kỳ"
+                        options={[{ label: 'Tất cả học kỳ', value: null }, ...semesters.map(d => ({ label: d, value: d }))]}
+                        selectedValue={selectedSemester}
+                        onValueChange={setSelectedSemester}
+                        placeholder="Tất cả học kỳ"
+                    />
+                )}
+                {subjects.length > 0 && (
+                    <DropdownPicker
+                        label="Môn học"
+                        options={[{ label: 'Tất cả môn học', value: null }, ...subjects.map(d => ({ label: d, value: d }))]}
+                        selectedValue={selectedSubject}
+                        onValueChange={setSelectedSubject}
+                        placeholder="Tất cả môn học"
+                    />
+                )}
+            </View>
+            <View style={{ paddingHorizontal: 16, paddingBottom: 10 }}>
                 <View style={s.countBadge}>
-                    <Text style={s.countBadgeText}>{filtered.length} / {classes.length} lớp</Text>
+                    <Text style={s.countBadgeText}>{filtered.length} / {classes.length} lớp học</Text>
                 </View>
             </View>
-
-            <SemesterDropdown
-                visible={dropdownVisible}
-                semesters={semesters}
-                selected={selectedSemester}
-                onSelect={setSelectedSemester}
-                onClose={() => setDropdownVisible(false)}
-            />
 
             {/* Content */}
             {loading ? (
@@ -740,20 +763,82 @@ const s = StyleSheet.create({
     searchInput: { flex: 1, fontSize: 14, color: '#1e293b' },
     addBtn: { width: 44, height: 44, backgroundColor: PINK, borderRadius: 12, justifyContent: 'center', alignItems: 'center', shadowColor: PINK, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.35, shadowRadius: 6, elevation: 5 },
 
-    filterBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12, gap: 10 },
-    semesterBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1.5, borderColor: PINK + '55', maxWidth: 200 },
-    semesterBtnText: { fontSize: 13, fontWeight: '600', color: PINK, flexShrink: 1 },
-    countBadge: { marginLeft: 'auto', backgroundColor: '#f1f5f9', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+    countBadge: { alignSelf: 'flex-start', backgroundColor: '#f1f5f9', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
     countBadgeText: { fontSize: 12, color: '#64748b', fontWeight: '600' },
 
-    // Semester dropdown
-    ddBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
-    ddContainer: { position: 'absolute', bottom: 0, left: 0, right: 0 },
-    ddSheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingBottom: 8 },
-    ddTitle: { fontSize: 16, fontWeight: '700', color: '#1e293b', marginBottom: 12 },
-    ddItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 13, paddingHorizontal: 12, borderRadius: 10, marginBottom: 4, gap: 10 },
-    ddItemActive: { backgroundColor: PINK + '0f' },
-    ddItemText: { flex: 1, fontSize: 14, color: '#475569', fontWeight: '500' },
+    // Dropdown (sao chép từ students.tsx)
+    dropdownFiltersContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: 16,
+        gap: 12,
+        marginBottom: 12,
+    },
+    dropdownWrapper: {
+        flex: 1,
+    },
+    dropdownLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#64748b',
+        marginBottom: 4,
+        marginLeft: 4,
+    },
+    dropdownButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#cbd5e1',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        height: 38,
+    },
+    dropdownButtonText: {
+        fontSize: 13,
+        color: '#1e293b',
+        flex: 1,
+        marginRight: 8,
+    },
+    dropdownOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    dropdownMenu: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        width: '100%',
+        maxWidth: 320,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 10,
+    },
+    dropdownItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    dropdownItemActive: {
+        backgroundColor: PINK + '0f',
+    },
+    dropdownItemText: {
+        fontSize: 14,
+        color: '#475569',
+        flex: 1,
+    },
+    dropdownItemTextActive: {
+        color: PINK,
+        fontWeight: '700',
+    },
 
     // Card
     card: { backgroundColor: '#fff', borderRadius: 16, marginBottom: 10, borderWidth: 1, borderColor: '#f1f5f9', shadowColor: '#64748b', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3 },

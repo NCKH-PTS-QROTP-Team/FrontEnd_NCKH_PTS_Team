@@ -275,11 +275,70 @@ function EditTeacherModal({
     );
 }
 
+// ─── Dropdown Component ─────────────────────────────────────────────────────────
+function DropdownPicker({
+    label,
+    options,
+    selectedValue,
+    onValueChange,
+    placeholder
+}: {
+    label: string;
+    options: { label: string; value: string | null }[];
+    selectedValue: string | null;
+    onValueChange: (val: string | null) => void;
+    placeholder: string;
+}) {
+    const [open, setOpen] = useState(false);
+    const selectedOption = options.find(o => o.value === selectedValue);
+
+    return (
+        <View style={styles.dropdownWrapper}>
+            <Text style={styles.dropdownLabel}>{label}</Text>
+            <TouchableOpacity
+                style={styles.dropdownButton}
+                activeOpacity={0.7}
+                onPress={() => setOpen(true)}
+            >
+                <Text style={[styles.dropdownButtonText, !selectedValue && { color: '#94a3b8' }]} numberOfLines={1}>
+                    {selectedOption ? selectedOption.label : placeholder}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color="#64748b" />
+            </TouchableOpacity>
+
+            <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+                <TouchableOpacity style={styles.dropdownOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
+                    <View style={styles.dropdownMenu}>
+                        <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 8 }}>
+                            {options.map((opt, idx) => {
+                                const isSelected = selectedValue === opt.value;
+                                return (
+                                    <TouchableOpacity
+                                        key={idx}
+                                        style={[styles.dropdownItem, isSelected && styles.dropdownItemActive]}
+                                        onPress={() => { onValueChange(opt.value); setOpen(false); }}
+                                    >
+                                        <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextActive]} numberOfLines={1}>
+                                            {opt.label}
+                                        </Text>
+                                        {isSelected && <Ionicons name="checkmark" size={18} color="#8b5cf6" />}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+        </View>
+    );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function TeachersManagement() {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<FilterKey>('all');
+    const [filterDepartment, setFilterDepartment] = useState<string | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [teachers, setTeachers] = useState<TeacherResponse[]>([]);
     const [loading, setLoading] = useState(true);
@@ -324,6 +383,15 @@ export default function TeachersManagement() {
 
     useEffect(() => { fetchTeachers(); }, [fetchTeachers]);
 
+    // Calc available departments
+    const availableDepartments = useMemo(() => {
+        const deps = new Set<string>();
+        teachers.forEach(t => {
+            if (t.departmentName) deps.add(t.departmentName);
+        });
+        return Array.from(deps).sort();
+    }, [teachers]);
+
     // ── Badge counts ──
     const countAll = teachers.length;
     const countActive = teachers.filter((t) => resolveStatus(t) === 'ACTIVE').length;
@@ -349,6 +417,9 @@ export default function TeachersManagement() {
             (filterStatus === 'inactive' && status === 'INACTIVE');
 
         if (!matchesFilter) return false;
+
+        if (filterDepartment && t.departmentName !== filterDepartment) return false;
+
         if (!searchQuery) return true;
 
         const q = searchQuery.toLowerCase();
@@ -361,7 +432,7 @@ export default function TeachersManagement() {
 
     useEffect(() => {
         setPage(1);
-    }, [searchQuery, filterStatus, teachers]);
+    }, [searchQuery, filterStatus, filterDepartment, teachers]);
 
     const totalPages = Math.ceil(filteredTeachers.length / PAGE_SIZE);
     const paginatedTeachers = useMemo(() => {
@@ -533,6 +604,19 @@ export default function TeachersManagement() {
                     );
                 })}
             </ScrollView>
+
+            {/* ── Dropdown Filters ── */}
+            {availableDepartments.length > 0 && (
+                <View style={styles.dropdownFiltersContainer}>
+                    <DropdownPicker
+                        label="Khoa / Bộ môn"
+                        options={[{ label: 'Tất cả Khoa', value: null }, ...availableDepartments.map(d => ({ label: d, value: d }))]}
+                        selectedValue={filterDepartment}
+                        onValueChange={setFilterDepartment}
+                        placeholder="Tất cả Khoa"
+                    />
+                </View>
+            )}
 
             {/* ── Content ── */}
             {loading ? (
@@ -1076,5 +1160,79 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#1e293b',
         fontWeight: '500',
+    },
+
+    // Dropdown (sao chép từ students.tsx)
+    dropdownFiltersContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: 16,
+        gap: 12,
+        marginBottom: 12,
+    },
+    dropdownWrapper: {
+        flex: 1,
+    },
+    dropdownLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#64748b',
+        marginBottom: 4,
+        marginLeft: 4,
+    },
+    dropdownButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#cbd5e1',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        height: 38,
+    },
+    dropdownButtonText: {
+        fontSize: 13,
+        color: '#1e293b',
+        flex: 1,
+        marginRight: 8,
+    },
+    dropdownOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    dropdownMenu: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        width: '100%',
+        maxWidth: 320,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 10,
+    },
+    dropdownItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+    },
+    dropdownItemActive: {
+        backgroundColor: '#f5f3ff', // Màu tím nhạt cho teacher
+    },
+    dropdownItemText: {
+        fontSize: 14,
+        color: '#475569',
+        flex: 1,
+    },
+    dropdownItemTextActive: {
+        color: '#8b5cf6', // Màu tím cho teacher
+        fontWeight: '700',
     },
 });
