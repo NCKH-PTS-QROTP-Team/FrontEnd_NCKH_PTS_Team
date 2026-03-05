@@ -17,11 +17,16 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { scheduleService } from '@/apis/services/schedule.service';
 import { ScheduleResponse } from '@/apis/types/schedule.types';
+import { teacherService } from '@/apis/services/teacher.service';
+import { TeacherResponse } from '@/apis/types/teacher.types';
 import {
     ScheduleFormModal,
     ScheduleFormData,
 } from '@/components/ScheduleFormModal';
 import DeleteScheduleModal from '@/components/DeleteScheduleModal';
+import { MonthCalendar, todayISO, jsDayToBackend, isoToDate } from '@/components/MonthCalendar';
+import { WeekCalendar } from '@/components/WeekCalendar';
+import { DropdownPicker } from '@/components/DropdownPicker';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -54,250 +59,7 @@ function getSessionColor(time: string | null) {
     return SESSION_COLORS.evening;
 }
 
-// ─── Date helpers ─────────────────────────────────────────────────────────────
 
-function todayISO() {
-    return new Date().toISOString().slice(0, 10);
-}
-
-/** JS getDay() (0=Sun,1=Mon…6=Sat) → backend dayOfWeek (2=Mon…8=Sun) */
-function jsDayToBackend(jsDay: number): number {
-    return jsDay === 0 ? 8 : jsDay + 1;
-}
-
-/** Format yyyy-MM-dd → Date */
-function isoToDate(iso: string) {
-    return new Date(iso + 'T00:00:00');
-}
-
-/** Date → yyyy-MM-dd */
-function dateToISO(d: Date) {
-    const yy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yy}-${mm}-${dd}`;
-}
-
-/** Build grid of 6×7 cells for the month containing anchorISO */
-interface DayCell {
-    iso: string;        // yyyy-MM-dd
-    date: number;       // 1-31
-    dow: number;        // backend: 2-8
-    isCurrentMonth: boolean;
-}
-
-function buildMonthGrid(year: number, month: number): DayCell[] {
-    // month: 0-indexed JS month
-    const firstDay = new Date(year, month, 1);
-    // offset: Mon=0 … Sun=6
-    let startOffset = firstDay.getDay() - 1; // JS: 0=Sun
-    if (startOffset < 0) startOffset = 6;
-
-    const cells: DayCell[] = [];
-    const cur = new Date(year, month, 1 - startOffset);
-    for (let i = 0; i < 42; i++) {
-        cells.push({
-            iso: dateToISO(cur),
-            date: cur.getDate(),
-            dow: jsDayToBackend(cur.getDay()),
-            isCurrentMonth: cur.getMonth() === month,
-        });
-        cur.setDate(cur.getDate() + 1);
-    }
-    return cells;
-}
-
-// ─── Monthly Calendar Component ───────────────────────────────────────────────
-
-interface MonthCalendarProps {
-    schedules: ScheduleResponse[];
-    selectedISO: string;
-    onSelectDay: (iso: string) => void;
-}
-
-function MonthCalendar({ schedules, selectedISO, onSelectDay }: MonthCalendarProps) {
-    const todayStr = todayISO();
-
-    const selDate = isoToDate(selectedISO);
-    const [viewYear, setViewYear] = useState(selDate.getFullYear());
-    const [viewMonth, setViewMonth] = useState(selDate.getMonth()); // 0-indexed
-
-    /** Set of backend-dayOfWeek values that have at least 1 schedule */
-    const activeDows = useMemo(() => {
-        const s = new Set<number>();
-        schedules.forEach((sc) => { if (sc.dayOfWeek != null) s.add(sc.dayOfWeek); });
-        return s;
-    }, [schedules]);
-
-    /** Count schedules per dow */
-    const dowCount = useMemo(() => {
-        const map: Record<number, number> = {};
-        schedules.forEach((sc) => {
-            if (sc.dayOfWeek != null) map[sc.dayOfWeek] = (map[sc.dayOfWeek] ?? 0) + 1;
-        });
-        return map;
-    }, [schedules]);
-
-    const cells = useMemo(() => buildMonthGrid(viewYear, viewMonth), [viewYear, viewMonth]);
-
-    const prevMonth = () => {
-        if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
-        else setViewMonth((m) => m - 1);
-    };
-    const nextMonth = () => {
-        if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
-        else setViewMonth((m) => m + 1);
-    };
-    const goToday = () => {
-        const t = new Date();
-        setViewYear(t.getFullYear());
-        setViewMonth(t.getMonth());
-        onSelectDay(todayStr);
-    };
-
-    const monthName = new Date(viewYear, viewMonth, 1).toLocaleString('vi-VN', { month: 'long' });
-
-    return (
-        <View style={cal.wrapper}>
-            {/* ── Month navigation ── */}
-            <View style={cal.navRow}>
-                <TouchableOpacity style={cal.navBtn} onPress={prevMonth}>
-                    <Ionicons name="chevron-back" size={18} color={TEAL} />
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={goToday} style={{ alignItems: 'center' }}>
-                    <Text style={cal.navTitle}>
-                        {monthName.charAt(0).toUpperCase() + monthName.slice(1)} {viewYear}
-                    </Text>
-                    <Text style={cal.navSub}>Nhấn để về hôm nay</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={cal.navBtn} onPress={nextMonth}>
-                    <Ionicons name="chevron-forward" size={18} color={TEAL} />
-                </TouchableOpacity>
-            </View>
-
-            {/* ── Day-of-week headers ── */}
-            <View style={cal.headRow}>
-                {COL_HEADS.map((h, i) => (
-                    <View key={i} style={[cal.headCell, i === 6 && cal.sundayHead]}>
-                        <Text style={[cal.headText, i === 6 && cal.sundayText]}>{h}</Text>
-                    </View>
-                ))}
-            </View>
-
-            {/* ── Day grid ── */}
-            <View style={cal.grid}>
-                {cells.map((cell) => {
-                    const isToday = cell.iso === todayStr;
-                    const isSelected = cell.iso === selectedISO;
-                    const hasScheds = activeDows.has(cell.dow) && cell.isCurrentMonth;
-                    const isSunday = cell.dow === 8;
-                    const count = cell.isCurrentMonth ? (dowCount[cell.dow] ?? 0) : 0;
-
-                    return (
-                        <TouchableOpacity
-                            key={cell.iso}
-                            style={[
-                                cal.cell,
-                                isSelected && cal.cellSelected,
-                                isToday && !isSelected && cal.cellToday,
-                                !cell.isCurrentMonth && cal.cellOtherMonth,
-                            ]}
-                            onPress={() => onSelectDay(cell.iso)}
-                            activeOpacity={0.65}
-                        >
-                            <Text
-                                style={[
-                                    cal.cellDate,
-                                    isSelected && cal.cellDateSelected,
-                                    isToday && !isSelected && cal.cellDateToday,
-                                    !cell.isCurrentMonth && cal.cellDateOther,
-                                    isSunday && !isSelected && cal.cellDateSunday,
-                                ]}
-                            >
-                                {cell.date}
-                            </Text>
-
-                            {/* Dots showing how many schedule slots */}
-                            {hasScheds && count > 0 && (
-                                <View style={cal.dotsRow}>
-                                    {Array.from({ length: Math.min(count, 3) }).map((_, di) => (
-                                        <View
-                                            key={di}
-                                            style={[
-                                                cal.dot,
-                                                { backgroundColor: isSelected ? '#fff' : TEAL },
-                                            ]}
-                                        />
-                                    ))}
-                                    {count > 3 && (
-                                        <Text style={[cal.dotMore, { color: isSelected ? '#fff' : TEAL }]}>
-                                            +
-                                        </Text>
-                                    )}
-                                </View>
-                            )}
-                        </TouchableOpacity>
-                    );
-                })}
-            </View>
-
-            {/* ── Legend ── */}
-            <View style={cal.legend}>
-                <View style={cal.legendItem}>
-                    <View style={[cal.legendDot, { backgroundColor: TEAL }]} />
-                    <Text style={cal.legendText}>Có lịch học</Text>
-                </View>
-                <View style={cal.legendItem}>
-                    <View style={[cal.legendRing]} />
-                    <Text style={cal.legendText}>Hôm nay</Text>
-                </View>
-                <View style={cal.legendItem}>
-                    <View style={[cal.legendFill, { backgroundColor: TEAL }]} />
-                    <Text style={cal.legendText}>Đang chọn</Text>
-                </View>
-            </View>
-        </View>
-    );
-}
-
-const cal = StyleSheet.create({
-    wrapper: { backgroundColor: '#fff', borderRadius: 20, marginHorizontal: 12, marginVertical: 10, paddingBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4, overflow: 'hidden' },
-
-    navRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingTop: 14, paddingBottom: 8 },
-    navBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: TEAL + '15', alignItems: 'center', justifyContent: 'center' },
-    navTitle: { fontSize: 16, fontWeight: '800', color: '#1e293b', textAlign: 'center' },
-    navSub: { fontSize: 10, color: '#94a3b8', marginTop: 1, textAlign: 'center' },
-
-    headRow: { flexDirection: 'row', paddingHorizontal: 4, marginBottom: 2 },
-    headCell: { flex: 1, alignItems: 'center', paddingVertical: 4 },
-    sundayHead: {},
-    headText: { fontSize: 11, fontWeight: '700', color: '#64748b' },
-    sundayText: { color: '#ef4444' },
-
-    grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 4 },
-    cell: { width: `${100 / 7}%` as any, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 10, marginBottom: 2 },
-    cellSelected: { backgroundColor: TEAL },
-    cellToday: { borderWidth: 2, borderColor: TEAL },
-    cellOtherMonth: { opacity: 0.3 },
-    cellDate: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
-    cellDateSelected: { color: '#fff', fontWeight: '800' },
-    cellDateToday: { color: TEAL, fontWeight: '800' },
-    cellDateOther: { color: '#94a3b8' },
-    cellDateSunday: { color: '#ef4444' },
-
-    dotsRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
-    dot: { width: 5, height: 5, borderRadius: 3 },
-    dotMore: { fontSize: 9, fontWeight: '800', marginTop: -1 },
-
-    legend: { flexDirection: 'row', justifyContent: 'center', gap: 16, paddingTop: 6, paddingBottom: 2 },
-    legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-    legendDot: { width: 8, height: 8, borderRadius: 4 },
-    legendRing: { width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: TEAL },
-    legendFill: { width: 14, height: 14, borderRadius: 7 },
-    legendText: { fontSize: 11, color: '#64748b' },
-});
 
 // ─── EmptyState ───────────────────────────────────────────────────────────────
 
@@ -549,22 +311,31 @@ function ListView({
 }) {
     const [page, setPage] = useState(1);
     const PAGE_SIZE = 15;
+    const [weekOffset, setWeekOffset] = useState(0);
+    const [selectedDate, setSelectedDate] = useState(() => new Date());
 
     useEffect(() => {
         setPage(1);
-    }, [searchQuery, schedules]);
+    }, [searchQuery, schedules, selectedDate]);
+
+
+    const selDow = selectedDate.getDay() === 0 ? 8 : selectedDate.getDay() + 1;
 
     const filtered = useMemo(() => {
-        if (!searchQuery) return schedules;
-        const q = searchQuery.toLowerCase();
-        return schedules.filter(
-            (sc) =>
-                (sc.subjectName ?? '').toLowerCase().includes(q) ||
-                (sc.className ?? '').toLowerCase().includes(q) ||
-                (sc.teacherName ?? '').toLowerCase().includes(q) ||
-                (sc.room ?? '').toLowerCase().includes(q),
-        );
-    }, [schedules, searchQuery]);
+        let res = schedules.filter(sc => sc.dayOfWeek === selDow);
+
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            res = res.filter(
+                (sc) =>
+                    (sc.subjectName ?? '').toLowerCase().includes(q) ||
+                    (sc.className ?? '').toLowerCase().includes(q) ||
+                    (sc.teacherName ?? '').toLowerCase().includes(q) ||
+                    (sc.room ?? '').toLowerCase().includes(q)
+            );
+        }
+        return res.sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''));
+    }, [schedules, searchQuery, selDow]);
 
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
 
@@ -572,23 +343,6 @@ function ListView({
         const start = (page - 1) * PAGE_SIZE;
         return filtered.slice(start, start + PAGE_SIZE);
     }, [filtered, page]);
-
-    const grouped = useMemo(() => {
-        const g: Record<number, ScheduleResponse[]> = {};
-        paginated.forEach((sc) => {
-            const d = sc.dayOfWeek ?? 2;
-            if (!g[d]) g[d] = [];
-            g[d].push(sc);
-        });
-        return g;
-    }, [paginated]);
-
-    const sortedDays = useMemo(() => Object.keys(grouped).map(Number).sort((a, b) => {
-        // Sort 2-7 then 8 (CN last)
-        const a2 = a === 8 ? 9 : a;
-        const b2 = b === 8 ? 9 : b;
-        return a2 - b2;
-    }), [grouped]);
 
     if (loading) {
         return (
@@ -604,30 +358,24 @@ function ListView({
             contentContainerStyle={{ padding: 16 }}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[TEAL]} tintColor={TEAL} />}
         >
+            <WeekCalendar
+                schedules={schedules}
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+                weekOffset={weekOffset}
+                setWeekOffset={setWeekOffset}
+            />
+
             {filtered.length === 0 ? (
-                <EmptyState message={searchQuery ? `Không tìm thấy "${searchQuery}"` : 'Chưa có lịch học nào'} />
+                <EmptyState message={searchQuery ? `Không tìm thấy "${searchQuery}"` : 'Không có lịch học ngày này'} />
             ) : (
                 <>
-                    {sortedDays.map((dow) => (
-                        <View key={dow}>
-                            <View style={s.groupHeader}>
-                                <View style={[s.groupAccent, { backgroundColor: TEAL }]} />
-                                <Text style={s.groupTitle}>{DAY_LABELS[dow] ?? `Thứ ${dow}`}</Text>
-                                <View style={s.groupBadge}>
-                                    <Text style={s.groupBadgeText}>{grouped[dow].length} lịch</Text>
-                                </View>
-                            </View>
-                            {grouped[dow]
-                                .slice()
-                                .sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
-                                .map((sc) => (
-                                    <ScheduleCard
-                                        key={sc.id} sc={sc}
-                                        onEdit={() => onEdit(sc)}
-                                        onDelete={() => onDelete(sc)}
-                                    />
-                                ))}
-                        </View>
+                    {paginated.map((sc) => (
+                        <ScheduleCard
+                            key={sc.id} sc={sc}
+                            onEdit={() => onEdit(sc)}
+                            onDelete={() => onDelete(sc)}
+                        />
                     ))}
 
                     {/* Pagination */}
@@ -668,10 +416,13 @@ type ViewMode = 'calendar' | 'list';
 export default function SchedulesManagement() {
     const [viewMode, setViewMode] = useState<ViewMode>('calendar');
     const [schedules, setSchedules] = useState<ScheduleResponse[]>([]);
+    const [teachers, setTeachers] = useState<TeacherResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [filterDepartment, setFilterDepartment] = useState<string | null>(null);
+    const [filterSubject, setFilterSubject] = useState<string | null>(null);
 
     // Form
     const todayISO = new Date().toISOString().slice(0, 10);
@@ -698,8 +449,12 @@ export default function SchedulesManagement() {
             if (isRefresh) setRefreshing(true);
             else setLoading(true);
             setError(null);
-            const data = await scheduleService.getAllSchedules();
-            setSchedules(data);
+            const [scheduleData, teacherData] = await Promise.all([
+                scheduleService.getAllSchedules(),
+                teacherService.getAllTeachers()
+            ]);
+            setSchedules(scheduleData);
+            setTeachers(teacherData);
         } catch (err: any) {
             const status = err?.status ?? err?.response?.status;
             if (status === 403) setError('Không có quyền truy cập (403). Liên hệ quản trị viên.');
@@ -709,6 +464,32 @@ export default function SchedulesManagement() {
     }, []);
 
     useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
+
+    const availableDepartments = useMemo(() => {
+        const deps = new Set<string>();
+        teachers.forEach(t => { if (t.departmentName) deps.add(t.departmentName); });
+        return Array.from(deps).sort();
+    }, [teachers]);
+
+    const availableSubjects = useMemo(() => {
+        const subs = new Set<string>();
+        schedules.forEach(s => { if (s.subjectName) subs.add(s.subjectName); });
+        return Array.from(subs).sort();
+    }, [schedules]);
+
+    const filteredSchedules = useMemo(() => {
+        let result = schedules;
+        if (filterSubject) {
+            result = result.filter(s => s.subjectName === filterSubject);
+        }
+        if (filterDepartment) {
+            result = result.filter(s => {
+                const t = teachers.find(teacher => teacher.id === s.teacherId);
+                return t && t.departmentName === filterDepartment;
+            });
+        }
+        return result;
+    }, [schedules, teachers, filterSubject, filterDepartment]);
 
     const handleOpenAdd = () => {
         setFormMode('add'); setInitialForm(blank); setEditingId(null); setFormVisible(true);
@@ -837,6 +618,30 @@ export default function SchedulesManagement() {
                 </View>
             </View>
 
+            {/* Filter bar */}
+            {(availableDepartments.length > 0 || availableSubjects.length > 0) && (
+                <View style={s.dropdownFiltersContainer}>
+                    {availableDepartments.length > 0 && (
+                        <DropdownPicker
+                            label="Khoa / Bộ môn"
+                            options={[{ label: 'Tất cả Khoa', value: null }, ...availableDepartments.map(d => ({ label: d, value: d }))]}
+                            selectedValue={filterDepartment}
+                            onValueChange={setFilterDepartment}
+                            placeholder="Tất cả Khoa"
+                        />
+                    )}
+                    {availableSubjects.length > 0 && (
+                        <DropdownPicker
+                            label="Môn học"
+                            options={[{ label: 'Tất cả môn học', value: null }, ...availableSubjects.map(d => ({ label: d, value: d }))]}
+                            selectedValue={filterSubject}
+                            onValueChange={setFilterSubject}
+                            placeholder="Tất cả môn học"
+                        />
+                    )}
+                </View>
+            )}
+
             {/* ── Content ── */}
             {error ? (
                 <View style={s.centerBox}>
@@ -851,7 +656,7 @@ export default function SchedulesManagement() {
                 </View>
             ) : viewMode === 'calendar' ? (
                 <CalendarView
-                    schedules={schedules}
+                    schedules={filteredSchedules}
                     loading={loading}
                     refreshing={refreshing}
                     onRefresh={() => fetchSchedules(true)}
@@ -860,7 +665,7 @@ export default function SchedulesManagement() {
                 />
             ) : (
                 <ListView
-                    schedules={schedules}
+                    schedules={filteredSchedules}
                     searchQuery={searchQuery}
                     loading={loading}
                     refreshing={refreshing}
@@ -922,6 +727,8 @@ function ToggleBtn({ icon, label, active, onPress }: {
     );
 }
 
+
+
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
@@ -942,6 +749,19 @@ const s = StyleSheet.create({
     searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', borderRadius: 10, paddingHorizontal: 10, height: 34, borderWidth: 1, borderColor: '#e2e8f0', gap: 6 },
     searchInput: { flex: 1, fontSize: 13, color: '#1e293b' },
     addBtn: { width: 36, height: 36, backgroundColor: TEAL, borderRadius: 10, justifyContent: 'center', alignItems: 'center', shadowColor: TEAL, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 4 },
+
+    // Dropdown filters
+    dropdownFiltersContainer: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 0, gap: 12 },
+    dropdownWrapper: { flex: 1 },
+    dropdownLabel: { fontSize: 12, fontWeight: '600', color: '#64748b', marginBottom: 4, marginLeft: 4 },
+    dropdownButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 10, paddingHorizontal: 12, height: 38 },
+    dropdownButtonText: { fontSize: 13, color: '#1e293b', flex: 1, marginRight: 8 },
+    dropdownOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
+    dropdownMenu: { backgroundColor: '#fff', borderRadius: 12, width: '100%', maxWidth: 320, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 10 },
+    dropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, marginBottom: 2 },
+    dropdownItemActive: { backgroundColor: TEAL + '15' },
+    dropdownItemText: { fontSize: 14, color: '#475569', flex: 1 },
+    dropdownItemTextActive: { color: TEAL, fontWeight: '700' },
 
     // Day section (below calendar)
     daySection: { paddingHorizontal: 16, paddingBottom: 8 },
@@ -972,6 +792,8 @@ const s = StyleSheet.create({
     menuItemBorder: { borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
     menuItemIcon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
     menuItemText: { fontSize: 14, fontWeight: '600' },
+
+
 
     // List view
     groupHeader: { flexDirection: 'row', alignItems: 'center', marginTop: 8, marginBottom: 10, gap: 8 },

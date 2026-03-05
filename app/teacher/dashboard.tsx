@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { Ionicons } from "@expo/vector-icons";
 import Tabs from "@/components/Tabs";
 import WeeklyCalendar from "@/components/WeeklyCalendar";
 import { Colors } from "@/constants/colors";
@@ -91,7 +92,7 @@ export default function TeacherDashboardScreen() {
     try {
       setLoading(true);
       const teacherId = await getTeacherIdFromToken();
-      
+
       if (!teacherId) {
         console.warn("No teacherId found, using empty data");
         setLoading(false);
@@ -132,7 +133,7 @@ export default function TeacherDashboardScreen() {
       // Tính stats từ sessions
       let totalStudents = 0;
       let presentToday = 0;
-      
+
       for (const session of todaySessions) {
         const records = await attendanceService.getRecords({ sessionId: session.id }).catch(() => []);
         console.log("[TeacherDashboard] records for session", session.id, "=", records);
@@ -189,10 +190,10 @@ export default function TeacherDashboardScreen() {
     )
       .toString()
       .padStart(2, "0")} - ${endDate.getDate().toString().padStart(2, "0")}/${(
-      endDate.getMonth() + 1
-    )
-      .toString()
-      .padStart(2, "0")}/${endDate.getFullYear()}`;
+        endDate.getMonth() + 1
+      )
+        .toString()
+        .padStart(2, "0")}/${endDate.getFullYear()}`;
   };
 
   const navigateWeek = (direction: "prev" | "next") => {
@@ -393,185 +394,70 @@ export default function TeacherDashboardScreen() {
 
       {/* Stats */}
       <View style={{ marginBottom: isMobile ? 16 : 24 }}>
-        <View
+        <Text
           style={{
-            backgroundColor: "#FFFFFF",
-            borderRadius: 16,
-            padding: 24,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 3,
+            fontSize: 20,
+            fontWeight: "bold",
+            color: "#1e293b",
+            marginBottom: 16,
           }}
         >
-          <Text
-            style={{
-              fontSize: 20,
-              lineHeight: 28,
-              fontWeight: "bold",
-              color: "#111827",
-              marginBottom: 20,
-            }}
-          >
-            Thống kê hôm nay
-          </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              marginHorizontal: -8,
-            }}
-          >
+          Thống kê hôm nay
+        </Text>
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
+          {[
+            { id: '1', title: 'Tổng sinh viên', value: stats.totalStudents, icon: 'people', color: '#3b82f6' },
+            { id: '2', title: 'Có mặt', value: stats.presentToday, icon: 'checkmark-circle', color: '#10b981' },
+            { id: '3', title: 'Vắng', value: stats.absentToday, icon: 'close-circle', color: '#ef4444' },
+            { id: '4', title: 'Tỷ lệ', value: `${stats.attendanceRate}%`, icon: 'pie-chart', color: '#f59e0b' },
+          ].map((stat) => (
             <View
+              key={stat.id}
               style={{
-                width: isMobile ? "50%" : "25%",
-                paddingHorizontal: 8,
-                marginBottom: isMobile ? 16 : 0,
+                backgroundColor: '#fff',
+                borderRadius: 16,
+                padding: 16,
+                marginBottom: 4,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 8,
+                elevation: 2,
+                flex: isMobile ? 0 : 1,
+                width: isMobile ? '48%' : undefined,
               }}
             >
               <View
                 style={{
-                  backgroundColor: "#EFF6FF",
+                  width: 48,
+                  height: 48,
                   borderRadius: 12,
-                  padding: 16,
-                  alignItems: "center",
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginBottom: 12,
+                  backgroundColor: stat.color + '20',
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 32,
-                    lineHeight: 40,
-                    fontWeight: "bold",
-                    color: "#3FA9F5",
-                    marginBottom: 4,
-                  }}
-                >
-                  {stats.totalStudents}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    lineHeight: 20,
-                    color: "#6B7280",
-                    textAlign: "center",
-                  }}
-                >
-                  Tổng SV
-                </Text>
+                <Ionicons name={stat.icon as any} size={24} color={stat.color} />
               </View>
+              <Text style={{
+                fontSize: 24,
+                fontWeight: 'bold',
+                color: '#1e293b',
+                marginBottom: 4,
+              }}>{stat.value}</Text>
+              <Text style={{
+                fontSize: 13,
+                color: '#64748b',
+              }}>{stat.title}</Text>
             </View>
-            <View
-              style={{
-                width: isMobile ? "50%" : "25%",
-                paddingHorizontal: 8,
-                marginBottom: isMobile ? 16 : 0,
-              }}
-            >
-              <View
-                style={{
-                  backgroundColor: "#ECFDF5",
-                  borderRadius: 12,
-                  padding: 16,
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 32,
-                    lineHeight: 40,
-                    fontWeight: "bold",
-                    color: "#10B981",
-                    marginBottom: 4,
-                  }}
-                >
-                  {stats.presentToday}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    lineHeight: 20,
-                    color: "#6B7280",
-                    textAlign: "center",
-                  }}
-                >
-                  Có mặt
-                </Text>
-              </View>
-            </View>
-            <View
-              style={{
-                width: isMobile ? "50%" : "25%",
-                paddingHorizontal: 8,
-                marginBottom: isMobile ? 16 : 0,
-              }}
-            >
-              <View
-                style={{
-                  backgroundColor: "#FEE2E2",
-                  borderRadius: 12,
-                  padding: 16,
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 32,
-                    lineHeight: 40,
-                    fontWeight: "bold",
-                    color: "#EF4444",
-                    marginBottom: 4,
-                  }}
-                >
-                  {stats.absentToday}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    lineHeight: 20,
-                    color: "#6B7280",
-                    textAlign: "center",
-                  }}
-                >
-                  Vắng
-                </Text>
-              </View>
-            </View>
-            <View
-              style={{ width: isMobile ? "50%" : "25%", paddingHorizontal: 8 }}
-            >
-              <View
-                style={{
-                  backgroundColor: "#F0F9FF",
-                  borderRadius: 12,
-                  padding: 16,
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 32,
-                    lineHeight: 40,
-                    fontWeight: "bold",
-                    color: "#3FA9F5",
-                    marginBottom: 4,
-                  }}
-                >
-                  {stats.attendanceRate}%
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    lineHeight: 20,
-                    color: "#6B7280",
-                    textAlign: "center",
-                  }}
-                >
-                  Tỷ lệ
-                </Text>
-              </View>
-            </View>
-          </View>
+          ))}
         </View>
       </View>
 

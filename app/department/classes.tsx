@@ -21,6 +21,7 @@ import {
     CreateClassRequest,
     UpdateClassRequest,
 } from '@/apis/types/class.types';
+import { DropdownPicker } from '@/components/DropdownPicker';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -53,66 +54,7 @@ function EmptyState({ query }: { query: string }) {
     );
 }
 
-// ─── Dropdown Component ─────────────────────────────────────────────────────────
 
-function DropdownPicker({
-    label,
-    options,
-    selectedValue,
-    onValueChange,
-    placeholder
-}: {
-    label: string;
-    options: { label: string; value: string | null }[];
-    selectedValue: string | null;
-    onValueChange: (val: string | null) => void;
-    placeholder: string;
-}) {
-    const [open, setOpen] = useState(false);
-    const selectedOption = options.find(o => o.value === selectedValue);
-
-    return (
-        <View style={s.dropdownWrapper}>
-            <Text style={s.dropdownLabel}>{label}</Text>
-            <TouchableOpacity
-                style={s.dropdownButton}
-                activeOpacity={0.7}
-                onPress={() => setOpen(true)}
-            >
-                <Text style={[s.dropdownButtonText, !selectedValue && { color: '#94a3b8' }]} numberOfLines={1}>
-                    {selectedOption ? selectedOption.label : placeholder}
-                </Text>
-                <Ionicons name="chevron-down" size={16} color="#64748b" />
-            </TouchableOpacity>
-
-            <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-                <TouchableOpacity style={s.dropdownOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
-                    <View style={s.dropdownMenu}>
-                        <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 8 }}>
-                            {options.map((opt, idx) => {
-                                const isSelected = selectedValue === opt.value;
-                                return (
-                                    <TouchableOpacity
-                                        key={idx}
-                                        style={[s.dropdownItem, isSelected && s.dropdownItemActive]}
-                                        onPress={() => { onValueChange(opt.value); setOpen(false); }}
-                                    >
-                                        <Text style={[s.dropdownItemText, isSelected && s.dropdownItemTextActive]} numberOfLines={1}>
-                                            {opt.label}
-                                        </Text>
-                                        {isSelected && <Ionicons name="checkmark" size={18} color={PINK} />}
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
-        </View>
-    );
-}
-
-// ─── Class Students Modal ─────────────────────────────────────────────────────
 
 function ClassStudentsModal({
     cls, visible, onClose,
@@ -685,6 +627,7 @@ export default function ClassesManagement() {
                         selectedValue={selectedSemester}
                         onValueChange={setSelectedSemester}
                         placeholder="Tất cả học kỳ"
+                        themeColor={PINK}
                     />
                 )}
                 {subjects.length > 0 && (
@@ -694,6 +637,7 @@ export default function ClassesManagement() {
                         selectedValue={selectedSubject}
                         onValueChange={setSelectedSubject}
                         placeholder="Tất cả môn học"
+                        themeColor={PINK}
                     />
                 )}
             </View>
@@ -824,8 +768,8 @@ const s = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 12,
         paddingHorizontal: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f1f5f9',
+        borderRadius: 8,
+        marginBottom: 2,
     },
     dropdownItemActive: {
         backgroundColor: PINK + '0f',

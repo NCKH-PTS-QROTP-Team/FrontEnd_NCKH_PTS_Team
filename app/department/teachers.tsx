@@ -20,6 +20,7 @@ import {
     TeacherStatus,
 } from '@/apis/types/teacher.types';
 import { UserCard } from '@/components/UserCard';
+import { DropdownPicker } from '@/components/DropdownPicker';
 
 // ─── Filter Tab Config ────────────────────────────────────────────────────────
 
@@ -275,65 +276,7 @@ function EditTeacherModal({
     );
 }
 
-// ─── Dropdown Component ─────────────────────────────────────────────────────────
-function DropdownPicker({
-    label,
-    options,
-    selectedValue,
-    onValueChange,
-    placeholder
-}: {
-    label: string;
-    options: { label: string; value: string | null }[];
-    selectedValue: string | null;
-    onValueChange: (val: string | null) => void;
-    placeholder: string;
-}) {
-    const [open, setOpen] = useState(false);
-    const selectedOption = options.find(o => o.value === selectedValue);
 
-    return (
-        <View style={styles.dropdownWrapper}>
-            <Text style={styles.dropdownLabel}>{label}</Text>
-            <TouchableOpacity
-                style={styles.dropdownButton}
-                activeOpacity={0.7}
-                onPress={() => setOpen(true)}
-            >
-                <Text style={[styles.dropdownButtonText, !selectedValue && { color: '#94a3b8' }]} numberOfLines={1}>
-                    {selectedOption ? selectedOption.label : placeholder}
-                </Text>
-                <Ionicons name="chevron-down" size={16} color="#64748b" />
-            </TouchableOpacity>
-
-            <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-                <TouchableOpacity style={styles.dropdownOverlay} activeOpacity={1} onPress={() => setOpen(false)}>
-                    <View style={styles.dropdownMenu}>
-                        <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 8 }}>
-                            {options.map((opt, idx) => {
-                                const isSelected = selectedValue === opt.value;
-                                return (
-                                    <TouchableOpacity
-                                        key={idx}
-                                        style={[styles.dropdownItem, isSelected && styles.dropdownItemActive]}
-                                        onPress={() => { onValueChange(opt.value); setOpen(false); }}
-                                    >
-                                        <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextActive]} numberOfLines={1}>
-                                            {opt.label}
-                                        </Text>
-                                        {isSelected && <Ionicons name="checkmark" size={18} color="#8b5cf6" />}
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
-        </View>
-    );
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function TeachersManagement() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -614,6 +557,7 @@ export default function TeachersManagement() {
                         selectedValue={filterDepartment}
                         onValueChange={setFilterDepartment}
                         placeholder="Tất cả Khoa"
+                        themeColor="#8b5cf6"
                     />
                 </View>
             )}
@@ -1220,8 +1164,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 12,
         paddingHorizontal: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f1f5f9',
+        borderRadius: 8,
+        marginBottom: 2,
     },
     dropdownItemActive: {
         backgroundColor: '#f5f3ff', // Màu tím nhạt cho teacher
