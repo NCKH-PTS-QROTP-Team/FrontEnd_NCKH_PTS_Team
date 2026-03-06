@@ -102,9 +102,11 @@ export interface User {
   email: string;
   username: string;
   password: string;
-  role: 'admin' | 'teacher' | 'student';
+  role: 'admin' | 'teacher' | 'student' | 'academic_staff';
   studentId?: string;
   teacherId?: string;
+  departmentId?: string;
+  departmentName?: string;
   isActive: boolean;
   createdAt: string;
 }
@@ -164,6 +166,7 @@ export const mockUsers: User[] = [
   { id: '3', name: 'ThS. Trần Thị B', email: 'ttb@teacher.edu.vn', username: 'GV002', password: 'teacher123', role: 'teacher', teacherId: 'GV002', isActive: true, createdAt: '2025-01-06' },
   { id: '4', name: 'Nguyễn Văn An', email: 'nva@student.edu.vn', username: 'SV001', password: 'student123', role: 'student', studentId: 'SV001', isActive: true, createdAt: '2025-02-01' },
   { id: '5', name: 'Trần Thị Bình', email: 'ttb@student.edu.vn', username: 'SV002', password: 'student123', role: 'student', studentId: 'SV002', isActive: false, createdAt: '2025-02-01' },
+  { id: '6', name: 'Nguyễn Thị Thanh Hương', email: 'gvk001@edu.vn', username: 'GVK001', password: 'academic123', role: 'academic_staff', departmentId: 'GVK001', departmentName: 'Khoa Công nghệ thông tin', isActive: true, createdAt: '2025-01-03' },
 ];
 
 export const mockClasses: Class[] = [

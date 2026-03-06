@@ -19,7 +19,7 @@ interface MenuItem {
 
 interface SidebarProps {
   menuItems: MenuItem[];
-  userRole: "admin" | "teacher" | "student";
+  userRole: "admin" | "teacher" | "student" | "department";
   userName?: string;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -54,12 +54,14 @@ export default function Sidebar({
     admin: Colors.primary,
     teacher: "#10B981", // Success green
     student: "#F59E0B", // Warning amber
+    department: "#2563eb", // Department blue
   };
 
   const roleLabels = {
     admin: "Admin",
     teacher: "Giảng viên",
     student: "Sinh viên",
+    department: "Giáo vụ khoa",
   };
 
   return (
@@ -105,10 +107,10 @@ export default function Sidebar({
                 elevation: 2,
               },
               Platform.OS === "web" &&
-                ({
-                  transition: "all 0.2s ease",
-                  cursor: "pointer",
-                } as any),
+              ({
+                transition: "all 0.2s ease",
+                cursor: "pointer",
+              } as any),
             ]}
             activeOpacity={0.7}
             {...(Platform.OS === "web" &&
@@ -180,8 +182,8 @@ export default function Sidebar({
                       backgroundColor: isActive
                         ? "#CCFBF1"
                         : isHovered
-                        ? "#F9FAFB"
-                        : "transparent",
+                          ? "#F9FAFB"
+                          : "transparent",
                       borderLeftWidth: isActive ? 3 : 0,
                       borderLeftColor: isActive ? Colors.primary : "transparent",
                       justifyContent: collapsed ? "center" : "flex-start",
@@ -202,8 +204,8 @@ export default function Sidebar({
                         backgroundColor: isActive
                           ? Colors.primary
                           : isHovered
-                          ? "#E5E7EB"
-                          : "#F3F4F6",
+                            ? "#E5E7EB"
+                            : "#F3F4F6",
                         alignItems: "center",
                         justifyContent: "center",
                         marginLeft: collapsed ? 0 : 12,

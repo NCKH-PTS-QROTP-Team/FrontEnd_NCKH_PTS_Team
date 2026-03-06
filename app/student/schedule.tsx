@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -30,6 +30,8 @@ export default function ScheduleScreen() {
   );
   const [loading, setLoading] = useState(true);
   const [daySchedules, setDaySchedules] = useState<DayScheduleItem[]>([]);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 15;
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
@@ -66,6 +68,16 @@ export default function ScheduleScreen() {
     return `${year}-${month}-${day}`;
   };
 
+  useEffect(() => {
+    setPage(1);
+  }, [daySchedules]);
+
+  const totalPages = Math.ceil(daySchedules.length / PAGE_SIZE);
+  const paginatedSchedules = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return daySchedules.slice(start, start + PAGE_SIZE);
+  }, [daySchedules, page]);
+
   // Load schedules từ backend cho ngày đã chọn
   useEffect(() => {
     const loadSchedulesForDate = async () => {
@@ -76,7 +88,7 @@ export default function ScheduleScreen() {
 
         // Lấy thông tin user hiện tại để biết classId
         const currentUser = await authService.getCurrentUser();
-        
+
         const params: {
           scheduleType?: "CLASS" | "EXAM";
           fromDate?: string;
@@ -362,94 +374,119 @@ export default function ScheduleScreen() {
                 </Text>
               </View>
             ) : (
-              daySchedules.map((schedule, index) => (
-                <TouchableOpacity
-                  key={schedule.id}
-                  activeOpacity={0.95}
-                  style={{
-                    backgroundColor: Colors.white,
-                    borderRadius: 12,
-                    padding: cardPadding,
-                    marginBottom:
-                      index < daySchedules.length - 1
-                        ? isDesktop
-                          ? 12
-                          : 10
-                        : 0,
-                    borderWidth: 1,
-                    borderColor: Colors.border,
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 8,
-                    elevation: 2,
-                  }}
-                >
-                  {/* Course Name */}
-                  <Text
+              <>
+                {paginatedSchedules.map((schedule, index) => (
+                  <TouchableOpacity
+                    key={schedule.id}
+                    activeOpacity={0.95}
                     style={{
-                      fontSize: isMobile ? 16 : 18,
-                      lineHeight: isMobile ? 24 : 28,
-                      fontWeight: "600",
-                      color: Colors.textHeading,
-                      marginBottom: isMobile ? 6 : 8,
+                      backgroundColor: Colors.white,
+                      borderRadius: 12,
+                      padding: cardPadding,
+                      marginBottom:
+                        index < paginatedSchedules.length - 1
+                          ? isDesktop
+                            ? 12
+                            : 10
+                          : 0,
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 8,
+                      elevation: 2,
                     }}
                   >
-                    {schedule.courseName}
-                  </Text>
-
-                  {/* Teacher */}
-                  <Text
-                    style={{
-                      fontSize: isMobile ? 13 : 14,
-                      lineHeight: isMobile ? 20 : 21,
-                      color: Colors.textLight,
-                      marginBottom: isMobile ? 10 : 12,
-                    }}
-                  >
-                    {schedule.teacher}
-                  </Text>
-
-                  {/* Time & Room */}
-                  <View
-                    style={{ flexDirection: "row", alignItems: "flex-start" }}
-                  >
-                    {/* Blue vertical line */}
-                    <View
+                    {/* Course Name */}
+                    <Text
                       style={{
-                        width: 3,
-                        height: isMobile ? 40 : 44,
-                        backgroundColor: Colors.primary,
-                        borderRadius: 2,
-                        marginRight: isMobile ? 10 : 12,
+                        fontSize: isMobile ? 16 : 18,
+                        lineHeight: isMobile ? 24 : 28,
+                        fontWeight: "600",
+                        color: Colors.textHeading,
+                        marginBottom: isMobile ? 6 : 8,
                       }}
-                    />
+                    >
+                      {schedule.courseName}
+                    </Text>
 
-                    <View style={{ flex: 1 }}>
-                      <Text
+                    {/* Teacher */}
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 13 : 14,
+                        lineHeight: isMobile ? 20 : 21,
+                        color: Colors.textLight,
+                        marginBottom: isMobile ? 10 : 12,
+                      }}
+                    >
+                      {schedule.teacher}
+                    </Text>
+
+                    {/* Time & Room */}
+                    <View
+                      style={{ flexDirection: "row", alignItems: "flex-start" }}
+                    >
+                      {/* Blue vertical line */}
+                      <View
                         style={{
-                          fontSize: isMobile ? 15 : 16,
-                          lineHeight: isMobile ? 22 : 24,
-                          fontWeight: "500",
-                          color: Colors.textHeading,
-                          marginBottom: isMobile ? 2 : 4,
+                          width: 3,
+                          height: isMobile ? 40 : 44,
+                          backgroundColor: Colors.primary,
+                          borderRadius: 2,
+                          marginRight: isMobile ? 10 : 12,
                         }}
-                      >
-                        {schedule.time}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: isMobile ? 13 : 14,
-                          lineHeight: isMobile ? 20 : 21,
-                          color: Colors.textSecondary,
-                        }}
-                      >
-                        Phòng: {schedule.room}
-                      </Text>
+                      />
+
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontSize: isMobile ? 15 : 16,
+                            lineHeight: isMobile ? 22 : 24,
+                            fontWeight: "500",
+                            color: Colors.textHeading,
+                            marginBottom: isMobile ? 2 : 4,
+                          }}
+                        >
+                          {schedule.time}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: isMobile ? 13 : 14,
+                            lineHeight: isMobile ? 20 : 21,
+                            color: Colors.textSecondary,
+                          }}
+                        >
+                          Phòng: {schedule.room}
+                        </Text>
+                      </View>
                     </View>
+                  </TouchableOpacity>
+                ))}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 20 }}>
+                    <TouchableOpacity
+                      style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }, page === 1 && { backgroundColor: '#f8fafc', elevation: 0 }]}
+                      disabled={page === 1}
+                      onPress={() => setPage(p => p - 1)}
+                    >
+                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: page === 1 ? '#cbd5e1' : Colors.primary }}>{'<'}</Text>
+                    </TouchableOpacity>
+
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#64748b' }}>Trang {page} / {totalPages}</Text>
+
+                    <TouchableOpacity
+                      style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }, page === totalPages && { backgroundColor: '#f8fafc', elevation: 0 }]}
+                      disabled={page === totalPages}
+                      onPress={() => setPage(p => p + 1)}
+                    >
+                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: page === totalPages ? '#cbd5e1' : Colors.primary }}>{'>'}</Text>
+                    </TouchableOpacity>
                   </View>
-                </TouchableOpacity>
-              ))
+                )}
+              </>
             )}
           </View>
         </View>

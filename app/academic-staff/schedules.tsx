@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -21,6 +21,8 @@ import { scheduleService, Schedule } from "@/apis";
 export default function ScheduleManagement() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 15;
   const { toast, showToast, hideToast } = useToast();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
@@ -50,6 +52,16 @@ export default function ScheduleManagement() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    setPage(1);
+  }, [schedules]);
+
+  const totalPages = Math.ceil(schedules.length / PAGE_SIZE);
+  const paginatedSchedules = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return schedules.slice(start, start + PAGE_SIZE);
+  }, [schedules, page]);
 
   const getDayName = (dayOfWeek: number) => {
     const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
@@ -121,7 +133,7 @@ export default function ScheduleManagement() {
                 Tìm thấy {schedules.length} lịch học
               </Text>
 
-              {schedules.map((schedule: Schedule) => (
+              {paginatedSchedules.map((schedule: Schedule) => (
                 <Card
                   key={schedule.id}
                   onPress={() =>
@@ -222,6 +234,29 @@ export default function ScheduleManagement() {
                   </View>
                 </Card>
               ))}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 12, marginBottom: 16 }}>
+                  <TouchableOpacity
+                    style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }, page === 1 && { backgroundColor: '#f8fafc', elevation: 0 }]}
+                    disabled={page === 1}
+                    onPress={() => setPage(p => p - 1)}
+                  >
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: page === 1 ? '#cbd5e1' : Colors.primary }}>{'<'}</Text>
+                  </TouchableOpacity>
+
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#64748b' }}>Trang {page} / {totalPages}</Text>
+
+                  <TouchableOpacity
+                    style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }, page === totalPages && { backgroundColor: '#f8fafc', elevation: 0 }]}
+                    disabled={page === totalPages}
+                    onPress={() => setPage(p => p + 1)}
+                  >
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: page === totalPages ? '#cbd5e1' : Colors.primary }}>{'>'}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </>
           ) : (
             <View style={{ alignItems: "center", paddingVertical: 48 }}>
@@ -239,7 +274,7 @@ export default function ScheduleManagement() {
           )}
         </View>
       </ScrollView>
-      
+
       {/* Toast Notification */}
       <Toast
         visible={toast.visible}

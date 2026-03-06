@@ -20,7 +20,7 @@ interface MenuItem {
 interface AppLayoutProps {
   children: React.ReactNode;
   menuItems: MenuItem[];
-  userRole: "admin" | "teacher" | "student";
+  userRole: "admin" | "teacher" | "student" | "department";
   userName?: string;
   userEmail?: string;
   userAvatar?: string;
@@ -59,6 +59,7 @@ export default function AppLayout({
     admin: "Admin",
     teacher: "Giảng viên",
     student: "Sinh viên",
+    department: "Giáo vụ khoa",
   };
 
   // Tự load thông tin user hiện tại từ storage (đã lưu sau login)

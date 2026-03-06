@@ -8,12 +8,12 @@ export interface Class {
   id: string;
   code: string;
   name: string;
-  subjectId?: string;
-  subjectName?: string;
-  teacherId?: string;
-  teacherName?: string;
-  semester?: string;
-  studentCount: number;
+  subjectId: string | null;
+  subjectName: string | null;
+  teacherId: string | null;
+  teacherName: string | null;
+  semester: string | null;
+  studentCount: number | null;
   createdAt: string;
 }
 
@@ -43,14 +43,21 @@ export interface UpdateClassRequest {
  */
 export const classService = {
   /**
-   * Get all classes or filter by teacher
+   * Get all classes
    */
-  getClasses: async (teacherId?: string): Promise<Class[]> => {
-    const params = teacherId ? { teacherId } : {};
-    const response = await apiClient.get<ApiResponse<Class[]>>('/classes', { params });
+  getAllClasses: async (): Promise<Class[]> => {
+    const response = await apiClient.get<ApiResponse<Class[]>>('/classes');
     return response.data.data;
   },
-  
+
+  /**
+   * Get classes by teacher
+   */
+  getClassesByTeacher: async (teacherId: string): Promise<Class[]> => {
+    const response = await apiClient.get<ApiResponse<Class[]>>('/classes', { params: { teacherId } });
+    return response.data.data;
+  },
+
   /**
    * Get class by ID
    */
@@ -58,7 +65,30 @@ export const classService = {
     const response = await apiClient.get<ApiResponse<Class>>(`/classes/${id}`);
     return response.data.data;
   },
-  
+
+  /**
+   * Get students by class ID
+   */
+  getStudentsByClass: async (classId: string): Promise<any[]> => {
+    const response = await apiClient.get<ApiResponse<any[]>>(`/classes/${classId}/students`);
+    return response.data.data;
+  },
+
+  /**
+   * Add student to class
+   */
+  addStudentToClass: async (classId: string, studentId: string): Promise<any> => {
+    const response = await apiClient.post<ApiResponse<any>>(`/classes/${classId}/students/${studentId}`);
+    return response.data.data;
+  },
+
+  /**
+   * Remove student from class
+   */
+  removeStudentFromClass: async (classId: string, studentId: string): Promise<void> => {
+    await apiClient.delete(`/classes/${classId}/students/${studentId}`);
+  },
+
   /**
    * Create class
    */
@@ -66,7 +96,7 @@ export const classService = {
     const response = await apiClient.post<ApiResponse<Class>>('/classes', request);
     return response.data.data;
   },
-  
+
   /**
    * Update class
    */
@@ -74,7 +104,7 @@ export const classService = {
     const response = await apiClient.put<ApiResponse<Class>>(`/classes/${id}`, request);
     return response.data.data;
   },
-  
+
   /**
    * Delete class
    */

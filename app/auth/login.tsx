@@ -77,6 +77,9 @@ export default function LoginScreen() {
             case "student":
               router.replace("/student/home" as any);
               break;
+            case "academic_staff":
+              router.replace("/department/dashboard" as any);
+              break;
             default:
               showToast("Vai trò không hợp lệ", "error");
           }
@@ -136,6 +139,9 @@ export default function LoginScreen() {
               break;
             case "student":
               router.replace("/student/home" as any);
+              break;
+            case "academic_staff":
+              router.replace("/department/dashboard" as any);
               break;
           }
         }, 500);
@@ -250,6 +256,72 @@ export default function LoginScreen() {
               loading={loading}
               disabled={!username.trim() || !password.trim()}
             />
+            {/* Demo Accounts */}
+            <View style={{ marginTop: 18 }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: Colors.textSecondary,
+                  textAlign: "center",
+                  marginBottom: 8,
+                }}
+              >
+                Tài khoản demo
+              </Text>
+              <View
+                style={{
+                  padding: 12,
+                  borderRadius: 8,
+                  backgroundColor: Colors.surface,
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: Colors.textSecondary,
+                    lineHeight: 20,
+                    marginBottom: 4,
+                  }}
+                >
+                  <Text style={{ fontWeight: "600" }}>Admin:</Text> admin /
+                  admin123
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: Colors.textSecondary,
+                    lineHeight: 20,
+                    marginBottom: 4,
+                  }}
+                >
+                  <Text style={{ fontWeight: "600" }}>Giáo vụ khoa:</Text> GVK001 /
+                  academic123
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: Colors.textSecondary,
+                    lineHeight: 20,
+                    marginBottom: 4,
+                  }}
+                >
+                  <Text style={{ fontWeight: "600" }}>Giảng viên:</Text> GV001 /
+                  teacher123
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: Colors.textSecondary,
+                    lineHeight: 20,
+                  }}
+                >
+                  <Text style={{ fontWeight: "600" }}>Sinh viên:</Text> SV001 /
+                  student123
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
       </ScrollView>
