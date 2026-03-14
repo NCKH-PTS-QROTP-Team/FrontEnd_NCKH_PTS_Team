@@ -228,104 +228,103 @@ export default function TeacherDashboardScreen() {
   }
 
   const renderOverview = () => (
-    <>
-      {/* Banner */}
-      <Image
-        source={require("@/assets/teacher-banner.png")}
+    <View style={{ gap: 24 }}>
+      {/* ── Progress Bar Card (Thống kê hôm nay) ── */}
+      <View
         style={{
-          width: "100%",
-          height: isMobile ? 150 : isTablet ? 180 : 200,
-          borderRadius: 16,
-          marginBottom: isMobile ? 16 : 24,
+          backgroundColor: "#fff",
+          borderRadius: 20,
+          padding: 20,
+          shadowColor: "#3b82f6",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 12,
+          elevation: 4,
+          borderWidth: 1,
+          borderColor: "#eff6ff"
         }}
-        resizeMode="contain"
-      />
-
-      {/* Weekly Calendar - Mobile Only */}
-      {isMobile && (
-        <View style={{ marginBottom: 16 }}>
-          <WeeklyCalendar />
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b" }}>
+            Tiến độ điểm danh hôm nay
+          </Text>
+          <View style={{ backgroundColor: "#ecfdf5", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+            <Text style={{ fontSize: 12, fontWeight: "700", color: "#10b981" }}>Tốt</Text>
+          </View>
         </View>
-      )}
 
-      {/* Quick Actions */}
-      <View style={{ marginBottom: isMobile ? 16 : 24 }}>
-        <Text
-          style={{
-            fontSize: isMobile ? 16 : 18,
-            lineHeight: isMobile ? 24 : 28,
-            fontWeight: "bold",
-            color: "#111827",
-            marginBottom: isMobile ? 12 : 16,
-          }}
-        >
-          Tạo phiên điểm danh
+        <View style={{ flexDirection: "row", alignItems: "flex-end", marginBottom: 16, gap: 12 }}>
+          <Text style={{ fontSize: 36, fontWeight: "800", color: "#3b82f6", lineHeight: 40 }}>
+            {stats.attendanceRate}%
+          </Text>
+          <Text style={{ fontSize: 14, color: "#64748b", marginBottom: 6 }}>
+            {stats.presentToday} / {stats.totalStudents} sinh viên có mặt
+          </Text>
+        </View>
+
+        {/* Custom Progress Bar */}
+        <View style={{ height: 10, backgroundColor: "#e2e8f0", borderRadius: 5, overflow: "hidden" }}>
+          <View
+            style={{
+              height: "100%",
+              width: `${Math.max(0, Math.min(stats.attendanceRate, 100))}%`,
+              backgroundColor: "#3b82f6",
+              borderRadius: 5,
+            }}
+          />
+        </View>
+
+        {/* Small stats under bar */}
+        <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+          <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#f8fafc", padding: 10, borderRadius: 10 }}>
+            <Ionicons name="people" size={18} color="#6366f1" />
+            <View>
+              <Text style={{ fontSize: 13, fontWeight: "700", color: "#1e293b" }}>{stats.totalStudents}</Text>
+              <Text style={{ fontSize: 11, color: "#64748b" }}>Tổng số</Text>
+            </View>
+          </View>
+          <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#fef2f2", padding: 10, borderRadius: 10 }}>
+            <Ionicons name="close-circle" size={18} color="#ef4444" />
+            <View>
+              <Text style={{ fontSize: 13, fontWeight: "700", color: "#ef4444" }}>{stats.absentToday}</Text>
+              <Text style={{ fontSize: 11, color: "#ef4444" }}>Vắng mặt</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* ── Quick Actions (Khởi tạo điểm danh) ── */}
+      <View>
+        <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b", marginBottom: 12 }}>
+          Khởi tạo điểm danh
         </Text>
-        <View
-          style={{
-            flexDirection: "row",
-            gap: isMobile ? 8 : 16,
-            marginBottom: isDesktop ? 0 : 16,
-          }}
-        >
+        <View style={{ flexDirection: "row", gap: 16 }}>
           <TouchableOpacity
             onPress={() => router.push("/teacher/generate-otp")}
             style={{
               flex: 1,
-              backgroundColor: "#FFFFFF",
-              borderRadius: isMobile ? 12 : 16,
-              padding: isMobile ? 12 : 24,
-              borderWidth: 2,
-              borderColor: "#DBEAFE",
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              padding: 16,
+              alignItems: "center",
+              borderWidth: 1,
+              borderColor: "#f1f5f9",
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
+              shadowOpacity: 0.05,
+              shadowRadius: 8,
               elevation: 2,
             }}
             activeOpacity={0.7}
           >
-            <View
-              style={{
-                width: isMobile ? 44 : 56,
-                height: isMobile ? 44 : 56,
-                backgroundColor: "#DBEAFE",
-                borderRadius: isMobile ? 10 : 12,
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: isMobile ? 8 : 16,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: isMobile ? 20 : 24,
-                  lineHeight: isMobile ? 28 : 32,
-                  fontWeight: "bold",
-                  color: "#3FA9F5",
-                }}
-              >
-                123
-              </Text>
+            <View style={{ width: 48, height: 48, backgroundColor: "#eff6ff", borderRadius: 14, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+              <Ionicons name="keypad" size={24} color="#3b82f6" />
             </View>
-            <Text
-              style={{
-                fontSize: isMobile ? 15 : 18,
-                lineHeight: isMobile ? 20 : 28,
-                fontWeight: "bold",
-                color: "#111827",
-                marginBottom: isMobile ? 4 : 8,
-              }}
-            >
-              {isMobile ? "OTP" : "Tạo mã OTP"}
+            <Text style={{ fontSize: 15, fontWeight: "700", color: "#1e293b", marginBottom: 4 }}>
+              Mã OTP
             </Text>
-            <Text
-              style={{
-                fontSize: isMobile ? 11 : 14,
-                lineHeight: isMobile ? 16 : 20,
-                color: "#6B7280",
-              }}
-            >
-              {isMobile ? "Sinh mã số" : "Sinh mã số cho sinh viên điểm danh"}
+            <Text style={{ fontSize: 12, color: "#64748b", textAlign: "center" }}>
+              Tạo mã số 6 số cho lớp
             </Text>
           </TouchableOpacity>
 
@@ -333,260 +332,75 @@ export default function TeacherDashboardScreen() {
             onPress={() => router.push("/teacher/generate-qr")}
             style={{
               flex: 1,
-              backgroundColor: "#FFFFFF",
-              borderRadius: isMobile ? 12 : 16,
-              padding: isMobile ? 12 : 24,
-              borderWidth: 2,
-              borderColor: "#D1FAE5",
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              padding: 16,
+              alignItems: "center",
+              borderWidth: 1,
+              borderColor: "#f1f5f9",
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
+              shadowOpacity: 0.05,
+              shadowRadius: 8,
               elevation: 2,
             }}
             activeOpacity={0.7}
           >
-            <View
-              style={{
-                width: isMobile ? 44 : 56,
-                height: isMobile ? 44 : 56,
-                backgroundColor: "#D1FAE5",
-                borderRadius: isMobile ? 10 : 12,
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: isMobile ? 8 : 16,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: isMobile ? 18 : 22,
-                  lineHeight: isMobile ? 24 : 28,
-                  fontWeight: "bold",
-                  color: "#10B981",
-                }}
-              >
-                QR
-              </Text>
+            <View style={{ width: 48, height: 48, backgroundColor: "#f0fdf4", borderRadius: 14, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+              <Ionicons name="qr-code" size={24} color="#10b981" />
             </View>
-            <Text
-              style={{
-                fontSize: isMobile ? 15 : 18,
-                lineHeight: isMobile ? 20 : 28,
-                fontWeight: "bold",
-                color: "#111827",
-                marginBottom: isMobile ? 4 : 8,
-              }}
-            >
-              {isMobile ? "QR Code" : "Tạo QR Code"}
+            <Text style={{ fontSize: 15, fontWeight: "700", color: "#1e293b", marginBottom: 4 }}>
+              Mã QR
             </Text>
-            <Text
-              style={{
-                fontSize: isMobile ? 11 : 14,
-                lineHeight: isMobile ? 16 : 20,
-                color: "#6B7280",
-              }}
-            >
-              {isMobile ? "Hiển thị mã" : "Hiển thị mã QR trên lớp"}
+            <Text style={{ fontSize: 12, color: "#64748b", textAlign: "center" }}>
+              Quét mã nhanh chóng
             </Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Stats */}
-      <View style={{ marginBottom: isMobile ? 16 : 24 }}>
-        <Text
-          style={{
-            fontSize: 20,
-            fontWeight: "bold",
-            color: "#1e293b",
-            marginBottom: 16,
-          }}
-        >
-          Thống kê hôm nay
+      {/* ── Management Links ── */}
+      <View>
+        <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b", marginBottom: 12 }}>
+          Quản lý chung
         </Text>
-        <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          {[
-            { id: '1', title: 'Tổng sinh viên', value: stats.totalStudents, icon: 'people', color: '#3b82f6' },
-            { id: '2', title: 'Có mặt', value: stats.presentToday, icon: 'checkmark-circle', color: '#10b981' },
-            { id: '3', title: 'Vắng', value: stats.absentToday, icon: 'close-circle', color: '#ef4444' },
-            { id: '4', title: 'Tỷ lệ', value: `${stats.attendanceRate}%`, icon: 'pie-chart', color: '#f59e0b' },
-          ].map((stat) => (
-            <View
-              key={stat.id}
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: 16,
-                padding: 16,
-                marginBottom: 4,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.05,
-                shadowRadius: 8,
-                elevation: 2,
-                flex: isMobile ? 0 : 1,
-                width: isMobile ? '48%' : undefined,
-              }}
-            >
-              <View
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 12,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  marginBottom: 12,
-                  backgroundColor: stat.color + '20',
-                }}
-              >
-                <Ionicons name={stat.icon as any} size={24} color={stat.color} />
-              </View>
-              <Text style={{
-                fontSize: 24,
-                fontWeight: 'bold',
-                color: '#1e293b',
-                marginBottom: 4,
-              }}>{stat.value}</Text>
-              <Text style={{
-                fontSize: 13,
-                color: '#64748b',
-              }}>{stat.title}</Text>
+        <View style={{ backgroundColor: "#fff", borderRadius: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 1, borderWidth: 1, borderColor: "#f1f5f9", overflow: "hidden" }}>
+
+          <TouchableOpacity
+            onPress={() => router.push("/teacher/advisee-class")}
+            style={{ flexDirection: "row", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" }}
+          >
+            <View style={{ width: 40, height: 40, backgroundColor: "#f5f3ff", borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 14 }}>
+              <Ionicons name="school" size={20} color="#8b5cf6" />
             </View>
-          ))}
+            <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: "#1e293b" }}>Lớp chủ nhiệm</Text>
+            <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push("/teacher/class-list")}
+            style={{ flexDirection: "row", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" }}
+          >
+            <View style={{ width: 40, height: 40, backgroundColor: "#eff6ff", borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 14 }}>
+              <Ionicons name="list" size={20} color="#3b82f6" />
+            </View>
+            <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: "#1e293b" }}>Danh sách lớp học</Text>
+            <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push("/teacher/reports")}
+            style={{ flexDirection: "row", alignItems: "center", padding: 16 }}
+          >
+            <View style={{ width: 40, height: 40, backgroundColor: "#fffbeb", borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 14 }}>
+              <Ionicons name="pie-chart" size={20} color="#f59e0b" />
+            </View>
+            <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: "#1e293b" }}>Báo cáo & Thống kê</Text>
+            <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+          </TouchableOpacity>
         </View>
       </View>
-
-      {/* Management Links */}
-      <View>
-        <TouchableOpacity
-          onPress={() => router.push("/teacher/class-list")}
-          style={{
-            backgroundColor: "#FFFFFF",
-            borderRadius: isMobile ? 12 : 16,
-            padding: isMobile ? 12 : 16,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 2,
-            marginBottom: isMobile ? 8 : 16,
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <View
-              style={{
-                backgroundColor: "#DBEAFE",
-                borderRadius: isMobile ? 10 : 12,
-                width: isMobile ? 40 : 48,
-                height: isMobile ? 40 : 48,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: isMobile ? 18 : 20,
-                  lineHeight: isMobile ? 22 : 24,
-                  fontWeight: "bold",
-                  color: "#3FA9F5",
-                }}
-              >
-                ≡
-              </Text>
-            </View>
-            <Text
-              style={{
-                fontSize: isMobile ? 14 : 16,
-                lineHeight: isMobile ? 20 : 24,
-                fontWeight: "600",
-                color: "#111827",
-              }}
-            >
-              Danh sách lớp học
-            </Text>
-          </View>
-          <Text
-            style={{
-              fontSize: isMobile ? 18 : 20,
-              lineHeight: 24,
-              color: "#9CA3AF",
-            }}
-          >
-            →
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => router.push("/teacher/reports")}
-          style={{
-            backgroundColor: "#FFFFFF",
-            borderRadius: isMobile ? 12 : 16,
-            padding: isMobile ? 12 : 16,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 2,
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <View
-              style={{
-                backgroundColor: "#FEF3C7",
-                borderRadius: isMobile ? 10 : 12,
-                width: isMobile ? 40 : 48,
-                height: isMobile ? 40 : 48,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: isMobile ? 18 : 20,
-                  lineHeight: isMobile ? 22 : 24,
-                  fontWeight: "bold",
-                  color: "#F59E0B",
-                }}
-              >
-                ☰
-              </Text>
-            </View>
-            <Text
-              style={{
-                fontSize: isMobile ? 14 : 16,
-                lineHeight: isMobile ? 20 : 24,
-                fontWeight: "600",
-                color: "#111827",
-              }}
-            >
-              Báo cáo & Thống kê
-            </Text>
-          </View>
-          <Text
-            style={{
-              fontSize: isMobile ? 18 : 20,
-              lineHeight: 24,
-              color: "#9CA3AF",
-            }}
-          >
-            →
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </>
+    </View>
   );
 
   const renderScheduleCell = (day: string, period: "morning" | "afternoon" | "evening") => {
@@ -915,33 +729,88 @@ export default function TeacherDashboardScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
-      <StatusBar style="dark" />
+    <View style={{ flex: 1, backgroundColor: "#f8fafc" }}>
+      <StatusBar style="light" />
 
-      {/* Tabs */}
+      {/* ── Blue Hero Banner (Fixed at top) ── */}
       <View
         style={{
-          backgroundColor: Colors.white,
-          borderBottomWidth: 1,
-          borderBottomColor: Colors.border,
+          backgroundColor: "#3b82f6",
+          paddingTop: isMobile ? 48 : 64, // leave space for status bar manually if needed
+          paddingBottom: 40,
+          paddingHorizontal: paddingHorizontal,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
         }}
       >
-        <Tabs
-          tabs={[
-            { key: "overview", label: "Tổng quan" },
-            { key: "schedule", label: "Lịch dạy" },
-          ]}
-          activeTab={activeTab}
-          onTabChange={(key) => setActiveTab(key as "overview" | "schedule")}
-        />
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <View>
+            <Text style={{ fontSize: 15, color: "rgba(255,255,255,0.8)", marginBottom: 4 }}>
+              Chào mừng trở lại!
+            </Text>
+            <Text style={{ fontSize: 24, fontWeight: "800", color: "#ffffff" }}>
+              Xin chào, Giảng viên
+            </Text>
+          </View>
+          <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255,255,255,0.3)" }}>
+            <Ionicons name="person" size={24} color="#fff" />
+          </View>
+        </View>
       </View>
 
+      {/* ── Tabs (Overlapping the banner) ── */}
+      <View style={{ paddingHorizontal: paddingHorizontal, marginTop: -24, zIndex: 10 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            backgroundColor: "#fff",
+            borderRadius: 16,
+            padding: 6,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.08,
+            shadowRadius: 12,
+            elevation: 4,
+          }}
+        >
+          {([
+            { key: "overview", label: "Tổng quan", icon: "grid-outline" },
+            { key: "schedule", label: "Lịch học", icon: "calendar-outline" },
+          ] as const).map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                activeOpacity={0.8}
+                onPress={() => setActiveTab(tab.key)}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  backgroundColor: isActive ? "#eff6ff" : "transparent"
+                }}
+              >
+                <Ionicons name={tab.icon as any} size={18} color={isActive ? "#3b82f6" : "#64748b"} />
+                <Text style={{ fontSize: 14, fontWeight: "700", color: isActive ? "#3b82f6" : "#64748b" }}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            )
+          })}
+        </View>
+      </View>
+
+      {/* ── Scrollable Content ── */}
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal,
-          paddingVertical: 24,
-          paddingBottom: isDesktop ? 32 : 24,
+          paddingTop: 24,
+          paddingBottom: isDesktop ? 40 : 32,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -955,6 +824,6 @@ export default function TeacherDashboardScreen() {
           {activeTab === "overview" ? renderOverview() : renderSchedule()}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
