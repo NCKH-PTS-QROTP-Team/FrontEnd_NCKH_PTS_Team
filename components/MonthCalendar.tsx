@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { ScheduleResponse } from '@/apis/types/schedule.types';
 
-const TEAL = '#0ea5e9';
+const DEFAULT_TEAL = '#0ea5e9';
 const SCREEN_W = Dimensions.get('window').width;
 const GRID_PADDING = 8;
 const CARD_MARGIN = 24;
@@ -59,9 +59,10 @@ interface MonthCalendarProps {
     schedules: ScheduleResponse[];
     selectedISO: string;
     onSelectDay: (iso: string) => void;
+    themeColor?: string;
 }
 
-export function MonthCalendar({ schedules, selectedISO, onSelectDay }: MonthCalendarProps) {
+export function MonthCalendar({ schedules, selectedISO, onSelectDay, themeColor = DEFAULT_TEAL }: MonthCalendarProps) {
     const todayStr = todayISO();
     const selDate = isoToDate(selectedISO);
     const [viewYear, setViewYear] = useState(selDate.getFullYear());
@@ -104,8 +105,8 @@ export function MonthCalendar({ schedules, selectedISO, onSelectDay }: MonthCale
         <View style={cal.wrapper}>
             {/* ── Month navigation ── */}
             <View style={cal.navRow}>
-                <TouchableOpacity style={cal.navBtn} onPress={prevMonth}>
-                    <Ionicons name="chevron-back" size={18} color={TEAL} />
+                <TouchableOpacity style={[cal.navBtn, { backgroundColor: themeColor + '15' }]} onPress={prevMonth}>
+                    <Ionicons name="chevron-back" size={18} color={themeColor} />
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={goToday} style={{ alignItems: 'center' }}>
@@ -115,8 +116,8 @@ export function MonthCalendar({ schedules, selectedISO, onSelectDay }: MonthCale
                     <Text style={cal.navSub}>Nhấn để về hôm nay</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={cal.navBtn} onPress={nextMonth}>
-                    <Ionicons name="chevron-forward" size={18} color={TEAL} />
+                <TouchableOpacity style={[cal.navBtn, { backgroundColor: themeColor + '15' }]} onPress={nextMonth}>
+                    <Ionicons name="chevron-forward" size={18} color={themeColor} />
                 </TouchableOpacity>
             </View>
 
@@ -143,8 +144,8 @@ export function MonthCalendar({ schedules, selectedISO, onSelectDay }: MonthCale
                             key={cell.iso}
                             style={[
                                 cal.cell,
-                                isSelected && cal.cellSelected,
-                                isToday && !isSelected && cal.cellToday,
+                                isSelected && { backgroundColor: themeColor },
+                                isToday && !isSelected && { borderColor: themeColor, borderWidth: 2 },
                                 !cell.isCurrentMonth && cal.cellOtherMonth,
                             ]}
                             onPress={() => onSelectDay(cell.iso)}
@@ -154,7 +155,7 @@ export function MonthCalendar({ schedules, selectedISO, onSelectDay }: MonthCale
                                 style={[
                                     cal.cellDate,
                                     isSelected && cal.cellDateSelected,
-                                    isToday && !isSelected && cal.cellDateToday,
+                                    isToday && !isSelected && { color: themeColor, fontWeight: '800' },
                                     !cell.isCurrentMonth && cal.cellDateOther,
                                     isSunday && !isSelected && cal.cellDateSunday,
                                 ]}
@@ -170,12 +171,12 @@ export function MonthCalendar({ schedules, selectedISO, onSelectDay }: MonthCale
                                             key={di}
                                             style={[
                                                 cal.dot,
-                                                { backgroundColor: isSelected ? '#fff' : TEAL },
+                                                { backgroundColor: isSelected ? '#fff' : themeColor },
                                             ]}
                                         />
                                     ))}
                                     {count > 3 && (
-                                        <Text style={[cal.dotMore, { color: isSelected ? '#fff' : TEAL }]}>
+                                        <Text style={[cal.dotMore, { color: isSelected ? '#fff' : themeColor }]}>
                                             +
                                         </Text>
                                     )}
@@ -189,15 +190,15 @@ export function MonthCalendar({ schedules, selectedISO, onSelectDay }: MonthCale
             {/* ── Legend ── */}
             <View style={cal.legend}>
                 <View style={cal.legendItem}>
-                    <View style={[cal.legendDot, { backgroundColor: TEAL }]} />
+                    <View style={[cal.legendDot, { backgroundColor: themeColor }]} />
                     <Text style={cal.legendText}>Có lịch học</Text>
                 </View>
                 <View style={cal.legendItem}>
-                    <View style={[cal.legendRing]} />
+                    <View style={[cal.legendRing, { borderColor: themeColor }]} />
                     <Text style={cal.legendText}>Hôm nay</Text>
                 </View>
                 <View style={cal.legendItem}>
-                    <View style={[cal.legendFill, { backgroundColor: TEAL }]} />
+                    <View style={[cal.legendFill, { backgroundColor: themeColor }]} />
                     <Text style={cal.legendText}>Đang chọn</Text>
                 </View>
             </View>
@@ -209,7 +210,7 @@ const cal = StyleSheet.create({
     wrapper: { backgroundColor: '#fff', borderRadius: 20, marginHorizontal: 12, marginVertical: 10, paddingBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4, overflow: 'hidden' },
 
     navRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingTop: 14, paddingBottom: 8 },
-    navBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: TEAL + '15', alignItems: 'center', justifyContent: 'center' },
+    navBtn: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
     navTitle: { fontSize: 16, fontWeight: '800', color: '#1e293b', textAlign: 'center' },
     navSub: { fontSize: 10, color: '#94a3b8', marginTop: 1, textAlign: 'center' },
 
@@ -221,12 +222,12 @@ const cal = StyleSheet.create({
 
     grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 4 },
     cell: { width: `${100 / 7}%` as any, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 10, marginBottom: 2 },
-    cellSelected: { backgroundColor: TEAL },
-    cellToday: { borderWidth: 2, borderColor: TEAL },
+    cellSelected: { backgroundColor: DEFAULT_TEAL },
+    cellToday: { borderWidth: 2, borderColor: DEFAULT_TEAL },
     cellOtherMonth: { opacity: 0.3 },
     cellDate: { fontSize: 14, fontWeight: '600', color: '#1e293b' },
     cellDateSelected: { color: '#fff', fontWeight: '800' },
-    cellDateToday: { color: TEAL, fontWeight: '800' },
+    cellDateToday: { color: DEFAULT_TEAL, fontWeight: '800' },
     cellDateOther: { color: '#94a3b8' },
     cellDateSunday: { color: '#ef4444' },
 
@@ -237,7 +238,7 @@ const cal = StyleSheet.create({
     legend: { flexDirection: 'row', justifyContent: 'center', gap: 16, paddingTop: 6, paddingBottom: 2 },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     legendDot: { width: 8, height: 8, borderRadius: 4 },
-    legendRing: { width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: TEAL },
+    legendRing: { width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: DEFAULT_TEAL },
     legendFill: { width: 14, height: 14, borderRadius: 7 },
     legendText: { fontSize: 11, fontWeight: '600', color: '#64748b' },
 });
