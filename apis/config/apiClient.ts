@@ -32,12 +32,12 @@ const getApiBaseUrl = () => {
       return 'http://localhost:8080/api';
     } else if (Platform.OS === 'android') {
       // 10.0.2.2 là địa chỉ đặc biệt cho Android Emulator trỏ về localhost của máy host
-      // Nếu dùng thiết bị thật, thay bằng IP của máy: http://192.168.1.11:8080/api
-      return 'http://192.168.1.11:8080/api';
+      // Nếu dùng thiết bị thật, thay bằng IP của máy: http://192.168.1.56:8080/api
+      return 'http://192.168.1.56:8080/api';
     } else {
       // iOS Simulator có thể dùng localhost
       // iOS thiết bị thật cần IP của máy tính (giống Android)
-      return 'http://192.168.1.7:8080/api';
+      return 'http://192.168.1.56:8080/api';
     }
   }
 
