@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -490,6 +491,42 @@ export default function AdviseeClass() {
   const isMobile = width < 768;
   const paddingHorizontal = isDesktop ? 24 : isMobile ? 16 : 20;
 
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+  const HEADER_MAX_HEIGHT = isDesktop ? 280 : isMobile ? 320 : 290;
+
+  // Chỉ cuộn gom header ở mobile, còn desktop/tablet set cứng = MAX_HEIGHT
+  const HEADER_MIN_HEIGHT = isMobile ? 120 : HEADER_MAX_HEIGHT;
+  const HEADER_SCROLL_DISTANCE = Math.max(1, HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT);
+
+  const headerHeight = isMobile ? scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+    extrapolate: "clamp",
+  }) : HEADER_MAX_HEIGHT;
+
+  const contentOpacity = isMobile ? scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+    outputRange: [1, 0.2, 0],
+    extrapolate: "clamp",
+  }) : 1;
+
+  const contentTranslateY = isMobile ? scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [0, -10],
+    extrapolate: "clamp",
+  }) : 0;
+
+  // Giữ TabBar luôn dính dưới bottom của Header khi cuộn quá nó
+  const tabBarTranslateY = isMobile
+    ? scrollY.interpolate({
+      inputRange: [-1, 0, HEADER_SCROLL_DISTANCE, HEADER_SCROLL_DISTANCE + 1],
+      outputRange: [0, 0, 0, 1],
+    })
+    : scrollY.interpolate({
+      inputRange: [-1, 0, 1],
+      outputRange: [0, 0, 1],
+    });
+
   // ── Student detail modal state ──────────────────────────────────────────────
   const [selectedStudent, setSelectedStudent] = useState<StudentAttendanceReport | null>(null);
   const [studentModalVisible, setStudentModalVisible] = useState(false);
@@ -622,47 +659,123 @@ export default function AdviseeClass() {
     <View style={{ flex: 1, backgroundColor: "#f8fafc" }}>
       <StatusBar style="light" />
 
-      {/* ── Emerald Hero Header ── */}
-      <View
+      {/* ── Parallax Animated Hero Header ── */}
+      <Animated.View
         style={{
           backgroundColor: "#10b981",
           paddingTop: isMobile ? 48 : 64,
-          paddingBottom: 40,
           paddingHorizontal: paddingHorizontal,
           borderBottomLeftRadius: 32,
           borderBottomRightRadius: 32,
-          alignItems: "center",
-          justifyContent: "center",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: headerHeight,
           zIndex: 10,
-        }}
-      >
-        <Text style={{ fontSize: 24, fontWeight: "800", color: "#ffffff" }}>
-          Lớp chủ nhiệm
-        </Text>
-      </View>
-
-      {/* Tab Bar - Floating Over Hero Header */}
-      <View
-        style={{
-          marginTop: -28,
-          marginHorizontal: paddingHorizontal,
-          borderRadius: 16,
-          backgroundColor: "#fff",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 12,
-          elevation: 5,
-          zIndex: 20,
           overflow: "hidden",
+          shadowColor: "#10b981",
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.32,
+          shadowRadius: 16,
+          elevation: 6,
         }}
       >
-        <TabBar
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          atRiskCount={atRiskCount}
-        />
-      </View>
+        <View style={{ maxWidth: 1200, width: "100%", alignSelf: "center", flex: 1 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 12 }}>
+            <View
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 16,
+                backgroundColor: "rgba(255,255,255,0.2)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons name="school" size={28} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 22, fontWeight: "800", color: "#fff", marginBottom: 2 }}>
+                Lớp {className}
+              </Text>
+              <Animated.Text style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", opacity: contentOpacity }}>
+                {major || "Lớp chủ nhiệm"}
+              </Animated.Text>
+            </View>
+            <View
+              style={{
+                backgroundColor: "rgba(255,255,255,0.2)",
+                borderRadius: 14,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                alignItems: "center",
+                borderWidth: 1.5,
+                borderColor: "rgba(255,255,255,0.35)",
+              }}
+            >
+              <Text style={{ fontSize: 20, fontWeight: "800", color: "#fff" }}>
+                {attendanceRate}%
+              </Text>
+            </View>
+          </View>
+
+          <Animated.View style={{ opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] }}>
+            <View style={{ marginBottom: 16, marginTop: 4 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.85)" }}>
+                  Tỷ lệ điểm danh trung bình
+                </Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>
+                  {attendanceRate}%
+                </Text>
+              </View>
+              <View style={{ height: 8, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 4, overflow: "hidden" }}>
+                <View
+                  style={{
+                    height: "100%",
+                    width: `${Math.min(attendanceRate, 100)}%`,
+                    backgroundColor: attendanceRate >= 90 ? "#34d399" : attendanceRate >= 75 ? "#fbbf24" : "#f87171",
+                    borderRadius: 4,
+                  }}
+                />
+              </View>
+            </View>
+
+            <View
+              style={{
+                flexDirection: "row",
+                backgroundColor: "rgba(255,255,255,0.15)",
+                borderRadius: 14,
+                paddingVertical: 12,
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.2)",
+              }}
+            >
+              {[
+                { label: "Sinh viên", value: String(totalStudents), icon: "people" as const },
+                { label: "Tỷ lệ ĐD", value: `${attendanceRate}%`, icon: "pie-chart" as const },
+                { label: "Cảnh báo", value: String(atRiskCount), icon: "warning" as const },
+              ].map((item, idx) => (
+                <View
+                  key={idx}
+                  style={{
+                    flex: 1,
+                    alignItems: "center",
+                    borderLeftWidth: idx > 0 ? 1 : 0,
+                    borderLeftColor: "rgba(255,255,255,0.25)",
+                    gap: 4,
+                  }}
+                >
+                  <Ionicons name={item.icon} size={15} color="rgba(255,255,255,0.7)" />
+                  <Text style={{ fontSize: 18, fontWeight: "800", color: "#fff" }}>{item.value}</Text>
+                  <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.7)" }}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+          </Animated.View>
+        </View>
+      </Animated.View>
 
       {loading ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -672,94 +785,42 @@ export default function AdviseeClass() {
           </Text>
         </View>
       ) : (
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal, paddingTop: 20, paddingBottom: 32 }}
+        <Animated.ScrollView
+          contentContainerStyle={{ paddingHorizontal, paddingTop: HEADER_MAX_HEIGHT + 16, paddingBottom: 32 }}
           showsVerticalScrollIndicator={false}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+          scrollEventThrottle={16}
         >
           <View style={{ maxWidth: 1200, width: "100%", alignSelf: "center" }}>
+            {/* Tab Bar - Sticky below header */}
+            <Animated.View
+              style={{
+                marginBottom: 20,
+                borderRadius: 16,
+                backgroundColor: "#fff",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 12,
+                elevation: 5,
+                zIndex: 20,
+                overflow: "hidden",
+                transform: [{ translateY: tabBarTranslateY }],
+              }}
+            >
+              <TabBar
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                atRiskCount={atRiskCount}
+              />
+            </Animated.View>
 
             {/* ── OVERVIEW TAB ──────────────────────────────────────────────── */}
             {activeTab === "overview" && (
               <>
-                {/* Hero card - Class Info */}
-                <View
-                  style={{
-                    backgroundColor: INDIGO,
-                    borderRadius: 18,
-                    padding: 20,
-                    marginBottom: 20,
-                    shadowColor: INDIGO,
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 12,
-                    elevation: 5,
-                  }}
-                >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 14,
-                      marginBottom: 12,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 52,
-                        height: 52,
-                        borderRadius: 16,
-                        backgroundColor: "rgba(255,255,255,0.2)",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Ionicons name="school" size={28} color="#fff" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{ fontSize: 22, fontWeight: "800", color: "#fff", marginBottom: 3 }}
-                      >
-                        {className}
-                      </Text>
-                      <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.8)" }}>
-                        {major || "Lớp chủ nhiệm"}
-                      </Text>
-                    </View>
-                  </View>
-                  {/* Quick stats inside hero */}
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      backgroundColor: "rgba(255,255,255,0.15)",
-                      borderRadius: 12,
-                      padding: 12,
-                      gap: 0,
-                    }}
-                  >
-                    {[
-                      { label: "Sinh viên", value: String(totalStudents) },
-                      { label: "Tỷ lệ ĐD", value: `${attendanceRate}%` },
-                      { label: "Cảnh báo", value: String(atRiskCount) },
-                    ].map((item, idx) => (
-                      <View
-                        key={idx}
-                        style={{
-                          flex: 1,
-                          alignItems: "center",
-                          borderLeftWidth: idx > 0 ? 1 : 0,
-                          borderLeftColor: "rgba(255,255,255,0.25)",
-                        }}
-                      >
-                        <Text style={{ fontSize: 20, fontWeight: "800", color: "#fff" }}>
-                          {item.value}
-                        </Text>
-                        <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", marginTop: 2 }}>
-                          {item.label}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
 
                 {/* Stat Cards */}
                 <Text
@@ -1258,7 +1319,7 @@ export default function AdviseeClass() {
             )}
 
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       )}
 
       {/* ─── Student Detail Modal (bottom-sheet style) ─── */}

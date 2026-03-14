@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -85,6 +86,31 @@ export default function ClassListScreen() {
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const paddingVertical = isMobile ? 16 : 24;
+
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+  const HEADER_MAX_HEIGHT = isDesktop ? 280 : isMobile ? 320 : 290;
+
+  // Chỉ cuộn gom header ở mobile, còn desktop/tablet set cứng = MAX_HEIGHT
+  const HEADER_MIN_HEIGHT = isMobile ? 120 : HEADER_MAX_HEIGHT;
+  const HEADER_SCROLL_DISTANCE = Math.max(1, HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT);
+
+  const headerHeight = isMobile ? scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+    extrapolate: "clamp",
+  }) : HEADER_MAX_HEIGHT;
+
+  const contentOpacity = isMobile ? scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+    outputRange: [1, 0.2, 0],
+    extrapolate: "clamp",
+  }) : 1;
+
+  const contentTranslateY = isMobile ? scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [0, -10],
+    extrapolate: "clamp",
+  }) : 0;
 
   useEffect(() => {
     loadClasses();
@@ -294,24 +320,197 @@ export default function ClassListScreen() {
     <View style={{ flex: 1, backgroundColor: "#f8fafc" }}>
       <StatusBar style="light" />
 
-      {/* ── Sky Blue Hero Header ── */}
-      <View
+      {/* ── Parallax Animated Hero Header ── */}
+      <Animated.View
         style={{
           backgroundColor: "#0ea5e9",
           paddingTop: isMobile ? 48 : 64,
-          paddingBottom: 24,
-          paddingHorizontal: 16,
+          paddingHorizontal: paddingHorizontal,
           borderBottomLeftRadius: 32,
           borderBottomRightRadius: 32,
-          alignItems: "center",
-          justifyContent: "center",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: headerHeight,
           zIndex: 10,
+          overflow: "hidden",
+          shadowColor: "#0ea5e9",
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.32,
+          shadowRadius: 16,
+          elevation: 6,
         }}
       >
-        <Text style={{ fontSize: 24, fontWeight: "800", color: "#ffffff" }}>
-          Danh sách lớp học
-        </Text>
-      </View>
+        <View style={{ maxWidth: contentMaxWidth, width: "100%", alignSelf: "center", flex: 1 }}>
+          {/* Header row (always visible, minimal scale info) */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 12 }}>
+            <View
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 16,
+                backgroundColor: "rgba(255,255,255,0.2)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons name="school" size={28} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 22,
+                  fontWeight: "800",
+                  color: "#fff",
+                  marginBottom: 2,
+                }}
+              >
+                Danh sách lớp học
+              </Text>
+              <Animated.Text
+                style={{
+                  fontSize: 13,
+                  color: "rgba(255,255,255,0.85)",
+                  opacity: contentOpacity,
+                }}
+              >
+                {summary.totalClasses} lớp • {summary.totalStudents} sinh viên
+              </Animated.Text>
+            </View>
+            {/* Big rate badge */}
+            <View
+              style={{
+                backgroundColor: "rgba(255,255,255,0.2)",
+                borderRadius: 14,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                alignItems: "center",
+                borderWidth: 1.5,
+                borderColor: "rgba(255,255,255,0.35)",
+              }}
+            >
+              <Text style={{ fontSize: 20, fontWeight: "800", color: "#fff" }}>
+                {summary.averageRate}%
+              </Text>
+            </View>
+          </View>
+
+          {/* Expanded Content: Progress + Stats */}
+          <Animated.View
+            style={{
+              opacity: contentOpacity,
+              transform: [{ translateY: contentTranslateY }],
+            }}
+          >
+            {/* Progress bar */}
+            <View style={{ marginBottom: 16, marginTop: 4 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginBottom: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "600",
+                    color: "rgba(255,255,255,0.85)",
+                  }}
+                >
+                  Tỷ lệ điểm danh trung bình
+                </Text>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>
+                  {summary.averageRate}%
+                </Text>
+              </View>
+              <View
+                style={{
+                  height: 8,
+                  backgroundColor: "rgba(255,255,255,0.2)",
+                  borderRadius: 4,
+                  overflow: "hidden",
+                }}
+              >
+                <View
+                  style={{
+                    height: "100%",
+                    width: `${Math.min(summary.averageRate, 100)}%`,
+                    backgroundColor:
+                      summary.averageRate >= 90
+                        ? "#34d399"
+                        : summary.averageRate >= 75
+                          ? "#fbbf24"
+                          : "#f87171",
+                    borderRadius: 4,
+                  }}
+                />
+              </View>
+            </View>
+
+            {/* Quick stats 3 columns */}
+            <View
+              style={{
+                flexDirection: "row",
+                backgroundColor: "rgba(255,255,255,0.15)",
+                borderRadius: 14,
+                paddingVertical: 12,
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.2)",
+              }}
+            >
+              {[
+                {
+                  label: "Tổng lớp",
+                  value: String(summary.totalClasses),
+                  icon: "grid" as const,
+                },
+                {
+                  label: "Sinh viên",
+                  value: String(summary.totalStudents),
+                  icon: "people" as const,
+                },
+                {
+                  label: "Điểm danh TB",
+                  value: `${summary.averageRate}%`,
+                  icon: "pie-chart" as const,
+                },
+              ].map((item, idx) => (
+                <View
+                  key={idx}
+                  style={{
+                    flex: 1,
+                    alignItems: "center",
+                    borderLeftWidth: idx > 0 ? 1 : 0,
+                    borderLeftColor: "rgba(255,255,255,0.25)",
+                    gap: 4,
+                  }}
+                >
+                  <Ionicons
+                    name={item.icon}
+                    size={16}
+                    color="rgba(255,255,255,0.7)"
+                  />
+                  <Text
+                    style={{ fontSize: 18, fontWeight: "800", color: "#fff" }}
+                  >
+                    {item.value}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      color: "rgba(255,255,255,0.7)",
+                    }}
+                  >
+                    {item.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </Animated.View>
+        </View>
+      </Animated.View>
 
       {loading ? (
         <View
@@ -325,9 +524,18 @@ export default function ClassListScreen() {
           <Text style={{ color: Colors.textSecondary, marginTop: 12 }}>Đang tải dữ liệu...</Text>
         </View>
       ) : (
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal, paddingTop: 16, paddingBottom: 24 }}
+        <Animated.ScrollView
+          contentContainerStyle={{
+            paddingHorizontal,
+            paddingTop: HEADER_MAX_HEIGHT + 16, // leave space for the animated header
+            paddingBottom: 24,
+          }}
           showsVerticalScrollIndicator={false}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+          scrollEventThrottle={16}
         >
           <View
             style={{
@@ -336,136 +544,6 @@ export default function ClassListScreen() {
               alignSelf: "center",
             }}
           >
-            {/* Page Title - Removed since it's redundant with AppHeader */}
-
-            {/* ── Hero Overview Bar ────────────────────────────────────── */}
-            <View
-              style={{
-                backgroundColor: '#0891b2',
-                borderRadius: 20,
-                padding: 20,
-                marginBottom: 24,
-                shadowColor: '#0891b2',
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.32,
-                shadowRadius: 16,
-                elevation: 6,
-              }}
-            >
-              {/* Header row */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                <View
-                  style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: 16,
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Ionicons name="school" size={28} color="#fff" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 2 }}>
-                    Tổng quan lớp học
-                  </Text>
-                  <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>
-                    {summary.totalClasses} lớp • {summary.totalStudents} sinh viên
-                  </Text>
-                </View>
-                {/* Big rate badge */}
-                <View
-                  style={{
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: 14,
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    alignItems: 'center',
-                    borderWidth: 1.5,
-                    borderColor: 'rgba(255,255,255,0.35)',
-                  }}
-                >
-                  <Text style={{ fontSize: 22, fontWeight: '800', color: '#fff' }}>
-                    {summary.averageRate}%
-                  </Text>
-                  <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.8)', marginTop: 1 }}>
-                    Điểm danh TB
-                  </Text>
-                </View>
-              </View>
-
-              {/* Progress bar */}
-              <View style={{ marginBottom: 16 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.85)' }}>
-                    Tỷ lệ điểm danh trung bình
-                  </Text>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>
-                    {summary.averageRate}%
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    height: 8,
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    borderRadius: 4,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <View
-                    style={{
-                      height: '100%',
-                      width: `${Math.min(summary.averageRate, 100)}%`,
-                      backgroundColor: summary.averageRate >= 90
-                        ? '#34d399'
-                        : summary.averageRate >= 75
-                          ? '#fbbf24'
-                          : '#f87171',
-                      borderRadius: 4,
-                    }}
-                  />
-                </View>
-              </View>
-
-              {/* Quick stats 3 columns */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  backgroundColor: 'rgba(255,255,255,0.15)',
-                  borderRadius: 14,
-                  paddingVertical: 12,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.2)',
-                }}
-              >
-                {[
-                  { label: 'Tổng lớp', value: String(summary.totalClasses), icon: 'grid' as const },
-                  { label: 'Sinh viên', value: String(summary.totalStudents), icon: 'people' as const },
-                  { label: 'Điểm danh TB', value: `${summary.averageRate}%`, icon: 'pie-chart' as const },
-                ].map((item, idx) => (
-                  <View
-                    key={idx}
-                    style={{
-                      flex: 1,
-                      alignItems: 'center',
-                      borderLeftWidth: idx > 0 ? 1 : 0,
-                      borderLeftColor: 'rgba(255,255,255,0.25)',
-                      gap: 4,
-                    }}
-                  >
-                    <Ionicons name={item.icon} size={16} color="rgba(255,255,255,0.7)" />
-                    <Text style={{ fontSize: 20, fontWeight: '800', color: '#fff' }}>
-                      {item.value}
-                    </Text>
-                    <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)' }}>
-                      {item.label}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
             {/* Classes List */}
             <View style={{
               flexDirection: isMobile ? "column" : "row",
@@ -743,7 +821,7 @@ export default function ClassListScreen() {
               })}
             </View>
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       )}
 
       {/* Detail Modal */}

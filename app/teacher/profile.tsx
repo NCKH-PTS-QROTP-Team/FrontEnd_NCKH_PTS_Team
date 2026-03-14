@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   Alert,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -21,6 +22,8 @@ import {
   ClipboardIcon,
   ChartIcon,
 } from "@/components/Icons";
+import { authService } from "@/apis/services/auth.service";
+import { reportService, type TeacherSummary } from "@/apis/services/report.service";
 
 export default function TeacherProfileScreen() {
   const router = useRouter();
@@ -41,82 +44,140 @@ export default function TeacherProfileScreen() {
     ]);
   };
 
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [summary, setSummary] = useState<TeacherSummary | null>(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const tokenUser = await authService.getCurrentUser();
+        if (tokenUser) setUserInfo(tokenUser);
+
+        const summaryData = await reportService.getTeacherSummary();
+        setSummary(summaryData);
+      } catch (error) {
+        console.error("Failed to load user info or summary:", error);
+      }
+    };
+    fetchUserData();
+  }, []);
+
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const HEADER_MAX_HEIGHT = isMobile ? 320 : 290;
+  const HEADER_MIN_HEIGHT = isMobile ? 120 : HEADER_MAX_HEIGHT;
+  const HEADER_SCROLL_DISTANCE = Math.max(1, HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT);
+
+  const headerHeight = isMobile ? scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+    extrapolate: "clamp",
+  }) : HEADER_MAX_HEIGHT;
+
+  const contentOpacity = isMobile ? scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+    outputRange: [1, 0.2, 0],
+    extrapolate: "clamp",
+  }) : 1;
+
+  const contentTranslateY = isMobile ? scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [0, -10],
+    extrapolate: "clamp",
+  }) : 0;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
       <StatusBar style="light" />
 
       {/* ── Purple Hero Header ── */}
-      <View
+      <Animated.View
         style={{
           backgroundColor: "#8B5CF6", // Purple theme
-          paddingTop: isMobile ? 48 : 64, // leave space for status bar manually if needed
-          paddingBottom: 40,
+          paddingTop: isMobile ? 48 : 64,
           paddingHorizontal: 16,
           borderBottomLeftRadius: 32,
           borderBottomRightRadius: 32,
-          alignItems: "center",
-          justifyContent: "center",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: headerHeight,
           zIndex: 10,
+          overflow: "hidden",
           shadowColor: "#8B5CF6",
-          shadowOffset: { width: 0, height: 4 },
+          shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0.3,
-          shadowRadius: 12,
+          shadowRadius: 16,
           elevation: 8,
+          alignItems: "center",
         }}
       >
         <Text style={{ fontSize: 16, fontWeight: "600", color: "rgba(255,255,255,0.8)", marginBottom: 16 }}>
           Tài khoản
         </Text>
-        <View
+        <Animated.View
           style={{
-            width: 80,
-            height: 80,
-            borderRadius: 40,
-            backgroundColor: "rgba(255,255,255,0.2)",
             alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 16,
+            opacity: contentOpacity,
+            transform: [{ translateY: contentTranslateY }]
           }}
         >
-          <TeacherIcon size={40} color="#fff" />
-        </View>
-        <Text
-          style={{
-            fontSize: 22,
-            fontWeight: "800",
-            color: "#ffffff",
-            marginBottom: 4,
-          }}
-        >
-          Trần Thị Bình
-        </Text>
-        <Text
-          style={{
-            fontSize: 14,
-            color: "rgba(255,255,255,0.8)",
-            marginBottom: 2,
-          }}
-        >
-          Mã GV: GV2021001
-        </Text>
-        <Text
-          style={{
-            fontSize: 14,
-            color: "rgba(255,255,255,0.8)",
-          }}
-        >
-          tranthib@teacher.edu.vn
-        </Text>
-      </View>
+          <View
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: 40,
+              backgroundColor: "rgba(255,255,255,0.2)",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 16,
+            }}
+          >
+            <TeacherIcon size={40} color="#fff" />
+          </View>
+          <Text
+            style={{
+              fontSize: 22,
+              fontWeight: "800",
+              color: "#ffffff",
+              marginBottom: 4,
+            }}
+          >
+            {userInfo?.name || "Trần Thị Bình"}
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: "rgba(255,255,255,0.8)",
+              marginBottom: 2,
+            }}
+          >
+            Mã GV: {userInfo?.username || "GV2021001"}
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: "rgba(255,255,255,0.8)",
+            }}
+          >
+            {userInfo?.email || "tranthib@teacher.edu.vn"}
+          </Text>
+        </Animated.View>
+      </Animated.View>
 
-      <ScrollView
+      <Animated.ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
           padding: 16,
-          paddingTop: 24,
+          paddingTop: HEADER_MAX_HEIGHT + 24,
           paddingBottom: isMobile ? 100 : 32,
         }}
         showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
       >
         {/* Stats Grid */}
         <View
@@ -153,7 +214,7 @@ export default function TeacherProfileScreen() {
                 color: Colors.primary,
               }}
             >
-              5
+              {summary?.totalClasses || 0}
             </Text>
           </View>
           <View
@@ -183,7 +244,7 @@ export default function TeacherProfileScreen() {
                 color: "#10B981",
               }}
             >
-              182
+              {summary?.totalStudents || 0}
             </Text>
           </View>
         </View>
@@ -414,7 +475,7 @@ export default function TeacherProfileScreen() {
         >
           Phiên bản 1.0.0
         </Text>
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
