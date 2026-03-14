@@ -22,8 +22,7 @@ import Toast, { useToast } from "@/components/Toast";
 import type { Class } from "@/apis/services/class.service";
 import type { ClassAttendanceReport, StudentAttendanceReport } from "@/apis/services/report.service";
 import type { Schedule } from "@/apis/services/schedule.service";
-import type { ScheduleResponse } from "@/apis/types/schedule.types";
-import { WeekCalendar } from "@/components/WeekCalendar";
+
 
 interface TeacherClassCard {
   id: string;
@@ -75,13 +74,7 @@ export default function ClassListScreen() {
   const [studentRecords, setStudentRecords] = useState<any[]>([]);
   const [studentRecordsLoading, setStudentRecordsLoading] = useState(false);
 
-  // Sub-tab trong modal chi tiết lớp học
-  const [modalTab, setModalTab] = useState<'students' | 'schedule'>('students');
-  const [classSchedules, setClassSchedules] = useState<Schedule[]>([]);
 
-  // WeekCalendar states cho tab lịch học
-  const [scheduleSelectedDate, setScheduleSelectedDate] = useState<Date>(new Date());
-  const [scheduleWeekOffset, setScheduleWeekOffset] = useState<number>(0);
 
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
@@ -236,11 +229,7 @@ export default function ClassListScreen() {
   const handleClassPress = (classItem: TeacherClassCard) => {
     setSelectedClass(classItem);
     setModalVisible(true);
-    setModalTab('students');
-    setScheduleSelectedDate(new Date());
-    setScheduleWeekOffset(0);
     loadStudentReports(classItem.id);
-    loadClassSchedules(classItem.id);
   };
 
   const loadStudentReports = async (classId: string) => {
@@ -254,15 +243,6 @@ export default function ClassListScreen() {
       showToast("Không thể tải danh sách sinh viên", "error");
     } finally {
       setStudentsLoading(false);
-    }
-  };
-
-  const loadClassSchedules = async (classId: string) => {
-    try {
-      const schedules = await scheduleService.getSchedules({ classId });
-      setClassSchedules(schedules || []);
-    } catch {
-      setClassSchedules([]);
     }
   };
 
@@ -896,39 +876,7 @@ export default function ClassListScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Modal Sub-tabs */}
-            <View
-              style={{
-                flexDirection: 'row',
-                borderBottomWidth: 1,
-                borderBottomColor: Colors.border,
-                paddingHorizontal: isMobile ? 16 : 24,
-              }}
-            >
-              {(['students', 'schedule'] as const).map((tab) => (
-                <TouchableOpacity
-                  key={tab}
-                  onPress={() => setModalTab(tab)}
-                  style={{
-                    paddingVertical: 12,
-                    paddingHorizontal: 4,
-                    marginRight: 24,
-                    borderBottomWidth: 2,
-                    borderBottomColor: modalTab === tab ? '#3b82f6' : 'transparent',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: '600',
-                      color: modalTab === tab ? '#3b82f6' : '#94a3b8',
-                    }}
-                  >
-                    {tab === 'students' ? 'Sinh viên' : 'Lịch học'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+
 
             {/* Modal Content */}
             <ScrollView
@@ -983,245 +931,125 @@ export default function ClassListScreen() {
                 ))}
               </View>
 
-              {modalTab === 'students' ? (
-                <>
-                  {/* Student List */}
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      fontWeight: "700",
-                      color: Colors.text,
-                      marginBottom: 12,
-                    }}
-                  >
-                    Danh sách sinh viên{" "}
-                    {studentsLoading
-                      ? "(đang tải...)"
-                      : `(${students.length} sinh viên)`}
-                  </Text>
-                  {!studentsLoading &&
-                    students.map((student) => {
-                      const rate = Math.round(student.attendanceRate || 0);
-                      const rateColor =
-                        rate >= 90
-                          ? "#10b981"
-                          : rate >= 75
-                            ? "#f59e0b"
-                            : "#ef4444";
-                      const avatarColor =
-                        rate >= 90
-                          ? "#dcfce7"
-                          : rate >= 75
-                            ? "#fef3c7"
-                            : "#fee2e2";
-                      return (
-                        <View
-                          key={student.studentId}
+              {/* Student List */}
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: "700",
+                  color: Colors.text,
+                  marginBottom: 12,
+                }}
+              >
+                Danh sách sinh viên{" "}
+                {studentsLoading
+                  ? "(đang tải...)"
+                  : `(${students.length} sinh viên)`}
+              </Text>
+              {!studentsLoading &&
+                students.map((student) => {
+                  const rate = Math.round(student.attendanceRate || 0);
+                  let rateColor = "#ef4444";
+                  let rateBg = "#fef2f2";
+                  if (rate >= 90) { rateColor = "#10b981"; rateBg = "#ecfdf5"; }
+                  else if (rate >= 75) { rateColor = "#f59e0b"; rateBg = "#fffbeb"; }
+                  const initial = (student.studentName || "?").trim().charAt(0).toUpperCase();
+
+                  return (
+                    <TouchableOpacity
+                      key={student.studentId}
+                      onPress={() => handleStudentPress(student)}
+                      activeOpacity={0.75}
+                      style={{
+                        backgroundColor: "#fff",
+                        borderRadius: 14,
+                        borderWidth: 1,
+                        borderColor: "#f1f5f9",
+                        shadowColor: "#64748b",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.06,
+                        shadowRadius: 6,
+                        elevation: 2,
+                        marginBottom: 10,
+                        padding: 14,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 12,
+                      }}
+                    >
+                      {/* Avatar */}
+                      <View
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 22,
+                          backgroundColor: "#6366f1" + "18",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Text style={{ fontSize: 18, fontWeight: "800", color: "#6366f1" }}>
+                          {initial}
+                        </Text>
+                      </View>
+
+                      {/* Info */}
+                      <View style={{ flex: 1 }}>
+                        <Text
                           style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            paddingVertical: 12,
-                            paddingHorizontal: 12,
-                            borderBottomWidth: 1,
-                            borderBottomColor: "#f8fafc",
-                            gap: 12,
-                            backgroundColor: "#fff",
-                            borderRadius: 10,
-                            marginBottom: 8,
-                            borderWidth: 1,
-                            borderColor: '#f1f5f9',
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 1 },
-                            shadowOpacity: 0.04,
-                            shadowRadius: 4,
-                            elevation: 1,
+                            fontSize: 14,
+                            fontWeight: "700",
+                            color: "#1e293b",
+                            marginBottom: 3,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {student.studentName}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>
+                          MSSV: {student.studentId}
+                        </Text>
+                        {/* Progress bar */}
+                        <View
+                          style={{
+                            height: 4,
+                            backgroundColor: "#e2e8f0",
+                            borderRadius: 2,
+                            overflow: "hidden",
                           }}
                         >
-                          {/* Avatar */}
                           <View
                             style={{
-                              width: 42,
-                              height: 42,
-                              borderRadius: 12,
-                              backgroundColor: avatarColor,
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0,
+                              height: "100%",
+                              width: `${Math.min(rate, 100)}%`,
+                              backgroundColor: rateColor,
+                              borderRadius: 2,
                             }}
-                          >
-                            <Text style={{ fontSize: 16, fontWeight: "700", color: rateColor }}>
-                              {student.studentName.trim().charAt(0).toUpperCase()}
-                            </Text>
-                          </View>
-                          {/* Info */}
-                          <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 14, fontWeight: '700', color: '#1e293b' }} numberOfLines={1}>
-                              {student.studentName}
-                            </Text>
-                            <Text style={{ fontSize: 12, color: '#94a3b8', marginTop: 1 }}>
-                              MSSV: {student.studentId}
-                            </Text>
-                            <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
-                              <Text style={{ fontSize: 11, color: '#10b981', fontWeight: '700' }}>✓ {student.presentCount}</Text>
-                              <Text style={{ fontSize: 11, color: '#f59e0b', fontWeight: '700' }}>◔ {student.lateCount}</Text>
-                              <Text style={{ fontSize: 11, color: '#ef4444', fontWeight: '700' }}>× {student.absentCount}</Text>
-                            </View>
-                          </View>
-                          {/* Rate badge */}
-                          <View style={{ alignItems: 'center', gap: 8 }}>
-                            <View
-                              style={{
-                                backgroundColor: rateColor + '18',
-                                paddingHorizontal: 10,
-                                paddingVertical: 4,
-                                borderRadius: 8,
-                              }}
-                            >
-                              <Text style={{ fontSize: 13, fontWeight: '800', color: rateColor }}>{rate}%</Text>
-                            </View>
-                            {/* Eye button */}
-                            <TouchableOpacity
-                              onPress={() => handleStudentPress(student)}
-                              style={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 16,
-                                backgroundColor: '#eff6ff',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <Ionicons name="eye-outline" size={16} color="#3b82f6" />
-                            </TouchableOpacity>
-                          </View>
+                          />
                         </View>
-                      );
-                    })}
-                </>
-              ) : (
-                <>
-                  {/* WeekCalendar */}
-                  <WeekCalendar
-                    schedules={classSchedules.map(s => ({
-                      ...s,
-                      classId: s.classId ?? null,
-                      classCode: s.classCode ?? null,
-                      className: s.className ?? null,
-                      subjectId: s.subjectId ?? null,
-                      subjectCode: s.subjectCode ?? null,
-                      subjectName: s.subjectName ?? null,
-                      teacherId: s.teacherId ?? null,
-                      teacherName: s.teacherName ?? null,
-                      // Schedule service dùng 1-7 (T2–CN), WeekCalendar dùng 2–8 (T2–CN)
-                      dayOfWeek: s.dayOfWeek != null
-                        ? (s.dayOfWeek === 7 ? 8 : s.dayOfWeek + 1)
-                        : null,
-                      startTime: s.startTime ?? null,
-                      endTime: s.endTime ?? null,
-                      room: s.room ?? null,
-                      startDate: s.startDate ?? null,
-                      endDate: s.endDate ?? null,
-                    }) as import('@/apis/types/schedule.types').ScheduleResponse)}
-                    selectedDate={scheduleSelectedDate}
-                    setSelectedDate={setScheduleSelectedDate}
-                    weekOffset={scheduleWeekOffset}
-                    setWeekOffset={setScheduleWeekOffset}
-                  />
-
-                  {/* Lịch của ngày đã chọn */}
-                  {(() => {
-                    // WeekCalendar dùng dow 2–8; schedule.service dùng 1–7
-                    const jsDay = scheduleSelectedDate.getDay(); // 0=CN,1=T2,...6=T7
-                    // convert jsDay -> schedule.service dayOfWeek (1=T2,...,7=CN)
-                    const svcDow = jsDay === 0 ? 7 : jsDay;
-                    const selStr = scheduleSelectedDate.toISOString().slice(0, 10); // yyyy-MM-dd
-
-                    const filtered = classSchedules.filter(s => {
-                      // Case 1: Backend trả về từng buổi học riêng lẻ (có field `date`)
-                      // → khớp chính xác với ngày chọn
-                      if (s.date) {
-                        return s.date === selStr;
-                      }
-
-                      // Case 2: Lịch lặp lại theo tuần (không có `date`)
-                      // → kiểm tra thứ + khoảng thời gian + excludedDates
-                      if (s.dayOfWeek !== svcDow) return false;
-                      if (s.startDate && selStr < s.startDate) return false;
-                      if (s.endDate && selStr > s.endDate) return false;
-                      if (s.excludedDates?.includes(selStr)) return false;
-                      return true;
-                    });
-
-                    // Loại duplicate theo ID (đề phòng API trả về trùng)
-                    const seen = new Set<string>();
-                    const unique = filtered.filter(s => {
-                      if (seen.has(s.id)) return false;
-                      seen.add(s.id);
-                      return true;
-                    });
-                    const dayMap: Record<number, string> = { 1: 'Thứ 2', 2: 'Thứ 3', 3: 'Thứ 4', 4: 'Thứ 5', 5: 'Thứ 6', 6: 'Thứ 7', 7: 'Chủ nhật' };
-
-                    if (unique.length === 0) {
-                      return (
-                        <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-                          <Ionicons name="calendar-outline" size={42} color="#cbd5e1" />
-                          <Text style={{ color: '#94a3b8', marginTop: 10, textAlign: 'center' }}>
-                            Không có lịch học{'\n'}vào {scheduleSelectedDate.toLocaleDateString('vi-VN')}
-                          </Text>
-                        </View>
-                      );
-                    }
-
-                    return (
-                      <View style={{ gap: 10 }}>
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#475569', marginBottom: 4 }}>
-                          {scheduleSelectedDate.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
-                        </Text>
-                        {unique.map((s, i) => (
-                          <View
-                            key={s.id || i}
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              padding: 14,
-                              backgroundColor: '#fff',
-                              borderRadius: 12,
-                              borderWidth: 1,
-                              borderColor: '#e0f2fe',
-                              borderLeftWidth: 4,
-                              borderLeftColor: '#0ea5e9',
-                              shadowColor: '#000',
-                              shadowOffset: { width: 0, height: 2 },
-                              shadowOpacity: 0.04,
-                              shadowRadius: 4,
-                              elevation: 1,
-                              gap: 14,
-                            }}
-                          >
-                            <View style={{ flex: 1 }}>
-                              <Text style={{ fontSize: 15, fontWeight: '700', color: '#1e293b' }}>
-                                {dayMap[s.dayOfWeek] || ''}
-                              </Text>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                                <Ionicons name="time-outline" size={13} color="#0ea5e9" />
-                                <Text style={{ fontSize: 13, color: '#0ea5e9', fontWeight: '600' }}>
-                                  {s.startTime} – {s.endTime}
-                                </Text>
-                              </View>
-                              {s.room && (
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                                  <Ionicons name="location-outline" size={13} color="#94a3b8" />
-                                  <Text style={{ fontSize: 12, color: '#64748b' }}>Phòng {s.room}</Text>
-                                </View>
-                              )}
-                            </View>
-                          </View>
-                        ))}
                       </View>
-                    );
-                  })()}
-                </>
-              )}
+
+                      {/* Rate badge */}
+                      <View
+                        style={{
+                          backgroundColor: rateBg,
+                          paddingHorizontal: 10,
+                          paddingVertical: 5,
+                          borderRadius: 8,
+                          alignItems: "center",
+                          minWidth: 52,
+                        }}
+                      >
+                        <Text style={{ fontSize: 15, fontWeight: "800", color: rateColor }}>
+                          {rate}%
+                        </Text>
+                        <Text style={{ fontSize: 10, color: rateColor, opacity: 0.8 }}>
+                          Điểm danh
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
             </ScrollView>
 
             {/* Modal Footer */}

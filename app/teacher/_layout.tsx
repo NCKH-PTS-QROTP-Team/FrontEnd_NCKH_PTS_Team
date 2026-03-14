@@ -13,16 +13,17 @@ import {
   ChartIcon,
   UserIcon,
   PlusIcon,
+  BellIcon,
 } from "@/components/Icons";
 import { Colors } from "@/constants/colors";
 
 export default function TeacherLayout() {
   const isWeb = Platform.OS === "web";
-const router = useRouter();
+  const router = useRouter();
   const pathname = usePathname();
 
   const menuItems = [
-{
+    {
       icon: <HomeIcon size={20} color="#3FA9F5" />,
       label: "Dashboard",
       route: "/teacher/dashboard",
@@ -52,14 +53,19 @@ const router = useRouter();
       label: "Báo cáo",
       route: "/teacher/reports",
     },
-];
+    {
+      icon: <BellIcon size={20} color="#3FA9F5" />,
+      label: "Thông báo",
+      route: "/teacher/notifications",
+    },
+  ];
 
   const stackContent = (
     <Stack
       screenOptions={{
         headerShown: false,
-contentStyle: { backgroundColor: "#FFFFFF" },
-}}
+        contentStyle: { backgroundColor: "#FFFFFF" },
+      }}
     >
       <Stack.Screen name="dashboard" />
       <Stack.Screen name="class-list" />
@@ -67,13 +73,14 @@ contentStyle: { backgroundColor: "#FFFFFF" },
       <Stack.Screen name="generate-qr" />
       <Stack.Screen name="advisee-class" />
       <Stack.Screen name="reports" />
-<Stack.Screen name="attendance-actions" />
+      <Stack.Screen name="attendance-actions" />
       <Stack.Screen name="profile" />
-</Stack>
+      <Stack.Screen name="notifications" />
+    </Stack>
   );
 
   if (!isWeb) {
-// On mobile, render with bottom navigation (4 items + center button)
+    // On mobile, render with bottom navigation (4 items + center button)
     const bottomNavItems = [
       {
         key: "/teacher/dashboard",
@@ -134,18 +141,18 @@ contentStyle: { backgroundColor: "#FFFFFF" },
     ];
 
     const currentRoute = pathname || "/teacher/dashboard";
-return (
+    return (
       <View style={{ flex: 1 }}>
         {stackContent}
         <BottomNavigation
           items={bottomNavItems}
           activeKey={currentRoute}
           onItemPress={(route) => router.push(route as any)}
-centerButton={{
+          centerButton={{
             icon: <QrCodeIcon size={32} color={Colors.white} />,
             onPress: () => router.push("/teacher/attendance-actions"),
           }}
-/>
+        />
         <ChatBox />
       </View>
     );

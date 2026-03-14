@@ -49,6 +49,7 @@ export default function TeacherDashboardScreen() {
   const { showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
+  const [unreadNotifs, setUnreadNotifs] = useState(3); // demo – 3 thông báo chưa đọc
   const [activeTab, setActiveTab] = useState<"overview" | "schedule">(
     "overview",
   );
@@ -390,12 +391,43 @@ export default function TeacherDashboardScreen() {
 
           <TouchableOpacity
             onPress={() => router.push("/teacher/reports")}
-            style={{ flexDirection: "row", alignItems: "center", padding: 16 }}
+            style={{ flexDirection: "row", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" }}
           >
             <View style={{ width: 40, height: 40, backgroundColor: "#fffbeb", borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 14 }}>
               <Ionicons name="pie-chart" size={20} color="#f59e0b" />
             </View>
-            <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: "#1e293b" }}>Báo cáo & Thống kê</Text>
+            <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: "#1e293b" }}>Báo cáo &amp; Thống kê</Text>
+            <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => { setUnreadNotifs(0); router.push("/teacher/notifications"); }}
+            style={{ flexDirection: "row", alignItems: "center", padding: 16 }}
+          >
+            <View style={{ width: 40, height: 40, backgroundColor: "#eef2ff", borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 14, position: "relative" }}>
+              <Ionicons name="notifications" size={20} color="#6366f1" />
+              {unreadNotifs > 0 && (
+                <View
+                  style={{
+                    position: "absolute", top: -2, right: -2,
+                    width: 16, height: 16, borderRadius: 8,
+                    backgroundColor: "#ef4444",
+                    alignItems: "center", justifyContent: "center",
+                    borderWidth: 1.5, borderColor: "#fff",
+                  }}
+                >
+                  <Text style={{ fontSize: 9, fontWeight: "800", color: "#fff" }}>
+                    {unreadNotifs > 9 ? "9+" : unreadNotifs}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: "#1e293b" }}>Thông báo</Text>
+            {unreadNotifs > 0 && (
+              <View style={{ backgroundColor: "#ef4444", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginRight: 8 }}>
+                <Text style={{ fontSize: 11, fontWeight: "800", color: "#fff" }}>{unreadNotifs} mới</Text>
+              </View>
+            )}
             <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
           </TouchableOpacity>
         </View>
@@ -752,8 +784,59 @@ export default function TeacherDashboardScreen() {
               Xin chào, Giảng viên
             </Text>
           </View>
-          <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255,255,255,0.3)" }}>
-            <Ionicons name="person" size={24} color="#fff" />
+
+          {/* Bell + Profile icons */}
+          <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+            {/* Notification Bell */}
+            <TouchableOpacity
+              onPress={() => router.push("/teacher/notifications")}
+              style={{ position: "relative" }}
+              activeOpacity={0.75}
+            >
+              <View
+                style={{
+                  width: 46, height: 46, borderRadius: 23,
+                  backgroundColor: "rgba(255,255,255,0.18)",
+                  alignItems: "center", justifyContent: "center",
+                  borderWidth: 1.5, borderColor: "rgba(255,255,255,0.3)",
+                }}
+              >
+                <Ionicons name="notifications-outline" size={22} color="#fff" />
+              </View>
+              {unreadNotifs > 0 && (
+                <View
+                  style={{
+                    position: "absolute", top: -3, right: -3,
+                    minWidth: 18, height: 18, borderRadius: 9,
+                    backgroundColor: "#ef4444",
+                    alignItems: "center", justifyContent: "center",
+                    paddingHorizontal: 4,
+                    borderWidth: 2, borderColor: "#3b82f6",
+                  }}
+                >
+                  <Text style={{ fontSize: 10, fontWeight: "800", color: "#fff" }}>
+                    {unreadNotifs > 9 ? "9+" : unreadNotifs}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            {/* Profile avatar */}
+            <TouchableOpacity
+              onPress={() => router.push("/teacher/profile")}
+              activeOpacity={0.75}
+            >
+              <View
+                style={{
+                  width: 46, height: 46, borderRadius: 23,
+                  backgroundColor: "rgba(255,255,255,0.2)",
+                  alignItems: "center", justifyContent: "center",
+                  borderWidth: 2, borderColor: "rgba(255,255,255,0.3)",
+                }}
+              >
+                <Ionicons name="person" size={22} color="#fff" />
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
