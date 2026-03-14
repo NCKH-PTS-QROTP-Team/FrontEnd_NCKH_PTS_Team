@@ -8,6 +8,7 @@ import {
   Platform,
   ActivityIndicator,
   Modal,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -236,9 +237,9 @@ function AtRiskCard({
   onNotify?: () => void;
   onDetail?: () => void;
 }) {
-  const totalSessions = student.totalSessions || 1;
-  const absenceRate = Math.round((student.absentCount / totalSessions) * 100);
-  const isCritical = absenceRate >= 40;
+  const totalSessions = student.totalSessions || 0;
+  const rate = Math.round(student.attendanceRate || 0);
+  const isCritical = rate < 60; // < 60% là cực kỳ nguy hiểm
   const accentColor = isCritical ? "#ef4444" : "#f59e0b";
   const accentBg = isCritical ? "#fef2f2" : "#fffbeb";
   const initial = (student.studentName || "?").charAt(0).toUpperCase();
@@ -307,7 +308,7 @@ function AtRiskCard({
               MSSV: {student.studentId}
             </Text>
           </View>
-          {/* Absence badge */}
+          {/* Rate badge */}
           <View
             style={{
               backgroundColor: accentColor,
@@ -317,10 +318,10 @@ function AtRiskCard({
             }}
           >
             <Text style={{ fontSize: 15, fontWeight: "800", color: "#fff" }}>
-              {absenceRate}%
+              {rate}%
             </Text>
             <Text style={{ fontSize: 9, color: "#fff", opacity: 0.85, textAlign: "center" }}>
-              Vắng
+              Chuyên cần
             </Text>
           </View>
         </View>
@@ -373,7 +374,7 @@ function AtRiskCard({
           <View
             style={{
               height: "100%",
-              width: `${absenceRate}%`,
+              width: `${rate}%`,
               backgroundColor: accentColor,
               borderRadius: 3,
             }}
@@ -475,6 +476,8 @@ export default function AdviseeClass() {
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState<StudentAttendanceReport[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState<"all" | "excellent" | "warning" | "danger">("all");
   const [atRiskStudents, setAtRiskStudents] = useState<StudentAttendanceReport[]>([]);
   const [className, setClassName] = useState<string>("Lớp chủ nhiệm");
   const [major, setMajor] = useState<string>("");
@@ -532,7 +535,7 @@ export default function AdviseeClass() {
       setTotalStudents(total);
 
       const atRisk = studentReports.filter(
-        (s) => s.absentCount / (s.totalSessions || 1) >= 0.2
+        (s) => s.attendanceRate != null && s.attendanceRate < 80
       );
       setAtRiskStudents(atRisk);
       setAtRiskCount(atRisk.length);
@@ -850,11 +853,9 @@ export default function AdviseeClass() {
                     {/* At-risk mini list (preview 3) */}
                     <View style={{ padding: 12 }}>
                       {atRiskStudents.slice(0, 3).map((student, idx) => {
-                        const totalSessions = student.totalSessions || 1;
-                        const absenceRate = Math.round(
-                          (student.absentCount / totalSessions) * 100
-                        );
-                        const isCrit = absenceRate >= 40;
+                        const totalSessions = student.totalSessions || 0;
+                        const rate = Math.round(student.attendanceRate || 0);
+                        const isCrit = rate < 60;
                         const ac = isCrit ? "#ef4444" : "#f59e0b";
                         return (
                           <View
@@ -904,7 +905,7 @@ export default function AdviseeClass() {
                               }}
                             >
                               <Text style={{ fontSize: 12, fontWeight: "800", color: "#fff" }}>
-                                {absenceRate}% vắng
+                                {rate}% CC
                               </Text>
                             </View>
                           </View>
@@ -1020,53 +1021,126 @@ export default function AdviseeClass() {
             )}
 
             {/* ── STUDENTS TAB ──────────────────────────────────────────────── */}
-            {activeTab === "students" && (
-              <>
-                {/* Count badge */}
-                <View
-                  style={{
-                    alignSelf: "flex-start",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 6,
-                    backgroundColor: "#fff",
-                    borderRadius: 10,
-                    paddingHorizontal: 12,
-                    paddingVertical: 7,
-                    borderWidth: 1,
-                    borderColor: "#f1f5f9",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.04,
-                    shadowRadius: 4,
-                    elevation: 1,
-                    marginBottom: 16,
-                  }}
-                >
-                  <Ionicons name="people" size={14} color={INDIGO} />
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#1e293b" }}>
-                    {students.length} sinh viên
-                  </Text>
-                </View>
+            {activeTab === "students" && (() => {
+              const filteredStudents = students.filter(s => {
+                const matchQuery = (s.studentName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (s.studentId || '').toLowerCase().includes(searchQuery.toLowerCase());
+                if (!matchQuery) return false;
 
-                {students.length === 0 ? (
-                  <View style={{ alignItems: "center", paddingVertical: 48 }}>
-                    <Ionicons name="people-outline" size={52} color="#cbd5e1" />
-                    <Text style={{ fontSize: 15, color: "#94a3b8", marginTop: 12, fontWeight: "600" }}>
-                      Chưa có sinh viên nào
+                const rate = Math.round(s.attendanceRate || 0);
+                if (filterType === 'excellent') return rate >= 90;
+                if (filterType === 'warning') return rate >= 75 && rate < 90;
+                if (filterType === 'danger') return rate < 75;
+                return true;
+              });
+
+              return (
+                <>
+                  {/* Search Bar & Filters */}
+                  <View style={{ marginBottom: 16 }}>
+                    <View style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: '#fff',
+                      borderRadius: 12,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      borderWidth: 1,
+                      borderColor: '#f1f5f9',
+                      marginBottom: 12,
+                    }}>
+                      <Ionicons name="search" size={20} color="#94a3b8" style={{ marginRight: 8 }} />
+                      <TextInput
+                        style={{ flex: 1, fontSize: 14, color: '#1e293b', outlineStyle: 'none' } as any}
+                        placeholder="Tìm kiếm theo tên hoặc MSSV..."
+                        placeholderTextColor="#94a3b8"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                      />
+                      {searchQuery.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchQuery("")}>
+                          <Ionicons name="close-circle" size={18} color="#cbd5e1" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
+                      {[
+                        { id: 'all', label: 'Tất cả' },
+                        { id: 'excellent', label: 'Tốt (≥90%)' },
+                        { id: 'warning', label: 'Cảnh báo (75-89%)' },
+                        { id: 'danger', label: 'Nguy hiểm (<75%)' },
+                      ].map((f) => {
+                        const isActive = filterType === f.id;
+                        return (
+                          <TouchableOpacity
+                            key={f.id}
+                            onPress={() => setFilterType(f.id as any)}
+                            style={{
+                              paddingHorizontal: 16,
+                              paddingVertical: 8,
+                              borderRadius: 20,
+                              backgroundColor: isActive ? INDIGO : '#fff',
+                              borderWidth: 1,
+                              borderColor: isActive ? INDIGO : '#e2e8f0',
+                              marginRight: 8,
+                            }}
+                          >
+                            <Text style={{ fontSize: 13, fontWeight: '600', color: isActive ? '#fff' : '#64748b' }}>
+                              {f.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+
+                  {/* Count badge */}
+                  <View
+                    style={{
+                      alignSelf: "flex-start",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      backgroundColor: "#fff",
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 7,
+                      borderWidth: 1,
+                      borderColor: "#f1f5f9",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.04,
+                      shadowRadius: 4,
+                      elevation: 1,
+                      marginBottom: 16,
+                    }}
+                  >
+                    <Ionicons name="people" size={14} color={INDIGO} />
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1e293b" }}>
+                      {filteredStudents.length} sinh viên
                     </Text>
                   </View>
-                ) : (
-                  students.map((student) => (
-                    <StudentRowCard
-                      key={student.studentId}
-                      student={student}
-                      onPress={() => handleOpenStudentDetail(student)}
-                    />
-                  ))
-                )}
-              </>
-            )}
+
+                  {filteredStudents.length === 0 ? (
+                    <View style={{ alignItems: "center", paddingVertical: 48 }}>
+                      <Ionicons name="search-outline" size={52} color="#cbd5e1" />
+                      <Text style={{ fontSize: 15, color: "#94a3b8", marginTop: 12, fontWeight: "600" }}>
+                        Không tìm thấy sinh viên nào
+                      </Text>
+                    </View>
+                  ) : (
+                    filteredStudents.map((student) => (
+                      <StudentRowCard
+                        key={student.studentId}
+                        student={student}
+                        onPress={() => handleOpenStudentDetail(student)}
+                      />
+                    ))
+                  )}
+                </>
+              );
+            })()}
 
             {/* ── AT-RISK TAB ───────────────────────────────────────────────── */}
             {activeTab === "at-risk" && (
@@ -1091,7 +1165,7 @@ export default function AdviseeClass() {
                       Tiêu chí cảnh báo
                     </Text>
                     <Text style={{ fontSize: 12, color: "#ef4444", opacity: 0.8, marginTop: 2 }}>
-                      Sinh viên vắng ≥ 20% tổng số buổi học
+                      Sinh viên có tỷ lệ chuyên cần &lt; 80%
                     </Text>
                   </View>
                 </View>
