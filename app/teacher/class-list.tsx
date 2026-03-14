@@ -449,7 +449,11 @@ export default function ClassListScreen() {
             </View>
 
             {/* Classes List */}
-            <View style={{ flexDirection: "column", gap: 14 }}>
+            <View style={{
+              flexDirection: isMobile ? "column" : "row",
+              flexWrap: isMobile ? "nowrap" : "wrap",
+              gap: 16
+            }}>
               {classes.map((classItem, index) => {
                 // Accent color cycle for variety
                 const accentColors = [
@@ -466,7 +470,13 @@ export default function ClassListScreen() {
                 const initial = (classItem.name || '?').trim().charAt(0).toUpperCase();
 
                 return (
-                  <View key={classItem.id} style={{ width: '100%' }}>
+                  <View
+                    key={classItem.id}
+                    style={{
+                      width: isDesktop ? '31.5%' : isTablet ? '48%' : '100%',
+                      flexGrow: isDesktop || isTablet ? 1 : 0,
+                    }}
+                  >
                     <TouchableOpacity
                       onPress={() => handleClassPress(classItem)}
                       activeOpacity={0.75}
