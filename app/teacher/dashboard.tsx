@@ -810,7 +810,7 @@ export default function TeacherDashboardScreen() {
         contentContainerStyle={{
           paddingHorizontal,
           paddingTop: 24,
-          paddingBottom: isDesktop ? 40 : 32,
+          paddingBottom: isDesktop ? 40 : isMobile ? 100 : 64,
         }}
         showsVerticalScrollIndicator={false}
       >

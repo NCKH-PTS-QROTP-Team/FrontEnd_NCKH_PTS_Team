@@ -43,27 +43,69 @@ export default function TeacherProfileScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
 
-      {/* Header */}
+      {/* ── Purple Hero Header ── */}
       <View
         style={{
-          backgroundColor: Colors.white,
-          borderBottomWidth: 1,
-          borderBottomColor: Colors.border,
+          backgroundColor: "#8B5CF6", // Purple theme
+          paddingTop: isMobile ? 48 : 64, // leave space for status bar manually if needed
+          paddingBottom: 40,
           paddingHorizontal: 16,
-          paddingVertical: 12,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 10,
+          shadowColor: "#8B5CF6",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 12,
+          elevation: 8,
         }}
       >
-        <Text
+        <Text style={{ fontSize: 16, fontWeight: "600", color: "rgba(255,255,255,0.8)", marginBottom: 16 }}>
+          Tài khoản
+        </Text>
+        <View
           style={{
-            fontSize: 20,
-            fontWeight: "bold",
-            color: Colors.textHeading,
-            textAlign: "center",
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: "rgba(255,255,255,0.2)",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 16,
           }}
         >
-          Tài khoản
+          <TeacherIcon size={40} color="#fff" />
+        </View>
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "800",
+            color: "#ffffff",
+            marginBottom: 4,
+          }}
+        >
+          Trần Thị Bình
+        </Text>
+        <Text
+          style={{
+            fontSize: 14,
+            color: "rgba(255,255,255,0.8)",
+            marginBottom: 2,
+          }}
+        >
+          Mã GV: GV2021001
+        </Text>
+        <Text
+          style={{
+            fontSize: 14,
+            color: "rgba(255,255,255,0.8)",
+          }}
+        >
+          tranthib@teacher.edu.vn
         </Text>
       </View>
 
@@ -71,64 +113,11 @@ export default function TeacherProfileScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           padding: 16,
+          paddingTop: 24,
           paddingBottom: isMobile ? 100 : 32,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Profile Card */}
-        <View
-          style={{
-            backgroundColor: Colors.white,
-            borderRadius: 16,
-            padding: 24,
-            marginBottom: 16,
-            alignItems: "center",
-            borderWidth: 1,
-            borderColor: Colors.border,
-          }}
-        >
-          <View
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: 40,
-              backgroundColor: Colors.primary + "20",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 16,
-            }}
-          >
-            <TeacherIcon size={40} color={Colors.primary} />
-          </View>
-          <Text
-            style={{
-              fontSize: 20,
-              fontWeight: "bold",
-              color: Colors.textHeading,
-              marginBottom: 4,
-            }}
-          >
-            Trần Thị Bình
-          </Text>
-          <Text
-            style={{
-              fontSize: 14,
-              color: Colors.textSecondary,
-              marginBottom: 2,
-            }}
-          >
-            Mã GV: GV2021001
-          </Text>
-          <Text
-            style={{
-              fontSize: 14,
-              color: Colors.textSecondary,
-            }}
-          >
-            tranthib@teacher.edu.vn
-          </Text>
-        </View>
-
         {/* Stats Grid */}
         <View
           style={{

@@ -263,8 +263,27 @@ export default function ReportsScreen() {
   const classReports = summary?.classReports ?? [];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#f8fafc" }} edges={["top"]}>
-      <StatusBar style="dark" />
+    <View style={{ flex: 1, backgroundColor: "#f8fafc" }}>
+      <StatusBar style="light" />
+
+      {/* ── Violet Hero Header ── */}
+      <View
+        style={{
+          backgroundColor: "#f59e0b",
+          paddingTop: isMobile ? 48 : 64,
+          paddingBottom: 24,
+          paddingHorizontal: 16,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 10,
+        }}
+      >
+        <Text style={{ fontSize: 24, fontWeight: "800", color: "#ffffff" }}>
+          Báo cáo & Thống kê
+        </Text>
+      </View>
 
       {loading ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -340,7 +359,7 @@ export default function ReportsScreen() {
                       marginBottom: 2,
                     }}
                   >
-                    Báo cáo điểm danh
+                    Tổng quan báo cáo
                   </Text>
                   <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.75)" }}>
                     {summary?.totalClasses ?? 0} lớp •{" "}
@@ -1036,6 +1055,6 @@ export default function ReportsScreen() {
           onHide={hideToast}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }

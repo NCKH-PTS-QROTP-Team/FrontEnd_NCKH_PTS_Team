@@ -7,6 +7,7 @@ import {
   Platform,
   TouchableOpacity,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -290,11 +291,27 @@ export default function ClassListScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#F9FAFB" }}
-      edges={["top"]}
-    >
-      <StatusBar style="dark" />
+    <View style={{ flex: 1, backgroundColor: "#f8fafc" }}>
+      <StatusBar style="light" />
+
+      {/* ── Sky Blue Hero Header ── */}
+      <View
+        style={{
+          backgroundColor: "#0ea5e9",
+          paddingTop: isMobile ? 48 : 64,
+          paddingBottom: 24,
+          paddingHorizontal: 16,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 10,
+        }}
+      >
+        <Text style={{ fontSize: 24, fontWeight: "800", color: "#ffffff" }}>
+          Danh sách lớp học
+        </Text>
+      </View>
 
       {loading ? (
         <View
@@ -304,11 +321,12 @@ export default function ClassListScreen() {
             alignItems: "center",
           }}
         >
-          <Text style={{ color: Colors.textSecondary }}>Đang tải dữ liệu...</Text>
+          <ActivityIndicator size="large" color="#3b82f6" />
+          <Text style={{ color: Colors.textSecondary, marginTop: 12 }}>Đang tải dữ liệu...</Text>
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
+          contentContainerStyle={{ paddingHorizontal, paddingTop: 16, paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
         >
           <View
@@ -350,7 +368,7 @@ export default function ClassListScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 2 }}>
-                    Danh sách lớp học
+                    Tổng quan lớp học
                   </Text>
                   <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>
                     {summary.totalClasses} lớp • {summary.totalStudents} sinh viên
@@ -1238,6 +1256,6 @@ export default function ClassListScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView >
+    </View>
   );
 }

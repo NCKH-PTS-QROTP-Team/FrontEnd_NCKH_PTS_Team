@@ -619,15 +619,50 @@ export default function AdviseeClass() {
   ];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#f8fafc" }} edges={["top"]}>
-      <StatusBar style="dark" />
+    <View style={{ flex: 1, backgroundColor: "#f8fafc" }}>
+      <StatusBar style="light" />
 
-      {/* Tab Bar */}
-      <TabBar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        atRiskCount={atRiskCount}
-      />
+      {/* ── Emerald Hero Header ── */}
+      <View
+        style={{
+          backgroundColor: "#10b981",
+          paddingTop: isMobile ? 48 : 64,
+          paddingBottom: 40,
+          paddingHorizontal: paddingHorizontal,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 10,
+        }}
+      >
+        <Text style={{ fontSize: 24, fontWeight: "800", color: "#ffffff" }}>
+          Lớp chủ nhiệm
+        </Text>
+      </View>
+
+      {/* Tab Bar - Floating Over Hero Header */}
+      <View
+        style={{
+          marginTop: -28,
+          marginHorizontal: paddingHorizontal,
+          borderRadius: 16,
+          backgroundColor: "#fff",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 12,
+          elevation: 5,
+          zIndex: 20,
+          overflow: "hidden",
+        }}
+      >
+        <TabBar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          atRiskCount={atRiskCount}
+        />
+      </View>
 
       {loading ? (
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -1549,6 +1584,6 @@ export default function AdviseeClass() {
           onHide={hideToast}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
