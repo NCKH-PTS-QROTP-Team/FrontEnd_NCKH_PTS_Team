@@ -55,6 +55,20 @@ export interface MonthlyReport {
 }
 
 /**
+ * Teacher-specific summary (filtered by JWT)
+ */
+export interface TeacherSummary {
+  totalClasses: number;
+  totalSessions: number;
+  totalStudents: number;
+  totalPresent: number;
+  totalAbsent: number;
+  totalLate: number;
+  averageAttendanceRate: number;
+  classReports: ClassAttendanceReport[];
+}
+
+/**
  * Report Service
  */
 export const reportService = {
@@ -65,7 +79,15 @@ export const reportService = {
     const response = await apiClient.get<ApiResponse<AttendanceSummary>>('/reports/summary');
     return response.data.data;
   },
-  
+
+  /**
+   * Get teacher-specific summary (classes, sessions, attendance of logged-in teacher)
+   */
+  getTeacherSummary: async (): Promise<TeacherSummary> => {
+    const response = await apiClient.get<ApiResponse<TeacherSummary>>('/reports/teacher-summary');
+    return response.data.data;
+  },
+
   /**
    * Get class attendance reports
    */
@@ -73,7 +95,7 @@ export const reportService = {
     const response = await apiClient.get<ApiResponse<ClassAttendanceReport[]>>('/reports/classes');
     return response.data.data;
   },
-  
+
   /**
    * Get student attendance reports
    */
@@ -82,7 +104,7 @@ export const reportService = {
     const response = await apiClient.get<ApiResponse<StudentAttendanceReport[]>>('/reports/students', { params });
     return response.data.data;
   },
-  
+
   /**
    * Get monthly report
    */

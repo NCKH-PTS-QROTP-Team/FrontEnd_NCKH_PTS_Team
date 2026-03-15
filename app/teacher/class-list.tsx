@@ -28,6 +28,7 @@ interface TeacherClassCard {
   code: string;
   name: string;
   subject?: string;
+  semester?: string;
   scheduleText: string;
   room?: string;
   totalStudents: number;
@@ -319,294 +320,409 @@ export default function ClassListScreen() {
           >
             {/* Page Title - Removed since it's redundant with AppHeader */}
 
-            {/* Summary Stats */}
-            <View style={{ marginBottom: 24 }}>
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontWeight: "bold",
-                  color: "#1e293b",
-                  marginBottom: 16,
-                }}
-              >
-                Tổng quan
-              </Text>
+            {/* ── Hero Overview Bar ────────────────────────────────────── */}
+            <View
+              style={{
+                backgroundColor: '#0891b2',
+                borderRadius: 20,
+                padding: 20,
+                marginBottom: 24,
+                shadowColor: '#0891b2',
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.32,
+                shadowRadius: 16,
+                elevation: 6,
+              }}
+            >
+              {/* Header row */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                <View
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 16,
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Ionicons name="school" size={28} color="#fff" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 2 }}>
+                    Danh sách lớp học
+                  </Text>
+                  <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>
+                    {summary.totalClasses} lớp • {summary.totalStudents} sinh viên
+                  </Text>
+                </View>
+                {/* Big rate badge */}
+                <View
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    borderRadius: 14,
+                    paddingHorizontal: 14,
+                    paddingVertical: 8,
+                    alignItems: 'center',
+                    borderWidth: 1.5,
+                    borderColor: 'rgba(255,255,255,0.35)',
+                  }}
+                >
+                  <Text style={{ fontSize: 22, fontWeight: '800', color: '#fff' }}>
+                    {summary.averageRate}%
+                  </Text>
+                  <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.8)', marginTop: 1 }}>
+                    Điểm danh TB
+                  </Text>
+                </View>
+              </View>
+
+              {/* Progress bar */}
+              <View style={{ marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.85)' }}>
+                    Tỷ lệ điểm danh trung bình
+                  </Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>
+                    {summary.averageRate}%
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    height: 8,
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    borderRadius: 4,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <View
+                    style={{
+                      height: '100%',
+                      width: `${Math.min(summary.averageRate, 100)}%`,
+                      backgroundColor: summary.averageRate >= 90
+                        ? '#34d399'
+                        : summary.averageRate >= 75
+                          ? '#fbbf24'
+                          : '#f87171',
+                      borderRadius: 4,
+                    }}
+                  />
+                </View>
+              </View>
+
+              {/* Quick stats 3 columns */}
               <View
                 style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: 12,
+                  flexDirection: 'row',
+                  backgroundColor: 'rgba(255,255,255,0.15)',
+                  borderRadius: 14,
+                  paddingVertical: 12,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.2)',
                 }}
               >
                 {[
-                  {
-                    id: '1',
-                    title: 'Tổng lớp học',
-                    value: summary.totalClasses,
-                    icon: 'school',
-                    color: '#ec4899',
-                  },
-                  {
-                    id: '2',
-                    title: 'Tổng sinh viên',
-                    value: summary.totalStudents,
-                    icon: 'people',
-                    color: '#3b82f6',
-                  },
-                  {
-                    id: '3',
-                    title: 'Tỷ lệ điểm danh TB',
-                    value: `${summary.averageRate}%`,
-                    icon: 'pie-chart',
-                    color: '#f59e0b',
-                  },
-                ].map((stat) => (
+                  { label: 'Tổng lớp', value: String(summary.totalClasses), icon: 'grid' as const },
+                  { label: 'Sinh viên', value: String(summary.totalStudents), icon: 'people' as const },
+                  { label: 'Điểm danh TB', value: `${summary.averageRate}%`, icon: 'pie-chart' as const },
+                ].map((item, idx) => (
                   <View
-                    key={stat.id}
+                    key={idx}
                     style={{
-                      backgroundColor: '#fff',
-                      borderRadius: 16,
-                      padding: 16,
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 8,
-                      elevation: 2,
-                      flex: isMobile ? 0 : 1,
-                      width: isMobile ? (stat.id === '3' ? '100%' : '48%') : undefined,
+                      flex: 1,
+                      alignItems: 'center',
+                      borderLeftWidth: idx > 0 ? 1 : 0,
+                      borderLeftColor: 'rgba(255,255,255,0.25)',
+                      gap: 4,
                     }}
                   >
-                    <View
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 12,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        marginBottom: 12,
-                        backgroundColor: stat.color + '20',
-                      }}
-                    >
-                      <Ionicons name={stat.icon as any} size={24} color={stat.color} />
-                    </View>
-                    <Text style={{
-                      fontSize: 24,
-                      fontWeight: 'bold',
-                      color: '#1e293b',
-                      marginBottom: 4,
-                    }}>{stat.value}</Text>
-                    <Text style={{
-                      fontSize: 13,
-                      color: '#64748b',
-                    }}>{stat.title}</Text>
+                    <Ionicons name={item.icon} size={16} color="rgba(255,255,255,0.7)" />
+                    <Text style={{ fontSize: 20, fontWeight: '800', color: '#fff' }}>
+                      {item.value}
+                    </Text>
+                    <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)' }}>
+                      {item.label}
+                    </Text>
                   </View>
                 ))}
               </View>
             </View>
 
             {/* Classes List */}
-            <View style={{ flexDirection: "column", gap: 16 }}>
-              {classes.map((classItem) => (
-                <View key={classItem.id} style={{ width: "100%" }}>
-                  <TouchableOpacity
-                    onPress={() => handleClassPress(classItem)}
-                    activeOpacity={0.7}
+            <View style={{
+              flexDirection: isMobile ? "column" : "row",
+              flexWrap: isMobile ? "nowrap" : "wrap",
+              gap: 16
+            }}>
+              {classes.map((classItem, index) => {
+                // Accent color cycle for variety
+                const accentColors = [
+                  { main: '#6366f1', bg: '#eef2ff', light: '#e0e7ff' }, // indigo
+                  { main: '#3b82f6', bg: '#eff6ff', light: '#dbeafe' }, // blue
+                  { main: '#8b5cf6', bg: '#f5f3ff', light: '#ede9fe' }, // violet
+                  { main: '#0ea5e9', bg: '#f0f9ff', light: '#e0f2fe' }, // sky
+                  { main: '#10b981', bg: '#ecfdf5', light: '#d1fae5' }, // emerald
+                ];
+                const accent = accentColors[index % accentColors.length];
+                const rate = classItem.attendanceRate || 0;
+                const rateColor = rate >= 90 ? '#10b981' : rate >= 75 ? '#f59e0b' : '#ef4444';
+                const rateBg = rate >= 90 ? '#ecfdf5' : rate >= 75 ? '#fffbeb' : '#fef2f2';
+                const initial = (classItem.name || '?').trim().charAt(0).toUpperCase();
+
+                return (
+                  <View
+                    key={classItem.id}
                     style={{
-                      backgroundColor: "#fff",
-                      borderRadius: 16,
-                      borderWidth: 1,
-                      borderColor: "#f1f5f9",
-                      shadowColor: "#64748b",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.07,
-                      shadowRadius: 8,
-                      elevation: 3,
+                      width: isDesktop ? '31.5%' : isTablet ? '48%' : '100%',
+                      flexGrow: isDesktop || isTablet ? 1 : 0,
                     }}
                   >
-                    <View
+                    <TouchableOpacity
+                      onPress={() => handleClassPress(classItem)}
+                      activeOpacity={0.75}
                       style={{
-                        flexDirection: "row",
-                        alignItems: "flex-start",
-                        paddingHorizontal: 14,
-                        paddingTop: 14,
-                        paddingBottom: 8,
-                        gap: 10,
+                        backgroundColor: '#fff',
+                        borderRadius: 18,
+                        borderWidth: 1,
+                        borderColor: '#f1f5f9',
+                        shadowColor: accent.main,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 12,
+                        elevation: 3,
+                        overflow: 'hidden',
                       }}
                     >
-                      <View
-                        style={{
-                          width: 46,
-                          height: 46,
-                          borderRadius: 13,
-                          backgroundColor: "#eff6ff",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 20,
-                            fontWeight: "800",
-                            color: "#3b82f6",
-                          }}
-                        >
-                          {classItem.name.trim().charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
-                      <View style={{ flex: 1, gap: 5 }}>
-                        <Text
-                          style={{
-                            fontSize: 15,
-                            fontWeight: "700",
-                            color: "#1e293b",
-                            lineHeight: 20,
-                          }}
-                          numberOfLines={2}
-                        >
-                          {classItem.name}
-                        </Text>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            gap: 6,
-                            flexWrap: "wrap",
-                          }}
-                        >
+                      {/* ── Top accent bar ────────────────────────── */}
+                      <View style={{ height: 4, backgroundColor: accent.main }} />
+
+                      {/* ── Card body ─────────────────────────────── */}
+                      <View style={{ padding: 16 }}>
+
+                        {/* Header row */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                          {/* Avatar */}
                           <View
                             style={{
-                              backgroundColor: "#f1f5f9",
-                              borderRadius: 6,
-                              paddingHorizontal: 8,
-                              paddingVertical: 2,
+                              width: 50,
+                              height: 50,
+                              borderRadius: 14,
+                              backgroundColor: accent.bg,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              borderWidth: 1.5,
+                              borderColor: accent.light,
                             }}
                           >
+                            <Text style={{ fontSize: 22, fontWeight: '800', color: accent.main }}>
+                              {initial}
+                            </Text>
+                          </View>
+
+                          {/* Name + badges */}
+                          <View style={{ flex: 1 }}>
                             <Text
-                              style={{
-                                fontSize: 11,
-                                fontWeight: "700",
-                                color: "#475569",
-                              }}
+                              style={{ fontSize: 15, fontWeight: '700', color: '#1e293b', marginBottom: 5 }}
+                              numberOfLines={1}
                             >
-                              {classItem.code}
+                              {classItem.name}
+                            </Text>
+                            <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                              {/* Code badge */}
+                              <View
+                                style={{
+                                  backgroundColor: accent.bg,
+                                  borderRadius: 6,
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 3,
+                                  borderWidth: 1,
+                                  borderColor: accent.light,
+                                }}
+                              >
+                                <Text style={{ fontSize: 11, fontWeight: '700', color: accent.main }}>
+                                  {classItem.code}
+                                </Text>
+                              </View>
+                              {/* Semester badge */}
+                              {classItem.semester && (
+                                <View
+                                  style={{
+                                    backgroundColor: '#f8fafc',
+                                    borderRadius: 6,
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 3,
+                                    borderWidth: 1,
+                                    borderColor: '#e2e8f0',
+                                  }}
+                                >
+                                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#64748b' }}>
+                                    {classItem.semester}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                          </View>
+
+                          {/* Rate ring */}
+                          <View
+                            style={{
+                              width: 52,
+                              height: 52,
+                              borderRadius: 26,
+                              backgroundColor: rateBg,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderWidth: 2.5,
+                              borderColor: rateColor + '35',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Text style={{ fontSize: 14, fontWeight: '800', color: rateColor }}>
+                              {rate}%
                             </Text>
                           </View>
                         </View>
-                      </View>
-                    </View>
 
-                    <View
-                      style={{
-                        paddingHorizontal: 14,
-                        paddingLeft: 70,
-                        paddingBottom: 10,
-                        gap: 5,
-                      }}
-                    >
-                      {classItem.subject && (
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 6,
-                          }}
-                        >
-                          <Ionicons
-                            name="book-outline"
-                            size={13}
-                            color="#94a3b8"
-                          />
-                          <Text
+                        {/* Meta info row */}
+                        <View style={{ gap: 4, marginBottom: 14 }}>
+                          {classItem.subject && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                              <Ionicons name="book-outline" size={13} color="#94a3b8" />
+                              <Text style={{ fontSize: 12, color: '#64748b', flex: 1 }} numberOfLines={1}>
+                                {classItem.subject}
+                              </Text>
+                            </View>
+                          )}
+                          <View style={{ flexDirection: 'row', gap: 14 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 }}>
+                              <Ionicons name="calendar-outline" size={13} color="#94a3b8" />
+                              <Text style={{ fontSize: 12, color: '#64748b' }} numberOfLines={1}>
+                                {classItem.scheduleText || 'Chưa có lịch'}
+                              </Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                              <Ionicons name="location-outline" size={13} color="#94a3b8" />
+                              <Text style={{ fontSize: 12, color: '#64748b' }}>
+                                {classItem.room || '—'}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+
+                        {/* ── Progress bar ───────────────────────── */}
+                        <View style={{ marginBottom: 14 }}>
+                          <View
                             style={{
-                              fontSize: 13,
-                              color: "#64748b",
-                              flex: 1,
+                              flexDirection: 'row',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginBottom: 6,
                             }}
-                            numberOfLines={1}
                           >
-                            Môn: {classItem.subject}
-                          </Text>
+                            <Text style={{ fontSize: 12, fontWeight: '600', color: '#475569' }}>
+                              Tỷ lệ điểm danh
+                            </Text>
+                            <Text style={{ fontSize: 12, fontWeight: '700', color: rateColor }}>
+                              {rate}%
+                            </Text>
+                          </View>
+                          <View
+                            style={{
+                              height: 7,
+                              backgroundColor: '#e2e8f0',
+                              borderRadius: 4,
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <View
+                              style={{
+                                height: '100%',
+                                width: `${Math.min(rate, 100)}%`,
+                                backgroundColor: rateColor,
+                                borderRadius: 4,
+                              }}
+                            />
+                          </View>
                         </View>
-                      )}
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 6,
-                        }}
-                      >
-                        <Ionicons
-                          name="calendar-outline"
-                          size={13}
-                          color="#94a3b8"
-                        />
-                        <Text
-                          style={{ fontSize: 13, color: "#64748b", flex: 1 }}
-                          numberOfLines={1}
-                        >
-                          {classItem.scheduleText}
-                        </Text>
-                      </View>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 6,
-                        }}
-                      >
-                        <Ionicons
-                          name="location-outline"
-                          size={13}
-                          color="#94a3b8"
-                        />
-                        <Text
-                          style={{ fontSize: 13, color: "#64748b", flex: 1 }}
-                          numberOfLines={1}
-                        >
-                          Phòng: {classItem.room || "—"}
-                        </Text>
-                      </View>
-                    </View>
 
-                    {/* Stats dạng colored boxes */}
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        borderTopWidth: 1,
-                        borderTopColor: "#f1f5f9",
-                        marginTop: 4,
-                      }}
-                    >
-                      {[
-                        { label: 'Sinh viên', value: classItem.totalStudents || 0, color: '#3b82f6', bg: '#eff6ff' },
-                        { label: 'Có mặt', value: classItem.presentCount || 0, color: '#10b981', bg: '#ecfdf5' },
-                        { label: 'Vắng', value: classItem.absentCount || 0, color: '#ef4444', bg: '#fef2f2' },
-                        {
-                          label: 'Tỷ lệ',
-                          value: `${classItem.attendanceRate}%`,
-                          color: classItem.attendanceRate >= 90 ? '#10b981' : classItem.attendanceRate >= 75 ? '#f59e0b' : '#ef4444',
-                          bg: classItem.attendanceRate >= 90 ? '#ecfdf5' : classItem.attendanceRate >= 75 ? '#fffbeb' : '#fef2f2',
-                        },
-                      ].map((s, idx) => (
+                        {/* ── Stats row ────────────────────────────── */}
                         <View
-                          key={s.label}
                           style={{
-                            flex: 1,
-                            alignItems: 'center',
-                            paddingVertical: 10,
-                            borderLeftWidth: idx > 0 ? 1 : 0,
-                            borderLeftColor: '#f1f5f9',
-                            backgroundColor: s.bg,
+                            flexDirection: 'row',
+                            backgroundColor: '#f8fafc',
+                            borderRadius: 12,
+                            overflow: 'hidden',
+                            borderWidth: 1,
+                            borderColor: '#f1f5f9',
                           }}
                         >
-                          <Text style={{ fontSize: 17, fontWeight: '800', color: s.color }}>{s.value}</Text>
-                          <Text style={{ fontSize: 10, color: s.color, opacity: 0.8, marginTop: 2 }}>{s.label}</Text>
+                          {[
+                            {
+                              label: 'Sinh viên',
+                              value: classItem.totalStudents || 0,
+                              icon: 'people' as const,
+                              color: accent.main,
+                            },
+                            {
+                              label: 'Có mặt',
+                              value: classItem.presentCount || 0,
+                              icon: 'checkmark-circle' as const,
+                              color: '#10b981',
+                            },
+                            {
+                              label: 'Vắng',
+                              value: classItem.absentCount || 0,
+                              icon: 'close-circle' as const,
+                              color: '#ef4444',
+                            },
+                          ].map((s, idx) => (
+                            <View
+                              key={s.label}
+                              style={{
+                                flex: 1,
+                                alignItems: 'center',
+                                paddingVertical: 10,
+                                paddingHorizontal: 4,
+                                borderLeftWidth: idx > 0 ? 1 : 0,
+                                borderLeftColor: '#e2e8f0',
+                              }}
+                            >
+                              <Ionicons name={s.icon} size={16} color={s.color} style={{ marginBottom: 3 }} />
+                              <Text style={{ fontSize: 16, fontWeight: '800', color: '#1e293b' }}>
+                                {s.value}
+                              </Text>
+                              <Text style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>
+                                {s.label}
+                              </Text>
+                            </View>
+                          ))}
                         </View>
-                      ))}
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              ))}
+
+                      </View>
+
+                      {/* ── Footer CTA ────────────────────────────── */}
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          paddingVertical: 11,
+                          borderTopWidth: 1,
+                          borderTopColor: '#f1f5f9',
+                          backgroundColor: accent.bg + 'aa',
+                        }}
+                      >
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: accent.main }}>
+                          Xem chi tiết
+                        </Text>
+                        <Ionicons name="chevron-forward" size={14} color={accent.main} />
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
             </View>
           </View>
         </ScrollView>
@@ -1122,6 +1238,6 @@ export default function ClassListScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </SafeAreaView >
   );
 }
