@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
   Alert,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -54,7 +55,7 @@ export default function StudentProfileScreen() {
       if (studentId) {
         try {
           const records = await attendanceService.getRecords({ studentId });
-          
+
           // Tính tỷ lệ điểm danh
           const totalSessions = records.length;
           const presentCount = records.filter(
@@ -100,42 +101,122 @@ export default function StudentProfileScreen() {
     ]);
   };
 
-  return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: Colors.surface }}
-      edges={["top"]}
-    >
-      <StatusBar style="dark" />
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const HEADER_MAX_HEIGHT = isMobile ? 320 : 290;
+  const HEADER_MIN_HEIGHT = isMobile ? 120 : HEADER_MAX_HEIGHT;
+  const HEADER_SCROLL_DISTANCE = Math.max(1, HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT);
 
-      {/* Header */}
-      <View
+  const headerHeight = isMobile ? scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+    extrapolate: "clamp",
+  }) : HEADER_MAX_HEIGHT;
+
+  const contentOpacity = isMobile ? scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+    outputRange: [1, 0.2, 0],
+    extrapolate: "clamp",
+  }) : 1;
+
+  const contentTranslateY = isMobile ? scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [0, -10],
+    extrapolate: "clamp",
+  }) : 0;
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
+      <StatusBar style="light" />
+
+      {/* ── Blue Hero Header ── */}
+      <Animated.View
         style={{
-          backgroundColor: Colors.white,
-          borderBottomWidth: 1,
-          borderBottomColor: Colors.border,
+          backgroundColor: "#3b82f6", // Blue theme
+          paddingTop: isMobile ? 48 : 64,
           paddingHorizontal: 16,
-          paddingVertical: 12,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: headerHeight,
+          zIndex: 10,
+          overflow: "hidden",
+          shadowColor: "#3b82f6",
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.3,
+          shadowRadius: 16,
+          elevation: 8,
+          alignItems: "center",
         }}
       >
-        <Text
-          style={{
-            fontSize: 20,
-            fontWeight: "bold",
-            color: Colors.textHeading,
-            textAlign: "center",
-          }}
-        >
+        <Text style={{ fontSize: 16, fontWeight: "600", color: "rgba(255,255,255,0.8)", marginBottom: 16 }}>
           Tài khoản
         </Text>
-      </View>
+        <Animated.View
+          style={{
+            alignItems: "center",
+            opacity: contentOpacity,
+            transform: [{ translateY: contentTranslateY }]
+          }}
+        >
+          <View
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: 40,
+              backgroundColor: "rgba(255,255,255,0.2)",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 16,
+            }}
+          >
+            <UserIcon size={40} color="#fff" />
+          </View>
+          <Text
+            style={{
+              fontSize: 22,
+              fontWeight: "800",
+              color: "#ffffff",
+              marginBottom: 4,
+            }}
+          >
+            {user?.name || "N/A"}
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: "rgba(255,255,255,0.8)",
+              marginBottom: 2,
+            }}
+          >
+            MSSV: {user?.studentId || "N/A"}
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: "rgba(255,255,255,0.8)",
+            }}
+          >
+            {user?.email || "N/A"}
+          </Text>
+        </Animated.View>
+      </Animated.View>
 
-      <ScrollView
+      <Animated.ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
           padding: 16,
-          paddingBottom: isMobile ? 100 : 32,
+          paddingTop: HEADER_MAX_HEIGHT + 24,
+          paddingBottom: isMobile ? 120 : 32,
         }}
         showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
       >
         {loading ? (
           <View
@@ -146,7 +227,7 @@ export default function StudentProfileScreen() {
               paddingVertical: 48,
             }}
           >
-            <ActivityIndicator size="large" color={Colors.primary} />
+            <ActivityIndicator size="large" color="#3b82f6" />
             <Text
               style={{
                 fontSize: 14,
@@ -159,59 +240,6 @@ export default function StudentProfileScreen() {
           </View>
         ) : (
           <>
-            {/* Profile Card */}
-            <View
-              style={{
-                backgroundColor: Colors.white,
-                borderRadius: 16,
-                padding: 24,
-                marginBottom: 16,
-                alignItems: "center",
-                borderWidth: 1,
-                borderColor: Colors.border,
-              }}
-            >
-              <View
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 40,
-                  backgroundColor: Colors.primary + "20",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 16,
-                }}
-              >
-                <UserIcon size={40} color={Colors.primary} />
-              </View>
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontWeight: "bold",
-                  color: Colors.textHeading,
-                  marginBottom: 4,
-                }}
-              >
-                {user?.name || "N/A"}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: Colors.textSecondary,
-                  marginBottom: 2,
-                }}
-              >
-                MSSV: {user?.studentId || "N/A"}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: Colors.textSecondary,
-                }}
-              >
-                {user?.email || "N/A"}
-              </Text>
-            </View>
 
             {/* Stats Grid */}
             <View
@@ -524,14 +552,14 @@ export default function StudentProfileScreen() {
         >
           Phiên bản 1.0.0
         </Text>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Toast Notification */}
       <Toast
         visible={false}
         message=""
         type="success"
-        onHide={() => {}}
+        onHide={() => { }}
       />
     </SafeAreaView>
   );

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useFocusEffect } from 'expo-router';
-import Card from '@/components/Card';
-import { Colors } from '@/constants/colors';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { Ionicons } from "@expo/vector-icons";
 import { notificationService, NotificationResponse, NotificationType } from '@/apis';
 import Toast, { useToast } from '@/components/Toast';
 
 export default function Notifications() {
+  const router = useRouter();
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,9 +35,9 @@ export default function Notifications() {
       } else {
         data = await notificationService.getNotifications();
       }
-      
+
       setNotifications(data);
-      
+
       // Load unread count
       const count = await notificationService.getUnreadCount();
       setUnreadCount(count);
@@ -109,165 +109,229 @@ export default function Notifications() {
     }
   };
 
-  const getNotificationIcon = (type: NotificationType) => {
-    const icons = {
-      [NotificationType.SUCCESS]: '✓',
-      [NotificationType.WARNING]: '⚠',
-      [NotificationType.ERROR]: '✕',
-      [NotificationType.INFO]: 'ℹ',
-    };
-    return icons[type] || 'ℹ';
-  };
-
-  const getNotificationColor = (type: NotificationType) => {
-    const colors = {
-      [NotificationType.SUCCESS]: Colors.success,
-      [NotificationType.WARNING]: Colors.warning,
-      [NotificationType.ERROR]: Colors.error,
-      [NotificationType.INFO]: Colors.primary,
-    };
-    return colors[type] || Colors.primary;
-  };
-
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
+  const isMobile = width < 768;
 
   const contentMaxWidth = isDesktop ? 800 : '100%';
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      <StatusBar style="dark" />
-      
-      <ScrollView style={{ flex: 1 }}>
-        <View style={{ paddingHorizontal, paddingVertical: 24, maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' }}>
-          
-          {/* Header Actions */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <View style={{ flexDirection: 'row' }}>
-              {[
-                { key: 'all', label: `Tất cả (${notifications.length})` },
-                { key: 'unread', label: `Chưa đọc (${unreadCount})` },
-              ].map((item) => (
-                <TouchableOpacity
-                  key={item.key}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    borderRadius: 18,
-                    marginRight: 8,
-                    backgroundColor: filter === item.key ? Colors.primary : Colors.gray100,
-                  }}
-                  onPress={() => setFilter(item.key as any)}
-                >
-                  <Text
-                    style={{
-                      fontWeight: '500',
-                      fontSize: 14,
-                      lineHeight: 20,
-                      color: filter === item.key ? Colors.white : Colors.gray700,
-                    }}
-                  >
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+    <View style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+      <StatusBar style="light" />
+
+      {/* ── Header ── */}
+      <View
+        style={{
+          backgroundColor: "#3b82f6",
+          paddingTop: isMobile ? 48 : 64,
+          paddingBottom: 24,
+          paddingHorizontal: paddingHorizontal,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          zIndex: 10,
+          shadowColor: "#3b82f6",
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.3,
+          shadowRadius: 16,
+          elevation: 6,
+        }}
+      >
+        <View style={{ maxWidth: 1200, width: "100%", alignSelf: "center" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={{
+                width: 40, height: 40, borderRadius: 12,
+                backgroundColor: "rgba(255,255,255,0.15)",
+                alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <Ionicons name="arrow-back" size={22} color="#fff" />
+            </TouchableOpacity>
+
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 22, fontWeight: "800", color: "#fff" }}>
+                Thông báo
+              </Text>
+              <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.85)" }}>
+                {unreadCount > 0 ? `${unreadCount} thông báo chưa đọc` : "Tất cả đã đọc"}
+              </Text>
             </View>
 
             {unreadCount > 0 && (
-              <TouchableOpacity onPress={markAllAsRead}>
-                <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '500', color: Colors.primary }}>
-                  Đánh dấu đã đọc
-                </Text>
-              </TouchableOpacity>
+              <View>
+                <TouchableOpacity
+                  onPress={markAllAsRead}
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.2)",
+                    borderRadius: 12,
+                    paddingHorizontal: 14,
+                    paddingVertical: 8,
+                    borderWidth: 1.5,
+                    borderColor: "rgba(255,255,255,0.35)",
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>
+                    Đọc tất cả
+                  </Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
+        </View>
+      </View>
 
-          {/* Notifications List */}
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: paddingHorizontal,
+          paddingTop: 24,
+          paddingBottom: isMobile ? 120 : 40,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ maxWidth: 800, width: "100%", alignSelf: "center" }}>
+          {/* Filter chips */}
+          <View style={{ flexDirection: "row", gap: 10, marginBottom: 20 }}>
+            {(["all", "unread"] as const).map((f) => (
+              <TouchableOpacity
+                key={f}
+                onPress={() => setFilter(f)}
+                style={{
+                  paddingHorizontal: 18,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  backgroundColor: filter === f ? "#3b82f6" : "#fff",
+                  borderWidth: 1.5,
+                  borderColor: filter === f ? "#3b82f6" : "#e2e8f0",
+                  shadowColor: filter === f ? "#3b82f6" : "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: filter === f ? 0.2 : 0.04,
+                  shadowRadius: 6,
+                  elevation: filter === f ? 3 : 1,
+                }}
+              >
+                <Text style={{
+                  fontSize: 13, fontWeight: "700",
+                  color: filter === f ? "#fff" : "#64748b",
+                }}>
+                  {f === "all" ? `Tất cả (${notifications.length})` : `Chưa đọc (${unreadCount})`}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Notification list */}
           {loading ? (
             <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-              <ActivityIndicator size="large" color={Colors.primary} />
-              <Text style={{ marginTop: 16, color: Colors.textSecondary }}>
+              <ActivityIndicator size="large" color="#3b82f6" />
+              <Text style={{ marginTop: 16, color: "#64748b", fontWeight: "600" }}>
                 Đang tải thông báo...
               </Text>
             </View>
           ) : notifications.length === 0 ? (
-            <Card style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Text style={{ fontSize: 36, lineHeight: 44, marginBottom: 12 }}>📭</Text>
-              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '500', marginBottom: 4, color: Colors.text }}>
-                Không có thông báo
-              </Text>
-              <Text style={{ fontSize: 14, lineHeight: 20, color: Colors.textSecondary }}>
-                {filter === 'unread' ? 'Bạn đã đọc hết thông báo' : 'Chưa có thông báo nào'}
-              </Text>
-            </Card>
-          ) : (
-            notifications.map((notification) => (
-              <Card
-                key={notification.id}
-                onPress={() => !notification.isRead && markAsRead(notification.id)}
+            <View style={{ alignItems: "center", paddingVertical: 60 }}>
+              <View
                 style={{
-                  marginBottom: 12,
-                  backgroundColor: notification.isRead ? Colors.white : '#E0F2FE',
-                  borderWidth: 1,
-                  borderColor: '#E5E7EB',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 2,
+                  width: 72, height: 72, borderRadius: 36,
+                  backgroundColor: "#f1f5f9",
+                  alignItems: "center", justifyContent: "center",
+                  marginBottom: 16,
                 }}
               >
-                <View style={{ flexDirection: 'row' }}>
+                <Ionicons name="notifications-off-outline" size={34} color="#94a3b8" />
+              </View>
+              <Text style={{ fontSize: 16, fontWeight: "700", color: "#475569", marginBottom: 6 }}>
+                Không có thông báo
+              </Text>
+              <Text style={{ fontSize: 13, color: "#94a3b8", textAlign: "center" }}>
+                {filter === "unread" ? "Bạn đã đọc tất cả thông báo rồi!" : "Chưa có thông báo nào."}
+              </Text>
+            </View>
+          ) : (
+            notifications.map((notification) => {
+              const getNotifConfig = (type: NotificationType) => {
+                const conf = {
+                  [NotificationType.SUCCESS]: { icon: "checkmark-circle", color: "#10b981", bg: "#ecfdf5", label: "Thành công" },
+                  [NotificationType.WARNING]: { icon: "warning", color: "#f59e0b", bg: "#fffbeb", label: "Cảnh báo" },
+                  [NotificationType.ERROR]: { icon: "close-circle", color: "#ef4444", bg: "#fef2f2", label: "Lỗii" },
+                  [NotificationType.INFO]: { icon: "information-circle", color: "#3b82f6", bg: "#eff6ff", label: "Thông tin" },
+                };
+                return conf[type] || conf[NotificationType.INFO];
+              };
+              const cfg = getNotifConfig(notification.type);
+              return (
+                <TouchableOpacity
+                  key={notification.id}
+                  onPress={() => !notification.isRead && markAsRead(notification.id)}
+                  activeOpacity={0.75}
+                  style={{
+                    backgroundColor: notification.isRead ? "#fff" : "#eff6ff",
+                    borderRadius: 16,
+                    borderWidth: 1.5,
+                    borderColor: notification.isRead ? "#f1f5f9" : "#bfdbfe",
+                    padding: 16,
+                    marginBottom: 12,
+                    flexDirection: "row",
+                    gap: 14,
+                    shadowColor: notification.isRead ? "#000" : "#3b82f6",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: notification.isRead ? 0.04 : 0.08,
+                    shadowRadius: 8,
+                    elevation: notification.isRead ? 1 : 3,
+                  }}
+                >
+                  {/* Icon */}
                   <View
                     style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: 12,
-                      backgroundColor: getNotificationColor(notification.type) === Colors.success ? '#D1FAE5' :
-                                     getNotificationColor(notification.type) === Colors.warning ? '#FEF3C7' :
-                                     getNotificationColor(notification.type) === Colors.error ? '#FEE2E2' : '#DBEAFE'
+                      width: 46, height: 46, borderRadius: 14,
+                      backgroundColor: cfg.bg,
+                      alignItems: "center", justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    <Text style={{ fontSize: 20, lineHeight: 24, color: getNotificationColor(notification.type) }}>
-                      {getNotificationIcon(notification.type)}
-                    </Text>
+                    <Ionicons name={cfg.icon as any} size={24} color={cfg.color} />
                   </View>
 
+                  {/* Content */}
                   <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <Text style={{ fontWeight: '600', fontSize: 16, lineHeight: 24, color: Colors.text }}>
-                        {notification.title}
-                      </Text>
-                      {!notification.isRead && (
-                        <View
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: 4,
-                            backgroundColor: Colors.primary
-                          }}
-                        />
-                      )}
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: "800", color: "#1e293b", flex: 1 }} numberOfLines={1}>
+                          {notification.title}
+                        </Text>
+                        {!notification.isRead && (
+                          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: "#3b82f6", marginRight: 8 }} />
+                        )}
+                      </View>
                     </View>
 
-                    <Text style={{ fontSize: 14, lineHeight: 20, marginBottom: 8, color: Colors.text }}>
+                    <Text style={{ fontSize: 13, color: "#64748b", lineHeight: 19, marginBottom: 8 }}>
                       {notification.message}
                     </Text>
 
-                    <Text style={{ fontSize: 12, lineHeight: 16, color: Colors.textSecondary }}>
-                      {formatTime(notification.createdAt)}
-                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                      <View
+                        style={{
+                          backgroundColor: cfg.bg,
+                          paddingHorizontal: 8, paddingVertical: 3,
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: cfg.color }}>
+                          {cfg.label}
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 11, color: "#94a3b8" }}>
+                        {formatTime(notification.createdAt)}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              </Card>
-            ))
+                </TouchableOpacity>
+              );
+            })
           )}
-
         </View>
       </ScrollView>
       <Toast
