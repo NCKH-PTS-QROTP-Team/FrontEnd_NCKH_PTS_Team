@@ -15,7 +15,9 @@ import { Colors } from "@/constants/colors";
 import WeeklyCalendar from "@/components/WeeklyCalendar";
 import { MonthCalendar, todayISO, isoToDate } from "@/components/MonthCalendar";
 import { CalendarIcon } from "@/components/Icons";
+import { useRouter } from "expo-router";
 import { scheduleService, authService } from "@/apis";
+import { removeAuthToken } from "@/apis/config/apiClient";
 import type { Schedule as ApiSchedule } from "@/apis/services/schedule.service";
 
 interface DayScheduleItem {
@@ -24,10 +26,14 @@ interface DayScheduleItem {
   teacher: string;
   time: string;
   room: string;
+  scheduleType?: "CLASS" | "EXAM";
+  pattern?: "RECURRING_WEEKLY" | "ONE_TIME";
+  date?: string;
   dayOfWeekStr?: string;
 }
 
 export default function ScheduleScreen() {
+  const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedView, setSelectedView] = useState<"all" | "class" | "exam">(
     "all",
@@ -53,25 +59,34 @@ export default function ScheduleScreen() {
 
   const HEADER_MAX_HEIGHT = isDesktop ? 180 : isMobile ? 200 : 190;
   const HEADER_MIN_HEIGHT = isMobile ? 120 : HEADER_MAX_HEIGHT;
-  const HEADER_SCROLL_DISTANCE = Math.max(1, HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT);
+  const HEADER_SCROLL_DISTANCE = Math.max(
+    1,
+    HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT,
+  );
 
-  const headerHeight = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE],
-    outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
-    extrapolate: "clamp",
-  }) : HEADER_MAX_HEIGHT;
+  const headerHeight = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+        extrapolate: "clamp",
+      })
+    : HEADER_MAX_HEIGHT;
 
-  const contentOpacity = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
-    outputRange: [1, 0.2, 0],
-    extrapolate: "clamp",
-  }) : 1;
+  const contentOpacity = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+        outputRange: [1, 0.2, 0],
+        extrapolate: "clamp",
+      })
+    : 1;
 
-  const contentTranslateY = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE],
-    outputRange: [0, -10],
-    extrapolate: "clamp",
-  }) : 0;
+  const contentTranslateY = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [0, -10],
+        extrapolate: "clamp",
+      })
+    : 0;
 
   // Get selected date info
   const weekdays = [
@@ -121,86 +136,108 @@ export default function ScheduleScreen() {
         // Lấy thông tin user hiện tại để biết classId
         const currentUser = await authService.getCurrentUser();
 
-        // Helper functions for boundaries
-        const getWeekBoundaries = (d: Date) => {
-          const start = new Date(d);
-          const day = start.getDay();
-          const diff = start.getDate() - day + (day === 0 ? -6 : 1);
-          start.setDate(diff);
-          const end = new Date(start);
-          end.setDate(end.getDate() + 6);
-          return { start: toIsoDate(start), end: toIsoDate(end) };
-        };
-
-        const getMonthBoundaries = (d: Date) => {
-          const start = new Date(d.getFullYear(), d.getMonth(), 1);
-          const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-          return { start: toIsoDate(start), end: toIsoDate(end) };
-        };
-
-        let fDate = dateOnly;
-        let tDate = dateOnly;
-
-        if (timeFilter === "week") {
-          const boundaries = getWeekBoundaries(selectedDate);
-          fDate = boundaries.start;
-          tDate = boundaries.end;
-        } else if (timeFilter === "month") {
-          const boundaries = getMonthBoundaries(selectedDate);
-          fDate = boundaries.start;
-          tDate = boundaries.end;
-        }
-
-        const params: {
+        // ── 1. LUÔN fetch list với fromDate=toDate=selectedDate ─────────────
+        // Backend tự xử lý đúng ngày cho cả RECURRING_WEEKLY (dayOfWeek) và
+        // ONE_TIME (date). Không filter client-side → tránh lỗi convention và
+        // duplicate do có cả RECURRING + ONE_TIME cho cùng buổi.
+        const baseParams: {
           scheduleType?: "CLASS" | "EXAM";
           fromDate?: string;
           toDate?: string;
           classId?: string;
           classIds?: string[];
-        } = {
-          fromDate: fDate,
-          toDate: tDate,
-        };
+        } = {};
 
         // 1 SV nhiều môn: ưu tiên enrolledClassIds, không có thì classId
         if (currentUser?.enrolledClassIds?.length) {
-          params.classIds = currentUser.enrolledClassIds;
+          baseParams.classIds = currentUser.enrolledClassIds;
         } else if (currentUser?.classId) {
-          params.classId = currentUser.classId;
+          baseParams.classId = currentUser.classId;
         }
 
         if (selectedView === "class") {
-          params.scheduleType = "CLASS";
+          baseParams.scheduleType = "CLASS";
         } else if (selectedView === "exam") {
-          params.scheduleType = "EXAM";
+          baseParams.scheduleType = "EXAM";
         }
 
-        const apiSchedules: ApiSchedule[] =
-          await scheduleService.getSchedules(params);
+        const listSchedules = await scheduleService.getSchedules({
+          ...baseParams,
+          fromDate: dateOnly,
+          toDate: dateOnly,
+        });
+
+        // Dedup by id (phòng backend trả trùng)
+        const seenIds = new Set<string>();
+        const uniqueList = listSchedules.filter((s) => {
+          if (seenIds.has(s.id)) return false;
+          seenIds.add(s.id);
+          return true;
+        });
 
         const backendDayMap: Record<number, string> = {
-          1: "Thứ hai",
-          2: "Thứ ba",
-          3: "Thứ tư",
-          4: "Thứ năm",
-          5: "Thứ sáu",
-          6: "Thứ bảy",
-          7: "Chủ nhật"
+          2: "Thứ hai",
+          3: "Thứ ba",
+          4: "Thứ tư",
+          5: "Thứ năm",
+          6: "Thứ sáu",
+          7: "Thứ bảy",
+          8: "Chủ nhật",
         };
 
-        const mapped: DayScheduleItem[] = apiSchedules.map((s) => ({
+        const mapped: DayScheduleItem[] = uniqueList.map((s) => ({
           id: s.id,
           courseName: s.subjectName,
           teacher: s.teacherName,
           time: `${s.startTime} - ${s.endTime}`,
           room: s.room,
-          dayOfWeekStr: s.dayOfWeek ? backendDayMap[s.dayOfWeek] : undefined
+          scheduleType: s.scheduleType,
+          pattern: s.pattern,
+          date: s.date,
+          dayOfWeekStr: s.dayOfWeek ? backendDayMap[s.dayOfWeek] : undefined,
         }));
 
-        setDaySchedules(mapped);
-        setRawSchedules(apiSchedules);
-      } catch (error) {
+        // Slot-level dedup: tránh hiển thị trùng buổi khi DB có cả recurring + one-time cùng khung giờ.
+        const seenSlots = new Set<string>();
+        const dedupedMapped = mapped.filter((item) => {
+          const slotKey = `${item.courseName}|${item.teacher}|${item.time}|${item.room}|${dateOnly}`;
+          if (seenSlots.has(slotKey)) return false;
+          seenSlots.add(slotKey);
+          return true;
+        });
+
+        setDaySchedules(dedupedMapped);
+
+        // ── 2. Fetch month range chỉ cho MonthCalendar dots ─────────────────
+        if (timeFilter === "month") {
+          const monthStart = new Date(
+            selectedDate.getFullYear(),
+            selectedDate.getMonth(),
+            1,
+          );
+          const monthEnd = new Date(
+            selectedDate.getFullYear(),
+            selectedDate.getMonth() + 1,
+            0,
+          );
+          const monthSchedules = await scheduleService.getSchedules({
+            ...baseParams,
+            fromDate: toIsoDate(monthStart),
+            toDate: toIsoDate(monthEnd),
+          });
+          setRawSchedules(monthSchedules);
+        } else {
+          // week/day: WeeklyCalendar không dùng schedule data (chỉ là date picker)
+          setRawSchedules(uniqueList);
+        }
+      } catch (error: any) {
         console.error("Error loading schedules for date:", error);
+        // JWT hết hạn hoặc user không tồn tại trong DB → đăng xuất
+        if (error?.status === 401) {
+          await removeAuthToken();
+          router.replace("/auth/login");
+          return;
+        }
         setDaySchedules([]);
       } finally {
         setLoading(false);
@@ -236,8 +273,22 @@ export default function ScheduleScreen() {
           elevation: 6,
         }}
       >
-        <View style={{ maxWidth: contentMaxWidth, width: "100%", alignSelf: "center", flex: 1 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 12 }}>
+        <View
+          style={{
+            maxWidth: contentMaxWidth,
+            width: "100%",
+            alignSelf: "center",
+            flex: 1,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 14,
+              marginBottom: 12,
+            }}
+          >
             <View
               style={{
                 width: 48,
@@ -251,16 +302,31 @@ export default function ScheduleScreen() {
               <Ionicons name="calendar" size={24} color="#fff" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", marginBottom: 2, fontWeight: "500" }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: "rgba(255,255,255,0.85)",
+                  marginBottom: 2,
+                  fontWeight: "500",
+                }}
+              >
                 {isToday ? "Hôm nay" : "Ngày đang chọn"}
               </Text>
-              <Text style={{ fontSize: 20, fontWeight: "800", color: "#fff" }} numberOfLines={1}>
+              <Text
+                style={{ fontSize: 20, fontWeight: "800", color: "#fff" }}
+                numberOfLines={1}
+              >
                 {dateStr}
               </Text>
             </View>
           </View>
 
-          <Animated.View style={{ opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] }}>
+          <Animated.View
+            style={{
+              opacity: contentOpacity,
+              transform: [{ translateY: contentTranslateY }],
+            }}
+          >
             {/* Filter Tabs in Header */}
             <View
               style={{
@@ -317,7 +383,7 @@ export default function ScheduleScreen() {
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
+          { useNativeDriver: false },
         )}
         scrollEventThrottle={16}
       >
@@ -342,18 +408,30 @@ export default function ScheduleScreen() {
                 <WeeklyCalendar
                   selectedDate={selectedDate}
                   onDateSelect={setSelectedDate}
+                  onPrevWeek={() => {
+                    const d = new Date(selectedDate);
+                    d.setDate(d.getDate() - 7);
+                    setSelectedDate(d);
+                  }}
+                  onNextWeek={() => {
+                    const d = new Date(selectedDate);
+                    d.setDate(d.getDate() + 7);
+                    setSelectedDate(d);
+                  }}
                 />
               )}
             </View>
           )}
 
           {/* Schedule List Header with Time Filters */}
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: isDesktop ? 16 : 12,
-          }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: isDesktop ? 16 : 12,
+            }}
+          >
             <Text
               style={{
                 fontSize: isMobile ? 16 : 18,
@@ -379,11 +457,13 @@ export default function ScheduleScreen() {
                     borderColor: timeFilter === f ? BLUE : Colors.border,
                   }}
                 >
-                  <Text style={{
-                    color: timeFilter === f ? Colors.white : Colors.text,
-                    fontWeight: "600",
-                    fontSize: 12
-                  }}>
+                  <Text
+                    style={{
+                      color: timeFilter === f ? Colors.white : Colors.text,
+                      fontWeight: "600",
+                      fontSize: 12,
+                    }}
+                  >
                     {f === "day" ? "Ngày" : f === "week" ? "Tuần" : "Tháng"}
                   </Text>
                 </TouchableOpacity>
@@ -480,7 +560,14 @@ export default function ScheduleScreen() {
                     }}
                   >
                     {/* Course Name & Day of Week */}
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: isMobile ? 6 : 8 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        marginBottom: isMobile ? 6 : 8,
+                      }}
+                    >
                       <Text
                         style={{
                           fontSize: isMobile ? 16 : 18,
@@ -492,15 +579,23 @@ export default function ScheduleScreen() {
                       >
                         {schedule.courseName}
                       </Text>
-                      {(timeFilter !== "day" && schedule.dayOfWeekStr) && (
-                        <View style={{
-                          backgroundColor: "#eff6ff",
-                          paddingHorizontal: 8,
-                          paddingVertical: 4,
-                          borderRadius: 8,
-                          marginLeft: 8,
-                        }}>
-                          <Text style={{ color: BLUE, fontSize: 12, fontWeight: "600" }}>
+                      {timeFilter !== "day" && schedule.dayOfWeekStr && (
+                        <View
+                          style={{
+                            backgroundColor: "#eff6ff",
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 8,
+                            marginLeft: 8,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: BLUE,
+                              fontSize: 12,
+                              fontWeight: "600",
+                            }}
+                          >
                             {schedule.dayOfWeekStr}
                           </Text>
                         </View>
@@ -562,23 +657,92 @@ export default function ScheduleScreen() {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 20 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 16,
+                      marginTop: 20,
+                    }}
+                  >
                     <TouchableOpacity
-                      style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }, page === 1 && { backgroundColor: '#f8fafc', elevation: 0 }]}
+                      style={[
+                        {
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: "#fff",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.1,
+                          shadowRadius: 4,
+                          elevation: 2,
+                        },
+                        page === 1 && {
+                          backgroundColor: "#f8fafc",
+                          elevation: 0,
+                        },
+                      ]}
                       disabled={page === 1}
-                      onPress={() => setPage(p => p - 1)}
+                      onPress={() => setPage((p) => p - 1)}
                     >
-                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: page === 1 ? '#cbd5e1' : Colors.primary }}>{'<'}</Text>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: "bold",
+                          color: page === 1 ? "#cbd5e1" : Colors.primary,
+                        }}
+                      >
+                        {"<"}
+                      </Text>
                     </TouchableOpacity>
 
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#64748b' }}>Trang {page} / {totalPages}</Text>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#64748b",
+                      }}
+                    >
+                      Trang {page} / {totalPages}
+                    </Text>
 
                     <TouchableOpacity
-                      style={[{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }, page === totalPages && { backgroundColor: '#f8fafc', elevation: 0 }]}
+                      style={[
+                        {
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: "#fff",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.1,
+                          shadowRadius: 4,
+                          elevation: 2,
+                        },
+                        page === totalPages && {
+                          backgroundColor: "#f8fafc",
+                          elevation: 0,
+                        },
+                      ]}
                       disabled={page === totalPages}
-                      onPress={() => setPage(p => p + 1)}
+                      onPress={() => setPage((p) => p + 1)}
                     >
-                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: page === totalPages ? '#cbd5e1' : Colors.primary }}>{'>'}</Text>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: "bold",
+                          color:
+                            page === totalPages ? "#cbd5e1" : Colors.primary,
+                        }}
+                      >
+                        {">"}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 )}
