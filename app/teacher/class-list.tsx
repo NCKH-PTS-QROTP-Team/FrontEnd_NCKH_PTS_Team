@@ -14,15 +14,22 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/colors";
 import PrimaryButton from "@/components/PrimaryButton";
-import { CalendarIcon, UsersIcon, LocationIcon, CloseIcon } from "@/components/Icons";
+import {
+  CalendarIcon,
+  UsersIcon,
+  LocationIcon,
+  CloseIcon,
+} from "@/components/Icons";
 import { Ionicons } from "@expo/vector-icons";
 import { classService, reportService, scheduleService } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
 import type { Class } from "@/apis/services/class.service";
-import type { ClassAttendanceReport, StudentAttendanceReport } from "@/apis/services/report.service";
+import type {
+  ClassAttendanceReport,
+  StudentAttendanceReport,
+} from "@/apis/services/report.service";
 import type { Schedule } from "@/apis/services/schedule.service";
-
 
 interface TeacherClassCard {
   id: string;
@@ -69,12 +76,11 @@ export default function ClassListScreen() {
   const [modalVisible, setModalVisible] = useState(false);
 
   // Thêm state cho history của một sinh viên
-  const [selectedStudent, setSelectedStudent] = useState<StudentAttendanceReport | null>(null);
+  const [selectedStudent, setSelectedStudent] =
+    useState<StudentAttendanceReport | null>(null);
   const [studentHistoryVisible, setStudentHistoryVisible] = useState(false);
   const [studentRecords, setStudentRecords] = useState<any[]>([]);
   const [studentRecordsLoading, setStudentRecordsLoading] = useState(false);
-
-
 
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
@@ -85,25 +91,34 @@ export default function ClassListScreen() {
 
   // Chỉ cuộn gom header ở mobile, còn desktop/tablet set cứng = MAX_HEIGHT
   const HEADER_MIN_HEIGHT = isMobile ? 120 : HEADER_MAX_HEIGHT;
-  const HEADER_SCROLL_DISTANCE = Math.max(1, HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT);
+  const HEADER_SCROLL_DISTANCE = Math.max(
+    1,
+    HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT,
+  );
 
-  const headerHeight = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE],
-    outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
-    extrapolate: "clamp",
-  }) : HEADER_MAX_HEIGHT;
+  const headerHeight = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+        extrapolate: "clamp",
+      })
+    : HEADER_MAX_HEIGHT;
 
-  const contentOpacity = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
-    outputRange: [1, 0.2, 0],
-    extrapolate: "clamp",
-  }) : 1;
+  const contentOpacity = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+        outputRange: [1, 0.2, 0],
+        extrapolate: "clamp",
+      })
+    : 1;
 
-  const contentTranslateY = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE],
-    outputRange: [0, -10],
-    extrapolate: "clamp",
-  }) : 0;
+  const contentTranslateY = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [0, -10],
+        extrapolate: "clamp",
+      })
+    : 0;
 
   useEffect(() => {
     loadClasses();
@@ -143,9 +158,9 @@ export default function ClassListScreen() {
 
       const [classList, classReports, teacherSchedules] = await Promise.all([
         classService.getClassesByTeacher(teacherId).catch(() => [] as Class[]),
-        reportService.getClassReports().catch(
-          () => [] as ClassAttendanceReport[],
-        ),
+        reportService
+          .getClassReports()
+          .catch(() => [] as ClassAttendanceReport[]),
         scheduleService
           .getSchedules({ teacherId })
           .catch(() => [] as Schedule[]),
@@ -177,9 +192,7 @@ export default function ClassListScreen() {
         const totalPresent = report?.totalPresent || 0;
         const totalAbsent = report?.totalAbsent || 0;
         const totalLate = report?.totalLate || 0;
-        const attendanceRate = report
-          ? Math.round(report.attendanceRate)
-          : 0;
+        const attendanceRate = report ? Math.round(report.attendanceRate) : 0;
 
         return {
           id: cls.id,
@@ -206,9 +219,9 @@ export default function ClassListScreen() {
       const averageRate =
         totalClasses > 0
           ? Math.round(
-            cards.reduce((sum, c) => sum + (c.attendanceRate || 0), 0) /
-            totalClasses,
-          )
+              cards.reduce((sum, c) => sum + (c.attendanceRate || 0), 0) /
+                totalClasses,
+            )
           : 0;
 
       setSummary({
@@ -264,7 +277,7 @@ export default function ClassListScreen() {
     setStudentHistoryVisible(true);
     setStudentRecordsLoading(true);
     try {
-      const { attendanceService } = await import('@/apis');
+      const { attendanceService } = await import("@/apis");
       const records = await attendanceService.getRecords({
         classId: selectedClass?.id,
         studentId: student.studentId,
@@ -280,19 +293,27 @@ export default function ClassListScreen() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PRESENT': return '#10b981';
-      case 'LATE': return '#f59e0b';
-      case 'ABSENT': return '#ef4444';
-      default: return '#94a3b8';
+      case "PRESENT":
+        return "#10b981";
+      case "LATE":
+        return "#f59e0b";
+      case "ABSENT":
+        return "#ef4444";
+      default:
+        return "#94a3b8";
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'PRESENT': return 'Có mặt';
-      case 'LATE': return 'Muộn';
-      case 'ABSENT': return 'Vắng';
-      default: return 'Không rõ';
+      case "PRESENT":
+        return "Có mặt";
+      case "LATE":
+        return "Muộn";
+      case "ABSENT":
+        return "Vắng";
+      default:
+        return "Không rõ";
     }
   };
 
@@ -322,9 +343,23 @@ export default function ClassListScreen() {
           elevation: 6,
         }}
       >
-        <View style={{ maxWidth: contentMaxWidth, width: "100%", alignSelf: "center", flex: 1 }}>
+        <View
+          style={{
+            maxWidth: contentMaxWidth,
+            width: "100%",
+            alignSelf: "center",
+            flex: 1,
+          }}
+        >
           {/* Header row (always visible, minimal scale info) */}
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 12 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 14,
+              marginBottom: 12,
+            }}
+          >
             <View
               style={{
                 width: 52,
@@ -401,7 +436,9 @@ export default function ClassListScreen() {
                 >
                   Tỷ lệ điểm danh trung bình
                 </Text>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>
+                <Text
+                  style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}
+                >
                   {summary.averageRate}%
                 </Text>
               </View>
@@ -501,19 +538,21 @@ export default function ClassListScreen() {
           }}
         >
           <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={{ color: Colors.textSecondary, marginTop: 12 }}>Đang tải dữ liệu...</Text>
+          <Text style={{ color: Colors.textSecondary, marginTop: 12 }}>
+            Đang tải dữ liệu...
+          </Text>
         </View>
       ) : (
         <Animated.ScrollView
           contentContainerStyle={{
             paddingHorizontal,
             paddingTop: HEADER_MAX_HEIGHT + 16, // leave space for the animated header
-            paddingBottom: 24,
+            paddingBottom: isMobile ? 120 : 40,
           }}
           showsVerticalScrollIndicator={false}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: false }
+            { useNativeDriver: false },
           )}
           scrollEventThrottle={16}
         >
@@ -525,31 +564,38 @@ export default function ClassListScreen() {
             }}
           >
             {/* Classes List */}
-            <View style={{
-              flexDirection: isMobile ? "column" : "row",
-              flexWrap: isMobile ? "nowrap" : "wrap",
-              gap: 16
-            }}>
+            <View
+              style={{
+                flexDirection: isMobile ? "column" : "row",
+                flexWrap: isMobile ? "nowrap" : "wrap",
+                gap: 16,
+              }}
+            >
               {classes.map((classItem, index) => {
                 // Accent color cycle for variety
                 const accentColors = [
-                  { main: '#6366f1', bg: '#eef2ff', light: '#e0e7ff' }, // indigo
-                  { main: '#3b82f6', bg: '#eff6ff', light: '#dbeafe' }, // blue
-                  { main: '#8b5cf6', bg: '#f5f3ff', light: '#ede9fe' }, // violet
-                  { main: '#0ea5e9', bg: '#f0f9ff', light: '#e0f2fe' }, // sky
-                  { main: '#10b981', bg: '#ecfdf5', light: '#d1fae5' }, // emerald
+                  { main: "#6366f1", bg: "#eef2ff", light: "#e0e7ff" }, // indigo
+                  { main: "#3b82f6", bg: "#eff6ff", light: "#dbeafe" }, // blue
+                  { main: "#8b5cf6", bg: "#f5f3ff", light: "#ede9fe" }, // violet
+                  { main: "#0ea5e9", bg: "#f0f9ff", light: "#e0f2fe" }, // sky
+                  { main: "#10b981", bg: "#ecfdf5", light: "#d1fae5" }, // emerald
                 ];
                 const accent = accentColors[index % accentColors.length];
                 const rate = classItem.attendanceRate || 0;
-                const rateColor = rate >= 90 ? '#10b981' : rate >= 75 ? '#f59e0b' : '#ef4444';
-                const rateBg = rate >= 90 ? '#ecfdf5' : rate >= 75 ? '#fffbeb' : '#fef2f2';
-                const initial = (classItem.name || '?').trim().charAt(0).toUpperCase();
+                const rateColor =
+                  rate >= 90 ? "#10b981" : rate >= 75 ? "#f59e0b" : "#ef4444";
+                const rateBg =
+                  rate >= 90 ? "#ecfdf5" : rate >= 75 ? "#fffbeb" : "#fef2f2";
+                const initial = (classItem.name || "?")
+                  .trim()
+                  .charAt(0)
+                  .toUpperCase();
 
                 return (
                   <View
                     key={classItem.id}
                     style={{
-                      width: isDesktop ? '31.5%' : isTablet ? '48%' : '100%',
+                      width: isDesktop ? "31.5%" : isTablet ? "48%" : "100%",
                       flexGrow: isDesktop || isTablet ? 1 : 0,
                     }}
                   >
@@ -557,26 +603,34 @@ export default function ClassListScreen() {
                       onPress={() => handleClassPress(classItem)}
                       activeOpacity={0.75}
                       style={{
-                        backgroundColor: '#fff',
+                        backgroundColor: "#fff",
                         borderRadius: 18,
                         borderWidth: 1,
-                        borderColor: '#f1f5f9',
+                        borderColor: "#f1f5f9",
                         shadowColor: accent.main,
                         shadowOffset: { width: 0, height: 4 },
                         shadowOpacity: 0.1,
                         shadowRadius: 12,
                         elevation: 3,
-                        overflow: 'hidden',
+                        overflow: "hidden",
                       }}
                     >
                       {/* ── Top accent bar ────────────────────────── */}
-                      <View style={{ height: 4, backgroundColor: accent.main }} />
+                      <View
+                        style={{ height: 4, backgroundColor: accent.main }}
+                      />
 
                       {/* ── Card body ─────────────────────────────── */}
                       <View style={{ padding: 16 }}>
-
                         {/* Header row */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 12,
+                            marginBottom: 12,
+                          }}
+                        >
                           {/* Avatar */}
                           <View
                             style={{
@@ -584,14 +638,20 @@ export default function ClassListScreen() {
                               height: 50,
                               borderRadius: 14,
                               backgroundColor: accent.bg,
-                              alignItems: 'center',
-                              justifyContent: 'center',
+                              alignItems: "center",
+                              justifyContent: "center",
                               flexShrink: 0,
                               borderWidth: 1.5,
                               borderColor: accent.light,
                             }}
                           >
-                            <Text style={{ fontSize: 22, fontWeight: '800', color: accent.main }}>
+                            <Text
+                              style={{
+                                fontSize: 22,
+                                fontWeight: "800",
+                                color: accent.main,
+                              }}
+                            >
                               {initial}
                             </Text>
                           </View>
@@ -599,12 +659,23 @@ export default function ClassListScreen() {
                           {/* Name + badges */}
                           <View style={{ flex: 1 }}>
                             <Text
-                              style={{ fontSize: 15, fontWeight: '700', color: '#1e293b', marginBottom: 5 }}
+                              style={{
+                                fontSize: 15,
+                                fontWeight: "700",
+                                color: "#1e293b",
+                                marginBottom: 5,
+                              }}
                               numberOfLines={1}
                             >
                               {classItem.name}
                             </Text>
-                            <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                gap: 6,
+                                flexWrap: "wrap",
+                              }}
+                            >
                               {/* Code badge */}
                               <View
                                 style={{
@@ -616,7 +687,13 @@ export default function ClassListScreen() {
                                   borderColor: accent.light,
                                 }}
                               >
-                                <Text style={{ fontSize: 11, fontWeight: '700', color: accent.main }}>
+                                <Text
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: "700",
+                                    color: accent.main,
+                                  }}
+                                >
                                   {classItem.code}
                                 </Text>
                               </View>
@@ -624,15 +701,21 @@ export default function ClassListScreen() {
                               {classItem.semester && (
                                 <View
                                   style={{
-                                    backgroundColor: '#f8fafc',
+                                    backgroundColor: "#f8fafc",
                                     borderRadius: 6,
                                     paddingHorizontal: 8,
                                     paddingVertical: 3,
                                     borderWidth: 1,
-                                    borderColor: '#e2e8f0',
+                                    borderColor: "#e2e8f0",
                                   }}
                                 >
-                                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#64748b' }}>
+                                  <Text
+                                    style={{
+                                      fontSize: 11,
+                                      fontWeight: "600",
+                                      color: "#64748b",
+                                    }}
+                                  >
                                     {classItem.semester}
                                   </Text>
                                 </View>
@@ -647,14 +730,20 @@ export default function ClassListScreen() {
                               height: 52,
                               borderRadius: 26,
                               backgroundColor: rateBg,
-                              alignItems: 'center',
-                              justifyContent: 'center',
+                              alignItems: "center",
+                              justifyContent: "center",
                               borderWidth: 2.5,
-                              borderColor: rateColor + '35',
+                              borderColor: rateColor + "35",
                               flexShrink: 0,
                             }}
                           >
-                            <Text style={{ fontSize: 14, fontWeight: '800', color: rateColor }}>
+                            <Text
+                              style={{
+                                fontSize: 14,
+                                fontWeight: "800",
+                                color: rateColor,
+                              }}
+                            >
                               {rate}%
                             </Text>
                           </View>
@@ -663,24 +752,65 @@ export default function ClassListScreen() {
                         {/* Meta info row */}
                         <View style={{ gap: 4, marginBottom: 14 }}>
                           {classItem.subject && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                              <Ionicons name="book-outline" size={13} color="#94a3b8" />
-                              <Text style={{ fontSize: 12, color: '#64748b', flex: 1 }} numberOfLines={1}>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 6,
+                              }}
+                            >
+                              <Ionicons
+                                name="book-outline"
+                                size={13}
+                                color="#94a3b8"
+                              />
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  color: "#64748b",
+                                  flex: 1,
+                                }}
+                                numberOfLines={1}
+                              >
                                 {classItem.subject}
                               </Text>
                             </View>
                           )}
-                          <View style={{ flexDirection: 'row', gap: 14 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1 }}>
-                              <Ionicons name="calendar-outline" size={13} color="#94a3b8" />
-                              <Text style={{ fontSize: 12, color: '#64748b' }} numberOfLines={1}>
-                                {classItem.scheduleText || 'Chưa có lịch'}
+                          <View style={{ flexDirection: "row", gap: 14 }}>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 5,
+                                flex: 1,
+                              }}
+                            >
+                              <Ionicons
+                                name="calendar-outline"
+                                size={13}
+                                color="#94a3b8"
+                              />
+                              <Text
+                                style={{ fontSize: 12, color: "#64748b" }}
+                                numberOfLines={1}
+                              >
+                                {classItem.scheduleText || "Chưa có lịch"}
                               </Text>
                             </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                              <Ionicons name="location-outline" size={13} color="#94a3b8" />
-                              <Text style={{ fontSize: 12, color: '#64748b' }}>
-                                {classItem.room || '—'}
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 5,
+                              }}
+                            >
+                              <Ionicons
+                                name="location-outline"
+                                size={13}
+                                color="#94a3b8"
+                              />
+                              <Text style={{ fontSize: 12, color: "#64748b" }}>
+                                {classItem.room || "—"}
                               </Text>
                             </View>
                           </View>
@@ -690,30 +820,42 @@ export default function ClassListScreen() {
                         <View style={{ marginBottom: 14 }}>
                           <View
                             style={{
-                              flexDirection: 'row',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
+                              flexDirection: "row",
+                              justifyContent: "space-between",
+                              alignItems: "center",
                               marginBottom: 6,
                             }}
                           >
-                            <Text style={{ fontSize: 12, fontWeight: '600', color: '#475569' }}>
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: "600",
+                                color: "#475569",
+                              }}
+                            >
                               Tỷ lệ điểm danh
                             </Text>
-                            <Text style={{ fontSize: 12, fontWeight: '700', color: rateColor }}>
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: "700",
+                                color: rateColor,
+                              }}
+                            >
                               {rate}%
                             </Text>
                           </View>
                           <View
                             style={{
                               height: 7,
-                              backgroundColor: '#e2e8f0',
+                              backgroundColor: "#e2e8f0",
                               borderRadius: 4,
-                              overflow: 'hidden',
+                              overflow: "hidden",
                             }}
                           >
                             <View
                               style={{
-                                height: '100%',
+                                height: "100%",
                                 width: `${Math.min(rate, 100)}%`,
                                 backgroundColor: rateColor,
                                 borderRadius: 4,
@@ -725,75 +867,101 @@ export default function ClassListScreen() {
                         {/* ── Stats row ────────────────────────────── */}
                         <View
                           style={{
-                            flexDirection: 'row',
-                            backgroundColor: '#f8fafc',
+                            flexDirection: "row",
+                            backgroundColor: "#f8fafc",
                             borderRadius: 12,
-                            overflow: 'hidden',
+                            overflow: "hidden",
                             borderWidth: 1,
-                            borderColor: '#f1f5f9',
+                            borderColor: "#f1f5f9",
                           }}
                         >
                           {[
                             {
-                              label: 'Sinh viên',
+                              label: "Sinh viên",
                               value: classItem.totalStudents || 0,
-                              icon: 'people' as const,
+                              icon: "people" as const,
                               color: accent.main,
                             },
                             {
-                              label: 'Có mặt',
+                              label: "Có mặt",
                               value: classItem.presentCount || 0,
-                              icon: 'checkmark-circle' as const,
-                              color: '#10b981',
+                              icon: "checkmark-circle" as const,
+                              color: "#10b981",
                             },
                             {
-                              label: 'Vắng',
+                              label: "Vắng",
                               value: classItem.absentCount || 0,
-                              icon: 'close-circle' as const,
-                              color: '#ef4444',
+                              icon: "close-circle" as const,
+                              color: "#ef4444",
                             },
                           ].map((s, idx) => (
                             <View
                               key={s.label}
                               style={{
                                 flex: 1,
-                                alignItems: 'center',
+                                alignItems: "center",
                                 paddingVertical: 10,
                                 paddingHorizontal: 4,
                                 borderLeftWidth: idx > 0 ? 1 : 0,
-                                borderLeftColor: '#e2e8f0',
+                                borderLeftColor: "#e2e8f0",
                               }}
                             >
-                              <Ionicons name={s.icon} size={16} color={s.color} style={{ marginBottom: 3 }} />
-                              <Text style={{ fontSize: 16, fontWeight: '800', color: '#1e293b' }}>
+                              <Ionicons
+                                name={s.icon}
+                                size={16}
+                                color={s.color}
+                                style={{ marginBottom: 3 }}
+                              />
+                              <Text
+                                style={{
+                                  fontSize: 16,
+                                  fontWeight: "800",
+                                  color: "#1e293b",
+                                }}
+                              >
                                 {s.value}
                               </Text>
-                              <Text style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>
+                              <Text
+                                style={{
+                                  fontSize: 10,
+                                  color: "#94a3b8",
+                                  marginTop: 1,
+                                }}
+                              >
                                 {s.label}
                               </Text>
                             </View>
                           ))}
                         </View>
-
                       </View>
 
                       {/* ── Footer CTA ────────────────────────────── */}
                       <View
                         style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "center",
                           gap: 6,
                           paddingVertical: 11,
                           borderTopWidth: 1,
-                          borderTopColor: '#f1f5f9',
-                          backgroundColor: accent.bg + 'aa',
+                          borderTopColor: "#f1f5f9",
+                          backgroundColor: accent.bg + "aa",
                         }}
                       >
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: accent.main }}>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontWeight: "700",
+                            color: accent.main,
+                          }}
+                        >
                           Xem chi tiết
                         </Text>
-                        <Ionicons name="chevron-forward" size={14} color={accent.main} />
+                        <Ionicons
+                          name="chevron-forward"
+                          size={14}
+                          color={accent.main}
+                        />
                       </View>
                     </TouchableOpacity>
                   </View>
@@ -827,11 +995,13 @@ export default function ClassListScreen() {
               width: "100%",
               maxWidth: isDesktop ? 800 : 600,
               maxHeight: "90%",
+              flexShrink: 1,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,
               shadowRadius: 16,
               elevation: 8,
+              overflow: "hidden",
             }}
           >
             {/* Modal Header */}
@@ -876,36 +1046,52 @@ export default function ClassListScreen() {
               </TouchableOpacity>
             </View>
 
-
-
             {/* Modal Content */}
             <ScrollView
-              style={{ flex: 1 }}
+              style={{ flexShrink: 1 }}
               contentContainerStyle={{ padding: isMobile ? 16 : 24 }}
             >
               {/* Stats Cards - Department style */}
               <View
                 style={{
-                  flexDirection: 'row',
+                  flexDirection: "row",
                   gap: 12,
                   marginBottom: 20,
-                  flexWrap: 'wrap',
+                  flexWrap: "wrap",
                 }}
               >
                 {[
-                  { label: 'Có mặt', value: selectedClass?.presentCount ?? 0, icon: 'checkmark-circle', color: '#10b981', bg: '#ecfdf5' },
-                  { label: 'Muộn', value: selectedClass?.lateCount ?? 0, icon: 'time', color: '#f59e0b', bg: '#fffbeb' },
-                  { label: 'Vắng', value: selectedClass?.absentCount ?? 0, icon: 'close-circle', color: '#ef4444', bg: '#fef2f2' },
+                  {
+                    label: "Có mặt",
+                    value: selectedClass?.presentCount ?? 0,
+                    icon: "checkmark-circle",
+                    color: "#10b981",
+                    bg: "#ecfdf5",
+                  },
+                  {
+                    label: "Muộn",
+                    value: selectedClass?.lateCount ?? 0,
+                    icon: "time",
+                    color: "#f59e0b",
+                    bg: "#fffbeb",
+                  },
+                  {
+                    label: "Vắng",
+                    value: selectedClass?.absentCount ?? 0,
+                    icon: "close-circle",
+                    color: "#ef4444",
+                    bg: "#fef2f2",
+                  },
                 ].map((s) => (
                   <View
                     key={s.label}
                     style={{
                       flex: 1,
                       minWidth: 80,
-                      backgroundColor: '#fff',
+                      backgroundColor: "#fff",
                       borderRadius: 14,
                       padding: 14,
-                      shadowColor: '#000',
+                      shadowColor: "#000",
                       shadowOffset: { width: 0, height: 2 },
                       shadowOpacity: 0.05,
                       shadowRadius: 6,
@@ -918,15 +1104,30 @@ export default function ClassListScreen() {
                         height: 38,
                         borderRadius: 10,
                         backgroundColor: s.bg,
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        alignItems: "center",
+                        justifyContent: "center",
                         marginBottom: 8,
                       }}
                     >
-                      <Ionicons name={s.icon as any} size={20} color={s.color} />
+                      <Ionicons
+                        name={s.icon as any}
+                        size={20}
+                        color={s.color}
+                      />
                     </View>
-                    <Text style={{ fontSize: 22, fontWeight: '800', color: '#1e293b', marginBottom: 2 }}>{s.value}</Text>
-                    <Text style={{ fontSize: 12, color: '#64748b' }}>{s.label}</Text>
+                    <Text
+                      style={{
+                        fontSize: 22,
+                        fontWeight: "800",
+                        color: "#1e293b",
+                        marginBottom: 2,
+                      }}
+                    >
+                      {s.value}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#64748b" }}>
+                      {s.label}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -950,9 +1151,17 @@ export default function ClassListScreen() {
                   const rate = Math.round(student.attendanceRate || 0);
                   let rateColor = "#ef4444";
                   let rateBg = "#fef2f2";
-                  if (rate >= 90) { rateColor = "#10b981"; rateBg = "#ecfdf5"; }
-                  else if (rate >= 75) { rateColor = "#f59e0b"; rateBg = "#fffbeb"; }
-                  const initial = (student.studentName || "?").trim().charAt(0).toUpperCase();
+                  if (rate >= 90) {
+                    rateColor = "#10b981";
+                    rateBg = "#ecfdf5";
+                  } else if (rate >= 75) {
+                    rateColor = "#f59e0b";
+                    rateBg = "#fffbeb";
+                  }
+                  const initial = (student.studentName || "?")
+                    .trim()
+                    .charAt(0)
+                    .toUpperCase();
 
                   return (
                     <TouchableOpacity
@@ -988,7 +1197,13 @@ export default function ClassListScreen() {
                           flexShrink: 0,
                         }}
                       >
-                        <Text style={{ fontSize: 18, fontWeight: "800", color: "#6366f1" }}>
+                        <Text
+                          style={{
+                            fontSize: 18,
+                            fontWeight: "800",
+                            color: "#6366f1",
+                          }}
+                        >
                           {initial}
                         </Text>
                       </View>
@@ -1006,7 +1221,13 @@ export default function ClassListScreen() {
                         >
                           {student.studentName}
                         </Text>
-                        <Text style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: "#64748b",
+                            marginBottom: 6,
+                          }}
+                        >
                           MSSV: {student.studentId}
                         </Text>
                         {/* Progress bar */}
@@ -1040,10 +1261,22 @@ export default function ClassListScreen() {
                           minWidth: 52,
                         }}
                       >
-                        <Text style={{ fontSize: 15, fontWeight: "800", color: rateColor }}>
+                        <Text
+                          style={{
+                            fontSize: 15,
+                            fontWeight: "800",
+                            color: rateColor,
+                          }}
+                        >
                           {rate}%
                         </Text>
-                        <Text style={{ fontSize: 10, color: rateColor, opacity: 0.8 }}>
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            color: rateColor,
+                            opacity: 0.8,
+                          }}
+                        >
                           Điểm danh
                         </Text>
                       </View>
@@ -1090,67 +1323,204 @@ export default function ClassListScreen() {
               borderTopRightRadius: 24,
               width: "100%",
               maxHeight: "85%",
+              flexShrink: 1,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: -4 },
               shadowOpacity: 0.1,
               shadowRadius: 16,
               elevation: 8,
               paddingTop: 16,
+              overflow: "hidden",
             }}
           >
-            <View style={{ width: 40, height: 4, backgroundColor: '#cbd5e1', borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
+            <View
+              style={{
+                width: 40,
+                height: 4,
+                backgroundColor: "#cbd5e1",
+                borderRadius: 2,
+                alignSelf: "center",
+                marginBottom: 16,
+              }}
+            />
 
-            <View style={{ paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: '#1e293b' }}>
+            <View
+              style={{
+                paddingHorizontal: 20,
+                paddingBottom: 16,
+                borderBottomWidth: 1,
+                borderBottomColor: "#f1f5f9",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={{ fontSize: 18, fontWeight: "700", color: "#1e293b" }}
+              >
                 Chi tiết điểm danh
               </Text>
-              <TouchableOpacity onPress={handleCloseHistoryModal} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' }}>
+              <TouchableOpacity
+                onPress={handleCloseHistoryModal}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "#f1f5f9",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
                 <CloseIcon size={16} color="#64748b" />
               </TouchableOpacity>
             </View>
 
-            <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: '#eff6ff', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: '#3b82f6' }}>{selectedStudent?.studentName?.trim().charAt(0).toUpperCase()}</Text>
+            <View
+              style={{
+                paddingHorizontal: 20,
+                paddingTop: 16,
+                paddingBottom: 12,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  backgroundColor: "#eff6ff",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{ fontSize: 18, fontWeight: "700", color: "#3b82f6" }}
+                >
+                  {selectedStudent?.studentName?.trim().charAt(0).toUpperCase()}
+                </Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: '#1e293b' }} numberOfLines={1}>{selectedStudent?.studentName}</Text>
-                <Text style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>MSSV: {selectedStudent?.studentId}</Text>
+                <Text
+                  style={{ fontSize: 16, fontWeight: "700", color: "#1e293b" }}
+                  numberOfLines={1}
+                >
+                  {selectedStudent?.studentName}
+                </Text>
+                <Text style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
+                  MSSV: {selectedStudent?.studentId}
+                </Text>
               </View>
             </View>
 
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
+            <ScrollView
+              style={{ flexShrink: 1 }}
+              contentContainerStyle={{ padding: 20 }}
+            >
               {studentRecordsLoading ? (
-                <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                  <Text style={{ color: '#64748b' }}>Đang tải lịch sử...</Text>
+                <View style={{ alignItems: "center", paddingVertical: 40 }}>
+                  <Text style={{ color: "#64748b" }}>Đang tải lịch sử...</Text>
                 </View>
               ) : studentRecords.length === 0 ? (
-                <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                <View style={{ alignItems: "center", paddingVertical: 40 }}>
                   <Ionicons name="calendar-outline" size={48} color="#cbd5e1" />
-                  <Text style={{ color: '#94a3b8', marginTop: 12, textAlign: 'center' }}>Chưa có bản ghi điểm danh nào{'\n'}cho sinh viên này</Text>
+                  <Text
+                    style={{
+                      color: "#94a3b8",
+                      marginTop: 12,
+                      textAlign: "center",
+                    }}
+                  >
+                    Chưa có bản ghi điểm danh nào{"\n"}cho sinh viên này
+                  </Text>
                 </View>
               ) : (
                 <View style={{ gap: 12 }}>
                   {studentRecords.map((r, i) => {
-                    const date = new Date(r.createdAt || r.attendedAt || Date.now());
+                    const date = new Date(
+                      r.createdAt || r.attendedAt || Date.now(),
+                    );
                     const statusColor = getStatusColor(r.status);
                     const statusLabel = getStatusLabel(r.status);
 
                     return (
-                      <View key={r.id || i} style={{ flexDirection: 'row', alignItems: 'center', padding: 14, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#f1f5f9', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 4, elevation: 1 }}>
-                        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: statusColor + '15', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                          <Ionicons name={
-                            r.status === 'PRESENT' ? 'checkmark' :
-                              r.status === 'LATE' ? 'time' :
-                                'close'
-                          } size={20} color={statusColor} />
+                      <View
+                        key={r.id || i}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          padding: 14,
+                          backgroundColor: "#fff",
+                          borderRadius: 12,
+                          borderWidth: 1,
+                          borderColor: "#f1f5f9",
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.02,
+                          shadowRadius: 4,
+                          elevation: 1,
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
+                            backgroundColor: statusColor + "15",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            marginRight: 12,
+                          }}
+                        >
+                          <Ionicons
+                            name={
+                              r.status === "PRESENT"
+                                ? "checkmark"
+                                : r.status === "LATE"
+                                  ? "time"
+                                  : "close"
+                            }
+                            size={20}
+                            color={statusColor}
+                          />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 15, fontWeight: '600', color: '#1e293b', marginBottom: 2 }}>{date.toLocaleDateString('vi-VN')}</Text>
-                          <Text style={{ fontSize: 12, color: '#64748b' }}>{date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • QUA {r.method || '---'}</Text>
+                          <Text
+                            style={{
+                              fontSize: 15,
+                              fontWeight: "600",
+                              color: "#1e293b",
+                              marginBottom: 2,
+                            }}
+                          >
+                            {date.toLocaleDateString("vi-VN")}
+                          </Text>
+                          <Text style={{ fontSize: 12, color: "#64748b" }}>
+                            {date.toLocaleTimeString("vi-VN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}{" "}
+                            • QUA {r.method || "---"}
+                          </Text>
                         </View>
-                        <View style={{ backgroundColor: statusColor + '15', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}>
-                          <Text style={{ fontSize: 13, fontWeight: '600', color: statusColor }}>{statusLabel}</Text>
+                        <View
+                          style={{
+                            backgroundColor: statusColor + "15",
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                            borderRadius: 6,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              fontWeight: "600",
+                              color: statusColor,
+                            }}
+                          >
+                            {statusLabel}
+                          </Text>
                         </View>
                       </View>
                     );

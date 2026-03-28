@@ -32,12 +32,12 @@ const getApiBaseUrl = () => {
       return 'http://localhost:8080/api';
     } else if (Platform.OS === 'android') {
       // 10.0.2.2 là địa chỉ đặc biệt cho Android Emulator trỏ về localhost của máy host
-      // Nếu dùng thiết bị thật, thay bằng IP của máy: http://192.168.1.56:8080/api
-      return 'http://192.168.1.56:8080/api';
+      // Nếu dùng thiết bị thật, thay bằng IP của máy: http://192.168.1.25:8080/api
+      return 'http://192.168.1.25:8080/api';
     } else {
       // iOS Simulator có thể dùng localhost
       // iOS thiết bị thật cần IP của máy tính (giống Android)
-      return 'http://192.168.1.56:8080/api';
+      return 'http://192.168.1.25:8080/api';
     }
   }
 
@@ -59,11 +59,15 @@ const getApiBaseUrl = () => {
 const API_BASE_URL = getApiBaseUrl();
 
 // Debug: Log API URL để kiểm tra
+console.log('═══════════════════════════════════════');
+console.log('🌐 API Configuration Loaded');
+console.log('   API Base URL:', API_BASE_URL);
+console.log('   Platform:', Platform.OS);
+console.log('   Dev Mode:', __DEV__);
 if (typeof window !== 'undefined') {
-  console.log('🌐 API Base URL:', API_BASE_URL);
-  console.log('🌐 Current hostname:', window.location.hostname);
-  console.log('🌐 __DEV__:', __DEV__);
+  console.log('   Current hostname:', window.location.hostname);
 }
+console.log('═══════════════════════════════════════');
 
 // Export để native download file (cần full URL cho fetch)
 export const getExportBaseUrl = () => apiClient.defaults.baseURL || API_BASE_URL;
@@ -210,10 +214,30 @@ apiClient.interceptors.response.use(
 
     // Handle network errors
     if (!error.response) {
-      console.error('Network Error:', error.message);
+      console.error('❌ Network Error Details:');
+      console.error('   Message:', error.message);
+      console.error('   Code:', error.code);
+      console.error('   API URL:', API_BASE_URL);
+      console.error('   Platform:', Platform.OS);
+      
+      // Provide specific debugging hints
+      if (error.code === 'ECONNREFUSED') {
+        console.warn('   🔴 Connection refused - Backend không chạy trên port 8080');
+      } else if (error.code === 'ENOTFOUND') {
+        console.warn('   🔴 Host not found - IP address sai hoặc không accessible');
+      } else if (error.code === 'ETIMEDOUT') {
+        console.warn('   🔴 Connection timeout - Firewall chặn hoặc network down');
+      }
+      
       return Promise.reject({
         message: 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.',
         isNetworkError: true,
+        debugInfo: {
+          errorCode: error.code,
+          errorMessage: error.message,
+          apiUrl: API_BASE_URL,
+          platform: Platform.OS,
+        },
       });
     }
 
