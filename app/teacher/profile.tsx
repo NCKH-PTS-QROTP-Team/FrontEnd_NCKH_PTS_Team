@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   useWindowDimensions,
   Alert,
@@ -14,21 +13,26 @@ import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/colors";
 import {
   TeacherIcon,
-  CalendarIcon,
-  BellIcon,
-  SettingsIcon,
   LogoutIcon,
   ChevronRightIcon,
   ClipboardIcon,
   ChartIcon,
+  BellIcon,
+  CalendarIcon,
 } from "@/components/Icons";
 import { authService } from "@/apis/services/auth.service";
-import { reportService, type TeacherSummary } from "@/apis/services/report.service";
+import {
+  reportService,
+  type TeacherSummary,
+} from "@/apis/services/report.service";
+import ProfileAndSettings from "@/components/ProfileAndSettings";
+import Toast, { useToast } from "@/components/Toast";
 
 export default function TeacherProfileScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  const { showToast } = useToast();
 
   const handleLogout = () => {
     Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
@@ -65,25 +69,34 @@ export default function TeacherProfileScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const HEADER_MAX_HEIGHT = isMobile ? 320 : 290;
   const HEADER_MIN_HEIGHT = isMobile ? 120 : HEADER_MAX_HEIGHT;
-  const HEADER_SCROLL_DISTANCE = Math.max(1, HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT);
+  const HEADER_SCROLL_DISTANCE = Math.max(
+    1,
+    HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT,
+  );
 
-  const headerHeight = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE],
-    outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
-    extrapolate: "clamp",
-  }) : HEADER_MAX_HEIGHT;
+  const headerHeight = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+        extrapolate: "clamp",
+      })
+    : HEADER_MAX_HEIGHT;
 
-  const contentOpacity = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
-    outputRange: [1, 0.2, 0],
-    extrapolate: "clamp",
-  }) : 1;
+  const contentOpacity = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+        outputRange: [1, 0.2, 0],
+        extrapolate: "clamp",
+      })
+    : 1;
 
-  const contentTranslateY = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE],
-    outputRange: [0, -10],
-    extrapolate: "clamp",
-  }) : 0;
+  const contentTranslateY = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [0, -10],
+        extrapolate: "clamp",
+      })
+    : 0;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
@@ -112,14 +125,21 @@ export default function TeacherProfileScreen() {
           alignItems: "center",
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: "600", color: "rgba(255,255,255,0.8)", marginBottom: 16 }}>
+        <Text
+          style={{
+            fontSize: 16,
+            fontWeight: "600",
+            color: "rgba(255,255,255,0.8)",
+            marginBottom: 16,
+          }}
+        >
           Tài khoản
         </Text>
         <Animated.View
           style={{
             alignItems: "center",
             opacity: contentOpacity,
-            transform: [{ translateY: contentTranslateY }]
+            transform: [{ translateY: contentTranslateY }],
           }}
         >
           <View
@@ -175,267 +195,240 @@ export default function TeacherProfileScreen() {
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
+          { useNativeDriver: false },
         )}
         scrollEventThrottle={16}
       >
-        {/* Stats Grid */}
-        <View
-          style={{
-            flexDirection: "row",
-            gap: 12,
-            marginBottom: 16,
-          }}
-        >
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: Colors.white,
-              borderRadius: 12,
-              padding: 16,
-              borderWidth: 1,
-              borderColor: Colors.border,
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                color: Colors.textSecondary,
-                marginBottom: 8,
-              }}
-            >
-              Tổng lớp
-            </Text>
-            <Text
-              style={{
-                fontSize: 28,
-                fontWeight: "bold",
-                color: Colors.primary,
-              }}
-            >
-              {summary?.totalClasses || 0}
-            </Text>
-          </View>
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: Colors.white,
-              borderRadius: 12,
-              padding: 16,
-              borderWidth: 1,
-              borderColor: Colors.border,
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12,
-                color: Colors.textSecondary,
-                marginBottom: 8,
-              }}
-            >
-              Tổng sinh viên
-            </Text>
-            <Text
-              style={{
-                fontSize: 28,
-                fontWeight: "bold",
-                color: "#10B981",
-              }}
-            >
-              {summary?.totalStudents || 0}
-            </Text>
-          </View>
-        </View>
+        <ProfileAndSettings
+          user={userInfo}
+          onShowToast={showToast}
+          headerContent={
+            <>
+              {/* Stats Grid */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: 12,
+                  marginBottom: 16,
+                }}
+              >
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: Colors.white,
+                    borderRadius: 12,
+                    padding: 16,
+                    borderWidth: 1,
+                    borderColor: Colors.border,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: Colors.textSecondary,
+                      marginBottom: 8,
+                    }}
+                  >
+                    Tổng lớp
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 28,
+                      fontWeight: "bold",
+                      color: Colors.primary,
+                    }}
+                  >
+                    {summary?.totalClasses || 0}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: Colors.white,
+                    borderRadius: 12,
+                    padding: 16,
+                    borderWidth: 1,
+                    borderColor: Colors.border,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: Colors.textSecondary,
+                      marginBottom: 8,
+                    }}
+                  >
+                    Tổng sinh viên
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 28,
+                      fontWeight: "bold",
+                      color: "#10B981",
+                    }}
+                  >
+                    {summary?.totalStudents || 0}
+                  </Text>
+                </View>
+              </View>
 
-        {/* Menu Items */}
-        <View
-          style={{
-            backgroundColor: Colors.white,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: Colors.border,
-            marginBottom: 16,
-            overflow: "hidden",
-          }}
-        >
-          <TouchableOpacity
-            onPress={() => router.push("/teacher/class-list")}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: Colors.border,
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: Colors.primary + "15",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-              }}
-            >
-              <ClipboardIcon size={20} color={Colors.primary} />
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 15,
-                color: Colors.textHeading,
-                fontWeight: "500",
-              }}
-            >
-              Danh sách lớp học
-            </Text>
-            <ChevronRightIcon size={20} color={Colors.textSecondary} />
-          </TouchableOpacity>
+              {/* Menu Items */}
+              <View
+                style={{
+                  backgroundColor: Colors.white,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  marginBottom: 16,
+                  overflow: "hidden",
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => router.push("/teacher/class-list")}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: Colors.border,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: Colors.primary + "15",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 12,
+                    }}
+                  >
+                    <ClipboardIcon size={20} color={Colors.primary} />
+                  </View>
+                  <Text
+                    style={{
+                      flex: 1,
+                      fontSize: 15,
+                      color: Colors.textHeading,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Danh sách lớp học
+                  </Text>
+                  <ChevronRightIcon size={20} color={Colors.textSecondary} />
+                </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => router.push("/teacher/dashboard")}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: Colors.border,
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#10B98115",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-              }}
-            >
-              <CalendarIcon size={20} color="#10B981" />
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 15,
-                color: Colors.textHeading,
-                fontWeight: "500",
-              }}
-            >
-              Lịch dạy
-            </Text>
-            <ChevronRightIcon size={20} color={Colors.textSecondary} />
-          </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => router.push("/teacher/dashboard")}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: Colors.border,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: "#10B98115",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 12,
+                    }}
+                  >
+                    <CalendarIcon size={20} color="#10B981" />
+                  </View>
+                  <Text
+                    style={{
+                      flex: 1,
+                      fontSize: 15,
+                      color: Colors.textHeading,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Lịch dạy
+                  </Text>
+                  <ChevronRightIcon size={20} color={Colors.textSecondary} />
+                </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => router.push("/teacher/reports")}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: Colors.border,
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#F59E0B15",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-              }}
-            >
-              <ChartIcon size={20} color="#F59E0B" />
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 15,
-                color: Colors.textHeading,
-                fontWeight: "500",
-              }}
-            >
-              Báo cáo & Thống kê
-            </Text>
-            <ChevronRightIcon size={20} color={Colors.textSecondary} />
-          </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => router.push("/teacher/reports")}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: Colors.border,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: "#F59E0B15",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 12,
+                    }}
+                  >
+                    <ChartIcon size={20} color="#F59E0B" />
+                  </View>
+                  <Text
+                    style={{
+                      flex: 1,
+                      fontSize: 15,
+                      color: Colors.textHeading,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Báo cáo & Thống kê
+                  </Text>
+                  <ChevronRightIcon size={20} color={Colors.textSecondary} />
+                </TouchableOpacity>
 
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: Colors.border,
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#8B5CF615",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-              }}
-            >
-              <BellIcon size={20} color="#8B5CF6" />
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 15,
-                color: Colors.textHeading,
-                fontWeight: "500",
-              }}
-            >
-              Thông báo
-            </Text>
-            <ChevronRightIcon size={20} color={Colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: Colors.gray100,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-              }}
-            >
-              <SettingsIcon size={20} color={Colors.textSecondary} />
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 15,
-                color: Colors.textHeading,
-                fontWeight: "500",
-              }}
-            >
-              Cài đặt
-            </Text>
-            <ChevronRightIcon size={20} color={Colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
+                <TouchableOpacity
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: 16,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: "#8B5CF615",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 12,
+                    }}
+                  >
+                    <BellIcon size={20} color="#8B5CF6" />
+                  </View>
+                  <Text
+                    style={{
+                      flex: 1,
+                      fontSize: 15,
+                      color: Colors.textHeading,
+                      fontWeight: "500",
+                    }}
+                  >
+                    Thông báo
+                  </Text>
+                  <ChevronRightIcon size={20} color={Colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            </>
+          }
+        />
 
         {/* Logout Button */}
         <TouchableOpacity

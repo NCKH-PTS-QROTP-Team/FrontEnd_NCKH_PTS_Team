@@ -1,118 +1,119 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Platform, TouchableOpacity, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Avatar } from './Avatar';
+import React, { useState, useRef, useEffect } from "react";
+import { View, Text, Platform, TouchableOpacity, Alert } from "react-native";
+import { useRouter } from "expo-router";
+import { Avatar } from "./Avatar";
 
 // Fallback Colors nếu chưa có file constants
 const Colors = {
-  primary: '#6366F1',
-  error: '#EF4444',
+  primary: "#6366F1",
+  error: "#EF4444",
 };
 
 interface UserProfileDropdownProps {
   userName: string;
   userAvatar?: string;
-  userRole?: 'student' | 'teacher' | 'admin' | 'department';
+  userRole?:
+    | "student"
+    | "teacher"
+    | "admin"
+    | "department"
+    | "academic-staff"
+    | string;
   userEmail?: string;
 }
 
 export default function UserProfileDropdown({
   userName,
   userAvatar,
-  userRole = 'student',
-  userEmail
+  userRole = "student",
+  userEmail,
 }: UserProfileDropdownProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<View>(null);
 
   useEffect(() => {
-    if (Platform.OS === 'web' && isOpen) {
+    if (Platform.OS === "web" && isOpen) {
       const handleClickOutside = (event: any) => {
-        if (dropdownRef.current && !(dropdownRef.current as any).contains(event.target)) {
+        if (
+          dropdownRef.current &&
+          !(dropdownRef.current as any).contains(event.target)
+        ) {
           setIsOpen(false);
         }
       };
 
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isOpen]);
 
   const handleLogout = () => {
     setIsOpen(false);
-    Alert.alert(
-      'Đăng xuất',
-      'Bạn có chắc muốn đăng xuất?',
-      [
-        { text: 'Hủy', style: 'cancel' },
-        {
-          text: 'Đăng xuất',
-          style: 'destructive',
-          onPress: () => router.replace('/auth/login')
-        }
-      ]
-    );
+    Alert.alert("Đăng xuất", "Bạn có chắc muốn đăng xuất?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Đăng xuất",
+        style: "destructive",
+        onPress: () => router.replace("/auth/login"),
+      },
+    ]);
   };
 
-  const handleProfile = () => {
+  const handleProfileAndSettings = () => {
     setIsOpen(false);
-    if (userRole === 'student') {
-      router.push('/student/home');
-    } else if (userRole === 'teacher') {
-      router.push('/teacher/dashboard');
-    } else if (userRole === 'department') {
-      router.push('/department/profile');
+    if (userRole === "student") {
+      router.push("/student/profile");
+    } else if (userRole === "teacher") {
+      router.push("/teacher/profile");
+    } else if (userRole === "department") {
+      router.push("/department/profile");
+    } else if (userRole === "admin") {
+      router.push("/admin/settings");
     } else {
-      router.push('/admin/dashboard');
-    }
-  };
-
-  const handleSettings = () => {
-    setIsOpen(false);
-    if (userRole === 'admin') {
-      router.push('/admin/settings');
+      router.push("/academic-staff/profile");
     }
   };
 
   const getRoleName = (role: string) => {
     switch (role) {
-      case 'student': return 'Sinh viên';
-      case 'teacher': return 'Giảng viên';
-      case 'admin': return 'Quản trị viên';
-      case 'department': return 'Giáo vụ khoa';
-      default: return '';
+      case "student":
+        return "Sinh viên";
+      case "teacher":
+        return "Giảng viên";
+      case "admin":
+        return "Quản trị viên";
+      case "department":
+        return "Giáo vụ khoa";
+      default:
+        return "";
     }
   };
 
   return (
-    <View ref={dropdownRef} style={{ position: 'relative' }}>
+    <View ref={dropdownRef} style={{ position: "relative" }}>
       {/* Dropdown Trigger Button */}
       <TouchableOpacity
         onPress={() => setIsOpen(!isOpen)}
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
+          flexDirection: "row",
+          alignItems: "center",
           paddingHorizontal: 12,
           paddingVertical: 8,
           minHeight: 44,
         }}
       >
         {/* Avatar */}
-        <Avatar
-          name={userName}
-          src={userAvatar}
-          size="small"
-          bordered
-        />
+        <Avatar name={userName} src={userAvatar} size="small" bordered />
 
         {/* User Name */}
         <Text
           style={{
             marginLeft: 10,
             fontSize: 14,
-            fontWeight: '600',
-            color: '#111827',
+            fontWeight: "600",
+            color: "#111827",
             maxWidth: 150,
           }}
           numberOfLines={1}
@@ -125,11 +126,12 @@ export default function UserProfileDropdown({
           style={{
             marginLeft: 8,
             fontSize: 12,
-            color: '#6B7280',
-            transform: isOpen ? [{ rotate: '180deg' }] : [{ rotate: '0deg' }],
-            ...(Platform.OS === 'web' && {
-              transition: 'transform 0.2s ease',
-            } as any),
+            color: "#6B7280",
+            transform: isOpen ? [{ rotate: "180deg" }] : [{ rotate: "0deg" }],
+            ...(Platform.OS === "web" &&
+              ({
+                transition: "transform 0.2s ease",
+              } as any)),
           }}
         >
           ▼
@@ -140,48 +142,50 @@ export default function UserProfileDropdown({
       {isOpen && (
         <View
           style={{
-            position: 'absolute' as any,
+            position: "absolute" as any,
             top: 56,
             right: 0,
             width: 280,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: "#FFFFFF",
             borderRadius: 12,
-            shadowColor: '#000',
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.15,
             shadowRadius: 12,
             elevation: 8,
             borderWidth: 1,
-            borderColor: '#E5E7EB',
+            borderColor: "#E5E7EB",
             zIndex: 2000,
-            overflow: 'hidden',
-            ...(Platform.OS === 'web' && {
-              animation: 'slideDown 0.2s ease',
-            } as any),
+            overflow: "hidden",
+            ...(Platform.OS === "web" &&
+              ({
+                animation: "slideDown 0.2s ease",
+              } as any)),
           }}
         >
           {/* User Info Header */}
           <View
             style={{
               padding: 16,
-              backgroundColor: '#F9FAFB',
+              backgroundColor: "#F9FAFB",
               borderBottomWidth: 1,
-              borderBottomColor: '#E5E7EB',
+              borderBottomColor: "#E5E7EB",
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-              <Avatar
-                name={userName}
-                src={userAvatar}
-                size="medium"
-                bordered
-              />
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 8,
+              }}
+            >
+              <Avatar name={userName} src={userAvatar} size="medium" bordered />
               <View style={{ marginLeft: 12, flex: 1 }}>
                 <Text
                   style={{
                     fontSize: 15,
-                    fontWeight: '700',
-                    color: '#111827',
+                    fontWeight: "700",
+                    color: "#111827",
                     marginBottom: 2,
                   }}
                   numberOfLines={1}
@@ -190,14 +194,20 @@ export default function UserProfileDropdown({
                 </Text>
                 <View
                   style={{
-                    alignSelf: 'flex-start',
+                    alignSelf: "flex-start",
                     paddingHorizontal: 8,
                     paddingVertical: 2,
-                    backgroundColor: Colors.primary + '15',
+                    backgroundColor: Colors.primary + "15",
                     borderRadius: 4,
                   }}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: Colors.primary }}>
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: "600",
+                      color: Colors.primary,
+                    }}
+                  >
                     {getRoleName(userRole)}
                   </Text>
                 </View>
@@ -207,7 +217,7 @@ export default function UserProfileDropdown({
               <Text
                 style={{
                   fontSize: 13,
-                  color: '#6B7280',
+                  color: "#6B7280",
                   marginTop: 4,
                 }}
                 numberOfLines={1}
@@ -219,141 +229,112 @@ export default function UserProfileDropdown({
 
           {/* Menu Items */}
           <View style={{ paddingVertical: 4 }}>
-            {/* Profile */}
+            {/* Profile and Settings */}
             <TouchableOpacity
-              onPress={handleProfile}
+              onPress={handleProfileAndSettings}
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
+                flexDirection: "row",
+                alignItems: "center",
                 paddingHorizontal: 16,
                 paddingVertical: 12,
-                ...(Platform.OS === 'web' && {
-                  cursor: 'pointer',
-                  transition: 'background-color 0.15s ease',
-                } as any),
+                ...(Platform.OS === "web" &&
+                  ({
+                    cursor: "pointer",
+                    transition: "background-color 0.15s ease",
+                  } as any)),
               }}
-              {...(Platform.OS === 'web' && {
-                onMouseEnter: (e: any) => {
-                  e.currentTarget.style.backgroundColor = '#F9FAFB';
-                },
-                onMouseLeave: (e: any) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                },
-              } as any)}
+              {...(Platform.OS === "web" &&
+                ({
+                  onMouseEnter: (e: any) => {
+                    e.currentTarget.style.backgroundColor = "#F9FAFB";
+                  },
+                  onMouseLeave: (e: any) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  },
+                } as any))}
             >
               <View
                 style={{
                   width: 36,
                   height: 36,
                   borderRadius: 18,
-                  backgroundColor: Colors.primary + '15',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  backgroundColor: Colors.primary + "15",
+                  alignItems: "center",
+                  justifyContent: "center",
                   marginRight: 12,
                 }}
               >
                 <Text style={{ fontSize: 18, color: Colors.primary }}>👤</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                  Trang cá nhân
+                <Text
+                  style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}
+                >
+                  Tài khoản & Cài đặt
                 </Text>
-                <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
-                  Xem thông tin của bạn
+                <Text style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>
+                  Thông tin cá nhân, mật khẩu
                 </Text>
               </View>
             </TouchableOpacity>
 
-            {/* Settings (Admin only) */}
-            {userRole === 'admin' && (
-              <TouchableOpacity
-                onPress={handleSettings}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
-                  ...(Platform.OS === 'web' && {
-                    cursor: 'pointer',
-                    transition: 'background-color 0.15s ease',
-                  } as any),
-                }}
-                {...(Platform.OS === 'web' && {
-                  onMouseEnter: (e: any) => {
-                    e.currentTarget.style.backgroundColor = '#F9FAFB';
-                  },
-                  onMouseLeave: (e: any) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  },
-                } as any)}
-              >
-                <View
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: '#6B728015',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: 12,
-                  }}
-                >
-                  <Text style={{ fontSize: 18, color: '#6B7280' }}>⚙️</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>
-                    Cài đặt
-                  </Text>
-                  <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
-                    Quản lý hệ thống
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            )}
-
             {/* Divider */}
-            <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 4 }} />
+            <View
+              style={{
+                height: 1,
+                backgroundColor: "#E5E7EB",
+                marginVertical: 4,
+              }}
+            />
 
             {/* Logout */}
             <TouchableOpacity
               onPress={handleLogout}
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
+                flexDirection: "row",
+                alignItems: "center",
                 paddingHorizontal: 16,
                 paddingVertical: 12,
-                ...(Platform.OS === 'web' && {
-                  cursor: 'pointer',
-                  transition: 'background-color 0.15s ease',
-                } as any),
+                ...(Platform.OS === "web" &&
+                  ({
+                    cursor: "pointer",
+                    transition: "background-color 0.15s ease",
+                  } as any)),
               }}
-              {...(Platform.OS === 'web' && {
-                onMouseEnter: (e: any) => {
-                  e.currentTarget.style.backgroundColor = '#FEF2F2';
-                },
-                onMouseLeave: (e: any) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                },
-              } as any)}
+              {...(Platform.OS === "web" &&
+                ({
+                  onMouseEnter: (e: any) => {
+                    e.currentTarget.style.backgroundColor = "#FEF2F2";
+                  },
+                  onMouseLeave: (e: any) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  },
+                } as any))}
             >
               <View
                 style={{
                   width: 36,
                   height: 36,
                   borderRadius: 18,
-                  backgroundColor: '#FEE2E2',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  backgroundColor: "#FEE2E2",
+                  alignItems: "center",
+                  justifyContent: "center",
                   marginRight: 12,
                 }}
               >
                 <Text style={{ fontSize: 18, color: Colors.error }}>🚪</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.error }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "600",
+                    color: Colors.error,
+                  }}
+                >
                   Đăng xuất
                 </Text>
-                <Text style={{ fontSize: 12, color: '#FCA5A5', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: "#FCA5A5", marginTop: 2 }}>
                   Thoát khỏi tài khoản
                 </Text>
               </View>
