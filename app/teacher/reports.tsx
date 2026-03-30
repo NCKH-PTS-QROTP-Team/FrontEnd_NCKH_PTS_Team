@@ -14,11 +14,16 @@ import { PieChart, BarChart } from "react-native-chart-kit";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import { reportService, type TeacherSummary, type ClassAttendanceReport } from "@/apis/services/report.service";
+import {
+  reportService,
+  type TeacherSummary,
+  type ClassAttendanceReport,
+} from "@/apis/services/report.service";
 import { getAuthToken } from "@/apis/config/apiClient";
 import Toast, { useToast } from "@/components/Toast";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
+import { LinearGradient } from "expo-linear-gradient";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const VIOLET = "#8b5cf6";
@@ -122,9 +127,7 @@ function ClassBarRow({
       </View>
 
       {/* Mini stats */}
-      <View
-        style={{ flexDirection: "row", gap: 12, marginTop: 10 }}
-      >
+      <View style={{ flexDirection: "row", gap: 12, marginTop: 10 }}>
         {[
           {
             label: "Có mặt",
@@ -178,25 +181,34 @@ export default function ReportsScreen() {
 
   // Chỉ cuộn gom header ở mobile, còn desktop/tablet set cứng = MAX_HEIGHT
   const HEADER_MIN_HEIGHT = isMobile ? 120 : HEADER_MAX_HEIGHT;
-  const HEADER_SCROLL_DISTANCE = Math.max(1, HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT);
+  const HEADER_SCROLL_DISTANCE = Math.max(
+    1,
+    HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT,
+  );
 
-  const headerHeight = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE],
-    outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
-    extrapolate: "clamp",
-  }) : HEADER_MAX_HEIGHT;
+  const headerHeight = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+        extrapolate: "clamp",
+      })
+    : HEADER_MAX_HEIGHT;
 
-  const contentOpacity = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
-    outputRange: [1, 0.2, 0],
-    extrapolate: "clamp",
-  }) : 1;
+  const contentOpacity = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+        outputRange: [1, 0.2, 0],
+        extrapolate: "clamp",
+      })
+    : 1;
 
-  const contentTranslateY = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE],
-    outputRange: [0, -10],
-    extrapolate: "clamp",
-  }) : 0;
+  const contentTranslateY = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [0, -10],
+        extrapolate: "clamp",
+      })
+    : 0;
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -218,7 +230,7 @@ export default function ReportsScreen() {
       console.error("Error loading report:", error);
       showToast(
         error?.response?.data?.message || "Không thể tải dữ liệu báo cáo",
-        "error"
+        "error",
       );
     } finally {
       setLoading(false);
@@ -295,7 +307,6 @@ export default function ReportsScreen() {
       {/* ── Parallax Animated Hero Header ── */}
       <Animated.View
         style={{
-          backgroundColor: VIOLET,
           paddingTop: isMobile ? 48 : 64,
           paddingHorizontal: paddingHorizontal,
           borderBottomLeftRadius: 32,
@@ -307,15 +318,35 @@ export default function ReportsScreen() {
           height: headerHeight,
           zIndex: 10,
           overflow: "hidden",
-          shadowColor: VIOLET,
+          shadowColor: "#3B82F6",
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0.32,
           shadowRadius: 16,
           elevation: 6,
         }}
       >
-        <View style={{ maxWidth: contentMaxWidth, width: "100%", alignSelf: "center", flex: 1 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 12 }}>
+        <LinearGradient
+          colors={["#1E3A8A", "#3B82F6"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+        />
+        <View
+          style={{
+            maxWidth: contentMaxWidth,
+            width: "100%",
+            alignSelf: "center",
+            flex: 1,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 14,
+              marginBottom: 12,
+            }}
+          >
             <View
               style={{
                 width: 52,
@@ -329,11 +360,25 @@ export default function ReportsScreen() {
               <Ionicons name="bar-chart" size={28} color="#fff" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 22, fontWeight: "800", color: "#fff", marginBottom: 2 }}>
+              <Text
+                style={{
+                  fontSize: 22,
+                  fontWeight: "800",
+                  color: "#fff",
+                  marginBottom: 2,
+                }}
+              >
                 Báo cáo & Thống kê
               </Text>
-              <Animated.Text style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", opacity: contentOpacity }}>
-                {summary?.totalClasses ?? 0} lớp • {summary?.totalStudents ?? 0} sinh viên
+              <Animated.Text
+                style={{
+                  fontSize: 13,
+                  color: "rgba(255,255,255,0.85)",
+                  opacity: contentOpacity,
+                }}
+              >
+                {summary?.totalClasses ?? 0} lớp • {summary?.totalStudents ?? 0}{" "}
+                sinh viên
               </Animated.Text>
             </View>
             <View
@@ -353,22 +398,53 @@ export default function ReportsScreen() {
             </View>
           </View>
 
-          <Animated.View style={{ opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] }}>
+          <Animated.View
+            style={{
+              opacity: contentOpacity,
+              transform: [{ translateY: contentTranslateY }],
+            }}
+          >
             <View style={{ marginBottom: 16, marginTop: 4 }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
-                <Text style={{ fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.85)" }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginBottom: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "600",
+                    color: "rgba(255,255,255,0.85)",
+                  }}
+                >
                   Tỷ lệ điểm danh trung bình
                 </Text>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>
+                <Text
+                  style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}
+                >
                   {rate}%
                 </Text>
               </View>
-              <View style={{ height: 8, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 4, overflow: "hidden" }}>
+              <View
+                style={{
+                  height: 8,
+                  backgroundColor: "rgba(255,255,255,0.2)",
+                  borderRadius: 4,
+                  overflow: "hidden",
+                }}
+              >
                 <View
                   style={{
                     height: "100%",
                     width: `${Math.min(rate, 100)}%`,
-                    backgroundColor: rate >= 90 ? "#34d399" : rate >= 75 ? "#fbbf24" : "#f87171",
+                    backgroundColor:
+                      rate >= 90
+                        ? "#34d399"
+                        : rate >= 75
+                          ? "#fbbf24"
+                          : "#f87171",
                     borderRadius: 4,
                   }}
                 />
@@ -386,10 +462,26 @@ export default function ReportsScreen() {
               }}
             >
               {[
-                { label: "Buổi học", value: String(summary?.totalSessions ?? 0), icon: "calendar" as const },
-                { label: "Có mặt", value: String(summary?.totalPresent ?? 0), icon: "checkmark-circle" as const },
-                { label: "Muộn", value: String(summary?.totalLate ?? 0), icon: "time" as const },
-                { label: "Vắng", value: String(summary?.totalAbsent ?? 0), icon: "close-circle" as const },
+                {
+                  label: "Buổi học",
+                  value: String(summary?.totalSessions ?? 0),
+                  icon: "calendar" as const,
+                },
+                {
+                  label: "Có mặt",
+                  value: String(summary?.totalPresent ?? 0),
+                  icon: "checkmark-circle" as const,
+                },
+                {
+                  label: "Muộn",
+                  value: String(summary?.totalLate ?? 0),
+                  icon: "time" as const,
+                },
+                {
+                  label: "Vắng",
+                  value: String(summary?.totalAbsent ?? 0),
+                  icon: "close-circle" as const,
+                },
               ].map((item, idx) => (
                 <View
                   key={idx}
@@ -401,9 +493,21 @@ export default function ReportsScreen() {
                     gap: 4,
                   }}
                 >
-                  <Ionicons name={item.icon} size={15} color="rgba(255,255,255,0.7)" />
-                  <Text style={{ fontSize: 18, fontWeight: "800", color: "#fff" }}>{item.value}</Text>
-                  <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.7)" }}>{item.label}</Text>
+                  <Ionicons
+                    name={item.icon}
+                    size={15}
+                    color="rgba(255,255,255,0.7)"
+                  />
+                  <Text
+                    style={{ fontSize: 18, fontWeight: "800", color: "#fff" }}
+                  >
+                    {item.value}
+                  </Text>
+                  <Text
+                    style={{ fontSize: 10, color: "rgba(255,255,255,0.7)" }}
+                  >
+                    {item.label}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -412,7 +516,9 @@ export default function ReportsScreen() {
       </Animated.View>
 
       {loading ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
           <ActivityIndicator size="large" color={VIOLET} />
           <Text style={{ fontSize: 13, color: "#94a3b8", marginTop: 12 }}>
             Đang tải báo cáo...
@@ -428,7 +534,7 @@ export default function ReportsScreen() {
           showsVerticalScrollIndicator={false}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: false }
+            { useNativeDriver: false },
           )}
           scrollEventThrottle={16}
           refreshControl={
@@ -446,13 +552,14 @@ export default function ReportsScreen() {
               alignSelf: "center",
             }}
           >
-
             {/* ── Charts Section (Row on Desktop) ── */}
-            <View style={{
-              flexDirection: isDesktop ? "row" : "column",
-              gap: 20,
-              marginBottom: 20,
-            }}>
+            <View
+              style={{
+                flexDirection: isDesktop ? "row" : "column",
+                gap: 20,
+                marginBottom: 20,
+              }}
+            >
               {/* ── Pie Chart: Tỷ lệ chuyên cần (Tổng quan) ── */}
               <View
                 style={{
@@ -539,7 +646,13 @@ export default function ReportsScreen() {
                     />
                   </View>
                 ) : (
-                  <Text style={{ textAlign: "center", color: "#94a3b8", marginVertical: 20 }}>
+                  <Text
+                    style={{
+                      textAlign: "center",
+                      color: "#94a3b8",
+                      marginVertical: 20,
+                    }}
+                  >
                     Chưa có dữ liệu
                   </Text>
                 )}
@@ -577,7 +690,11 @@ export default function ReportsScreen() {
                       justifyContent: "center",
                     }}
                   >
-                    <Ionicons name="bar-chart-outline" size={18} color={VIOLET} />
+                    <Ionicons
+                      name="bar-chart-outline"
+                      size={18}
+                      color={VIOLET}
+                    />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text
@@ -599,10 +716,21 @@ export default function ReportsScreen() {
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     <BarChart
                       data={{
-                        labels: classReports.map((c) => c.classCode.substring(0, 8)),
-                        datasets: [{ data: classReports.map((c) => Math.round(c.attendanceRate)) }],
+                        labels: classReports.map((c) =>
+                          c.classCode.substring(0, 8),
+                        ),
+                        datasets: [
+                          {
+                            data: classReports.map((c) =>
+                              Math.round(c.attendanceRate),
+                            ),
+                          },
+                        ],
                       }}
-                      width={Math.max(isDesktop ? ((960 - 20) / 3) * 2 - 36 : width - 68, classReports.length * 60)}
+                      width={Math.max(
+                        isDesktop ? ((960 - 20) / 3) * 2 - 36 : width - 68,
+                        classReports.length * 60,
+                      )}
                       height={220}
                       yAxisLabel=""
                       yAxisSuffix="%"
@@ -616,8 +744,10 @@ export default function ReportsScreen() {
                         fillShadowGradient: VIOLET,
                         fillShadowGradientOpacity: 1,
                         decimalPlaces: 0,
-                        color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
-                        labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                        color: (opacity = 1) =>
+                          `rgba(139, 92, 246, ${opacity})`,
+                        labelColor: (opacity = 1) =>
+                          `rgba(100, 116, 139, ${opacity})`,
                         style: { borderRadius: 16 },
                         barPercentage: 0.6,
                       }}
@@ -629,7 +759,13 @@ export default function ReportsScreen() {
                     />
                   </ScrollView>
                 ) : (
-                  <Text style={{ textAlign: "center", color: "#94a3b8", marginVertical: 20 }}>
+                  <Text
+                    style={{
+                      textAlign: "center",
+                      color: "#94a3b8",
+                      marginVertical: 20,
+                    }}
+                  >
                     Chưa có dữ liệu
                   </Text>
                 )}
@@ -706,14 +842,8 @@ export default function ReportsScreen() {
               </View>
 
               {classReports.length === 0 ? (
-                <View
-                  style={{ alignItems: "center", paddingVertical: 40 }}
-                >
-                  <Ionicons
-                    name="school-outline"
-                    size={48}
-                    color="#cbd5e1"
-                  />
+                <View style={{ alignItems: "center", paddingVertical: 40 }}>
+                  <Ionicons name="school-outline" size={48} color="#cbd5e1" />
                   <Text
                     style={{
                       fontSize: 14,
@@ -727,11 +857,7 @@ export default function ReportsScreen() {
                 </View>
               ) : (
                 classReports.map((cls) => (
-                  <ClassBarRow
-                    key={cls.classId}
-                    cls={cls}
-                    maxRate={100}
-                  />
+                  <ClassBarRow key={cls.classId} cls={cls} maxRate={100} />
                 ))
               )}
             </View>
@@ -748,7 +874,11 @@ export default function ReportsScreen() {
               {[
                 { label: "≥ 90%: Tốt", color: "#10b981", bg: "#ecfdf5" },
                 { label: "75–89%: Khá", color: "#f59e0b", bg: "#fffbeb" },
-                { label: "< 75%: Cần cải thiện", color: "#ef4444", bg: "#fef2f2" },
+                {
+                  label: "< 75%: Cần cải thiện",
+                  color: "#ef4444",
+                  bg: "#fef2f2",
+                },
               ].map((l) => (
                 <View
                   key={l.label}
@@ -866,11 +996,7 @@ export default function ReportsScreen() {
                   {exportingExcel ? (
                     <ActivityIndicator size="small" color="#10b981" />
                   ) : (
-                    <Ionicons
-                      name="document-text"
-                      size={22}
-                      color="#10b981"
-                    />
+                    <Ionicons name="document-text" size={22} color="#10b981" />
                   )}
                 </View>
                 <View style={{ flex: 1 }}>

@@ -19,6 +19,7 @@ import { useRouter } from "expo-router";
 import { scheduleService, authService } from "@/apis";
 import { removeAuthToken } from "@/apis/config/apiClient";
 import type { Schedule as ApiSchedule } from "@/apis/services/schedule.service";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface DayScheduleItem {
   id: string;
@@ -254,7 +255,6 @@ export default function ScheduleScreen() {
       {/* ── Parallax Animated Hero Header ── */}
       <Animated.View
         style={{
-          backgroundColor: BLUE,
           paddingTop: isMobile ? 48 : 64,
           paddingHorizontal: paddingHorizontal,
           borderBottomLeftRadius: 24,
@@ -266,13 +266,19 @@ export default function ScheduleScreen() {
           height: headerHeight,
           zIndex: 10,
           overflow: "hidden",
-          shadowColor: BLUE,
+          shadowColor: "#3B82F6",
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0.3,
           shadowRadius: 16,
           elevation: 6,
         }}
       >
+        <LinearGradient
+          colors={["#1E3A8A", "#3B82F6"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+        />
         <View
           style={{
             maxWidth: contentMaxWidth,

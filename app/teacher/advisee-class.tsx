@@ -14,9 +14,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/colors";
 import { classService } from "@/apis/services/class.service";
-import { reportService, type StudentAttendanceReport } from "@/apis/services/report.service";
+import {
+  reportService,
+  type StudentAttendanceReport,
+} from "@/apis/services/report.service";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
 
@@ -106,7 +110,9 @@ function TabBar({
                   paddingHorizontal: 5,
                 }}
               >
-                <Text style={{ fontSize: 11, fontWeight: "800", color: "#fff" }}>
+                <Text
+                  style={{ fontSize: 11, fontWeight: "800", color: "#fff" }}
+                >
                   {atRiskCount}
                 </Text>
               </View>
@@ -294,13 +300,20 @@ function AtRiskCard({
               flexShrink: 0,
             }}
           >
-            <Text style={{ fontSize: 17, fontWeight: "800", color: accentColor }}>
+            <Text
+              style={{ fontSize: 17, fontWeight: "800", color: accentColor }}
+            >
               {initial}
             </Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text
-              style={{ fontSize: 14, fontWeight: "700", color: "#1e293b", marginBottom: 2 }}
+              style={{
+                fontSize: 14,
+                fontWeight: "700",
+                color: "#1e293b",
+                marginBottom: 2,
+              }}
               numberOfLines={1}
             >
               {student.studentName}
@@ -321,7 +334,14 @@ function AtRiskCard({
             <Text style={{ fontSize: 15, fontWeight: "800", color: "#fff" }}>
               {rate}%
             </Text>
-            <Text style={{ fontSize: 9, color: "#fff", opacity: 0.85, textAlign: "center" }}>
+            <Text
+              style={{
+                fontSize: 9,
+                color: "#fff",
+                opacity: 0.85,
+                textAlign: "center",
+              }}
+            >
               Chuyên cần
             </Text>
           </View>
@@ -341,7 +361,11 @@ function AtRiskCard({
           {[
             { label: "Vắng", value: student.absentCount, color: "#ef4444" },
             { label: "Tổng buổi", value: totalSessions, color: "#64748b" },
-            { label: "Có mặt", value: totalSessions - student.absentCount, color: "#10b981" },
+            {
+              label: "Có mặt",
+              value: totalSessions - student.absentCount,
+              color: "#10b981",
+            },
           ].map((s, idx) => (
             <View
               key={idx}
@@ -449,26 +473,40 @@ function AtRiskCard({
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getStatusColor(status: string) {
   switch (status) {
-    case 'PRESENT': return '#10b981';
-    case 'LATE': return '#f59e0b';
-    case 'ABSENT': return '#ef4444';
-    default: return '#94a3b8';
+    case "PRESENT":
+      return "#10b981";
+    case "LATE":
+      return "#f59e0b";
+    case "ABSENT":
+      return "#ef4444";
+    default:
+      return "#94a3b8";
   }
 }
 function getStatusLabel(status: string) {
   switch (status) {
-    case 'PRESENT': return 'Có mặt';
-    case 'LATE': return 'Muộn';
-    case 'ABSENT': return 'Vắng';
-    default: return 'Không rõ';
+    case "PRESENT":
+      return "Có mặt";
+    case "LATE":
+      return "Muộn";
+    case "ABSENT":
+      return "Vắng";
+    default:
+      return "Không rõ";
   }
 }
-function getStatusIcon(status: string): React.ComponentProps<typeof Ionicons>['name'] {
+function getStatusIcon(
+  status: string,
+): React.ComponentProps<typeof Ionicons>["name"] {
   switch (status) {
-    case 'PRESENT': return 'checkmark-circle';
-    case 'LATE': return 'time';
-    case 'ABSENT': return 'close-circle';
-    default: return 'help-circle';
+    case "PRESENT":
+      return "checkmark-circle";
+    case "LATE":
+      return "time";
+    case "ABSENT":
+      return "close-circle";
+    default:
+      return "help-circle";
   }
 }
 
@@ -478,8 +516,12 @@ export default function AdviseeClass() {
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState<StudentAttendanceReport[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "excellent" | "warning" | "danger">("all");
-  const [atRiskStudents, setAtRiskStudents] = useState<StudentAttendanceReport[]>([]);
+  const [filterType, setFilterType] = useState<
+    "all" | "excellent" | "warning" | "danger"
+  >("all");
+  const [atRiskStudents, setAtRiskStudents] = useState<
+    StudentAttendanceReport[]
+  >([]);
   const [className, setClassName] = useState<string>("Lớp chủ nhiệm");
   const [major, setMajor] = useState<string>("");
   const [totalStudents, setTotalStudents] = useState<number>(0);
@@ -496,39 +538,49 @@ export default function AdviseeClass() {
 
   // Chỉ cuộn gom header ở mobile, còn desktop/tablet set cứng = MAX_HEIGHT
   const HEADER_MIN_HEIGHT = isMobile ? 120 : HEADER_MAX_HEIGHT;
-  const HEADER_SCROLL_DISTANCE = Math.max(1, HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT);
+  const HEADER_SCROLL_DISTANCE = Math.max(
+    1,
+    HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT,
+  );
 
-  const headerHeight = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE],
-    outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
-    extrapolate: "clamp",
-  }) : HEADER_MAX_HEIGHT;
+  const headerHeight = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+        extrapolate: "clamp",
+      })
+    : HEADER_MAX_HEIGHT;
 
-  const contentOpacity = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
-    outputRange: [1, 0.2, 0],
-    extrapolate: "clamp",
-  }) : 1;
+  const contentOpacity = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+        outputRange: [1, 0.2, 0],
+        extrapolate: "clamp",
+      })
+    : 1;
 
-  const contentTranslateY = isMobile ? scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE],
-    outputRange: [0, -10],
-    extrapolate: "clamp",
-  }) : 0;
+  const contentTranslateY = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [0, -10],
+        extrapolate: "clamp",
+      })
+    : 0;
 
   // Giữ TabBar luôn dính dưới bottom của Header khi cuộn quá nó
   const tabBarTranslateY = isMobile
     ? scrollY.interpolate({
-      inputRange: [-1, 0, HEADER_SCROLL_DISTANCE, HEADER_SCROLL_DISTANCE + 1],
-      outputRange: [0, 0, 0, 1],
-    })
+        inputRange: [-1, 0, HEADER_SCROLL_DISTANCE, HEADER_SCROLL_DISTANCE + 1],
+        outputRange: [0, 0, 0, 1],
+      })
     : scrollY.interpolate({
-      inputRange: [-1, 0, 1],
-      outputRange: [0, 0, 1],
-    });
+        inputRange: [-1, 0, 1],
+        outputRange: [0, 0, 1],
+      });
 
   // ── Student detail modal state ──────────────────────────────────────────────
-  const [selectedStudent, setSelectedStudent] = useState<StudentAttendanceReport | null>(null);
+  const [selectedStudent, setSelectedStudent] =
+    useState<StudentAttendanceReport | null>(null);
   const [studentModalVisible, setStudentModalVisible] = useState(false);
   const [studentRecords, setStudentRecords] = useState<any[]>([]);
   const [studentRecordsLoading, setStudentRecordsLoading] = useState(false);
@@ -545,7 +597,10 @@ export default function AdviseeClass() {
       const teacherId = await getTeacherIdFromToken();
       console.log("[AdviseeClass] teacherId from token:", teacherId);
       if (!teacherId) {
-        showToast("Không tìm thấy thông tin giảng viên. Vui lòng đăng nhập lại.", "error");
+        showToast(
+          "Không tìm thấy thông tin giảng viên. Vui lòng đăng nhập lại.",
+          "error",
+        );
         return;
       }
 
@@ -564,7 +619,9 @@ export default function AdviseeClass() {
       setMajor(advisorClass.name);
 
       // Bước 3: Lấy báo cáo điểm danh sinh viên của lớp
-      const studentReports = await reportService.getStudentReports(advisorClass.id);
+      const studentReports = await reportService.getStudentReports(
+        advisorClass.id,
+      );
       console.log("[AdviseeClass] studentReports:", studentReports);
       setStudents(studentReports);
 
@@ -572,7 +629,7 @@ export default function AdviseeClass() {
       setTotalStudents(total);
 
       const atRisk = studentReports.filter(
-        (s) => s.attendanceRate != null && s.attendanceRate < 80
+        (s) => s.attendanceRate != null && s.attendanceRate < 80,
       );
       setAtRiskStudents(atRisk);
       setAtRiskCount(atRisk.length);
@@ -580,13 +637,21 @@ export default function AdviseeClass() {
       const avgRate =
         total > 0
           ? Math.round(
-            (studentReports.reduce((sum, s) => sum + (s.attendanceRate || 0), 0) / total) * 10
-          ) / 10
+              (studentReports.reduce(
+                (sum, s) => sum + (s.attendanceRate || 0),
+                0,
+              ) /
+                total) *
+                10,
+            ) / 10
           : 0;
       setAttendanceRate(avgRate);
     } catch (error: any) {
       console.error("[AdviseeClass] Error loading advisor class data:", error);
-      const msg = error?.response?.data?.message || error?.message || "Không thể tải dữ liệu lớp chủ nhiệm.";
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Không thể tải dữ liệu lớp chủ nhiệm.";
       showToast(msg, "error");
     } finally {
       setLoading(false);
@@ -600,7 +665,7 @@ export default function AdviseeClass() {
     setStudentRecords([]);
     setStudentRecordsLoading(true);
     try {
-      const { attendanceService } = await import('@/apis');
+      const { attendanceService } = await import("@/apis");
       const records = await attendanceService.getRecords({
         studentId: student.studentId,
       });
@@ -650,9 +715,30 @@ export default function AdviseeClass() {
 
   // ── Subject Summary (static/demo) ────────────────────────────────────────────
   const subjectSummary = [
-    { subject: "Lập trình cơ bản", rate: 92, present: 41, total: 45, color: "#10b981", bg: "#ecfdf5" },
-    { subject: "Cơ sở dữ liệu", rate: 87, present: 39, total: 45, color: "#3b82f6", bg: "#eff6ff" },
-    { subject: "Mạng máy tính", rate: 78, present: 35, total: 45, color: "#f59e0b", bg: "#fffbeb" },
+    {
+      subject: "Lập trình cơ bản",
+      rate: 92,
+      present: 41,
+      total: 45,
+      color: "#10b981",
+      bg: "#ecfdf5",
+    },
+    {
+      subject: "Cơ sở dữ liệu",
+      rate: 87,
+      present: 39,
+      total: 45,
+      color: "#3b82f6",
+      bg: "#eff6ff",
+    },
+    {
+      subject: "Mạng máy tính",
+      rate: 78,
+      present: 35,
+      total: 45,
+      color: "#f59e0b",
+      bg: "#fffbeb",
+    },
   ];
 
   return (
@@ -662,7 +748,6 @@ export default function AdviseeClass() {
       {/* ── Parallax Animated Hero Header ── */}
       <Animated.View
         style={{
-          backgroundColor: "#10b981",
           paddingTop: isMobile ? 48 : 64,
           paddingHorizontal: paddingHorizontal,
           borderBottomLeftRadius: 32,
@@ -674,15 +759,35 @@ export default function AdviseeClass() {
           height: headerHeight,
           zIndex: 10,
           overflow: "hidden",
-          shadowColor: "#10b981",
+          shadowColor: "#3B82F6",
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0.32,
           shadowRadius: 16,
           elevation: 6,
         }}
       >
-        <View style={{ maxWidth: 1200, width: "100%", alignSelf: "center", flex: 1 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 12 }}>
+        <LinearGradient
+          colors={["#1E3A8A", "#3B82F6"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+        />
+        <View
+          style={{
+            maxWidth: 1200,
+            width: "100%",
+            alignSelf: "center",
+            flex: 1,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 14,
+              marginBottom: 12,
+            }}
+          >
             <View
               style={{
                 width: 52,
@@ -696,10 +801,23 @@ export default function AdviseeClass() {
               <Ionicons name="school" size={28} color="#fff" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 22, fontWeight: "800", color: "#fff", marginBottom: 2 }}>
+              <Text
+                style={{
+                  fontSize: 22,
+                  fontWeight: "800",
+                  color: "#fff",
+                  marginBottom: 2,
+                }}
+              >
                 Lớp {className}
               </Text>
-              <Animated.Text style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", opacity: contentOpacity }}>
+              <Animated.Text
+                style={{
+                  fontSize: 13,
+                  color: "rgba(255,255,255,0.85)",
+                  opacity: contentOpacity,
+                }}
+              >
                 {major || "Lớp chủ nhiệm"}
               </Animated.Text>
             </View>
@@ -720,22 +838,53 @@ export default function AdviseeClass() {
             </View>
           </View>
 
-          <Animated.View style={{ opacity: contentOpacity, transform: [{ translateY: contentTranslateY }] }}>
+          <Animated.View
+            style={{
+              opacity: contentOpacity,
+              transform: [{ translateY: contentTranslateY }],
+            }}
+          >
             <View style={{ marginBottom: 16, marginTop: 4 }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
-                <Text style={{ fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.85)" }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginBottom: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "600",
+                    color: "rgba(255,255,255,0.85)",
+                  }}
+                >
                   Tỷ lệ điểm danh trung bình
                 </Text>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>
+                <Text
+                  style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}
+                >
                   {attendanceRate}%
                 </Text>
               </View>
-              <View style={{ height: 8, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 4, overflow: "hidden" }}>
+              <View
+                style={{
+                  height: 8,
+                  backgroundColor: "rgba(255,255,255,0.2)",
+                  borderRadius: 4,
+                  overflow: "hidden",
+                }}
+              >
                 <View
                   style={{
                     height: "100%",
                     width: `${Math.min(attendanceRate, 100)}%`,
-                    backgroundColor: attendanceRate >= 90 ? "#34d399" : attendanceRate >= 75 ? "#fbbf24" : "#f87171",
+                    backgroundColor:
+                      attendanceRate >= 90
+                        ? "#34d399"
+                        : attendanceRate >= 75
+                          ? "#fbbf24"
+                          : "#f87171",
                     borderRadius: 4,
                   }}
                 />
@@ -753,9 +902,21 @@ export default function AdviseeClass() {
               }}
             >
               {[
-                { label: "Sinh viên", value: String(totalStudents), icon: "people" as const },
-                { label: "Tỷ lệ ĐD", value: `${attendanceRate}%`, icon: "pie-chart" as const },
-                { label: "Cảnh báo", value: String(atRiskCount), icon: "warning" as const },
+                {
+                  label: "Sinh viên",
+                  value: String(totalStudents),
+                  icon: "people" as const,
+                },
+                {
+                  label: "Tỷ lệ ĐD",
+                  value: `${attendanceRate}%`,
+                  icon: "pie-chart" as const,
+                },
+                {
+                  label: "Cảnh báo",
+                  value: String(atRiskCount),
+                  icon: "warning" as const,
+                },
               ].map((item, idx) => (
                 <View
                   key={idx}
@@ -767,9 +928,21 @@ export default function AdviseeClass() {
                     gap: 4,
                   }}
                 >
-                  <Ionicons name={item.icon} size={15} color="rgba(255,255,255,0.7)" />
-                  <Text style={{ fontSize: 18, fontWeight: "800", color: "#fff" }}>{item.value}</Text>
-                  <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.7)" }}>{item.label}</Text>
+                  <Ionicons
+                    name={item.icon}
+                    size={15}
+                    color="rgba(255,255,255,0.7)"
+                  />
+                  <Text
+                    style={{ fontSize: 18, fontWeight: "800", color: "#fff" }}
+                  >
+                    {item.value}
+                  </Text>
+                  <Text
+                    style={{ fontSize: 10, color: "rgba(255,255,255,0.7)" }}
+                  >
+                    {item.label}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -778,7 +951,9 @@ export default function AdviseeClass() {
       </Animated.View>
 
       {loading ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
           <ActivityIndicator size="large" color={INDIGO} />
           <Text style={{ fontSize: 13, color: "#94a3b8", marginTop: 12 }}>
             Đang tải dữ liệu...
@@ -786,11 +961,15 @@ export default function AdviseeClass() {
         </View>
       ) : (
         <Animated.ScrollView
-          contentContainerStyle={{ paddingHorizontal, paddingTop: HEADER_MAX_HEIGHT + 16, paddingBottom: 32 }}
+          contentContainerStyle={{
+            paddingHorizontal,
+            paddingTop: HEADER_MAX_HEIGHT + 16,
+            paddingBottom: 32,
+          }}
           showsVerticalScrollIndicator={false}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: false }
+            { useNativeDriver: false },
           )}
           scrollEventThrottle={16}
         >
@@ -821,7 +1000,6 @@ export default function AdviseeClass() {
             {/* ── OVERVIEW TAB ──────────────────────────────────────────────── */}
             {activeTab === "overview" && (
               <>
-
                 {/* Stat Cards */}
                 <Text
                   style={{
@@ -868,14 +1046,25 @@ export default function AdviseeClass() {
                           marginBottom: 10,
                         }}
                       >
-                        <Ionicons name={stat.icon} size={22} color={stat.color} />
+                        <Ionicons
+                          name={stat.icon}
+                          size={22}
+                          color={stat.color}
+                        />
                       </View>
                       <Text
-                        style={{ fontSize: 24, fontWeight: "800", color: "#1e293b", marginBottom: 4 }}
+                        style={{
+                          fontSize: 24,
+                          fontWeight: "800",
+                          color: "#1e293b",
+                          marginBottom: 4,
+                        }}
                       >
                         {stat.value}
                       </Text>
-                      <Text style={{ fontSize: 12, color: "#64748b" }}>{stat.label}</Text>
+                      <Text style={{ fontSize: 12, color: "#64748b" }}>
+                        {stat.label}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -909,7 +1098,13 @@ export default function AdviseeClass() {
                         borderBottomColor: "#f1f5f9",
                       }}
                     >
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
                         <View
                           style={{
                             width: 32,
@@ -922,7 +1117,13 @@ export default function AdviseeClass() {
                         >
                           <Ionicons name="warning" size={16} color="#ef4444" />
                         </View>
-                        <Text style={{ fontSize: 15, fontWeight: "700", color: "#1e293b" }}>
+                        <Text
+                          style={{
+                            fontSize: 15,
+                            fontWeight: "700",
+                            color: "#1e293b",
+                          }}
+                        >
                           Sinh viên cần quan tâm
                         </Text>
                       </View>
@@ -939,10 +1140,20 @@ export default function AdviseeClass() {
                         }}
                         activeOpacity={0.75}
                       >
-                        <Text style={{ fontSize: 12, fontWeight: "700", color: INDIGO }}>
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontWeight: "700",
+                            color: INDIGO,
+                          }}
+                        >
                           Xem tất cả
                         </Text>
-                        <Ionicons name="chevron-forward" size={12} color={INDIGO} />
+                        <Ionicons
+                          name="chevron-forward"
+                          size={12}
+                          color={INDIGO}
+                        />
                       </TouchableOpacity>
                     </View>
 
@@ -977,13 +1188,25 @@ export default function AdviseeClass() {
                                 justifyContent: "center",
                               }}
                             >
-                              <Text style={{ fontSize: 14, fontWeight: "800", color: ac }}>
-                                {(student.studentName || "?").charAt(0).toUpperCase()}
+                              <Text
+                                style={{
+                                  fontSize: 14,
+                                  fontWeight: "800",
+                                  color: ac,
+                                }}
+                              >
+                                {(student.studentName || "?")
+                                  .charAt(0)
+                                  .toUpperCase()}
                               </Text>
                             </View>
                             <View style={{ flex: 1 }}>
                               <Text
-                                style={{ fontSize: 13, fontWeight: "700", color: "#1e293b" }}
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: "700",
+                                  color: "#1e293b",
+                                }}
                                 numberOfLines={1}
                               >
                                 {student.studentName}
@@ -1000,7 +1223,13 @@ export default function AdviseeClass() {
                                 borderRadius: 6,
                               }}
                             >
-                              <Text style={{ fontSize: 12, fontWeight: "800", color: "#fff" }}>
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: "800",
+                                  color: "#fff",
+                                }}
+                              >
                                 {rate}% CC
                               </Text>
                             </View>
@@ -1050,7 +1279,13 @@ export default function AdviseeClass() {
                     >
                       <Ionicons name="book" size={16} color="#3b82f6" />
                     </View>
-                    <Text style={{ fontSize: 15, fontWeight: "700", color: "#1e293b" }}>
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: "700",
+                        color: "#1e293b",
+                      }}
+                    >
                       Thống kê các môn học
                     </Text>
                   </View>
@@ -1059,7 +1294,8 @@ export default function AdviseeClass() {
                       <View
                         key={index}
                         style={{
-                          marginBottom: index < subjectSummary.length - 1 ? 10 : 0,
+                          marginBottom:
+                            index < subjectSummary.length - 1 ? 10 : 0,
                           backgroundColor: "#f8fafc",
                           padding: 12,
                           borderRadius: 10,
@@ -1076,13 +1312,22 @@ export default function AdviseeClass() {
                           }}
                         >
                           <Text
-                            style={{ fontSize: 14, fontWeight: "700", color: "#1e293b", flex: 1 }}
+                            style={{
+                              fontSize: 14,
+                              fontWeight: "700",
+                              color: "#1e293b",
+                              flex: 1,
+                            }}
                             numberOfLines={1}
                           >
                             {item.subject}
                           </Text>
                           <Text
-                            style={{ fontSize: 18, fontWeight: "800", color: item.color }}
+                            style={{
+                              fontSize: 18,
+                              fontWeight: "800",
+                              color: item.color,
+                            }}
                           >
                             {item.rate}%
                           </Text>
@@ -1117,126 +1362,179 @@ export default function AdviseeClass() {
             )}
 
             {/* ── STUDENTS TAB ──────────────────────────────────────────────── */}
-            {activeTab === "students" && (() => {
-              const filteredStudents = students.filter(s => {
-                const matchQuery = (s.studentName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  (s.studentId || '').toLowerCase().includes(searchQuery.toLowerCase());
-                if (!matchQuery) return false;
+            {activeTab === "students" &&
+              (() => {
+                const filteredStudents = students.filter((s) => {
+                  const matchQuery =
+                    (s.studentName || "")
+                      .toLowerCase()
+                      .includes(searchQuery.toLowerCase()) ||
+                    (s.studentId || "")
+                      .toLowerCase()
+                      .includes(searchQuery.toLowerCase());
+                  if (!matchQuery) return false;
 
-                const rate = Math.round(s.attendanceRate || 0);
-                if (filterType === 'excellent') return rate >= 90;
-                if (filterType === 'warning') return rate >= 75 && rate < 90;
-                if (filterType === 'danger') return rate < 75;
-                return true;
-              });
+                  const rate = Math.round(s.attendanceRate || 0);
+                  if (filterType === "excellent") return rate >= 90;
+                  if (filterType === "warning") return rate >= 75 && rate < 90;
+                  if (filterType === "danger") return rate < 75;
+                  return true;
+                });
 
-              return (
-                <>
-                  {/* Search Bar & Filters */}
-                  <View style={{ marginBottom: 16 }}>
-                    <View style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      backgroundColor: '#fff',
-                      borderRadius: 12,
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                      borderWidth: 1,
-                      borderColor: '#f1f5f9',
-                      marginBottom: 12,
-                    }}>
-                      <Ionicons name="search" size={20} color="#94a3b8" style={{ marginRight: 8 }} />
-                      <TextInput
-                        style={{ flex: 1, fontSize: 14, color: '#1e293b', outlineStyle: 'none' } as any}
-                        placeholder="Tìm kiếm theo tên hoặc MSSV..."
-                        placeholderTextColor="#94a3b8"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                      />
-                      {searchQuery.length > 0 && (
-                        <TouchableOpacity onPress={() => setSearchQuery("")}>
-                          <Ionicons name="close-circle" size={18} color="#cbd5e1" />
-                        </TouchableOpacity>
-                      )}
+                return (
+                  <>
+                    {/* Search Bar & Filters */}
+                    <View style={{ marginBottom: 16 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          backgroundColor: "#fff",
+                          borderRadius: 12,
+                          paddingHorizontal: 12,
+                          paddingVertical: 10,
+                          borderWidth: 1,
+                          borderColor: "#f1f5f9",
+                          marginBottom: 12,
+                        }}
+                      >
+                        <Ionicons
+                          name="search"
+                          size={20}
+                          color="#94a3b8"
+                          style={{ marginRight: 8 }}
+                        />
+                        <TextInput
+                          style={
+                            {
+                              flex: 1,
+                              fontSize: 14,
+                              color: "#1e293b",
+                              outlineStyle: "none",
+                            } as any
+                          }
+                          placeholder="Tìm kiếm theo tên hoặc MSSV..."
+                          placeholderTextColor="#94a3b8"
+                          value={searchQuery}
+                          onChangeText={setSearchQuery}
+                        />
+                        {searchQuery.length > 0 && (
+                          <TouchableOpacity onPress={() => setSearchQuery("")}>
+                            <Ionicons
+                              name="close-circle"
+                              size={18}
+                              color="#cbd5e1"
+                            />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={{ flexDirection: "row" }}
+                      >
+                        {[
+                          { id: "all", label: "Tất cả" },
+                          { id: "excellent", label: "Tốt (≥90%)" },
+                          { id: "warning", label: "Cảnh báo (75-89%)" },
+                          { id: "danger", label: "Nguy hiểm (<75%)" },
+                        ].map((f) => {
+                          const isActive = filterType === f.id;
+                          return (
+                            <TouchableOpacity
+                              key={f.id}
+                              onPress={() => setFilterType(f.id as any)}
+                              style={{
+                                paddingHorizontal: 16,
+                                paddingVertical: 8,
+                                borderRadius: 20,
+                                backgroundColor: isActive ? INDIGO : "#fff",
+                                borderWidth: 1,
+                                borderColor: isActive ? INDIGO : "#e2e8f0",
+                                marginRight: 8,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: "600",
+                                  color: isActive ? "#fff" : "#64748b",
+                                }}
+                              >
+                                {f.label}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
                     </View>
 
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
-                      {[
-                        { id: 'all', label: 'Tất cả' },
-                        { id: 'excellent', label: 'Tốt (≥90%)' },
-                        { id: 'warning', label: 'Cảnh báo (75-89%)' },
-                        { id: 'danger', label: 'Nguy hiểm (<75%)' },
-                      ].map((f) => {
-                        const isActive = filterType === f.id;
-                        return (
-                          <TouchableOpacity
-                            key={f.id}
-                            onPress={() => setFilterType(f.id as any)}
-                            style={{
-                              paddingHorizontal: 16,
-                              paddingVertical: 8,
-                              borderRadius: 20,
-                              backgroundColor: isActive ? INDIGO : '#fff',
-                              borderWidth: 1,
-                              borderColor: isActive ? INDIGO : '#e2e8f0',
-                              marginRight: 8,
-                            }}
-                          >
-                            <Text style={{ fontSize: 13, fontWeight: '600', color: isActive ? '#fff' : '#64748b' }}>
-                              {f.label}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </ScrollView>
-                  </View>
-
-                  {/* Count badge */}
-                  <View
-                    style={{
-                      alignSelf: "flex-start",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 6,
-                      backgroundColor: "#fff",
-                      borderRadius: 10,
-                      paddingHorizontal: 12,
-                      paddingVertical: 7,
-                      borderWidth: 1,
-                      borderColor: "#f1f5f9",
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.04,
-                      shadowRadius: 4,
-                      elevation: 1,
-                      marginBottom: 16,
-                    }}
-                  >
-                    <Ionicons name="people" size={14} color={INDIGO} />
-                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1e293b" }}>
-                      {filteredStudents.length} sinh viên
-                    </Text>
-                  </View>
-
-                  {filteredStudents.length === 0 ? (
-                    <View style={{ alignItems: "center", paddingVertical: 48 }}>
-                      <Ionicons name="search-outline" size={52} color="#cbd5e1" />
-                      <Text style={{ fontSize: 15, color: "#94a3b8", marginTop: 12, fontWeight: "600" }}>
-                        Không tìm thấy sinh viên nào
+                    {/* Count badge */}
+                    <View
+                      style={{
+                        alignSelf: "flex-start",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                        backgroundColor: "#fff",
+                        borderRadius: 10,
+                        paddingHorizontal: 12,
+                        paddingVertical: 7,
+                        borderWidth: 1,
+                        borderColor: "#f1f5f9",
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.04,
+                        shadowRadius: 4,
+                        elevation: 1,
+                        marginBottom: 16,
+                      }}
+                    >
+                      <Ionicons name="people" size={14} color={INDIGO} />
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: "700",
+                          color: "#1e293b",
+                        }}
+                      >
+                        {filteredStudents.length} sinh viên
                       </Text>
                     </View>
-                  ) : (
-                    filteredStudents.map((student) => (
-                      <StudentRowCard
-                        key={student.studentId}
-                        student={student}
-                        onPress={() => handleOpenStudentDetail(student)}
-                      />
-                    ))
-                  )}
-                </>
-              );
-            })()}
+
+                    {filteredStudents.length === 0 ? (
+                      <View
+                        style={{ alignItems: "center", paddingVertical: 48 }}
+                      >
+                        <Ionicons
+                          name="search-outline"
+                          size={52}
+                          color="#cbd5e1"
+                        />
+                        <Text
+                          style={{
+                            fontSize: 15,
+                            color: "#94a3b8",
+                            marginTop: 12,
+                            fontWeight: "600",
+                          }}
+                        >
+                          Không tìm thấy sinh viên nào
+                        </Text>
+                      </View>
+                    ) : (
+                      filteredStudents.map((student) => (
+                        <StudentRowCard
+                          key={student.studentId}
+                          student={student}
+                          onPress={() => handleOpenStudentDetail(student)}
+                        />
+                      ))
+                    )}
+                  </>
+                );
+              })()}
 
             {/* ── AT-RISK TAB ───────────────────────────────────────────────── */}
             {activeTab === "at-risk" && (
@@ -1257,10 +1555,23 @@ export default function AdviseeClass() {
                 >
                   <Ionicons name="alert-circle" size={20} color="#ef4444" />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#ef4444" }}>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#ef4444",
+                      }}
+                    >
                       Tiêu chí cảnh báo
                     </Text>
-                    <Text style={{ fontSize: 12, color: "#ef4444", opacity: 0.8, marginTop: 2 }}>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: "#ef4444",
+                        opacity: 0.8,
+                        marginTop: 2,
+                      }}
+                    >
                       Sinh viên có tỷ lệ chuyên cần &lt; 80%
                     </Text>
                   </View>
@@ -1283,14 +1594,24 @@ export default function AdviseeClass() {
                   }}
                 >
                   <Ionicons name="warning" size={14} color="#ef4444" />
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#ef4444" }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "700",
+                      color: "#ef4444",
+                    }}
+                  >
                     {atRiskCount} sinh viên cần quan tâm
                   </Text>
                 </View>
 
                 {atRiskStudents.length === 0 ? (
                   <View style={{ alignItems: "center", paddingVertical: 48 }}>
-                    <Ionicons name="checkmark-circle-outline" size={52} color="#10b981" />
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={52}
+                      color="#10b981"
+                    />
                     <Text
                       style={{
                         fontSize: 15,
@@ -1301,7 +1622,9 @@ export default function AdviseeClass() {
                     >
                       Không có sinh viên cần cảnh báo
                     </Text>
-                    <Text style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}>
+                    <Text
+                      style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}
+                    >
                       Tất cả sinh viên đều có điểm danh tốt
                     </Text>
                   </View>
@@ -1310,14 +1633,15 @@ export default function AdviseeClass() {
                     <AtRiskCard
                       key={student.studentId || idx}
                       student={student}
-                      onNotify={() => alert(`Gửi thông báo cho ${student.studentName}`)}
+                      onNotify={() =>
+                        alert(`Gửi thông báo cho ${student.studentName}`)
+                      }
                       onDetail={() => handleOpenStudentDetail(student)}
                     />
                   ))
                 )}
               </>
             )}
-
           </View>
         </Animated.ScrollView>
       )}
@@ -1330,15 +1654,21 @@ export default function AdviseeClass() {
         onRequestClose={handleCloseStudentDetail}
         statusBarTranslucent
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' }}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.45)",
+            justifyContent: "flex-end",
+          }}
+        >
           <View
             style={{
-              backgroundColor: '#fff',
+              backgroundColor: "#fff",
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
-              width: '100%',
-              maxHeight: '90%',
-              shadowColor: '#000',
+              width: "100%",
+              maxHeight: "90%",
+              shadowColor: "#000",
               shadowOffset: { width: 0, height: -4 },
               shadowOpacity: 0.12,
               shadowRadius: 16,
@@ -1347,17 +1677,26 @@ export default function AdviseeClass() {
             }}
           >
             {/* Handle bar */}
-            <View style={{ width: 40, height: 4, backgroundColor: '#cbd5e1', borderRadius: 2, alignSelf: 'center', marginBottom: 12 }} />
+            <View
+              style={{
+                width: 40,
+                height: 4,
+                backgroundColor: "#cbd5e1",
+                borderRadius: 2,
+                alignSelf: "center",
+                marginBottom: 12,
+              }}
+            />
 
             {/* Modal header */}
             <View
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
+                flexDirection: "row",
+                alignItems: "center",
                 paddingHorizontal: 20,
                 paddingBottom: 14,
                 borderBottomWidth: 1,
-                borderBottomColor: '#f1f5f9',
+                borderBottomColor: "#f1f5f9",
               }}
             >
               {/* Avatar */}
@@ -1366,23 +1705,30 @@ export default function AdviseeClass() {
                   width: 48,
                   height: 48,
                   borderRadius: 24,
-                  backgroundColor: INDIGO + '18',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  backgroundColor: INDIGO + "18",
+                  alignItems: "center",
+                  justifyContent: "center",
                   marginRight: 12,
                 }}
               >
-                <Text style={{ fontSize: 20, fontWeight: '800', color: INDIGO }}>
+                <Text
+                  style={{ fontSize: 20, fontWeight: "800", color: INDIGO }}
+                >
                   {selectedStudent?.studentName?.trim().charAt(0).toUpperCase()}
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 17, fontWeight: '700', color: '#1e293b' }} numberOfLines={1}>
+                <Text
+                  style={{ fontSize: 17, fontWeight: "700", color: "#1e293b" }}
+                  numberOfLines={1}
+                >
                   {selectedStudent?.studentName}
                 </Text>
-                <Text style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
+                <Text style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
                   MSSV: {selectedStudent?.studentId}
-                  {selectedStudent?.className ? ` • ${selectedStudent.className}` : ''}
+                  {selectedStudent?.className
+                    ? ` • ${selectedStudent.className}`
+                    : ""}
                 </Text>
               </View>
               <TouchableOpacity
@@ -1391,9 +1737,9 @@ export default function AdviseeClass() {
                   width: 34,
                   height: 34,
                   borderRadius: 17,
-                  backgroundColor: '#f1f5f9',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  backgroundColor: "#f1f5f9",
+                  alignItems: "center",
+                  justifyContent: "center",
                   marginLeft: 8,
                 }}
               >
@@ -1401,141 +1747,238 @@ export default function AdviseeClass() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ padding: 20 }}
+              showsVerticalScrollIndicator={false}
+            >
               {/* ── Stats overview ── */}
-              {selectedStudent && (() => {
-                const rate = Math.round(selectedStudent.attendanceRate || 0);
-                const rateColor = getAttendanceColor(rate);
-                const rateBg = getAttendanceBg(rate);
-                const totalSess = selectedStudent.totalSessions || 0;
-                return (
-                  <>
-                    {/* Big rate badge */}
-                    <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                      <View
-                        style={{
-                          width: 88,
-                          height: 88,
-                          borderRadius: 44,
-                          backgroundColor: rateBg,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderWidth: 3,
-                          borderColor: rateColor + '40',
-                          marginBottom: 8,
-                        }}
-                      >
-                        <Text style={{ fontSize: 26, fontWeight: '800', color: rateColor }}>{rate}%</Text>
-                      </View>
-                      <Text style={{ fontSize: 13, color: '#64748b', fontWeight: '600' }}>Tỷ lệ điểm danh</Text>
-                    </View>
-
-                    {/* 4-column stats */}
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        backgroundColor: '#f8fafc',
-                        borderRadius: 14,
-                        padding: 14,
-                        marginBottom: 20,
-                        gap: 0,
-                      }}
-                    >
-                      {[
-                        { label: 'Tổng buổi', value: totalSess, color: '#64748b' },
-                        { label: 'Có mặt', value: selectedStudent.presentCount, color: '#10b981' },
-                        { label: 'Muộn', value: selectedStudent.lateCount, color: '#f59e0b' },
-                        { label: 'Vắng', value: selectedStudent.absentCount, color: '#ef4444' },
-                      ].map((s, idx) => (
+              {selectedStudent &&
+                (() => {
+                  const rate = Math.round(selectedStudent.attendanceRate || 0);
+                  const rateColor = getAttendanceColor(rate);
+                  const rateBg = getAttendanceBg(rate);
+                  const totalSess = selectedStudent.totalSessions || 0;
+                  return (
+                    <>
+                      {/* Big rate badge */}
+                      <View style={{ alignItems: "center", marginBottom: 20 }}>
                         <View
-                          key={idx}
                           style={{
-                            flex: 1,
-                            alignItems: 'center',
-                            borderLeftWidth: idx > 0 ? 1 : 0,
-                            borderLeftColor: '#e2e8f0',
+                            width: 88,
+                            height: 88,
+                            borderRadius: 44,
+                            backgroundColor: rateBg,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderWidth: 3,
+                            borderColor: rateColor + "40",
+                            marginBottom: 8,
                           }}
                         >
-                          <Text style={{ fontSize: 22, fontWeight: '800', color: s.color }}>{s.value}</Text>
-                          <Text style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>{s.label}</Text>
+                          <Text
+                            style={{
+                              fontSize: 26,
+                              fontWeight: "800",
+                              color: rateColor,
+                            }}
+                          >
+                            {rate}%
+                          </Text>
                         </View>
-                      ))}
-                    </View>
-
-                    {/* Progress bar */}
-                    <View style={{ marginBottom: 4 }}>
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          justifyContent: 'space-between',
-                          marginBottom: 6,
-                        }}
-                      >
-                        <Text style={{ fontSize: 13, fontWeight: '600', color: '#475569' }}>Tiến độ điểm danh</Text>
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: rateColor }}>{rate}%</Text>
-                      </View>
-                      <View style={{ height: 8, backgroundColor: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
-                        <View
+                        <Text
                           style={{
-                            height: '100%',
-                            width: `${rate}%`,
-                            backgroundColor: rateColor,
-                            borderRadius: 4,
+                            fontSize: 13,
+                            color: "#64748b",
+                            fontWeight: "600",
                           }}
-                        />
-                      </View>
-                    </View>
-
-                    {/* Warning if at-risk */}
-                    {rate < 80 && (
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 8,
-                          backgroundColor: '#fef2f2',
-                          borderRadius: 10,
-                          padding: 12,
-                          marginTop: 14,
-                          marginBottom: 4,
-                          borderWidth: 1,
-                          borderColor: '#fecaca',
-                        }}
-                      >
-                        <Ionicons name="warning" size={16} color="#ef4444" />
-                        <Text style={{ fontSize: 13, fontWeight: '600', color: '#ef4444', flex: 1 }}>
-                          {rate < 60
-                            ? 'Nguy cơ cao — Cần can thiệp ngay'
-                            : 'Cần theo dõi — Tỷ lệ điểm danh thấp'}
+                        >
+                          Tỷ lệ điểm danh
                         </Text>
                       </View>
-                    )}
-                  </>
-                );
-              })()}
+
+                      {/* 4-column stats */}
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          backgroundColor: "#f8fafc",
+                          borderRadius: 14,
+                          padding: 14,
+                          marginBottom: 20,
+                          gap: 0,
+                        }}
+                      >
+                        {[
+                          {
+                            label: "Tổng buổi",
+                            value: totalSess,
+                            color: "#64748b",
+                          },
+                          {
+                            label: "Có mặt",
+                            value: selectedStudent.presentCount,
+                            color: "#10b981",
+                          },
+                          {
+                            label: "Muộn",
+                            value: selectedStudent.lateCount,
+                            color: "#f59e0b",
+                          },
+                          {
+                            label: "Vắng",
+                            value: selectedStudent.absentCount,
+                            color: "#ef4444",
+                          },
+                        ].map((s, idx) => (
+                          <View
+                            key={idx}
+                            style={{
+                              flex: 1,
+                              alignItems: "center",
+                              borderLeftWidth: idx > 0 ? 1 : 0,
+                              borderLeftColor: "#e2e8f0",
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 22,
+                                fontWeight: "800",
+                                color: s.color,
+                              }}
+                            >
+                              {s.value}
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: 10,
+                                color: "#94a3b8",
+                                marginTop: 3,
+                              }}
+                            >
+                              {s.label}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+
+                      {/* Progress bar */}
+                      <View style={{ marginBottom: 4 }}>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            marginBottom: 6,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              fontWeight: "600",
+                              color: "#475569",
+                            }}
+                          >
+                            Tiến độ điểm danh
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              fontWeight: "700",
+                              color: rateColor,
+                            }}
+                          >
+                            {rate}%
+                          </Text>
+                        </View>
+                        <View
+                          style={{
+                            height: 8,
+                            backgroundColor: "#e2e8f0",
+                            borderRadius: 4,
+                            overflow: "hidden",
+                          }}
+                        >
+                          <View
+                            style={{
+                              height: "100%",
+                              width: `${rate}%`,
+                              backgroundColor: rateColor,
+                              borderRadius: 4,
+                            }}
+                          />
+                        </View>
+                      </View>
+
+                      {/* Warning if at-risk */}
+                      {rate < 80 && (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                            backgroundColor: "#fef2f2",
+                            borderRadius: 10,
+                            padding: 12,
+                            marginTop: 14,
+                            marginBottom: 4,
+                            borderWidth: 1,
+                            borderColor: "#fecaca",
+                          }}
+                        >
+                          <Ionicons name="warning" size={16} color="#ef4444" />
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              fontWeight: "600",
+                              color: "#ef4444",
+                              flex: 1,
+                            }}
+                          >
+                            {rate < 60
+                              ? "Nguy cơ cao — Cần can thiệp ngay"
+                              : "Cần theo dõi — Tỷ lệ điểm danh thấp"}
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  );
+                })()}
 
               {/* ── Attendance history ── */}
               <View style={{ marginTop: 20 }}>
                 <View
                   style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
+                    flexDirection: "row",
+                    alignItems: "center",
                     gap: 8,
                     marginBottom: 14,
                   }}
                 >
                   <Ionicons name="calendar" size={16} color={INDIGO} />
-                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#1e293b' }}>Lịch sử điểm danh</Text>
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: "700",
+                      color: "#1e293b",
+                    }}
+                  >
+                    Lịch sử điểm danh
+                  </Text>
                   {!studentRecordsLoading && (
                     <View
                       style={{
-                        backgroundColor: INDIGO + '18',
+                        backgroundColor: INDIGO + "18",
                         borderRadius: 8,
                         paddingHorizontal: 8,
                         paddingVertical: 2,
                       }}
                     >
-                      <Text style={{ fontSize: 11, fontWeight: '700', color: INDIGO }}>
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: "700",
+                          color: INDIGO,
+                        }}
+                      >
                         {studentRecords.length} buổi
                       </Text>
                     </View>
@@ -1543,21 +1986,38 @@ export default function AdviseeClass() {
                 </View>
 
                 {studentRecordsLoading ? (
-                  <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+                  <View style={{ alignItems: "center", paddingVertical: 32 }}>
                     <ActivityIndicator size="small" color={INDIGO} />
-                    <Text style={{ fontSize: 13, color: '#94a3b8', marginTop: 10 }}>Đang tải lịch sử...</Text>
+                    <Text
+                      style={{ fontSize: 13, color: "#94a3b8", marginTop: 10 }}
+                    >
+                      Đang tải lịch sử...
+                    </Text>
                   </View>
                 ) : studentRecords.length === 0 ? (
-                  <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-                    <Ionicons name="calendar-outline" size={44} color="#cbd5e1" />
-                    <Text style={{ fontSize: 14, color: '#94a3b8', marginTop: 12, textAlign: 'center' }}>
+                  <View style={{ alignItems: "center", paddingVertical: 32 }}>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={44}
+                      color="#cbd5e1"
+                    />
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        color: "#94a3b8",
+                        marginTop: 12,
+                        textAlign: "center",
+                      }}
+                    >
                       Chưa có bản ghi điểm danh nào{"\n"}cho sinh viên này
                     </Text>
                   </View>
                 ) : (
                   <View style={{ gap: 8 }}>
                     {studentRecords.map((r, i) => {
-                      const date = new Date(r.createdAt || r.attendedAt || Date.now());
+                      const date = new Date(
+                        r.createdAt || r.attendedAt || Date.now(),
+                      );
                       const statusColor = getStatusColor(r.status);
                       const statusLabel = getStatusLabel(r.status);
                       const statusIcon = getStatusIcon(r.status);
@@ -1565,14 +2025,14 @@ export default function AdviseeClass() {
                         <View
                           key={r.id || i}
                           style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
+                            flexDirection: "row",
+                            alignItems: "center",
                             padding: 12,
-                            backgroundColor: '#fff',
+                            backgroundColor: "#fff",
                             borderRadius: 12,
                             borderWidth: 1,
-                            borderColor: '#f1f5f9',
-                            shadowColor: '#000',
+                            borderColor: "#f1f5f9",
+                            shadowColor: "#000",
                             shadowOffset: { width: 0, height: 1 },
                             shadowOpacity: 0.03,
                             shadowRadius: 4,
@@ -1586,41 +2046,61 @@ export default function AdviseeClass() {
                               width: 40,
                               height: 40,
                               borderRadius: 20,
-                              backgroundColor: statusColor + '18',
-                              alignItems: 'center',
-                              justifyContent: 'center',
+                              backgroundColor: statusColor + "18",
+                              alignItems: "center",
+                              justifyContent: "center",
                               flexShrink: 0,
                             }}
                           >
-                            <Ionicons name={statusIcon} size={20} color={statusColor} />
+                            <Ionicons
+                              name={statusIcon}
+                              size={20}
+                              color={statusColor}
+                            />
                           </View>
 
                           {/* Date/time info */}
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 14, fontWeight: '600', color: '#1e293b', marginBottom: 2 }}>
-                              {date.toLocaleDateString('vi-VN', {
-                                weekday: 'short',
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
+                            <Text
+                              style={{
+                                fontSize: 14,
+                                fontWeight: "600",
+                                color: "#1e293b",
+                                marginBottom: 2,
+                              }}
+                            >
+                              {date.toLocaleDateString("vi-VN", {
+                                weekday: "short",
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
                               })}
                             </Text>
-                            <Text style={{ fontSize: 12, color: '#94a3b8' }}>
-                              {date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                              {r.method ? ` • ${r.method}` : ''}
+                            <Text style={{ fontSize: 12, color: "#94a3b8" }}>
+                              {date.toLocaleTimeString("vi-VN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                              {r.method ? ` • ${r.method}` : ""}
                             </Text>
                           </View>
 
                           {/* Status badge */}
                           <View
                             style={{
-                              backgroundColor: statusColor + '18',
+                              backgroundColor: statusColor + "18",
                               paddingHorizontal: 10,
                               paddingVertical: 5,
                               borderRadius: 8,
                             }}
                           >
-                            <Text style={{ fontSize: 12, fontWeight: '700', color: statusColor }}>
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: "700",
+                                color: statusColor,
+                              }}
+                            >
                               {statusLabel}
                             </Text>
                           </View>

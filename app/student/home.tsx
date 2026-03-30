@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { BookIcon, SchoolIcon } from "@/components/Icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { scheduleService, attendanceService, authService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
@@ -151,11 +152,19 @@ export default function StudentHomeScreen() {
       });
 
       const totalSessions = weeklyRecords.length;
-      const present = weeklyRecords.filter((r: any) => r.status === "PRESENT").length;
+      const present = weeklyRecords.filter(
+        (r: any) => r.status === "PRESENT",
+      ).length;
       const absent = totalSessions - present;
-      const attendanceRate = totalSessions > 0 ? Math.round((present / totalSessions) * 100) : 0;
+      const attendanceRate =
+        totalSessions > 0 ? Math.round((present / totalSessions) * 100) : 0;
 
-      console.log("📈 Stats:", { totalSessions, present, absent, attendanceRate });
+      console.log("📈 Stats:", {
+        totalSessions,
+        present,
+        absent,
+        attendanceRate,
+      });
       setAttendanceStats({
         totalSessions,
         present,
@@ -164,7 +173,10 @@ export default function StudentHomeScreen() {
       });
     } catch (error: any) {
       console.error("❌ Error loading dashboard:", error);
-      showToast("Không thể tải dữ liệu: " + (error.message || "Lỗi không xác định"), "error");
+      showToast(
+        "Không thể tải dữ liệu: " + (error.message || "Lỗi không xác định"),
+        "error",
+      );
     } finally {
       setLoading(false);
       console.log("✅ Dashboard loading complete");
@@ -206,9 +218,11 @@ export default function StudentHomeScreen() {
       <StatusBar style="light" />
 
       {/* ── Blue Hero Banner (Fixed at top) ── */}
-      <View
+      <LinearGradient
+        colors={["#1E3A8A", "#3B82F6"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          backgroundColor: "#3b82f6",
           paddingTop: isMobile ? 48 : 64, // leave space for status bar manually if needed
           paddingBottom: 40,
           paddingHorizontal: padding,
@@ -216,15 +230,33 @@ export default function StudentHomeScreen() {
           borderBottomRightRadius: 32,
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <View style={{ flex: 1, paddingRight: 16 }}>
-            <Text style={{ fontSize: 15, color: "rgba(255,255,255,0.8)", marginBottom: 4 }}>
+            <Text
+              style={{
+                fontSize: 15,
+                color: "rgba(255,255,255,0.8)",
+                marginBottom: 4,
+              }}
+            >
               Chào mừng trở lại!
             </Text>
-            <Text style={{ fontSize: 24, fontWeight: "800", color: "#ffffff" }} numberOfLines={1}>
+            <Text
+              style={{ fontSize: 24, fontWeight: "800", color: "#ffffff" }}
+              numberOfLines={1}
+            >
               Xin chào,
             </Text>
-            <Text style={{ fontSize: 24, fontWeight: "800", color: "#ffffff" }} numberOfLines={1}>
+            <Text
+              style={{ fontSize: 24, fontWeight: "800", color: "#ffffff" }}
+              numberOfLines={1}
+            >
               {userName ? userName : "Sinh viên"}
             </Text>
           </View>
@@ -233,7 +265,10 @@ export default function StudentHomeScreen() {
             {/* Notification Bell (chỉ hiện trên mobile) */}
             {isMobile && (
               <TouchableOpacity
-                onPress={() => { setUnreadNotifs(0); router.push("/student/notifications" as any); }}
+                onPress={() => {
+                  setUnreadNotifs(0);
+                  router.push("/student/notifications" as any);
+                }}
                 style={{
                   width: 40,
                   height: 40,
@@ -263,7 +298,9 @@ export default function StudentHomeScreen() {
                       borderColor: "#3b82f6",
                     }}
                   >
-                    <Text style={{ fontSize: 9, fontWeight: "800", color: "#fff" }}>
+                    <Text
+                      style={{ fontSize: 9, fontWeight: "800", color: "#fff" }}
+                    >
                       {unreadNotifs > 9 ? "9+" : unreadNotifs}
                     </Text>
                   </View>
@@ -286,11 +323,13 @@ export default function StudentHomeScreen() {
               }}
             >
               <Ionicons name="calendar" size={18} color="#fff" />
-              <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>Xem lịch</Text>
+              <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>
+                Xem lịch
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </LinearGradient>
 
       {/* ── Scrollable Content ── */}
       <ScrollView
@@ -301,8 +340,14 @@ export default function StudentHomeScreen() {
           paddingBottom: isMobile ? 100 : 40,
         }}
       >
-        <View style={{ maxWidth: contentMaxWidth, width: "100%", alignSelf: "center", gap: 24 }}>
-
+        <View
+          style={{
+            maxWidth: contentMaxWidth,
+            width: "100%",
+            alignSelf: "center",
+            gap: 24,
+          }}
+        >
           {/* Lịch học hôm nay block */}
           <View>
             <View
@@ -313,7 +358,9 @@ export default function StudentHomeScreen() {
                 marginBottom: 12,
               }}
             >
-              <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b" }}>
+              <Text
+                style={{ fontSize: 16, fontWeight: "700", color: "#1e293b" }}
+              >
                 Lịch học hôm nay
               </Text>
               {todaySchedules.length > 1 && (
@@ -372,7 +419,8 @@ export default function StudentHomeScreen() {
                     marginBottom: 12,
                   }}
                 >
-                  Giảng viên: {todaySchedules[currentScheduleIndex]?.teacher ||
+                  Giảng viên:{" "}
+                  {todaySchedules[currentScheduleIndex]?.teacher ||
                     todaySchedules[currentScheduleIndex]?.teacherName ||
                     "N/A"}
                 </Text>
@@ -387,11 +435,20 @@ export default function StudentHomeScreen() {
                     }}
                   />
                   <View>
-                    <Text style={{ fontSize: 15, fontWeight: "600", color: "#1e293b" }}>
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: "600",
+                        color: "#1e293b",
+                      }}
+                    >
                       {todaySchedules[currentScheduleIndex]?.time || ""}
                     </Text>
-                    <Text style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
-                      Phòng: {todaySchedules[currentScheduleIndex]?.room || "N/A"}
+                    <Text
+                      style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}
+                    >
+                      Phòng:{" "}
+                      {todaySchedules[currentScheduleIndex]?.room || "N/A"}
                     </Text>
                   </View>
                 </View>
@@ -425,7 +482,9 @@ export default function StudentHomeScreen() {
                 >
                   <Ionicons name="calendar-outline" size={24} color="#94a3b8" />
                 </View>
-                <Text style={{ fontSize: 14, fontWeight: "600", color: "#64748b" }}>
+                <Text
+                  style={{ fontSize: 14, fontWeight: "600", color: "#64748b" }}
+                >
                   Không có lịch học hôm nay
                 </Text>
               </View>
@@ -434,7 +493,14 @@ export default function StudentHomeScreen() {
 
           {/* Quick Actions */}
           <View>
-            <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b", marginBottom: 12 }}>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "700",
+                color: "#1e293b",
+                marginBottom: 12,
+              }}
+            >
               Điểm danh nhanh
             </Text>
             <View style={{ flexDirection: "row", gap: 16 }}>
@@ -456,13 +522,36 @@ export default function StudentHomeScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <View style={{ width: 48, height: 48, backgroundColor: "#eff6ff", borderRadius: 14, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    backgroundColor: "#eff6ff",
+                    borderRadius: 14,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 12,
+                  }}
+                >
                   <Ionicons name="keypad" size={24} color="#3b82f6" />
                 </View>
-                <Text style={{ fontSize: 15, fontWeight: "700", color: "#1e293b", marginBottom: 4 }}>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontWeight: "700",
+                    color: "#1e293b",
+                    marginBottom: 4,
+                  }}
+                >
                   Mã OTP
                 </Text>
-                <Text style={{ fontSize: 12, color: "#64748b", textAlign: "center" }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: "#64748b",
+                    textAlign: "center",
+                  }}
+                >
                   Nhập mã từ GV
                 </Text>
               </TouchableOpacity>
@@ -485,13 +574,36 @@ export default function StudentHomeScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <View style={{ width: 48, height: 48, backgroundColor: "#f0fdf4", borderRadius: 14, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    backgroundColor: "#f0fdf4",
+                    borderRadius: 14,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 12,
+                  }}
+                >
                   <Ionicons name="qr-code" size={24} color="#10b981" />
                 </View>
-                <Text style={{ fontSize: 15, fontWeight: "700", color: "#1e293b", marginBottom: 4 }}>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontWeight: "700",
+                    color: "#1e293b",
+                    marginBottom: 4,
+                  }}
+                >
                   Mã QR
                 </Text>
-                <Text style={{ fontSize: 12, color: "#64748b", textAlign: "center" }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: "#64748b",
+                    textAlign: "center",
+                  }}
+                >
                   Quét mã trên lớp
                 </Text>
               </TouchableOpacity>
@@ -511,29 +623,76 @@ export default function StudentHomeScreen() {
                 shadowRadius: 12,
                 elevation: 4,
                 borderWidth: 1,
-                borderColor: "#eff6ff"
+                borderColor: "#eff6ff",
               }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b" }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 16,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 16, fontWeight: "700", color: "#1e293b" }}
+                >
                   Thống kê tuần này
                 </Text>
-                <View style={{ backgroundColor: "#eff6ff", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
-                  <Text style={{ fontSize: 12, fontWeight: "700", color: "#3b82f6" }}>Tuần {attendanceStats.totalSessions} buổi</Text>
+                <View
+                  style={{
+                    backgroundColor: "#eff6ff",
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: 12,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "700",
+                      color: "#3b82f6",
+                    }}
+                  >
+                    Tuần {attendanceStats.totalSessions} buổi
+                  </Text>
                 </View>
               </View>
 
-              <View style={{ flexDirection: "row", alignItems: "flex-end", marginBottom: 16, gap: 12 }}>
-                <Text style={{ fontSize: 36, fontWeight: "800", color: "#3b82f6", lineHeight: 40 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "flex-end",
+                  marginBottom: 16,
+                  gap: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 36,
+                    fontWeight: "800",
+                    color: "#3b82f6",
+                    lineHeight: 40,
+                  }}
+                >
                   {attendanceStats.attendanceRate}%
                 </Text>
-                <Text style={{ fontSize: 14, color: "#64748b", marginBottom: 6 }}>
+                <Text
+                  style={{ fontSize: 14, color: "#64748b", marginBottom: 6 }}
+                >
                   Tỷ lệ có mặt
                 </Text>
               </View>
 
               {/* Custom Progress Bar */}
-              <View style={{ height: 10, backgroundColor: "#e2e8f0", borderRadius: 5, overflow: "hidden" }}>
+              <View
+                style={{
+                  height: 10,
+                  backgroundColor: "#e2e8f0",
+                  borderRadius: 5,
+                  overflow: "hidden",
+                }}
+              >
                 <View
                   style={{
                     height: "100%",
@@ -546,18 +705,58 @@ export default function StudentHomeScreen() {
 
               {/* Small stats under bar */}
               <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-                <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#ecfdf5", padding: 10, borderRadius: 10 }}>
+                <View
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    backgroundColor: "#ecfdf5",
+                    padding: 10,
+                    borderRadius: 10,
+                  }}
+                >
                   <Ionicons name="checkmark-circle" size={18} color="#10b981" />
                   <View>
-                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#10b981" }}>{attendanceStats.present}</Text>
-                    <Text style={{ fontSize: 11, color: "#10b981" }}>Có mặt</Text>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#10b981",
+                      }}
+                    >
+                      {attendanceStats.present}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: "#10b981" }}>
+                      Có mặt
+                    </Text>
                   </View>
                 </View>
-                <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#fef2f2", padding: 10, borderRadius: 10 }}>
+                <View
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    backgroundColor: "#fef2f2",
+                    padding: 10,
+                    borderRadius: 10,
+                  }}
+                >
                   <Ionicons name="close-circle" size={18} color="#ef4444" />
                   <View>
-                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#ef4444" }}>{attendanceStats.absent}</Text>
-                    <Text style={{ fontSize: 11, color: "#ef4444" }}>Vắng mặt</Text>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#ef4444",
+                      }}
+                    >
+                      {attendanceStats.absent}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: "#ef4444" }}>
+                      Vắng mặt
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -610,7 +809,6 @@ export default function StudentHomeScreen() {
             </View>
             <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
           </TouchableOpacity>
-
         </View>
       </ScrollView>
     </View>

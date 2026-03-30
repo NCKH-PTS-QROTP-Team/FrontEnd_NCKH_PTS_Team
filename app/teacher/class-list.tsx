@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/colors";
 import PrimaryButton from "@/components/PrimaryButton";
 import {
@@ -324,7 +325,6 @@ export default function ClassListScreen() {
       {/* ── Parallax Animated Hero Header ── */}
       <Animated.View
         style={{
-          backgroundColor: "#0ea5e9",
           paddingTop: isMobile ? 48 : 64,
           paddingHorizontal: paddingHorizontal,
           borderBottomLeftRadius: 32,
@@ -336,13 +336,19 @@ export default function ClassListScreen() {
           height: headerHeight,
           zIndex: 10,
           overflow: "hidden",
-          shadowColor: "#0ea5e9",
+          shadowColor: "#3B82F6",
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0.32,
           shadowRadius: 16,
           elevation: 6,
         }}
       >
+        <LinearGradient
+          colors={["#1E3A8A", "#3B82F6"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+        />
         <View
           style={{
             maxWidth: contentMaxWidth,

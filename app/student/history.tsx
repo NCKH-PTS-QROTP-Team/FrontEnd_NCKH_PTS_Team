@@ -20,6 +20,7 @@ import {
   AttendanceMethod,
 } from "@/apis/types/attendance.types";
 import Toast, { useToast } from "@/components/Toast";
+import { LinearGradient } from "expo-linear-gradient";
 
 const BLUE = "#3b82f6";
 
@@ -209,7 +210,6 @@ export default function HistoryScreen() {
       {/* ── Parallax Animated Hero Header ── */}
       <Animated.View
         style={{
-          backgroundColor: BLUE,
           paddingTop: isMobile ? 48 : 64,
           paddingHorizontal: paddingHorizontal,
           borderBottomLeftRadius: 32,
@@ -221,13 +221,19 @@ export default function HistoryScreen() {
           height: headerHeight,
           zIndex: 10,
           overflow: "hidden",
-          shadowColor: BLUE,
+          shadowColor: "#3B82F6",
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0.32,
           shadowRadius: 16,
           elevation: 6,
         }}
       >
+        <LinearGradient
+          colors={["#1E3A8A", "#3B82F6"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+        />
         <View
           style={{
             maxWidth: contentMaxWidth,

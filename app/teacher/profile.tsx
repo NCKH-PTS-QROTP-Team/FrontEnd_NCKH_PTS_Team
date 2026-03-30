@@ -27,6 +27,7 @@ import {
 } from "@/apis/services/report.service";
 import ProfileAndSettings from "@/components/ProfileAndSettings";
 import Toast, { useToast } from "@/components/Toast";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function TeacherProfileScreen() {
   const router = useRouter();
@@ -105,7 +106,6 @@ export default function TeacherProfileScreen() {
       {/* ── Purple Hero Header ── */}
       <Animated.View
         style={{
-          backgroundColor: "#8B5CF6", // Purple theme
           paddingTop: isMobile ? 48 : 64,
           paddingHorizontal: 16,
           borderBottomLeftRadius: 32,
@@ -117,7 +117,7 @@ export default function TeacherProfileScreen() {
           height: headerHeight,
           zIndex: 10,
           overflow: "hidden",
-          shadowColor: "#8B5CF6",
+          shadowColor: "#3B82F6",
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0.3,
           shadowRadius: 16,
@@ -125,6 +125,12 @@ export default function TeacherProfileScreen() {
           alignItems: "center",
         }}
       >
+        <LinearGradient
+          colors={["#1E3A8A", "#3B82F6"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+        />
         <Text
           style={{
             fontSize: 16,
