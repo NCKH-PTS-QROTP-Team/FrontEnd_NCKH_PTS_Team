@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import React, {
   useState,
   useEffect,
@@ -832,9 +833,58 @@ export default function SchedulesManagement() {
   };
 
   return (
-    <View style={s.container}>
+    <View style={[s.container, { padding: 0 }]}>
+      <LinearGradient
+        colors={["#1E3A8A", "#3B82F6"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          paddingTop: 64,
+          paddingBottom: 20,
+          paddingHorizontal: 20,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          zIndex: 10,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <View>
+            <Text style={{ fontSize: 24, fontWeight: "800", color: "#fff" }}>
+              Quản lý Lịch biểu
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                color: "rgba(255,255,255,0.8)",
+                marginTop: 4,
+              }}
+            >
+              Xem và quản lý lịch biểu khoa
+            </Text>
+          </View>
+          <View
+            style={{
+              width: 48,
+              height: 48,
+              backgroundColor: "rgba(255,255,255,0.2)",
+              borderRadius: 24,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Ionicons name="calendar" size={24} color="#fff" />
+          </View>
+        </View>
+      </LinearGradient>
+
       {/* ── Header bar ── */}
-      <View style={s.headerBar}>
+      <View style={[s.headerBar, { marginTop: 10, paddingHorizontal: 16 }]}>
         {/* Stats */}
         <View style={s.statsRow}>
           <StatChip

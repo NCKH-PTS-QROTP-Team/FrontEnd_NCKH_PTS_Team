@@ -45,7 +45,10 @@ export default function HistoryScreen() {
     records.forEach((r) => {
       if (r.subjectName) subjects.add(r.subjectName);
     });
-    const opts = Array.from(subjects).map((subj) => ({ label: subj, value: subj }));
+    const opts = Array.from(subjects).map((subj) => ({
+      label: subj,
+      value: subj,
+    }));
     opts.unshift({ label: "Tất cả", value: "all" });
     return opts;
   }, [records]);
@@ -164,7 +167,9 @@ export default function HistoryScreen() {
         selectedSubject === "all" || r.subjectName === selectedSubject;
       const date = new Date(r.attendedAt || r.createdAt);
       const matchYear =
-        selectedYear === "all" || (!isNaN(date.getTime()) && date.getFullYear().toString() === selectedYear);
+        selectedYear === "all" ||
+        (!isNaN(date.getTime()) &&
+          date.getFullYear().toString() === selectedYear);
       return matchSubject && matchYear;
     });
   }, [records, selectedSubject, selectedYear]);
@@ -172,8 +177,10 @@ export default function HistoryScreen() {
   // Tính stats từ data thật
   const stats = {
     total: contextRecords.length,
-    present: contextRecords.filter((r) => r.status === AttendanceStatus.PRESENT).length,
-    late: contextRecords.filter((r) => r.status === AttendanceStatus.LATE).length,
+    present: contextRecords.filter((r) => r.status === AttendanceStatus.PRESENT)
+      .length,
+    late: contextRecords.filter((r) => r.status === AttendanceStatus.LATE)
+      .length,
     absent: contextRecords.filter(
       (r) =>
         r.status === AttendanceStatus.ABSENT ||
@@ -468,7 +475,14 @@ export default function HistoryScreen() {
           }}
         >
           {/* Advanced Filters */}
-          <View style={{ flexDirection: "row", gap: 12, marginBottom: 16, zIndex: 10 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 12,
+              marginBottom: 16,
+              zIndex: 10,
+            }}
+          >
             <DropdownPicker
               label="Năm học"
               placeholder="Chọn năm"
