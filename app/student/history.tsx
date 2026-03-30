@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import {
 } from "@/apis/types/attendance.types";
 import Toast, { useToast } from "@/components/Toast";
 import { LinearGradient } from "expo-linear-gradient";
+import { DropdownPicker } from "@/components/DropdownPicker";
 
 const BLUE = "#3b82f6";
 
@@ -30,11 +31,39 @@ export default function HistoryScreen() {
   const [filter, setFilter] = useState<"all" | "present" | "late" | "absent">(
     "all",
   );
+  const [selectedSubject, setSelectedSubject] = useState<string | null>("all");
+  const [selectedYear, setSelectedYear] = useState<string | null>("all");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
   const { toast, showToast, hideToast } = useToast();
 
   const scrollY = React.useRef(new Animated.Value(0)).current;
+
+  // Extract unique subjects and years for filters
+  const subjectOptions = useMemo(() => {
+    const subjects = new Set<string>();
+    records.forEach((r) => {
+      if (r.subjectName) subjects.add(r.subjectName);
+    });
+    const opts = Array.from(subjects).map((subj) => ({ label: subj, value: subj }));
+    opts.unshift({ label: "Tất cả", value: "all" });
+    return opts;
+  }, [records]);
+
+  const yearOptions = useMemo(() => {
+    const years = new Set<string>();
+    records.forEach((r) => {
+      const date = new Date(r.attendedAt || r.createdAt);
+      if (!isNaN(date.getTime())) {
+        years.add(date.getFullYear().toString());
+      }
+    });
+    const opts = Array.from(years)
+      .sort((a, b) => b.localeCompare(a)) // sort descending
+      .map((year) => ({ label: `Năm ${year}`, value: year }));
+    opts.unshift({ label: "Tất cả", value: "all" });
+    return opts;
+  }, [records]);
 
   const getMethodIcon = (method: AttendanceMethod) => {
     switch (method) {
@@ -98,7 +127,7 @@ export default function HistoryScreen() {
 
   useEffect(() => {
     setPage(1);
-  }, [filter]);
+  }, [filter, selectedSubject, selectedYear]);
 
   const loadHistory = async () => {
     try {
@@ -128,13 +157,24 @@ export default function HistoryScreen() {
     }
   };
 
+  // Filter by subject and year first to compute dynamic stats
+  const contextRecords = useMemo(() => {
+    return records.filter((r) => {
+      const matchSubject =
+        selectedSubject === "all" || r.subjectName === selectedSubject;
+      const date = new Date(r.attendedAt || r.createdAt);
+      const matchYear =
+        selectedYear === "all" || (!isNaN(date.getTime()) && date.getFullYear().toString() === selectedYear);
+      return matchSubject && matchYear;
+    });
+  }, [records, selectedSubject, selectedYear]);
+
   // Tính stats từ data thật
   const stats = {
-    total: records.length,
-    present: records.filter((r) => r.status === AttendanceStatus.PRESENT)
-      .length,
-    late: records.filter((r) => r.status === AttendanceStatus.LATE).length,
-    absent: records.filter(
+    total: contextRecords.length,
+    present: contextRecords.filter((r) => r.status === AttendanceStatus.PRESENT).length,
+    late: contextRecords.filter((r) => r.status === AttendanceStatus.LATE).length,
+    absent: contextRecords.filter(
       (r) =>
         r.status === AttendanceStatus.ABSENT ||
         r.status === AttendanceStatus.EXCUSED,
@@ -149,7 +189,7 @@ export default function HistoryScreen() {
     stats.total > 0 ? Math.round((stats.absent / stats.total) * 100) : 0;
 
   // Filter records theo tab
-  const filteredRecords = records.filter((record) => {
+  const filteredRecords = contextRecords.filter((record) => {
     if (filter === "all") return true;
     const uiStatus = mapStatusToUI(record.status);
     return uiStatus === filter;
@@ -427,8 +467,28 @@ export default function HistoryScreen() {
             alignSelf: "center",
           }}
         >
+          {/* Advanced Filters */}
+          <View style={{ flexDirection: "row", gap: 12, marginBottom: 16, zIndex: 10 }}>
+            <DropdownPicker
+              label="Năm học"
+              placeholder="Chọn năm"
+              options={yearOptions}
+              selectedValue={selectedYear}
+              onValueChange={setSelectedYear}
+              themeColor={BLUE}
+            />
+            <DropdownPicker
+              label="Môn học"
+              placeholder="Chọn môn"
+              options={subjectOptions}
+              selectedValue={selectedSubject}
+              onValueChange={setSelectedSubject}
+              themeColor={BLUE}
+            />
+          </View>
+
           {/* Filter Tabs */}
-          <View style={{ marginBottom: 20 }}>
+          <View style={{ marginBottom: 20, zIndex: 1 }}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
