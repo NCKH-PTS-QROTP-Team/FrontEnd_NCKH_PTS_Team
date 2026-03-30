@@ -164,8 +164,6 @@ export default function TeacherLayout() {
       <AppLayout
         menuItems={menuItems}
         userRole="teacher"
-        userName="Trần Thị Bình"
-        userEmail="tranthib@teacher.edu.vn"
       >
         {stackContent}
       </AppLayout>

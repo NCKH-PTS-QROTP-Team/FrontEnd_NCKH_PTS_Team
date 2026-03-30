@@ -33,11 +33,12 @@ const getApiBaseUrl = () => {
     } else if (Platform.OS === 'android') {
       // 10.0.2.2 là địa chỉ đặc biệt cho Android Emulator trỏ về localhost của máy host
       // Nếu dùng thiết bị thật, thay bằng IP của máy: http://192.168.1.25:8080/api
-      return process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.25:8080/api';
+      // Default for this project (avoid wrong IP issues on device)
+      return process.env.EXPO_PUBLIC_API_URL || 'http://192.168.30.91:8080/api';
     } else {
       // iOS Simulator có thể dùng localhost
       // iOS thiết bị thật cần IP của máy tính (giống Android)
-      return process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.25:8080/api';
+      return process.env.EXPO_PUBLIC_API_URL || 'http://192.168.30.91:8080/api';
     }
   }
 

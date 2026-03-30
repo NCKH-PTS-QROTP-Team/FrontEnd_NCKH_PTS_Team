@@ -351,7 +351,7 @@ export default function Sidebar({
           activeOpacity={0.8}
         >
           {collapsed ? (
-            <Text style={{ fontSize: 18, color: "#EF4444" }}>🚪</Text>
+            <LogoutIcon size={18} color="#EF4444" />
           ) : (
             <Text style={{ fontSize: 14, fontWeight: "600", color: "#EF4444" }}>
               Đăng xuất

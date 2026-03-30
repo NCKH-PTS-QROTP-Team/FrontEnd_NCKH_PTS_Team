@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { View, Text, Platform, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Avatar } from "./Avatar";
+import { LogoutIcon, UserIcon } from "./Icons";
 
 // Fallback Colors nếu chưa có file constants
 const Colors = {
@@ -264,7 +265,7 @@ export default function UserProfileDropdown({
                   marginRight: 12,
                 }}
               >
-                <Text style={{ fontSize: 18, color: Colors.primary }}>👤</Text>
+                <UserIcon size={18} color={Colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text
@@ -322,7 +323,7 @@ export default function UserProfileDropdown({
                   marginRight: 12,
                 }}
               >
-                <Text style={{ fontSize: 18, color: Colors.error }}>🚪</Text>
+                <LogoutIcon size={18} color={Colors.error} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text
