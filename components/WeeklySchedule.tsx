@@ -167,7 +167,7 @@ export default function WeeklySchedule() {
       const startDate = new Date(currentWeek);
       startDate.setDate(startDate.getDate() - startDate.getDay() + 1); // Monday
       const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 6); // Sunday
+      endDate.setDate(endDate.getDate() + 6);
 
       const toIsoDate = (d: Date) => {
         const year = d.getFullYear();
@@ -265,8 +265,7 @@ export default function WeeklySchedule() {
   };
 
   const formatWeekRange = () => {
-    const startDate = new Date(currentWeek);
-    startDate.setDate(startDate.getDate() - startDate.getDay() + 1); // Monday
+    const startDate = startOfWeekMonday(currentWeek);
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 6); // Sunday
 
