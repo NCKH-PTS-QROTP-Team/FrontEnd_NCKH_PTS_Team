@@ -47,6 +47,11 @@ export default function StudentLayout() {
       route: "/student/register-face",
     },
     {
+      icon: <UserIcon size={20} color="#3FA9F5" />,
+      label: "Điểm danh Face",
+      route: "/student/face-demo",
+    },
+    {
       icon: <ScrollIcon size={20} color="#3FA9F5" />,
       label: "Lịch sử",
       route: "/student/history",
@@ -70,6 +75,7 @@ export default function StudentLayout() {
       <Stack.Screen name="qr-attendance" />
       <Stack.Screen name="otp-attendance" />
       <Stack.Screen name="face-attendance" />
+      <Stack.Screen name="face-demo" />
       <Stack.Screen name="register-face" />
       <Stack.Screen name="history" />
       <Stack.Screen name="notifications" />
@@ -117,6 +123,20 @@ export default function StudentLayout() {
             size={24}
             color={
               pathname === "/student/register-face"
+                ? Colors.primary
+                : Colors.textSecondary
+            }
+          />
+        ),
+      },
+      {
+        key: "/student/face-attendance",
+        label: "Điểm danh Face",
+        icon: (
+          <UserIcon
+            size={24}
+            color={
+              pathname === "/student/face-attendance"
                 ? Colors.primary
                 : Colors.textSecondary
             }

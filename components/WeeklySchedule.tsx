@@ -41,7 +41,15 @@ export default function WeeklySchedule() {
   const headerFontSize = isMobile ? 13 : 15;
   const dayFontSize = isMobile ? 12 : 14;
   const periodFontSize = isMobile ? 12 : 14;
-  
+
+  /** Thứ Hai đầu tuần (T2–CN). Tránh lệch khi currentWeek là Chủ nhật. */
+  const startOfWeekMonday = (d: Date) => {
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const day = x.getDay();
+    x.setDate(x.getDate() + (day === 0 ? -6 : 1 - day));
+    return x;
+  };
+
   // Data theo giờ (11:00, 13:30...) → map đúng ca Sáng/Chiều/Tối (tiết 1-6 sáng, 7-12 chiều, 13-15 tối)
   const convertSchedulesToDaySchedule = (schedules: Schedule[]): DaySchedule => {
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -50,9 +58,30 @@ export default function WeeklySchedule() {
       scheduleMap[d] = { morning: [], afternoon: [], evening: [] };
     });
 
-    schedules.forEach((s: Schedule) => {
-      const dayIndex = s.dayOfWeek === 7 ? 0 : s.dayOfWeek;
-      const dayName = dayNames[dayIndex] ?? 'monday';
+    // Gộp bản ghi trùng (cùng lớp + ngày + giờ bắt đầu) — hỗ trợ DB cũ sau khi seed từng tạo 2–3 lần
+    const seen = new Set<string>();
+    const unique = schedules.filter((s) => {
+      const k = `${s.classId ?? ''}|${(s.date ?? '').trim()}|${(s.startTime ?? '').trim()}|${s.scheduleType ?? ''}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+
+    const dayKeyFromSchedule = (s: Schedule): string => {
+      const raw = s.date?.trim();
+      if (raw && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        const [y, m, d] = raw.split('-').map((x) => parseInt(x, 10));
+        return dayNames[new Date(y, m - 1, d).getDay()] ?? 'monday';
+      }
+      if (s.dayOfWeek != null && s.dayOfWeek >= 1 && s.dayOfWeek <= 7) {
+        const jsDow = s.dayOfWeek === 7 ? 0 : s.dayOfWeek;
+        return dayNames[jsDow] ?? 'monday';
+      }
+      return 'monday';
+    };
+
+    unique.forEach((s: Schedule) => {
+      const dayName = dayKeyFromSchedule(s);
       const slotIndex = getSlotIndexFromStartTime(s.startTime ?? '');
       const period: 'morning' | 'afternoon' | 'evening' = slotIndex <= 2 ? 'morning' : slotIndex <= 5 ? 'afternoon' : 'evening';
 
@@ -128,11 +157,9 @@ export default function WeeklySchedule() {
       }
       console.log("📅 Loading weekly schedules...");
       
-      // Tính khoảng ngày của tuần hiện tại (fromDate, toDate - yyyy-MM-dd)
-      const startDate = new Date(currentWeek);
-      startDate.setDate(startDate.getDate() - startDate.getDay() + 1); // Monday
+      const startDate = startOfWeekMonday(currentWeek);
       const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 6); // Sunday
+      endDate.setDate(endDate.getDate() + 6);
 
       const toIsoDate = (d: Date) => {
         const year = d.getFullYear();
@@ -214,10 +241,9 @@ export default function WeeklySchedule() {
   };
 
   const formatWeekRange = () => {
-    const startDate = new Date(currentWeek);
-    startDate.setDate(startDate.getDate() - startDate.getDay() + 1); // Monday
+    const startDate = startOfWeekMonday(currentWeek);
     const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 6); // Sunday
+    endDate.setDate(endDate.getDate() + 6);
     
     return `${startDate.getDate().toString().padStart(2, '0')}/${(startDate.getMonth() + 1).toString().padStart(2, '0')} - ${endDate.getDate().toString().padStart(2, '0')}/${(endDate.getMonth() + 1).toString().padStart(2, '0')}/${endDate.getFullYear()}`;
   };
