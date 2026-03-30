@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
   Alert,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -14,15 +15,15 @@ import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/colors";
 import {
   UserIcon,
-  CalendarIcon,
   BellIcon,
-  SettingsIcon,
   LogoutIcon,
   ChevronRightIcon,
 } from "@/components/Icons";
 import { authService, attendanceService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
+import ProfileAndSettings from "@/components/ProfileAndSettings";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function StudentProfileScreen() {
   const router = useRouter();
@@ -54,11 +55,11 @@ export default function StudentProfileScreen() {
       if (studentId) {
         try {
           const records = await attendanceService.getRecords({ studentId });
-          
+
           // Tính tỷ lệ điểm danh
           const totalSessions = records.length;
           const presentCount = records.filter(
-            (r: any) => r.status === "PRESENT" || r.status === "LATE"
+            (r: any) => r.status === "PRESENT" || r.status === "LATE",
           ).length;
           const attendanceRate =
             totalSessions > 0
@@ -100,42 +101,143 @@ export default function StudentProfileScreen() {
     ]);
   };
 
-  return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: Colors.surface }}
-      edges={["top"]}
-    >
-      <StatusBar style="dark" />
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const HEADER_MAX_HEIGHT = isMobile ? 320 : 290;
+  const HEADER_MIN_HEIGHT = isMobile ? 120 : HEADER_MAX_HEIGHT;
+  const HEADER_SCROLL_DISTANCE = Math.max(
+    1,
+    HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT,
+  );
 
-      {/* Header */}
-      <View
+  const headerHeight = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+        extrapolate: "clamp",
+      })
+    : HEADER_MAX_HEIGHT;
+
+  const contentOpacity = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+        outputRange: [1, 0.2, 0],
+        extrapolate: "clamp",
+      })
+    : 1;
+
+  const contentTranslateY = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [0, -10],
+        extrapolate: "clamp",
+      })
+    : 0;
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
+      <StatusBar style="light" />
+
+      {/* ── Blue Hero Header ── */}
+      <Animated.View
         style={{
-          backgroundColor: Colors.white,
-          borderBottomWidth: 1,
-          borderBottomColor: Colors.border,
+          paddingTop: isMobile ? 48 : 64,
           paddingHorizontal: 16,
-          paddingVertical: 12,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: headerHeight,
+          zIndex: 10,
+          overflow: "hidden",
+          shadowColor: "#3B82F6",
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.3,
+          shadowRadius: 16,
+          elevation: 8,
+          alignItems: "center",
         }}
       >
+        <LinearGradient
+          colors={["#1E3A8A", "#3B82F6"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+        />
         <Text
           style={{
-            fontSize: 20,
-            fontWeight: "bold",
-            color: Colors.textHeading,
-            textAlign: "center",
+            fontSize: 16,
+            fontWeight: "600",
+            color: "rgba(255,255,255,0.8)",
+            marginBottom: 16,
           }}
         >
           Tài khoản
         </Text>
-      </View>
+        <Animated.View
+          style={{
+            alignItems: "center",
+            opacity: contentOpacity,
+            transform: [{ translateY: contentTranslateY }],
+          }}
+        >
+          <View
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: 40,
+              backgroundColor: "rgba(255,255,255,0.2)",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 16,
+            }}
+          >
+            <UserIcon size={40} color="#fff" />
+          </View>
+          <Text
+            style={{
+              fontSize: 22,
+              fontWeight: "800",
+              color: "#ffffff",
+              marginBottom: 4,
+            }}
+          >
+            {user?.name || "N/A"}
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: "rgba(255,255,255,0.8)",
+              marginBottom: 2,
+            }}
+          >
+            MSSV: {user?.studentId || "N/A"}
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: "rgba(255,255,255,0.8)",
+            }}
+          >
+            {user?.email || "N/A"}
+          </Text>
+        </Animated.View>
+      </Animated.View>
 
-      <ScrollView
+      <Animated.ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
           padding: 16,
-          paddingBottom: isMobile ? 100 : 32,
+          paddingTop: HEADER_MAX_HEIGHT + 24,
+          paddingBottom: isMobile ? 120 : 32,
         }}
         showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false },
+        )}
+        scrollEventThrottle={16}
       >
         {loading ? (
           <View
@@ -146,7 +248,7 @@ export default function StudentProfileScreen() {
               paddingVertical: 48,
             }}
           >
-            <ActivityIndicator size="large" color={Colors.primary} />
+            <ActivityIndicator size="large" color="#3b82f6" />
             <Text
               style={{
                 fontSize: 14,
@@ -159,129 +261,92 @@ export default function StudentProfileScreen() {
           </View>
         ) : (
           <>
-            {/* Profile Card */}
-            <View
-              style={{
-                backgroundColor: Colors.white,
-                borderRadius: 16,
-                padding: 24,
-                marginBottom: 16,
-                alignItems: "center",
-                borderWidth: 1,
-                borderColor: Colors.border,
-              }}
-            >
-              <View
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 40,
-                  backgroundColor: Colors.primary + "20",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 16,
-                }}
-              >
-                <UserIcon size={40} color={Colors.primary} />
-              </View>
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontWeight: "bold",
-                  color: Colors.textHeading,
-                  marginBottom: 4,
-                }}
-              >
-                {user?.name || "N/A"}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: Colors.textSecondary,
-                  marginBottom: 2,
-                }}
-              >
-                MSSV: {user?.studentId || "N/A"}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: Colors.textSecondary,
-                }}
-              >
-                {user?.email || "N/A"}
-              </Text>
-            </View>
-
-            {/* Stats Grid */}
-            <View
-              style={{
-                flexDirection: "row",
-                gap: 12,
-                marginBottom: 16,
-              }}
-            >
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: Colors.white,
-                  borderRadius: 12,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: Colors.border,
-                  alignItems: "center",
-                }}
-              >
-                <Text
+            <ProfileAndSettings
+              user={user}
+              onShowToast={showToast}
+              headerContent={
+                <View
                   style={{
-                    fontSize: 12,
-                    color: Colors.textSecondary,
-                    marginBottom: 8,
+                    flexDirection: "row",
+                    gap: 12,
+                    marginBottom: -8, // slight adjustment to fit the gap pattern of ProfileAndSettings
                   }}
                 >
-                  Tỷ lệ điểm danh
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 28,
-                    fontWeight: "bold",
-                    color: "#10B981",
-                  }}
-                >
-                  {attendanceStats.attendanceRate}%
-                </Text>
-              </View>
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: Colors.white,
-                  borderRadius: 12,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: Colors.border,
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: Colors.textSecondary,
-                    marginBottom: 8,
-                  }}
-                >
-                  Tổng buổi điểm danh
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 28,
-                    fontWeight: "bold",
-                    color: Colors.primary,
-                  }}
-                >
-                  {attendanceStats.totalSessions}
-                </Text>
-              </View>
-            </View>
+                  <View
+                    style={{
+                      flex: 1,
+                      backgroundColor: Colors.white,
+                      borderRadius: 16,
+                      padding: 16,
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                      alignItems: "center",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 8,
+                      elevation: 2,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "600",
+                        color: Colors.textSecondary,
+                        marginBottom: 8,
+                      }}
+                    >
+                      Tỷ lệ điểm danh
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 28,
+                        fontWeight: "800",
+                        color: "#10B981",
+                      }}
+                    >
+                      {attendanceStats.attendanceRate}%
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      flex: 1,
+                      backgroundColor: Colors.white,
+                      borderRadius: 16,
+                      padding: 16,
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                      alignItems: "center",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 8,
+                      elevation: 2,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "600",
+                        color: Colors.textSecondary,
+                        marginBottom: 8,
+                      }}
+                    >
+                      Tổng buổi học
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 28,
+                        fontWeight: "800",
+                        color: Colors.primary,
+                      }}
+                    >
+                      {attendanceStats.totalSessions}
+                    </Text>
+                  </View>
+                </View>
+              }
+            />
           </>
         )}
 
@@ -289,11 +354,17 @@ export default function StudentProfileScreen() {
         <View
           style={{
             backgroundColor: Colors.white,
-            borderRadius: 12,
+            borderRadius: 16,
             borderWidth: 1,
             borderColor: Colors.border,
+            marginTop: 24,
             marginBottom: 16,
             overflow: "hidden",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 8,
+            elevation: 2,
           }}
         >
           <TouchableOpacity
@@ -301,128 +372,6 @@ export default function StudentProfileScreen() {
               flexDirection: "row",
               alignItems: "center",
               padding: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: Colors.border,
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: Colors.primary + "15",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-              }}
-            >
-              <UserIcon size={20} color={Colors.primary} />
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 15,
-                color: Colors.textHeading,
-                fontWeight: "500",
-              }}
-            >
-              Thông tin cá nhân
-            </Text>
-            <ChevronRightIcon size={20} color={Colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: Colors.border,
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#10B98115",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-              }}
-            >
-              <CalendarIcon size={20} color="#10B981" />
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 15,
-                color: Colors.textHeading,
-                fontWeight: "500",
-              }}
-            >
-              Lịch học của tôi
-            </Text>
-            <ChevronRightIcon size={20} color={Colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: Colors.border,
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#F59E0B15",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-              }}
-            >
-              <BellIcon size={20} color="#F59E0B" />
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 15,
-                color: Colors.textHeading,
-                fontWeight: "500",
-              }}
-            >
-              Thông báo
-            </Text>
-            <View
-              style={{
-                backgroundColor: "#EF4444",
-                borderRadius: 10,
-                paddingHorizontal: 6,
-                paddingVertical: 2,
-                marginRight: 8,
-              }}
-            >
-              <Text
-                style={{ fontSize: 11, color: Colors.white, fontWeight: "600" }}
-              >
-                3
-              </Text>
-            </View>
-            <ChevronRightIcon size={20} color={Colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: Colors.border,
             }}
             onPress={() => router.push("/student/register-face")}
           >
@@ -447,40 +396,7 @@ export default function StudentProfileScreen() {
                 fontWeight: "500",
               }}
             >
-              Đăng ký nhận diện khuôn mặt
-            </Text>
-            <ChevronRightIcon size={20} color={Colors.textSecondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: Colors.gray100,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-              }}
-            >
-              <SettingsIcon size={20} color={Colors.textSecondary} />
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 15,
-                color: Colors.textHeading,
-                fontWeight: "500",
-              }}
-            >
-              Cài đặt
+              Cập nhật dữ liệu khuôn mặt
             </Text>
             <ChevronRightIcon size={20} color={Colors.textSecondary} />
           </TouchableOpacity>
@@ -524,15 +440,10 @@ export default function StudentProfileScreen() {
         >
           Phiên bản 1.0.0
         </Text>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Toast Notification */}
-      <Toast
-        visible={false}
-        message=""
-        type="success"
-        onHide={() => {}}
-      />
+      <Toast visible={false} message="" type="success" onHide={() => {}} />
     </SafeAreaView>
   );
 }

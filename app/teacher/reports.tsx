@@ -5,91 +5,236 @@ import {
   ScrollView,
   TouchableOpacity,
   useWindowDimensions,
-  Platform,
   ActivityIndicator,
+  RefreshControl,
+  Platform,
+  Animated,
 } from "react-native";
+import { PieChart, BarChart } from "react-native-chart-kit";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { attendanceService, reportService } from "@/apis";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  reportService,
+  type TeacherSummary,
+  type ClassAttendanceReport,
+} from "@/apis/services/report.service";
 import { getAuthToken } from "@/apis/config/apiClient";
-import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
+import { LinearGradient } from "expo-linear-gradient";
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+const VIOLET = "#8b5cf6";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getRateColor(rate: number) {
+  if (rate >= 90) return "#10b981";
+  if (rate >= 75) return "#f59e0b";
+  return "#ef4444";
+}
+function getRateBg(rate: number) {
+  if (rate >= 90) return "#ecfdf5";
+  if (rate >= 75) return "#fffbeb";
+  return "#fef2f2";
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+/** Visual bar chart row cho từng lớp học */
+function ClassBarRow({
+  cls,
+  maxRate,
+}: {
+  cls: ClassAttendanceReport;
+  maxRate: number;
+}) {
+  const rate = Math.round(cls.attendanceRate);
+  const rateColor = getRateColor(rate);
+  const barWidth = maxRate > 0 ? (rate / 100) * 100 : 0;
+
+  return (
+    <View
+      style={{
+        backgroundColor: "#fff",
+        borderRadius: 14,
+        padding: 14,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: "#f1f5f9",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+        elevation: 1,
+      }}
+    >
+      {/* Header */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 10,
+        }}
+      >
+        <View style={{ flex: 1, marginRight: 8 }}>
+          <Text
+            style={{ fontSize: 14, fontWeight: "700", color: "#1e293b" }}
+            numberOfLines={1}
+          >
+            {cls.className}
+          </Text>
+          <Text style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+            {cls.classCode} • {cls.totalStudents} SV • {cls.totalSessions} buổi
+          </Text>
+        </View>
+        {/* Rate badge */}
+        <View
+          style={{
+            backgroundColor: getRateBg(rate),
+            borderRadius: 10,
+            paddingHorizontal: 10,
+            paddingVertical: 5,
+            borderWidth: 1.5,
+            borderColor: rateColor + "35",
+          }}
+        >
+          <Text style={{ fontSize: 14, fontWeight: "800", color: rateColor }}>
+            {rate}%
+          </Text>
+        </View>
+      </View>
+
+      {/* Bar */}
+      <View
+        style={{
+          height: 7,
+          backgroundColor: "#e2e8f0",
+          borderRadius: 4,
+          overflow: "hidden",
+        }}
+      >
+        <View
+          style={{
+            height: "100%",
+            width: `${Math.min(barWidth, 100)}%`,
+            backgroundColor: rateColor,
+            borderRadius: 4,
+          }}
+        />
+      </View>
+
+      {/* Mini stats */}
+      <View style={{ flexDirection: "row", gap: 12, marginTop: 10 }}>
+        {[
+          {
+            label: "Có mặt",
+            value: cls.totalPresent,
+            color: "#10b981",
+            icon: "checkmark-circle" as const,
+          },
+          {
+            label: "Muộn",
+            value: cls.totalLate,
+            color: "#f59e0b",
+            icon: "time" as const,
+          },
+          {
+            label: "Vắng",
+            value: cls.totalAbsent,
+            color: "#ef4444",
+            icon: "close-circle" as const,
+          },
+        ].map((s) => (
+          <View
+            key={s.label}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+          >
+            <Ionicons name={s.icon} size={13} color={s.color} />
+            <Text style={{ fontSize: 12, color: s.color, fontWeight: "600" }}>
+              {s.value}
+            </Text>
+            <Text style={{ fontSize: 11, color: "#94a3b8" }}>{s.label}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function ReportsScreen() {
   const isWeb = Platform.OS === "web";
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
-  const { showToast } = useToast();
-
-  const contentMaxWidth = isDesktop ? 900 : "100%";
-  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const isMobile = width < 768;
+  const { toast, showToast, hideToast } = useToast();
+
+  const contentMaxWidth = isDesktop ? 960 : "100%";
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
+
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+  const HEADER_MAX_HEIGHT = isDesktop ? 280 : isMobile ? 320 : 290;
+
+  // Chỉ cuộn gom header ở mobile, còn desktop/tablet set cứng = MAX_HEIGHT
+  const HEADER_MIN_HEIGHT = isMobile ? 120 : HEADER_MAX_HEIGHT;
+  const HEADER_SCROLL_DISTANCE = Math.max(
+    1,
+    HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT,
+  );
+
+  const headerHeight = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+        extrapolate: "clamp",
+      })
+    : HEADER_MAX_HEIGHT;
+
+  const contentOpacity = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+        outputRange: [1, 0.2, 0],
+        extrapolate: "clamp",
+      })
+    : 1;
+
+  const contentTranslateY = isMobile
+    ? scrollY.interpolate({
+        inputRange: [0, HEADER_SCROLL_DISTANCE],
+        outputRange: [0, -10],
+        extrapolate: "clamp",
+      })
+    : 0;
 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
-  const [stats, setStats] = useState({
-    totalSessions: 0,
-    present: 0,
-    late: 0,
-    absent: 0,
-  });
+  const [summary, setSummary] = useState<TeacherSummary | null>(null);
 
   useEffect(() => {
-    loadReportData();
+    loadData();
   }, []);
 
-  const loadReportData = async () => {
+  const loadData = async (isRefresh = false) => {
     try {
-      setLoading(true);
-      const teacherId = await getTeacherIdFromToken();
-      
-      if (!teacherId) {
-        showToast("Không tìm thấy thông tin giảng viên", "error");
-        setLoading(false);
-        return;
-      }
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
 
-      // Lấy tất cả sessions của giảng viên (cả ACTIVE và COMPLETED)
-      const allSessions = await attendanceService.getSessions({ teacherId });
-      
-      // Lấy tất cả records của các sessions này
-      let totalPresent = 0;
-      let totalLate = 0;
-      let totalAbsent = 0;
-      let totalSessions = allSessions.length;
-
-      for (const session of allSessions) {
-        try {
-          const records = await attendanceService.getRecords({ sessionId: session.id });
-          
-          records.forEach((record: any) => {
-            if (record.status === "PRESENT") {
-              totalPresent++;
-            } else if (record.status === "LATE") {
-              totalLate++;
-            } else if (record.status === "ABSENT") {
-              totalAbsent++;
-            }
-          });
-        } catch (error) {
-          console.error(`Error loading records for session ${session.id}:`, error);
-        }
-      }
-
-      setStats({
-        totalSessions,
-        present: totalPresent,
-        late: totalLate,
-        absent: totalAbsent,
-      });
+      const data = await reportService.getTeacherSummary();
+      setSummary(data);
     } catch (error: any) {
-      console.error("Error loading report data:", error);
-      showToast("Không thể tải dữ liệu báo cáo", "error");
+      console.error("Error loading report:", error);
+      showToast(
+        error?.response?.data?.message || "Không thể tải dữ liệu báo cáo",
+        "error",
+      );
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -133,7 +278,8 @@ export default function ReportsScreen() {
         const canShare = await Sharing.isAvailableAsync();
         if (canShare) {
           await Sharing.shareAsync(fileUri, {
-            mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            mimeType:
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             dialogTitle: "Lưu file Excel",
           });
           showToast("Đã mở hộp thoại lưu/chia sẻ file", "success");
@@ -149,398 +295,818 @@ export default function ReportsScreen() {
     }
   };
 
-  const statsData = [
-    { 
-      value: stats.totalSessions.toString(), 
-      label: "Tổng buổi", 
-      color: "#3FA9F5", 
-      bgColor: "#EFF6FF" 
-    },
-    { 
-      value: stats.present.toString(), 
-      label: "Có mặt", 
-      color: "#10B981", 
-      bgColor: "#ECFDF5" 
-    },
-    { 
-      value: stats.late.toString(), 
-      label: "Đi muộn", 
-      color: "#F59E0B", 
-      bgColor: "#FEF3C7" 
-    },
-    { 
-      value: stats.absent.toString(), 
-      label: "Vắng", 
-      color: "#EF4444", 
-      bgColor: "#FEE2E2" 
-    },
-  ];
+  // Derived
+  const rate = Math.round(summary?.averageAttendanceRate ?? 0);
+  const rateColor = getRateColor(rate);
+  const classReports = summary?.classReports ?? [];
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#F9FAFB" }}
-      edges={["top"]}
-    >
-      <StatusBar style="dark" />
+    <View style={{ flex: 1, backgroundColor: "#f8fafc" }}>
+      <StatusBar style="light" />
 
-      <ScrollView
-        contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
-        showsVerticalScrollIndicator={false}
+      {/* ── Parallax Animated Hero Header ── */}
+      <Animated.View
+        style={{
+          paddingTop: isMobile ? 48 : 64,
+          paddingHorizontal: paddingHorizontal,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: headerHeight,
+          zIndex: 10,
+          overflow: "hidden",
+          shadowColor: "#3B82F6",
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.32,
+          shadowRadius: 16,
+          elevation: 6,
+        }}
       >
+        <LinearGradient
+          colors={["#1E3A8A", "#3B82F6"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+        />
         <View
           style={{
             maxWidth: contentMaxWidth,
             width: "100%",
             alignSelf: "center",
+            flex: 1,
           }}
         >
-          {/* Summary Card */}
           <View
             style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: 16,
-              padding: 24,
-              marginBottom: 24,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 3,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 14,
+              marginBottom: 12,
             }}
           >
-            <Text
-              style={{
-                fontSize: 20,
-                lineHeight: 28,
-                fontWeight: "bold",
-                color: "#111827",
-                marginBottom: 20,
-              }}
-            >
-              Tổng quan học kỳ
-            </Text>
-            {loading ? (
-              <View
-                style={{
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingVertical: 48,
-                }}
-              >
-                <ActivityIndicator size="large" color="#3FA9F5" />
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: "#6B7280",
-                    marginTop: 16,
-                  }}
-                >
-                  Đang tải dữ liệu...
-                </Text>
-              </View>
-            ) : (
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  marginHorizontal: -8,
-                }}
-              >
-                {statsData.map((stat, index) => (
-                  <View
-                    key={index}
-                    style={{
-                      width: isMobile ? "50%" : "25%",
-                      paddingHorizontal: 8,
-                      marginBottom: isMobile ? 16 : 0,
-                    }}
-                  >
-                    <View
-                      style={{
-                        backgroundColor: stat.bgColor,
-                        borderRadius: 12,
-                        padding: 16,
-                        alignItems: "center",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 32,
-                          lineHeight: 40,
-                          fontWeight: "bold",
-                          color: stat.color,
-                          marginBottom: 4,
-                        }}
-                      >
-                        {stat.value}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          lineHeight: 20,
-                          color: "#6B7280",
-                          textAlign: "center",
-                        }}
-                      >
-                        {stat.label}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-
-          {/* Chart Placeholder */}
-          <View
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: 16,
-              padding: 24,
-              marginBottom: 24,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 3,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 18,
-                lineHeight: 28,
-                fontWeight: "bold",
-                color: "#111827",
-                marginBottom: 16,
-              }}
-            >
-              Biểu đồ chuyên cần
-            </Text>
             <View
               style={{
-                backgroundColor: "#F9FAFB",
-                borderRadius: 12,
-                padding: 48,
-                height: 250,
+                width: 52,
+                height: 52,
+                borderRadius: 16,
+                backgroundColor: "rgba(255,255,255,0.2)",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <View
-                style={{
-                  width: 64,
-                  height: 64,
-                  backgroundColor: "#E5E7EB",
-                  borderRadius: 16,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 12,
-                }}
-              >
-                <Text
-                  style={{ fontSize: 32, lineHeight: 40, color: "#6B7280" }}
-                >
-                  ☰
-                </Text>
-              </View>
+              <Ionicons name="bar-chart" size={28} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
               <Text
                 style={{
-                  fontSize: 14,
-                  lineHeight: 20,
-                  color: "#6B7280",
-                  textAlign: "center",
+                  fontSize: 22,
+                  fontWeight: "800",
+                  color: "#fff",
+                  marginBottom: 2,
                 }}
               >
-                Biểu đồ thống kê sẽ hiển thị ở đây
+                Báo cáo & Thống kê
+              </Text>
+              <Animated.Text
+                style={{
+                  fontSize: 13,
+                  color: "rgba(255,255,255,0.85)",
+                  opacity: contentOpacity,
+                }}
+              >
+                {summary?.totalClasses ?? 0} lớp • {summary?.totalStudents ?? 0}{" "}
+                sinh viên
+              </Animated.Text>
+            </View>
+            <View
+              style={{
+                backgroundColor: "rgba(255,255,255,0.2)",
+                borderRadius: 14,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                alignItems: "center",
+                borderWidth: 1.5,
+                borderColor: "rgba(255,255,255,0.35)",
+              }}
+            >
+              <Text style={{ fontSize: 20, fontWeight: "800", color: "#fff" }}>
+                {rate}%
               </Text>
             </View>
           </View>
 
-          {/* Export Options */}
-          <View
+          <Animated.View
             style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: 16,
-              padding: 24,
-              marginBottom: 24,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 3,
+              opacity: contentOpacity,
+              transform: [{ translateY: contentTranslateY }],
             }}
           >
-            <Text
-              style={{
-                fontSize: 18,
-                lineHeight: 28,
-                fontWeight: "bold",
-                color: "#111827",
-                marginBottom: 16,
-              }}
-            >
-              Xuất báo cáo
-            </Text>
-
-            <TouchableOpacity
-              style={{
-                backgroundColor: "#D1FAE5",
-                borderWidth: 2,
-                borderColor: "#A7F3D0",
-                borderRadius: 12,
-                padding: 16,
-                marginBottom: 12,
-              }}
-              activeOpacity={0.7}
-              onPress={handleExportExcel}
-              disabled={exportingExcel}
-            >
+            <View style={{ marginBottom: 16, marginTop: 4 }}>
               <View
                 style={{
                   flexDirection: "row",
-                  alignItems: "center",
                   justifyContent: "space-between",
+                  marginBottom: 6,
                 }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      backgroundColor: "#D1FAE5",
-                      borderRadius: 8,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginRight: 12,
-                    }}
-                  >
-                    {exportingExcel ? (
-                      <ActivityIndicator size="small" color="#10B981" />
-                    ) : (
-                      <Text
-                        style={{
-                          fontSize: 20,
-                          lineHeight: 24,
-                          fontWeight: "bold",
-                          color: "#10B981",
-                        }}
-                      >
-                        =
-                      </Text>
-                    )}
-                  </View>
-                  <View>
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        lineHeight: 24,
-                        fontWeight: "600",
-                        color: "#111827",
-                      }}
-                    >
-                      Xuất file Excel
-                    </Text>
-                    <Text
-                      style={{ fontSize: 14, lineHeight: 20, color: "#6B7280" }}
-                    >
-                      Danh sách điểm danh chi tiết (theo lớp + theo sinh viên)
-                    </Text>
-                  </View>
-                </View>
                 <Text
                   style={{
-                    color: "#047857",
-                    fontSize: 14,
-                    lineHeight: 20,
+                    fontSize: 12,
                     fontWeight: "600",
+                    color: "rgba(255,255,255,0.85)",
                   }}
                 >
-                  {exportingExcel ? "Đang tải..." : "Tải về"}
+                  Tỷ lệ điểm danh trung bình
+                </Text>
+                <Text
+                  style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}
+                >
+                  {rate}%
                 </Text>
               </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={{
-                backgroundColor: "#FEE2E2",
-                borderWidth: 2,
-                borderColor: "#FECACA",
-                borderRadius: 12,
-                padding: 16,
-              }}
-              activeOpacity={0.7}
-            >
               <View
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  height: 8,
+                  backgroundColor: "rgba(255,255,255,0.2)",
+                  borderRadius: 4,
+                  overflow: "hidden",
                 }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      backgroundColor: "#FEE2E2",
-                      borderRadius: 8,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginRight: 12,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 20,
-                        lineHeight: 24,
-                        fontWeight: "bold",
-                        color: "#EF4444",
-                      }}
-                    >
-                      P
-                    </Text>
-                  </View>
-                  <View>
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        lineHeight: 24,
-                        fontWeight: "600",
-                        color: "#111827",
-                      }}
-                    >
-                      Xuất file PDF
-                    </Text>
-                    <Text
-                      style={{ fontSize: 14, lineHeight: 20, color: "#6B7280" }}
-                    >
-                      Báo cáo tổng hợp
-                    </Text>
-                  </View>
-                </View>
-                <Text
+                <View
                   style={{
-                    color: "#DC2626",
-                    fontSize: 14,
-                    lineHeight: 20,
-                    fontWeight: "600",
+                    height: "100%",
+                    width: `${Math.min(rate, 100)}%`,
+                    backgroundColor:
+                      rate >= 90
+                        ? "#34d399"
+                        : rate >= 75
+                          ? "#fbbf24"
+                          : "#f87171",
+                    borderRadius: 4,
+                  }}
+                />
+              </View>
+            </View>
+
+            <View
+              style={{
+                flexDirection: "row",
+                backgroundColor: "rgba(255,255,255,0.15)",
+                borderRadius: 14,
+                paddingVertical: 12,
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.2)",
+              }}
+            >
+              {[
+                {
+                  label: "Buổi học",
+                  value: String(summary?.totalSessions ?? 0),
+                  icon: "calendar" as const,
+                },
+                {
+                  label: "Có mặt",
+                  value: String(summary?.totalPresent ?? 0),
+                  icon: "checkmark-circle" as const,
+                },
+                {
+                  label: "Muộn",
+                  value: String(summary?.totalLate ?? 0),
+                  icon: "time" as const,
+                },
+                {
+                  label: "Vắng",
+                  value: String(summary?.totalAbsent ?? 0),
+                  icon: "close-circle" as const,
+                },
+              ].map((item, idx) => (
+                <View
+                  key={idx}
+                  style={{
+                    flex: 1,
+                    alignItems: "center",
+                    borderLeftWidth: idx > 0 ? 1 : 0,
+                    borderLeftColor: "rgba(255,255,255,0.25)",
+                    gap: 4,
                   }}
                 >
-                  Tải về
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+                  <Ionicons
+                    name={item.icon}
+                    size={15}
+                    color="rgba(255,255,255,0.7)"
+                  />
+                  <Text
+                    style={{ fontSize: 18, fontWeight: "800", color: "#fff" }}
+                  >
+                    {item.value}
+                  </Text>
+                  <Text
+                    style={{ fontSize: 10, color: "rgba(255,255,255,0.7)" }}
+                  >
+                    {item.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </Animated.View>
         </View>
-      </ScrollView>
+      </Animated.View>
 
-      {/* Toast Notification */}
-      <Toast
-        visible={false}
-        message=""
-        type="success"
-        onHide={() => {}}
-      />
-    </SafeAreaView>
+      {loading ? (
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" color={VIOLET} />
+          <Text style={{ fontSize: 13, color: "#94a3b8", marginTop: 12 }}>
+            Đang tải báo cáo...
+          </Text>
+        </View>
+      ) : (
+        <Animated.ScrollView
+          contentContainerStyle={{
+            paddingHorizontal,
+            paddingTop: HEADER_MAX_HEIGHT + 16,
+            paddingBottom: 40,
+          }}
+          showsVerticalScrollIndicator={false}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false },
+          )}
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadData(true)}
+              tintColor={VIOLET}
+            />
+          }
+        >
+          <View
+            style={{
+              maxWidth: contentMaxWidth,
+              width: "100%",
+              alignSelf: "center",
+            }}
+          >
+            {/* ── Charts Section (Row on Desktop) ── */}
+            <View
+              style={{
+                flexDirection: isDesktop ? "row" : "column",
+                gap: 20,
+                marginBottom: 20,
+              }}
+            >
+              {/* ── Pie Chart: Tỷ lệ chuyên cần (Tổng quan) ── */}
+              <View
+                style={{
+                  flex: isDesktop ? 1 : undefined,
+                  backgroundColor: "#fff",
+                  borderRadius: 18,
+                  padding: 18,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.06,
+                  shadowRadius: 10,
+                  elevation: 2,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 16,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      backgroundColor: "#f59e0b18",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Ionicons name="pie-chart" size={18} color="#f59e0b" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: "700",
+                        color: "#1e293b",
+                      }}
+                    >
+                      Tổng quan
+                    </Text>
+                  </View>
+                </View>
+
+                {summary && summary.totalSessions > 0 ? (
+                  <View style={{ alignItems: "center" }}>
+                    <PieChart
+                      data={[
+                        {
+                          name: "Có mặt",
+                          population: summary.totalPresent,
+                          color: "#10b981",
+                          legendFontColor: "#475569",
+                          legendFontSize: 12,
+                        },
+                        {
+                          name: "Đi muộn",
+                          population: summary.totalLate,
+                          color: "#f59e0b",
+                          legendFontColor: "#475569",
+                          legendFontSize: 12,
+                        },
+                        {
+                          name: "Vắng",
+                          population: summary.totalAbsent,
+                          color: "#ef4444",
+                          legendFontColor: "#475569",
+                          legendFontSize: 12,
+                        },
+                      ]}
+                      width={isDesktop ? (960 - 20) / 3 - 36 + 10 : width - 68}
+                      height={180}
+                      chartConfig={{
+                        color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                      }}
+                      accessor={"population"}
+                      backgroundColor={"transparent"}
+                      paddingLeft={isMobile ? "0" : "10"}
+                      center={[0, 0]}
+                      absolute
+                    />
+                  </View>
+                ) : (
+                  <Text
+                    style={{
+                      textAlign: "center",
+                      color: "#94a3b8",
+                      marginVertical: 20,
+                    }}
+                  >
+                    Chưa có dữ liệu
+                  </Text>
+                )}
+              </View>
+
+              {/* ── Bar Chart: Điểm danh theo lớp ── */}
+              <View
+                style={{
+                  flex: isDesktop ? 2 : undefined,
+                  backgroundColor: "#fff",
+                  borderRadius: 18,
+                  padding: 18,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.06,
+                  shadowRadius: 10,
+                  elevation: 2,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 16,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      backgroundColor: VIOLET + "18",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name="bar-chart-outline"
+                      size={18}
+                      color={VIOLET}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: "700",
+                        color: "#1e293b",
+                      }}
+                    >
+                      Tỷ lệ chuyên cần các lớp
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#94a3b8" }}>
+                      Tỷ lệ % điểm danh trung bình của từng lớp
+                    </Text>
+                  </View>
+                </View>
+
+                {classReports.length > 0 ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <BarChart
+                      data={{
+                        labels: classReports.map((c) =>
+                          c.classCode.substring(0, 8),
+                        ),
+                        datasets: [
+                          {
+                            data: classReports.map((c) =>
+                              Math.round(c.attendanceRate),
+                            ),
+                          },
+                        ],
+                      }}
+                      width={Math.max(
+                        isDesktop ? ((960 - 20) / 3) * 2 - 36 : width - 68,
+                        classReports.length * 60,
+                      )}
+                      height={220}
+                      yAxisLabel=""
+                      yAxisSuffix="%"
+                      fromZero={true}
+                      chartConfig={{
+                        backgroundColor: "#ffffff",
+                        backgroundGradientFrom: "#ffffff",
+                        backgroundGradientFromOpacity: 0,
+                        backgroundGradientTo: "#ffffff",
+                        backgroundGradientToOpacity: 0,
+                        fillShadowGradient: VIOLET,
+                        fillShadowGradientOpacity: 1,
+                        decimalPlaces: 0,
+                        color: (opacity = 1) =>
+                          `rgba(139, 92, 246, ${opacity})`,
+                        labelColor: (opacity = 1) =>
+                          `rgba(100, 116, 139, ${opacity})`,
+                        style: { borderRadius: 16 },
+                        barPercentage: 0.6,
+                      }}
+                      style={{
+                        marginVertical: 8,
+                        borderRadius: 16,
+                      }}
+                      showValuesOnTopOfBars={true}
+                    />
+                  </ScrollView>
+                ) : (
+                  <Text
+                    style={{
+                      textAlign: "center",
+                      color: "#94a3b8",
+                      marginVertical: 20,
+                    }}
+                  >
+                    Chưa có dữ liệu
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            {/* ── Danh sách chi tiết từng lớp ───────────────────────────────── */}
+            <View
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 18,
+                padding: 18,
+                marginBottom: 20,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 10,
+                elevation: 2,
+              }}
+            >
+              {/* Section header */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 16,
+                }}
+              >
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    backgroundColor: VIOLET + "18",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name="list" size={18} color={VIOLET} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: "700",
+                      color: "#1e293b",
+                    }}
+                  >
+                    Chi tiết điểm danh từng lớp
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#94a3b8" }}>
+                    Tỷ lệ chuyên cần từng lớp học
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    backgroundColor: VIOLET + "18",
+                    borderRadius: 8,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "700",
+                      color: VIOLET,
+                    }}
+                  >
+                    {classReports.length} lớp
+                  </Text>
+                </View>
+              </View>
+
+              {classReports.length === 0 ? (
+                <View style={{ alignItems: "center", paddingVertical: 40 }}>
+                  <Ionicons name="school-outline" size={48} color="#cbd5e1" />
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: "#94a3b8",
+                      marginTop: 12,
+                      textAlign: "center",
+                    }}
+                  >
+                    Chưa có dữ liệu lớp học
+                  </Text>
+                </View>
+              ) : (
+                classReports.map((cls) => (
+                  <ClassBarRow key={cls.classId} cls={cls} maxRate={100} />
+                ))
+              )}
+            </View>
+
+            {/* ── At-risk legend ────────────────────────────────────────── */}
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 10,
+                marginBottom: 20,
+                flexWrap: "wrap",
+              }}
+            >
+              {[
+                { label: "≥ 90%: Tốt", color: "#10b981", bg: "#ecfdf5" },
+                { label: "75–89%: Khá", color: "#f59e0b", bg: "#fffbeb" },
+                {
+                  label: "< 75%: Cần cải thiện",
+                  color: "#ef4444",
+                  bg: "#fef2f2",
+                },
+              ].map((l) => (
+                <View
+                  key={l.label}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    backgroundColor: l.bg,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: l.color + "30",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: l.color,
+                    }}
+                  />
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: "600",
+                      color: l.color,
+                    }}
+                  >
+                    {l.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            {/* ── Export Card ───────────────────────────────────────────── */}
+            <View
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 18,
+                padding: 18,
+                marginBottom: 16,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 10,
+                elevation: 2,
+              }}
+            >
+              {/* Section header */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 16,
+                }}
+              >
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    backgroundColor: "#10b98118",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name="download" size={18} color="#10b981" />
+                </View>
+                <View>
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: "700",
+                      color: "#1e293b",
+                    }}
+                  >
+                    Xuất báo cáo
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#94a3b8" }}>
+                    Tải về file báo cáo điểm danh
+                  </Text>
+                </View>
+              </View>
+
+              {/* Excel export button */}
+              <TouchableOpacity
+                activeOpacity={0.75}
+                onPress={handleExportExcel}
+                disabled={exportingExcel}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#f0fdf4",
+                  borderRadius: 14,
+                  padding: 16,
+                  marginBottom: 10,
+                  borderWidth: 1.5,
+                  borderColor: "#bbf7d0",
+                }}
+              >
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    backgroundColor: "#dcfce7",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 14,
+                  }}
+                >
+                  {exportingExcel ? (
+                    <ActivityIndicator size="small" color="#10b981" />
+                  ) : (
+                    <Ionicons name="document-text" size={22} color="#10b981" />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: "700",
+                      color: "#15803d",
+                      marginBottom: 2,
+                    }}
+                  >
+                    Xuất file Excel
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#4ade80" }}>
+                    Danh sách điểm danh chi tiết theo lớp & sinh viên
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    backgroundColor: "#10b981",
+                    borderRadius: 8,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "700",
+                      color: "#fff",
+                    }}
+                  >
+                    {exportingExcel ? "Đang tải..." : "Tải về"}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* PDF button (placeholder, disabled) */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#fff5f5",
+                  borderRadius: 14,
+                  padding: 16,
+                  borderWidth: 1.5,
+                  borderColor: "#fecdd3",
+                  opacity: 0.6,
+                }}
+              >
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    backgroundColor: "#ffe4e6",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 14,
+                  }}
+                >
+                  <Ionicons name="document" size={22} color="#ef4444" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: "700",
+                      color: "#991b1b",
+                      marginBottom: 2,
+                    }}
+                  >
+                    Xuất file PDF
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#fca5a5" }}>
+                    Báo cáo tổng hợp (sắp ra mắt)
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    backgroundColor: "#f1f5f9",
+                    borderRadius: 8,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "700",
+                      color: "#94a3b8",
+                    }}
+                  >
+                    Sắp ra mắt
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </Animated.ScrollView>
+      )}
+
+      {toast && (
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          onHide={hideToast}
+        />
+      )}
+    </View>
   );
 }
