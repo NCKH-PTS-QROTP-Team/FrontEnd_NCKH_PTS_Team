@@ -17,7 +17,7 @@ import Tabs from "@/components/Tabs";
 import WeeklyCalendar from "@/components/WeeklyCalendar";
 import { Colors } from "@/constants/colors";
 import { getSlotIndexFromStartTime } from "@/constants/scheduleSlots";
-import { scheduleService, attendanceService } from "@/apis";
+import { scheduleService, attendanceService, authService } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
 import type { Schedule } from "@/apis/services/schedule.service";
@@ -95,10 +95,19 @@ export default function TeacherDashboardScreen() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const teacherId = await getTeacherIdFromToken();
+      let teacherId = await getTeacherIdFromToken();
 
       if (!teacherId) {
-        console.warn("No teacherId found, using empty data");
+        // Fallback: take teacherId from /users/me (JWT decoding might miss claim)
+        console.warn(
+          "No teacherId found in token, falling back to /users/me",
+        );
+        const tokenUser = await authService.getCurrentUser().catch(() => null);
+        teacherId = tokenUser?.teacherId ?? null;
+      }
+
+      if (!teacherId) {
+        console.warn("No teacherId available, using empty dashboard data");
         setLoading(false);
         return;
       }
@@ -192,7 +201,11 @@ export default function TeacherDashboardScreen() {
       "friday",
       "saturday",
     ];
-    return days[dayOfWeek];
+    // Backend convention: 2=Mon ... 7=Sat, 8=Sun (FE expects day names)
+    if (dayOfWeek === 8) return "sunday";
+    // For Mon..Sat, convert 2..7 -> index 1..6 in `days`
+    const idx = dayOfWeek - 1;
+    return days[idx] ?? "monday";
   };
 
   // Format week range
