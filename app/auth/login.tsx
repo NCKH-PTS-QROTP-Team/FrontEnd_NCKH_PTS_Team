@@ -8,10 +8,12 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
+  Image,
+  useWindowDimensions,
 } from "react-native";
-import { Image, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { Ionicons } from "@expo/vector-icons";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import Input from "@/components/Input";
 import Toast, { useToast } from "@/components/Toast";
@@ -24,6 +26,7 @@ export default function LoginScreen() {
   const { width } = useWindowDimensions();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [usernameError, setUsernameError] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -223,9 +226,6 @@ export default function LoginScreen() {
               }}
               placeholder="Nhập tên đăng nhập"
               error={usernameError || undefined}
-              success={
-                username.trim().length > 0 && !usernameError ? true : undefined
-              }
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="next"
@@ -240,14 +240,23 @@ export default function LoginScreen() {
               }}
               placeholder="Nhập mật khẩu"
               error={passwordError || undefined}
-              success={
-                password.trim().length > 0 && !passwordError ? true : undefined
-              }
-              secureTextEntry
+              secureTextEntry={!showPassword}
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="done"
               onSubmitEditing={handleLogin}
+              rightIcon={
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <Ionicons
+                    name={showPassword ? "eye-outline" : "eye-off-outline"}
+                    size={20}
+                    color={Colors.textLight}
+                  />
+                </TouchableOpacity>
+              }
             />
 
             <PrimaryButton

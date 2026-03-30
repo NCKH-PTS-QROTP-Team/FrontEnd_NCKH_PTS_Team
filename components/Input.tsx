@@ -8,9 +8,10 @@ interface InputProps extends TextInputProps {
   success?: boolean;
   helperText?: string;
   leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
 }
 
-export default function Input({ label, error, success, helperText, leftIcon, ...props }: InputProps) {
+export default function Input({ label, error, success, helperText, leftIcon, rightIcon, ...props }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
 
   const getBorderColor = () => {
@@ -30,7 +31,7 @@ export default function Input({ label, error, success, helperText, leftIcon, ...
   return (
     <View style={{ marginBottom: 16 }}>
       {label ? (
-        <Text 
+        <Text
           style={{ fontSize: 14, fontWeight: '500', color: Colors.textHeading, marginBottom: 8, lineHeight: 21 }}
         >
           {label}
@@ -40,7 +41,7 @@ export default function Input({ label, error, success, helperText, leftIcon, ...
         <TextInput
           accessible={true}
           accessibilityLabel={label || props.placeholder}
-          accessibilityState={{ 
+          accessibilityState={{
             disabled: props.editable === false,
           }}
           style={[
@@ -50,7 +51,7 @@ export default function Input({ label, error, success, helperText, leftIcon, ...
               borderWidth: 2,
               borderColor: getBorderColor(),
               paddingLeft: leftIcon ? 44 : 16,
-              paddingRight: 16,
+              paddingRight: rightIcon ? 44 : (success || error ? 40 : 16),
               color: Colors.text,
               backgroundColor: Colors.white,
               lineHeight: 24,
@@ -90,7 +91,7 @@ export default function Input({ label, error, success, helperText, leftIcon, ...
           </View>
         ) : null}
         {/* Success Icon */}
-        {success && !error ? (
+        {success && !error && !rightIcon ? (
           <View
             style={{
               position: 'absolute',
@@ -116,7 +117,7 @@ export default function Input({ label, error, success, helperText, leftIcon, ...
           </View>
         ) : null}
         {/* Error Icon */}
-        {error ? (
+        {error && !rightIcon ? (
           <View
             style={{
               position: 'absolute',
@@ -139,6 +140,20 @@ export default function Input({ label, error, success, helperText, leftIcon, ...
             >
               <Text style={{ color: Colors.white, fontSize: 14, fontWeight: 'bold' }}>!</Text>
             </View>
+          </View>
+        ) : null}
+        {/* Custom Right Icon */}
+        {rightIcon ? (
+          <View
+            style={{
+              position: 'absolute',
+              right: 12,
+              top: 0,
+              bottom: 0,
+              justifyContent: 'center',
+            }}
+          >
+            {rightIcon}
           </View>
         ) : null}
       </View>

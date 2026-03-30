@@ -110,13 +110,13 @@ export default function StudentLayout() {
         ),
       },
       {
-        key: "/student/register-face",
-        label: "Đăng ký Face",
+        key: "/student/history",
+        label: "Lịch sử",
         icon: (
-          <UserIcon
+          <ScrollIcon
             size={24}
             color={
-              pathname === "/student/register-face"
+              pathname === "/student/history"
                 ? Colors.primary
                 : Colors.textSecondary
             }

@@ -40,6 +40,11 @@ export interface UpdateUserRequest {
   isActive?: boolean;
 }
 
+export interface UpdatePasswordRequest {
+  oldPassword?: string;
+  newPassword?: string;
+}
+
 export interface AssignStudentToClassRequest {
   studentId: string;
   classId: string;
@@ -80,6 +85,13 @@ export const userService = {
   updateUser: async (id: string, request: UpdateUserRequest): Promise<User> => {
     const response = await apiClient.put<ApiResponse<User>>(`/users/${id}`, request);
     return response.data.data;
+  },
+  
+  /**
+   * Update password
+   */
+  updatePassword: async (id: string, request: UpdatePasswordRequest): Promise<void> => {
+    await apiClient.put(`/users/${id}/password`, request);
   },
   
   /**

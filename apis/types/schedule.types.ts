@@ -12,6 +12,8 @@ export interface ScheduleResponse {
     subjectName: string | null;
     teacherId: string | null;
     teacherName: string | null;
+    scheduleType?: 'CLASS' | 'EXAM';
+    pattern?: 'RECURRING_WEEKLY' | 'ONE_TIME';
     /** 2–8, auto-derived from startDate */
     dayOfWeek: number | null;
     /** HH:mm */
@@ -19,6 +21,8 @@ export interface ScheduleResponse {
     /** HH:mm */
     endTime: string | null;
     room: string | null;
+    /** yyyy-MM-dd – single-occurrence date (one-time schedule) */
+    date?: string | null;
     /** yyyy-MM-dd – first active date */
     startDate?: string | null;
     /** yyyy-MM-dd – last active date (null = open-ended) */
@@ -32,13 +36,17 @@ export interface CreateScheduleRequest {
     classId: string;
     subjectId?: string;
     teacherId?: string;
+    scheduleType?: 'CLASS' | 'EXAM';
+    pattern?: 'RECURRING_WEEKLY' | 'ONE_TIME';
     /** Auto-computed by backend from startDate; can omit */
     dayOfWeek?: number;
     startTime: string;
     endTime: string;
     room?: string;
+    /** yyyy-MM-dd: one-time occurrence date */
+    date?: string;
     /** yyyy-MM-dd: first lesson date — backend derives dayOfWeek from this */
-    startDate: string;
+    startDate?: string;
     /** yyyy-MM-dd: last lesson date (optional) */
     endDate?: string;
 }
@@ -47,10 +55,13 @@ export interface UpdateScheduleRequest {
     classId?: string;
     subjectId?: string;
     teacherId?: string;
+    scheduleType?: 'CLASS' | 'EXAM';
+    pattern?: 'RECURRING_WEEKLY' | 'ONE_TIME';
     dayOfWeek?: number;
     startTime?: string;
     endTime?: string;
     room?: string;
+    date?: string;
     startDate?: string;
     endDate?: string;
 }
@@ -63,4 +74,30 @@ export interface ExcludeScheduleRequest {
     rangeStart?: string;
     /** End of date range to cancel */
     rangeEnd?: string;
+}
+
+export interface BulkExcludeRangeRequest {
+    scheduleIds?: string[];
+    classId?: string;
+    subjectId?: string;
+    teacherId?: string;
+    scheduleType?: 'CLASS' | 'EXAM';
+    rangeStart: string;
+    rangeEnd: string;
+}
+
+export interface BulkInsertScheduleRequest {
+    classId: string;
+    subjectId: string;
+    teacherId: string;
+    scheduleType?: 'CLASS' | 'EXAM';
+    pattern?: 'RECURRING_WEEKLY' | 'ONE_TIME';
+    room?: string;
+    startTime: string;
+    endTime: string;
+    dayOfWeek: number;
+    rangeStart: string;
+    rangeEnd: string;
+    frequency?: 'WEEKLY' | 'MONTHLY';
+    interval?: number;
 }

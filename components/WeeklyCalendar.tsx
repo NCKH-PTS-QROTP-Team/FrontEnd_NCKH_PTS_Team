@@ -1,14 +1,19 @@
 import React from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { View, Text, TouchableOpacity } from "react-native";
 
 interface WeeklyCalendarProps {
   selectedDate?: Date;
   onDateSelect?: (date: Date) => void;
+  onPrevWeek?: () => void;
+  onNextWeek?: () => void;
 }
 
 export default function WeeklyCalendar({
   selectedDate,
   onDateSelect,
+  onPrevWeek,
+  onNextWeek,
 }: WeeklyCalendarProps) {
   const today = new Date();
   const currentSelectedDate = selectedDate || today;
@@ -93,6 +98,55 @@ export default function WeeklyCalendar({
         elevation: 3,
       }}
     >
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 12,
+        }}
+      >
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={onPrevWeek}
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: "#EFF6FF",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Ionicons name="chevron-back" size={16} color="#3FA9F5" />
+        </TouchableOpacity>
+
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: "700",
+            color: "#111827",
+          }}
+        >
+          Tuần hiện tại
+        </Text>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={onNextWeek}
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: "#EFF6FF",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Ionicons name="chevron-forward" size={16} color="#3FA9F5" />
+        </TouchableOpacity>
+      </View>
+
       <View
         style={{
           flexDirection: "row",
