@@ -1,16 +1,7 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  useWindowDimensions,
-  TextInput,
-  Platform,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, ScrollView, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { Colors } from "@/constants/colors";
 import Toast, { useToast } from "@/components/Toast";
 import { authService } from "@/apis";
 import ProfileAndSettings from "@/components/ProfileAndSettings";
@@ -56,7 +47,7 @@ export default function ProfileScreen() {
       >
         <View
           style={{
-            maxWidth: isDesktop ? 800 : "100%",
+            maxWidth: isDesktop ? 1200 : "100%",
             width: "100%",
             alignSelf: "center",
           }}
