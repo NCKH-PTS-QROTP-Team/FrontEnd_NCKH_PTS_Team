@@ -3,12 +3,7 @@ import { View, Text, Platform, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Avatar } from "./Avatar";
 import { LogoutIcon, UserIcon } from "./Icons";
-
-// Fallback Colors nếu chưa có file constants
-const Colors = {
-  primary: "#6366F1",
-  error: "#EF4444",
-};
+import { Colors } from "@/constants/colors";
 
 interface UserProfileDropdownProps {
   userName: string;
@@ -103,6 +98,11 @@ export default function UserProfileDropdown({
           paddingHorizontal: 12,
           paddingVertical: 8,
           minHeight: 44,
+          borderRadius: 999,
+          backgroundColor: "#FFFFFF",
+          borderWidth: 1,
+          borderColor: "#E5E7EB",
+          boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06)",
         }}
       >
         {/* Avatar */}
@@ -114,7 +114,7 @@ export default function UserProfileDropdown({
             marginLeft: 10,
             fontSize: 14,
             fontWeight: "600",
-            color: "#111827",
+            color: Colors.gray800,
             maxWidth: 150,
           }}
           numberOfLines={1}
@@ -127,7 +127,7 @@ export default function UserProfileDropdown({
           style={{
             marginLeft: 8,
             fontSize: 12,
-            color: "#6B7280",
+            color: Colors.gray500,
             transform: isOpen ? [{ rotate: "180deg" }] : [{ rotate: "0deg" }],
             ...(Platform.OS === "web" &&
               ({

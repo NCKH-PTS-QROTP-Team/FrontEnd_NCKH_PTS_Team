@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, Platform, Text, useWindowDimensions, Image } from "react-native";
+import { View, Platform, Text, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import Sidebar from "./Sidebar";
 import NotificationDropdown from "./NotificationDropdown";
 import UserProfileDropdown from "./UserProfileDropdown";
 import { Colors } from "@/constants/colors";
 import { getCurrentUserProfile } from "@/apis/config/apiClient";
-
-// Import logo IUH
-const logoNameImage = require("@/assets/logoname.png");
 
 interface MenuItem {
   icon: React.ReactNode;
@@ -41,7 +38,9 @@ export default function AppLayout({
   const [collapsed, setCollapsed] = useState(false);
   const { width: windowWidth } = useWindowDimensions();
   const [currentName, setCurrentName] = useState<string | undefined>(userName);
-  const [currentEmail, setCurrentEmail] = useState<string | undefined>(userEmail);
+  const [currentEmail, setCurrentEmail] = useState<string | undefined>(
+    userEmail,
+  );
 
   // Responsive breakpoints
   const isMobile = windowWidth < 768;
@@ -50,9 +49,9 @@ export default function AppLayout({
   const sidebarWidth = collapsed ? 80 : 260;
 
   // Responsive values
-  const headerHeight = isMobile ? 56 : 64;
+  const headerHeight = isMobile ? 56 : 72;
   const headerPadding = isMobile ? 12 : isTablet ? 16 : 24;
-  const logoFontSize = isMobile ? 16 : 20;
+  const logoFontSize = isMobile ? 16 : 34;
   const badgeFontSize = isMobile ? 10 : 12;
   const badgePadding = isMobile ? 8 : 12;
   const roleLabels = {
@@ -78,7 +77,10 @@ export default function AppLayout({
           setCurrentEmail(user.email);
         }
       } catch (error) {
-        console.warn("Không đọc được thông tin user hiện tại từ storage:", error);
+        console.warn(
+          "Không đọc được thông tin user hiện tại từ storage:",
+          error,
+        );
       }
     }
 
@@ -104,7 +106,7 @@ export default function AppLayout({
           left: 0,
           right: 0,
           height: headerHeight,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: "#EEF2F6",
           borderBottomWidth: 1,
           borderBottomColor: "#E5E7EB",
           zIndex: 1000,
@@ -112,36 +114,82 @@ export default function AppLayout({
           alignItems: "center",
           paddingHorizontal: headerPadding,
           justifyContent: "space-between",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+          boxShadow: "0 2px 8px rgba(8, 47, 73, 0.08)",
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+          {!isMobile && (
+            <View
+              style={{
+                width: 58,
+                height: 58,
+                borderRadius: 10,
+                backgroundColor: Colors.primaryDark,
+                justifyContent: "center",
+                alignItems: "center",
+                marginRight: 18,
+                boxShadow: "0 6px 18px rgba(7, 89, 133, 0.25)",
+              }}
+            >
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+              >
+                <View
+                  style={{
+                    width: 3,
+                    height: 18,
+                    borderRadius: 2,
+                    backgroundColor: Colors.white,
+                  }}
+                />
+                <View
+                  style={{
+                    width: 3,
+                    height: 26,
+                    borderRadius: 2,
+                    backgroundColor: Colors.white,
+                  }}
+                />
+                <View
+                  style={{
+                    width: 3,
+                    height: 14,
+                    borderRadius: 2,
+                    backgroundColor: Colors.white,
+                  }}
+                />
+              </View>
+            </View>
+          )}
+
           <Text
             style={{
               fontSize: logoFontSize,
-              fontWeight: "bold",
-              color: Colors.primary,
+              fontWeight: "800",
+              color: Colors.gray900,
+              letterSpacing: 0.8,
               marginRight: isMobile ? 8 : 16,
               ...(isMobile ? { maxWidth: "50%" } : {}),
             }}
             numberOfLines={1}
           >
-            {isMobile ? "Điểm danh" : "OTP & Điểm Danh"}
+            {isMobile ? "EDU" : "EDUCATION2025"}
           </Text>
+
           {!isMobile && (
             <View
               style={{
                 paddingHorizontal: badgePadding,
                 paddingVertical: 4,
-                backgroundColor: `${Colors.primary}15`,
-                borderRadius: 12,
+                backgroundColor: `${Colors.primaryDark}12`,
+                borderRadius: 999,
               }}
             >
               <Text
                 style={{
                   fontSize: badgeFontSize,
                   fontWeight: "600",
-                  color: Colors.primary,
+                  color: Colors.primaryDark,
                 }}
               >
                 {roleLabels[userRole]}
@@ -155,7 +203,7 @@ export default function AppLayout({
           style={{
             flexDirection: "row",
             alignItems: "center",
-            gap: isMobile ? 8 : 12,
+            gap: isMobile ? 8 : 14,
           }}
         >
           <NotificationDropdown />

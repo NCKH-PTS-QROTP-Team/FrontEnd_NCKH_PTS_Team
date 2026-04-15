@@ -56,6 +56,7 @@ export const scheduleService = {
   getSchedules: async (params?: {
     classId?: string;
     classIds?: string[];
+    lecturerId?: string;
     teacherId?: string;
     scheduleType?: 'CLASS' | 'EXAM';
     fromDate?: string;
@@ -64,7 +65,8 @@ export const scheduleService = {
     const query: Record<string, string> = {};
     if (params?.classIds?.length) query.classIds = params.classIds.join(',');
     else if (params?.classId) query.classId = params.classId;
-    if (params?.teacherId) query.teacherId = params.teacherId;
+    if (params?.lecturerId) query.lecturerId = params.lecturerId;
+    else if (params?.teacherId) query.teacherId = params.teacherId;
     if (params?.scheduleType) query.scheduleType = params.scheduleType;
     if (params?.fromDate) query.fromDate = params.fromDate;
     if (params?.toDate) query.toDate = params.toDate;

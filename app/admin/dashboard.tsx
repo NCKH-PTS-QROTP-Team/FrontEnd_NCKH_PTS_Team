@@ -55,7 +55,7 @@ export default function AdminDashboard() {
       setLoading(true);
       const [users, classes, subjects, summary] = await Promise.all([
         userService.getUsers().catch(() => []),
-        classService.getClasses().catch(() => []),
+        classService.getAllClasses().catch(() => []),
         subjectService.getSubjects().catch(() => []),
         reportService.getAttendanceSummary().catch(() => null),
       ]);
