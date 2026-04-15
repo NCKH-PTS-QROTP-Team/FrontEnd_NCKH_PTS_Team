@@ -191,6 +191,20 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
   }, [isOpen]);
 
   useEffect(() => {
+    if (!isWeb || typeof window === "undefined") return;
+
+    const openFromHeader = () => {
+      setIsOpen(true);
+      setIsMinimized(false);
+    };
+
+    window.addEventListener("chatbox:open", openFromHeader as EventListener);
+    return () => {
+      window.removeEventListener("chatbox:open", openFromHeader as EventListener);
+    };
+  }, [isWeb]);
+
+  useEffect(() => {
     if (isOpen && !isMinimized && messages.length > 0) {
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });

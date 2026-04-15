@@ -8,8 +8,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Colors } from "@/constants/colors";
-import { BellIcon } from "./Icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 
 interface Notification {
   id: string;
@@ -150,7 +150,12 @@ export default function NotificationDropdown() {
             bottom: 0,
           }}
         />
-        <BellIcon size={20} color={Colors.white} />
+        <Ionicons
+          name="notifications"
+          size={20}
+          color="#FFFFFF"
+          style={Platform.OS === "web" ? ({ textShadow: "0 1px 4px rgba(0,0,0,0.28)" } as any) : undefined}
+        />
 
         {/* Badge */}
         {unreadCount > 0 && (

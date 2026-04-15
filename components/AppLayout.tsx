@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import Sidebar from "./Sidebar";
 import NotificationDropdown from "./NotificationDropdown";
 import UserProfileDropdown from "./UserProfileDropdown";
+import AIChatHeaderButton from "./AIChatHeaderButton";
 import { Colors } from "@/constants/colors";
 import { getCurrentUserProfile } from "@/apis/config/apiClient";
 
@@ -177,6 +178,7 @@ export default function AppLayout({
             gap: isMobile ? 8 : 14,
           }}
         >
+          <AIChatHeaderButton />
           <NotificationDropdown />
           <UserProfileDropdown
             userName={currentName || roleLabels[userRole]}

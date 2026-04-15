@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 // Base URL strategy:
 // - Web: ưu tiên EXPO_PUBLIC_API_URL_WEB, sau đó auto theo hostname hiện tại.
@@ -25,6 +26,20 @@ const getApiBaseUrl = () => {
 
   if (envApiUrl) {
     return envApiUrl;
+  }
+
+  // Native fallback (device/emulator): derive host from Expo dev host to avoid stale LAN IP configs.
+  // Example hostUri: "192.168.1.23:8081" -> API: "http://192.168.1.23:8080/api"
+  const hostUri =
+    (Constants.expoConfig as any)?.hostUri ||
+    (Constants as any)?.manifest2?.extra?.expoClient?.hostUri ||
+    (Constants as any)?.manifest?.debuggerHost;
+
+  if (hostUri) {
+    const host = String(hostUri).split(':')[0];
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      return `http://${host}:8080/api`;
+    }
   }
 
   if (Platform.OS === 'android') {
