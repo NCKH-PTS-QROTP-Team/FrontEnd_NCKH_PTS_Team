@@ -98,7 +98,7 @@ export default function StudentProfileScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
       <StatusBar style="dark" />
 
-      <Animated.ScrollView
+      <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
           padding: 16,
@@ -191,7 +191,7 @@ export default function StudentProfileScreen() {
         >
           Phiên bản 1.0.0
         </Text>
-      </Animated.ScrollView>
+      </ScrollView>
 
       {/* Toast Notification */}
       <Toast visible={false} message="" type="success" onHide={() => {}} />

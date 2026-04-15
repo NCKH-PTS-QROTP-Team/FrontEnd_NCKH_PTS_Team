@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, Text, Platform, TouchableOpacity, Alert } from "react-native";
+import { View, Text, Platform, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { Avatar } from "./Avatar";
 import { LogoutIcon, UserIcon } from "./Icons";
 import { Colors } from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
+import { authService } from "@/apis/services/auth.service";
 
 interface UserProfileDropdownProps {
   userName: string;
@@ -46,16 +47,19 @@ export default function UserProfileDropdown({
     }
   }, [isOpen]);
 
+  const doLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      router.replace("/auth/login");
+    }
+  };
+
   const handleLogout = () => {
     setIsOpen(false);
-    Alert.alert("Đăng xuất", "Bạn có chắc muốn đăng xuất?", [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Đăng xuất",
-        style: "destructive",
-        onPress: () => router.replace("/auth/login"),
-      },
-    ]);
+    doLogout();
   };
 
   const handleProfileAndSettings = () => {

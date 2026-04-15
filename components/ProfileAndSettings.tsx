@@ -353,7 +353,7 @@ export default function ProfileAndSettings({
           style={[
             isDesktop && ({ gridArea: "identity", minHeight: 360 } as any),
             {
-              minHeight: 360,
+              minHeight: isDesktop ? 360 : undefined,
               borderRadius: 18,
               overflow: "hidden",
               shadowColor: "#0F172A",
@@ -371,7 +371,7 @@ export default function ProfileAndSettings({
             style={StyleSheet.absoluteFillObject}
           />
 
-          <View style={{ padding: 22, minHeight: 360, height: "100%" }}>
+          <View style={{ padding: 22, minHeight: isDesktop ? 360 : undefined }}>
             <Text
               style={{
                 fontSize: 13,
