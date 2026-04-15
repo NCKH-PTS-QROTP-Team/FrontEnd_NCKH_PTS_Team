@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { View, Platform, Text, useWindowDimensions } from "react-native";
+import { View, Platform, Text, useWindowDimensions, Image } from "react-native";
 import { useRouter } from "expo-router";
 import Sidebar from "./Sidebar";
 import NotificationDropdown from "./NotificationDropdown";
 import UserProfileDropdown from "./UserProfileDropdown";
 import { Colors } from "@/constants/colors";
 import { getCurrentUserProfile } from "@/apis/config/apiClient";
+
+const logoNameImage = require("@/assets/logo.png");
 
 interface MenuItem {
   icon: React.ReactNode;
@@ -49,9 +51,9 @@ export default function AppLayout({
   const sidebarWidth = collapsed ? 80 : 260;
 
   // Responsive values
-  const headerHeight = isMobile ? 56 : 72;
+  const headerHeight = isMobile ? 56 : 64;
   const headerPadding = isMobile ? 12 : isTablet ? 16 : 24;
-  const logoFontSize = isMobile ? 16 : 34;
+  const logoFontSize = isMobile ? 16 : 22;
   const badgeFontSize = isMobile ? 10 : 12;
   const badgePadding = isMobile ? 8 : 12;
   const roleLabels = {
@@ -119,61 +121,30 @@ export default function AppLayout({
       >
         <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
           {!isMobile && (
-            <View
+            <Image
+              source={logoNameImage}
               style={{
-                width: 58,
-                height: 58,
-                borderRadius: 10,
-                backgroundColor: Colors.primaryDark,
-                justifyContent: "center",
-                alignItems: "center",
-                marginRight: 18,
-                boxShadow: "0 6px 18px rgba(7, 89, 133, 0.25)",
+                width: 44,
+                height: 44,
+                borderRadius: 8,
+                marginRight: 12,
               }}
-            >
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-              >
-                <View
-                  style={{
-                    width: 3,
-                    height: 18,
-                    borderRadius: 2,
-                    backgroundColor: Colors.white,
-                  }}
-                />
-                <View
-                  style={{
-                    width: 3,
-                    height: 26,
-                    borderRadius: 2,
-                    backgroundColor: Colors.white,
-                  }}
-                />
-                <View
-                  style={{
-                    width: 3,
-                    height: 14,
-                    borderRadius: 2,
-                    backgroundColor: Colors.white,
-                  }}
-                />
-              </View>
-            </View>
+              resizeMode="contain"
+            />
           )}
 
           <Text
             style={{
               fontSize: logoFontSize,
-              fontWeight: "800",
+              fontWeight: "700",
               color: Colors.gray900,
-              letterSpacing: 0.8,
+              letterSpacing: 0.2,
               marginRight: isMobile ? 8 : 16,
               ...(isMobile ? { maxWidth: "50%" } : {}),
             }}
             numberOfLines={1}
           >
-            {isMobile ? "EDU" : "EDUCATION2025"}
+            Điểm danh
           </Text>
 
           {!isMobile && (

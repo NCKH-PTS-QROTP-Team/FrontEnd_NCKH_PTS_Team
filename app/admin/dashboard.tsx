@@ -27,7 +27,12 @@ import {
   ChartIcon,
   SettingsIcon,
 } from "@/components/Icons";
-import { userService, classService, subjectService, reportService } from "@/apis";
+import {
+  userService,
+  classService,
+  subjectService,
+  reportService,
+} from "@/apis";
 import Toast, { useToast } from "@/components/Toast";
 
 export default function AdminDashboard() {
@@ -206,11 +211,18 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }} edges={["top"]}>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: "#FFFFFF" }}
+        edges={["top"]}
+      >
         <StatusBar style="dark" />
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
           <ActivityIndicator size="large" color="#3FA9F5" />
-          <Text style={{ marginTop: 16, color: "#6B7280" }}>Đang tải dữ liệu...</Text>
+          <Text style={{ marginTop: 16, color: "#6B7280" }}>
+            Đang tải dữ liệu...
+          </Text>
         </View>
       </SafeAreaView>
     );

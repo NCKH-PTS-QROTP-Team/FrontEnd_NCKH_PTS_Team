@@ -9,6 +9,7 @@ import {
 import { useRouter } from "expo-router";
 import { Colors } from "@/constants/colors";
 import { BellIcon } from "./Icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface Notification {
   id: string;
@@ -121,31 +122,34 @@ export default function NotificationDropdown() {
           width: 42,
           height: 42,
           borderRadius: 21,
-          backgroundColor: isOpen ? Colors.primaryDark : Colors.primary,
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
           borderWidth: 1,
-          borderColor: Colors.primaryDark,
-          boxShadow: "0 4px 12px rgba(7, 89, 133, 0.28)",
+          borderColor: "#1f3d8e",
+          overflow: "hidden",
+          boxShadow: isOpen
+            ? "0 6px 16px rgba(31, 61, 142, 0.38)"
+            : "0 4px 12px rgba(31, 61, 142, 0.28)",
           ...(Platform.OS === "web" &&
             ({
               cursor: "pointer",
               transition: "all 0.2s ease",
             } as any)),
         }}
-        {...(Platform.OS === "web" &&
-          ({
-            onMouseEnter: (e: any) => {
-              if (!isOpen)
-                e.currentTarget.style.backgroundColor = Colors.primaryDark;
-            },
-            onMouseLeave: (e: any) => {
-              if (!isOpen)
-                e.currentTarget.style.backgroundColor = Colors.primary;
-            },
-          } as any))}
       >
+        <LinearGradient
+          colors={isOpen ? ["#162d67", "#1f3d8e"] : ["#1f3d8e", "#2f57bf"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        />
         <BellIcon size={20} color={Colors.white} />
 
         {/* Badge */}
