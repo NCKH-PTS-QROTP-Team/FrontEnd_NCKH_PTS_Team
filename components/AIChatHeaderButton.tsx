@@ -51,7 +51,11 @@ export default function AIChatHeaderButton() {
         name="chatbubble-ellipses"
         size={19}
         color="#FFFFFF"
-        style={Platform.OS === "web" ? ({ textShadow: "0 1px 4px rgba(0,0,0,0.28)" } as any) : undefined}
+        style={
+          Platform.OS === "web"
+            ? ({ textShadow: "0 1px 4px rgba(0,0,0,0.28)" } as any)
+            : undefined
+        }
       />
 
       <View
@@ -65,7 +69,9 @@ export default function AIChatHeaderButton() {
           paddingVertical: 1,
         }}
       >
-        <Text style={{ fontSize: 8, fontWeight: "700", color: "#FFFFFF" }}>AI</Text>
+        <Text style={{ fontSize: 8, fontWeight: "700", color: "#FFFFFF" }}>
+          AI
+        </Text>
       </View>
     </TouchableOpacity>
   );

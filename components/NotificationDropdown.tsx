@@ -154,7 +154,11 @@ export default function NotificationDropdown() {
           name="notifications"
           size={20}
           color="#FFFFFF"
-          style={Platform.OS === "web" ? ({ textShadow: "0 1px 4px rgba(0,0,0,0.28)" } as any) : undefined}
+          style={
+            Platform.OS === "web"
+              ? ({ textShadow: "0 1px 4px rgba(0,0,0,0.28)" } as any)
+              : undefined
+          }
         />
 
         {/* Badge */}

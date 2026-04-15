@@ -13,7 +13,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Colors } from "@/constants/colors";
-import { getRoleFromToken, getUserIdFromToken, getStudentIdFromToken } from "@/apis/utils/jwt";
+import {
+  getRoleFromToken,
+  getUserIdFromToken,
+  getStudentIdFromToken,
+} from "@/apis/utils/jwt";
 import { getAuthToken, getCurrentUserProfile } from "@/apis/config/apiClient";
 import { reportService, subjectService } from "@/apis";
 import * as FileSystem from "expo-file-system/legacy";
@@ -97,14 +101,14 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
       Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
       (e: any) => {
         setKeyboardHeight(e.endCoordinates.height);
-      }
+      },
     );
 
     const keyboardWillHide = Keyboard.addListener(
       Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
       () => {
         setKeyboardHeight(0);
-      }
+      },
     );
 
     return () => {
@@ -125,7 +129,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
           const subject = subjects.find(
             (s) =>
               s.name === subjectName ||
-              s.name.toLowerCase().includes(subjectName.toLowerCase())
+              s.name.toLowerCase().includes(subjectName.toLowerCase()),
           );
           if (subject) subjectId = subject.id;
         } catch (_) {
@@ -150,7 +154,9 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
         const token = await getAuthToken();
         if (!token) return;
         const url = reportService.getExportExcelUrl(undefined, subjectId);
-        const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        const response = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const arrayBuffer = await response.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
@@ -166,7 +172,8 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
         const canShare = await Sharing.isAvailableAsync();
         if (canShare) {
           await Sharing.shareAsync(fileUri, {
-            mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            mimeType:
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             dialogTitle: "Lưu file Excel",
           });
         }
@@ -200,7 +207,10 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
 
     window.addEventListener("chatbox:open", openFromHeader as EventListener);
     return () => {
-      window.removeEventListener("chatbox:open", openFromHeader as EventListener);
+      window.removeEventListener(
+        "chatbox:open",
+        openFromHeader as EventListener,
+      );
     };
   }, [isWeb]);
 
@@ -245,7 +255,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const data = await response.json() as {
+      const data = (await response.json()) as {
         answer?: string;
         intent?: string;
         downloadExcel?: boolean;
@@ -262,9 +272,9 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
       // Fallback: nếu API không trả downloadExcel nhưng nội dung có nhắc nút Tải file Excel → vẫn hiển thị nút
       const showExcelButton =
         hasDownloadExcelFlag ||
-        (answerText.includes("Tải file Excel") && answerText.includes("Bấm nút"));
-      const subjectName =
-        data.subjectName ?? data.subject_name ?? undefined;
+        (answerText.includes("Tải file Excel") &&
+          answerText.includes("Bấm nút"));
+      const subjectName = data.subjectName ?? data.subject_name ?? undefined;
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -349,9 +359,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
   // Mobile: không có thu gọn, luôn full hoặc đóng
   // Web: có thu gọn
   const chatWidth = isWeb ? (isMobile ? "90%" : 380) : "100%";
-  const chatHeight = isWeb 
-    ? (isMinimized ? 56 : 500) 
-    : "100%"; // Mobile: luôn full screen để dễ xử lý keyboard
+  const chatHeight = isWeb ? (isMinimized ? 56 : 500) : "100%"; // Mobile: luôn full screen để dễ xử lý keyboard
 
   return (
     <Animated.View
@@ -488,8 +496,8 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
         >
           <ScrollView
             ref={scrollViewRef}
-            style={{ 
-              flex: 1, 
+            style={{
+              flex: 1,
               backgroundColor: Colors.surface,
             }}
             contentContainerStyle={{
@@ -504,7 +512,8 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
                 <View
                   style={{
                     flexDirection: "row",
-                    marginBottom: message.sender === "bot" && message.downloadExcel ? 8 : 0,
+                    marginBottom:
+                      message.sender === "bot" && message.downloadExcel ? 8 : 0,
                     justifyContent:
                       message.sender === "user" ? "flex-end" : "flex-start",
                   }}
@@ -569,8 +578,16 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
                       ) : (
                         <Text style={{ fontSize: 18 }}>📥</Text>
                       )}
-                      <Text style={{ fontSize: 15, fontWeight: "600", color: "#fff" }}>
-                        {downloadingExcel === message.id ? "Đang tải..." : "Tải file Excel"}
+                      <Text
+                        style={{
+                          fontSize: 15,
+                          fontWeight: "600",
+                          color: "#fff",
+                        }}
+                      >
+                        {downloadingExcel === message.id
+                          ? "Đang tải..."
+                          : "Tải file Excel"}
                       </Text>
                     </TouchableOpacity>
                   </View>
