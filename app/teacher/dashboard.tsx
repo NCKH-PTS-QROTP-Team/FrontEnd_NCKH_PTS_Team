@@ -159,7 +159,10 @@ export default function TeacherDashboardScreen() {
 
     const rowHeight = 78;
     const visibleRows = 3;
-    const maxOffset = Math.max(0, schedulesToday.length * rowHeight - visibleRows * rowHeight);
+    const maxOffset = Math.max(
+      0,
+      schedulesToday.length * rowHeight - visibleRows * rowHeight,
+    );
 
     const timer = setInterval(() => {
       setScrollOffset((prev) => {
@@ -195,8 +198,12 @@ export default function TeacherDashboardScreen() {
       }
 
       const [allSchedules, sessions] = await Promise.all([
-        scheduleService.getSchedules({ teacherId }).catch(() => [] as Schedule[]),
-        attendanceService.getSessions({ teacherId, active: true }).catch(() => []),
+        scheduleService
+          .getSchedules({ teacherId })
+          .catch(() => [] as Schedule[]),
+        attendanceService
+          .getSessions({ teacherId, active: true })
+          .catch(() => []),
       ]);
 
       setSchedules(allSchedules);
@@ -210,12 +217,16 @@ export default function TeacherDashboardScreen() {
           .catch(() => []);
 
         totalStudents += records.length;
-        presentToday += records.filter((r: any) => r.status === "PRESENT").length;
+        presentToday += records.filter(
+          (r: any) => r.status === "PRESENT",
+        ).length;
       }
 
       const absentToday = Math.max(0, totalStudents - presentToday);
       const attendanceRate =
-        totalStudents > 0 ? Math.round((presentToday / totalStudents) * 100) : 0;
+        totalStudents > 0
+          ? Math.round((presentToday / totalStudents) * 100)
+          : 0;
 
       const uniqueClasses = new Set(allSchedules.map((s) => s.classId)).size;
 
@@ -280,27 +291,46 @@ export default function TeacherDashboardScreen() {
       >
         <Ionicons name={icon} size={18} color={tone} />
       </View>
-      <Text style={{ fontSize: 20, fontWeight: "800", color: "#0F172A", marginBottom: 2 }}>
+      <Text
+        style={{
+          fontSize: 20,
+          fontWeight: "800",
+          color: "#0F172A",
+          marginBottom: 2,
+        }}
+      >
         {value}
       </Text>
-      <Text style={{ fontSize: 12, color: "#64748B", fontWeight: "600" }}>{label}</Text>
+      <Text style={{ fontSize: 12, color: "#64748B", fontWeight: "600" }}>
+        {label}
+      </Text>
     </View>
   );
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#F8FAFC" }} edges={["top"]}>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: "#F8FAFC" }}
+        edges={["top"]}
+      >
         <StatusBar style="dark" />
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <View
+          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+        >
           <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={{ marginTop: 12, color: "#64748B" }}>Đang tải dashboard...</Text>
+          <Text style={{ marginTop: 12, color: "#64748B" }}>
+            Đang tải dashboard...
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F1F5F9" }} edges={["top"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#F1F5F9" }}
+      edges={["top"]}
+    >
       <StatusBar style="dark" />
 
       <ScrollView
@@ -321,7 +351,9 @@ export default function TeacherDashboardScreen() {
             }}
           >
             {/* Left side - wider */}
-            <View style={{ flex: isDesktopWeb ? 1.65 : 1, width: "100%", gap: 16 }}>
+            <View
+              style={{ flex: isDesktopWeb ? 1.65 : 1, width: "100%", gap: 16 }}
+            >
               {/* Gradient banner */}
               <LinearGradient
                 colors={["#1E3A8A", "#3B82F6"]}
@@ -336,14 +368,33 @@ export default function TeacherDashboardScreen() {
                 }}
               >
                 <View>
-                  <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.82)", marginBottom: 6 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: "rgba(255,255,255,0.82)",
+                      marginBottom: 6,
+                    }}
+                  >
                     Teacher workspace
                   </Text>
-                  <Text style={{ fontSize: isDesktopWeb ? 30 : 24, fontWeight: "800", color: "#FFFFFF" }}>
+                  <Text
+                    style={{
+                      fontSize: isDesktopWeb ? 30 : 24,
+                      fontWeight: "800",
+                      color: "#FFFFFF",
+                    }}
+                  >
                     Xin chào, {teacherName}
                   </Text>
-                  <Text style={{ marginTop: 8, color: "rgba(255,255,255,0.9)", fontSize: 14 }}>
-                    Quản lý điểm danh, lớp học và lịch giảng dạy trong một màn hình.
+                  <Text
+                    style={{
+                      marginTop: 8,
+                      color: "rgba(255,255,255,0.9)",
+                      fontSize: 14,
+                    }}
+                  >
+                    Quản lý điểm danh, lớp học và lịch giảng dạy trong một màn
+                    hình.
                   </Text>
                 </View>
 
@@ -392,11 +443,23 @@ export default function TeacherDashboardScreen() {
                   padding: 16,
                 }}
               >
-                <Text style={{ fontSize: 16, fontWeight: "800", color: "#0F172A", marginBottom: 12 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "800",
+                    color: "#0F172A",
+                    marginBottom: 12,
+                  }}
+                >
                   Khởi tạo điểm danh
                 </Text>
 
-                <View style={{ flexDirection: isMobile ? "column" : "row", gap: 12 }}>
+                <View
+                  style={{
+                    flexDirection: isMobile ? "column" : "row",
+                    gap: 12,
+                  }}
+                >
                   <TouchableOpacity
                     onPress={() => router.push("/teacher/generate-qr")}
                     style={{
@@ -414,11 +477,25 @@ export default function TeacherDashboardScreen() {
                       end={{ x: 1, y: 1 }}
                       style={{ padding: 14 }}
                     >
-                      <Ionicons name="qr-code" size={22} color="#FFFFFF" style={{ marginBottom: 8 }} />
-                      <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "800", marginBottom: 2 }}>
+                      <Ionicons
+                        name="qr-code"
+                        size={22}
+                        color="#FFFFFF"
+                        style={{ marginBottom: 8 }}
+                      />
+                      <Text
+                        style={{
+                          color: "#FFFFFF",
+                          fontSize: 16,
+                          fontWeight: "800",
+                          marginBottom: 2,
+                        }}
+                      >
                         Tạo mã QR
                       </Text>
-                      <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 12 }}>
+                      <Text
+                        style={{ color: "rgba(255,255,255,0.9)", fontSize: 12 }}
+                      >
                         Tạo mã quét điểm danh nhanh cho lớp.
                       </Text>
                     </LinearGradient>
@@ -441,11 +518,25 @@ export default function TeacherDashboardScreen() {
                       end={{ x: 1, y: 1 }}
                       style={{ padding: 14 }}
                     >
-                      <Ionicons name="keypad" size={22} color="#FFFFFF" style={{ marginBottom: 8 }} />
-                      <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "800", marginBottom: 2 }}>
+                      <Ionicons
+                        name="keypad"
+                        size={22}
+                        color="#FFFFFF"
+                        style={{ marginBottom: 8 }}
+                      />
+                      <Text
+                        style={{
+                          color: "#FFFFFF",
+                          fontSize: 16,
+                          fontWeight: "800",
+                          marginBottom: 2,
+                        }}
+                      >
                         Tạo mã OTP
                       </Text>
-                      <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 12 }}>
+                      <Text
+                        style={{ color: "rgba(255,255,255,0.9)", fontSize: 12 }}
+                      >
                         Tạo mã OTP cho buổi học hiện tại.
                       </Text>
                     </LinearGradient>
@@ -463,21 +554,52 @@ export default function TeacherDashboardScreen() {
                   padding: 16,
                 }}
               >
-                <Text style={{ fontSize: 16, fontWeight: "800", color: "#0F172A", marginBottom: 12 }}>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "800",
+                    color: "#0F172A",
+                    marginBottom: 12,
+                  }}
+                >
                   Thống kê nhanh
                 </Text>
 
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-                  {statCard("people", "Tổng sinh viên", stats.totalStudents, "#1F3D8E")}
-                  {statCard("checkmark-circle", "Có mặt hôm nay", stats.presentToday, "#2563EB")}
-                  {statCard("close-circle", "Vắng hôm nay", stats.absentToday, "#1D4ED8")}
-                  {statCard("stats-chart", "Tỷ lệ điểm danh", `${stats.attendanceRate}%`, "#3B82F6")}
+                <View
+                  style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}
+                >
+                  {statCard(
+                    "people",
+                    "Tổng sinh viên",
+                    stats.totalStudents,
+                    "#1F3D8E",
+                  )}
+                  {statCard(
+                    "checkmark-circle",
+                    "Có mặt hôm nay",
+                    stats.presentToday,
+                    "#2563EB",
+                  )}
+                  {statCard(
+                    "close-circle",
+                    "Vắng hôm nay",
+                    stats.absentToday,
+                    "#1D4ED8",
+                  )}
+                  {statCard(
+                    "stats-chart",
+                    "Tỷ lệ điểm danh",
+                    `${stats.attendanceRate}%`,
+                    "#3B82F6",
+                  )}
                 </View>
               </View>
             </View>
 
             {/* Right side */}
-            <View style={{ flex: isDesktopWeb ? 1 : 1, width: "100%", gap: 16 }}>
+            <View
+              style={{ flex: isDesktopWeb ? 1 : 1, width: "100%", gap: 16 }}
+            >
               {/* Mini month calendar */}
               <View
                 style={{
@@ -488,30 +610,78 @@ export default function TeacherDashboardScreen() {
                   padding: 14,
                 }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                  <Text style={{ fontSize: 15, fontWeight: "800", color: "#0F172A" }}>Lịch tháng</Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 8,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: "800",
+                      color: "#0F172A",
+                    }}
+                  >
+                    Lịch tháng
+                  </Text>
                   <View style={{ flexDirection: "row", gap: 8 }}>
                     <TouchableOpacity
                       onPress={() => changeMonth("prev")}
-                      style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" }}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: "#EEF2FF",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
                     >
                       <Ionicons name="chevron-back" size={16} color="#1F3D8E" />
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => changeMonth("next")}
-                      style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" }}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: "#EEF2FF",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
                     >
-                      <Ionicons name="chevron-forward" size={16} color="#1F3D8E" />
+                      <Ionicons
+                        name="chevron-forward"
+                        size={16}
+                        color="#1F3D8E"
+                      />
                     </TouchableOpacity>
                   </View>
                 </View>
 
-                <Text style={{ fontSize: 13, color: "#64748B", marginBottom: 10 }}>{monthLabel}</Text>
+                <Text
+                  style={{ fontSize: 13, color: "#64748B", marginBottom: 10 }}
+                >
+                  {monthLabel}
+                </Text>
 
                 <View style={{ flexDirection: "row", marginBottom: 6 }}>
                   {WEEK_HEADERS.map((h) => (
-                    <View key={h} style={{ width: `${100 / 7}%`, alignItems: "center" }}>
-                      <Text style={{ fontSize: 11, fontWeight: "700", color: "#64748B" }}>{h}</Text>
+                    <View
+                      key={h}
+                      style={{ width: `${100 / 7}%`, alignItems: "center" }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: "700",
+                          color: "#64748B",
+                        }}
+                      >
+                        {h}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -520,7 +690,9 @@ export default function TeacherDashboardScreen() {
                   {monthCells.map((cell) => {
                     const isToday = cell.iso === todayISO;
                     const isSelected = cell.iso === selectedISO;
-                    const hasClass = schedules.some((s) => scheduleAppliesOnDate(s, cell.iso));
+                    const hasClass = schedules.some((s) =>
+                      scheduleAppliesOnDate(s, cell.iso),
+                    );
                     return (
                       <TouchableOpacity
                         key={cell.iso}
@@ -531,7 +703,9 @@ export default function TeacherDashboardScreen() {
                           alignItems: "center",
                           justifyContent: "center",
                           borderRadius: 9,
-                          backgroundColor: isSelected ? "#1F3D8E" : "transparent",
+                          backgroundColor: isSelected
+                            ? "#1F3D8E"
+                            : "transparent",
                           opacity: cell.isCurrentMonth ? 1 : 0.35,
                           borderWidth: isToday && !isSelected ? 1.5 : 0,
                           borderColor: "#3B82F6",
@@ -554,7 +728,9 @@ export default function TeacherDashboardScreen() {
                               width: 4,
                               height: 4,
                               borderRadius: 2,
-                              backgroundColor: isSelected ? "#FFFFFF" : "#3B82F6",
+                              backgroundColor: isSelected
+                                ? "#FFFFFF"
+                                : "#3B82F6",
                             }}
                           />
                         ) : null}
@@ -574,23 +750,63 @@ export default function TeacherDashboardScreen() {
                   padding: 14,
                 }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <Text style={{ fontSize: 15, fontWeight: "800", color: "#0F172A" }}>Lớp học trong ngày</Text>
-                  <View style={{ backgroundColor: "#EEF2FF", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 }}>
-                    <Text style={{ fontSize: 11, color: "#1F3D8E", fontWeight: "700" }}>{schedulesToday.length} lớp</Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 10,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: "800",
+                      color: "#0F172A",
+                    }}
+                  >
+                    Lớp học trong ngày
+                  </Text>
+                  <View
+                    style={{
+                      backgroundColor: "#EEF2FF",
+                      borderRadius: 999,
+                      paddingHorizontal: 10,
+                      paddingVertical: 3,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: "#1F3D8E",
+                        fontWeight: "700",
+                      }}
+                    >
+                      {schedulesToday.length} lớp
+                    </Text>
                   </View>
                 </View>
 
                 {schedulesToday.length === 0 ? (
-                  <View style={{ borderRadius: 12, backgroundColor: "#F8FAFC", padding: 14 }}>
-                    <Text style={{ color: "#64748B", fontSize: 13 }}>Hôm nay chưa có lịch dạy.</Text>
+                  <View
+                    style={{
+                      borderRadius: 12,
+                      backgroundColor: "#F8FAFC",
+                      padding: 14,
+                    }}
+                  >
+                    <Text style={{ color: "#64748B", fontSize: 13 }}>
+                      Hôm nay chưa có lịch dạy.
+                    </Text>
                   </View>
                 ) : (
                   <ScrollView
                     ref={dayListRef}
                     style={{ maxHeight: 234 }}
                     showsVerticalScrollIndicator={false}
-                    onScroll={(e) => setScrollOffset(e.nativeEvent.contentOffset.y)}
+                    onScroll={(e) =>
+                      setScrollOffset(e.nativeEvent.contentOffset.y)
+                    }
                     scrollEventThrottle={16}
                   >
                     <View style={{ gap: 8 }}>
@@ -607,15 +823,39 @@ export default function TeacherDashboardScreen() {
                             backgroundColor: "#F8FAFC",
                           }}
                         >
-                          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                            <Text style={{ fontSize: 13, fontWeight: "800", color: "#0F172A", flex: 1 }} numberOfLines={1}>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              marginBottom: 4,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                fontWeight: "800",
+                                color: "#0F172A",
+                                flex: 1,
+                              }}
+                              numberOfLines={1}
+                            >
                               {item.subjectName}
                             </Text>
-                            <Text style={{ fontSize: 11, color: "#1F3D8E", fontWeight: "700" }}>
+                            <Text
+                              style={{
+                                fontSize: 11,
+                                color: "#1F3D8E",
+                                fontWeight: "700",
+                              }}
+                            >
                               {item.startTime} - {item.endTime}
                             </Text>
                           </View>
-                          <Text style={{ fontSize: 12, color: "#475569" }} numberOfLines={1}>
+                          <Text
+                            style={{ fontSize: 12, color: "#475569" }}
+                            numberOfLines={1}
+                          >
                             {item.className} • Phòng {item.room || "N/A"}
                           </Text>
                         </TouchableOpacity>
@@ -635,7 +875,14 @@ export default function TeacherDashboardScreen() {
                   padding: 14,
                 }}
               >
-                <Text style={{ fontSize: 15, fontWeight: "800", color: "#0F172A", marginBottom: 10 }}>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontWeight: "800",
+                    color: "#0F172A",
+                    marginBottom: 10,
+                  }}
+                >
                   Quick actions
                 </Text>
 
@@ -652,11 +899,34 @@ export default function TeacherDashboardScreen() {
                       backgroundColor: "#FFFFFF",
                     }}
                   >
-                    <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center", marginRight: 10 }}>
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: "#DBEAFE",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 10,
+                      }}
+                    >
                       <Ionicons name="list" size={16} color="#1F3D8E" />
                     </View>
-                    <Text style={{ flex: 1, fontSize: 13, fontWeight: "700", color: "#0F172A" }}>Danh sách lớp học</Text>
-                    <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#0F172A",
+                      }}
+                    >
+                      Danh sách lớp học
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color="#94A3B8"
+                    />
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -671,11 +941,34 @@ export default function TeacherDashboardScreen() {
                       backgroundColor: "#FFFFFF",
                     }}
                   >
-                    <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center", marginRight: 10 }}>
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: "#DBEAFE",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 10,
+                      }}
+                    >
                       <Ionicons name="bar-chart" size={16} color="#1F3D8E" />
                     </View>
-                    <Text style={{ flex: 1, fontSize: 13, fontWeight: "700", color: "#0F172A" }}>Báo cáo & thống kê</Text>
-                    <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#0F172A",
+                      }}
+                    >
+                      Báo cáo & thống kê
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color="#94A3B8"
+                    />
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -690,11 +983,38 @@ export default function TeacherDashboardScreen() {
                       backgroundColor: "#FFFFFF",
                     }}
                   >
-                    <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center", marginRight: 10 }}>
-                      <Ionicons name="notifications" size={16} color="#1F3D8E" />
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: "#DBEAFE",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 10,
+                      }}
+                    >
+                      <Ionicons
+                        name="notifications"
+                        size={16}
+                        color="#1F3D8E"
+                      />
                     </View>
-                    <Text style={{ flex: 1, fontSize: 13, fontWeight: "700", color: "#0F172A" }}>Thông báo</Text>
-                    <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#0F172A",
+                      }}
+                    >
+                      Thông báo
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color="#94A3B8"
+                    />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -710,11 +1030,20 @@ export default function TeacherDashboardScreen() {
                     padding: 14,
                   }}
                 >
-                  <Text style={{ fontSize: 15, fontWeight: "800", color: "#0F172A", marginBottom: 10 }}>
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: "800",
+                      color: "#0F172A",
+                      marginBottom: 10,
+                    }}
+                  >
                     Lịch theo ngày đã chọn
                   </Text>
                   {schedulesOnSelectedDay.length === 0 ? (
-                    <Text style={{ fontSize: 13, color: "#64748B" }}>Không có lớp học trong ngày này.</Text>
+                    <Text style={{ fontSize: 13, color: "#64748B" }}>
+                      Không có lớp học trong ngày này.
+                    </Text>
                   ) : (
                     <View style={{ gap: 8 }}>
                       {schedulesOnSelectedDay.map((s) => (
@@ -728,11 +1057,19 @@ export default function TeacherDashboardScreen() {
                             backgroundColor: "#F8FAFC",
                           }}
                         >
-                          <Text style={{ fontSize: 13, fontWeight: "800", color: "#0F172A", marginBottom: 2 }}>
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              fontWeight: "800",
+                              color: "#0F172A",
+                              marginBottom: 2,
+                            }}
+                          >
                             {s.subjectName}
                           </Text>
                           <Text style={{ fontSize: 12, color: "#475569" }}>
-                            {s.className} • {s.startTime} - {s.endTime} • Phòng {s.room || "N/A"}
+                            {s.className} • {s.startTime} - {s.endTime} • Phòng{" "}
+                            {s.room || "N/A"}
                           </Text>
                         </View>
                       ))}
@@ -745,7 +1082,12 @@ export default function TeacherDashboardScreen() {
         </View>
       </ScrollView>
 
-      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+      />
     </SafeAreaView>
   );
 }
