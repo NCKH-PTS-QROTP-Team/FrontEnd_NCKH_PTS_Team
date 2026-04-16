@@ -113,6 +113,12 @@ export default function ProfileAndSettings({
         ],
         actions: [
           {
+            icon: "school-outline",
+            label: "Quản lý lớp chủ nhiệm",
+            description: "Theo dõi lớp và sinh viên được phụ trách",
+            route: "/teacher/advisee-class",
+          },
+          {
             icon: "notifications-outline",
             label: "Thông báo",
             description: "Lịch dạy, buổi điểm danh",

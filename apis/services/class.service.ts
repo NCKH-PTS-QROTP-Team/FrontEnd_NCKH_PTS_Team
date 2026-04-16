@@ -18,6 +18,18 @@ export interface Class {
   createdAt: string;
 }
 
+export interface ClassStudent {
+  id: string;
+  email: string;
+  name: string;
+  studentId: string | null;
+  classId: string | null;
+  role: 'ADMIN' | 'TEACHER' | 'STUDENT' | 'ACADEMIC_STAFF';
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 /**
  * Class Request
  */
@@ -70,8 +82,8 @@ export const classService = {
   /**
    * Get students by class ID
    */
-  getStudentsByClass: async (classId: string): Promise<any[]> => {
-    const response = await apiClient.get<ApiResponse<any[]>>(`/classes/${classId}/students`);
+  getStudentsByClass: async (classId: string): Promise<ClassStudent[]> => {
+    const response = await apiClient.get<ApiResponse<ClassStudent[]>>(`/classes/${classId}/students`);
     return response.data.data;
   },
 

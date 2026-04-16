@@ -888,6 +888,48 @@ export default function TeacherDashboardScreen() {
 
                 <View style={{ gap: 8 }}>
                   <TouchableOpacity
+                    onPress={() => router.push("/teacher/advisee-class")}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: "#E2E8F0",
+                      padding: 11,
+                      backgroundColor: "#FFFFFF",
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: "#DBEAFE",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 10,
+                      }}
+                    >
+                      <Ionicons name="school" size={16} color="#1F3D8E" />
+                    </View>
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#0F172A",
+                      }}
+                    >
+                      Quản lý lớp chủ nhiệm
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color="#94A3B8"
+                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
                     onPress={() => router.push("/teacher/class-list")}
                     style={{
                       flexDirection: "row",
