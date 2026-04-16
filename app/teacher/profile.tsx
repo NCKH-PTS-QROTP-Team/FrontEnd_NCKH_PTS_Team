@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  RefreshControl,
   View,
   Text,
   ScrollView,
@@ -42,21 +43,32 @@ export default function TeacherProfileScreen() {
 
   const [userInfo, setUserInfo] = useState<any>(null);
   const [summary, setSummary] = useState<TeacherSummary | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchUserData = async () => {
+    try {
+      const tokenUser = await authService.getCurrentUser();
+      if (tokenUser) setUserInfo(tokenUser);
+
+      const summaryData = await reportService.getTeacherSummary();
+      setSummary(summaryData);
+    } catch (error) {
+      console.error("Failed to load user info or summary:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const tokenUser = await authService.getCurrentUser();
-        if (tokenUser) setUserInfo(tokenUser);
-
-        const summaryData = await reportService.getTeacherSummary();
-        setSummary(summaryData);
-      } catch (error) {
-        console.error("Failed to load user info or summary:", error);
-      }
-    };
     fetchUserData();
   }, []);
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await fetchUserData();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
@@ -64,6 +76,16 @@ export default function TeacherProfileScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
+        refreshControl={
+          isMobile ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={["#1E3A8A"]}
+              tintColor="#1E3A8A"
+            />
+          ) : undefined
+        }
         contentContainerStyle={{
           padding: 16,
           paddingTop: isMobile ? 18 : 24,

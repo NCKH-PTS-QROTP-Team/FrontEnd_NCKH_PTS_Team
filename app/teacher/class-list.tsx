@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  RefreshControl,
   View,
   Text,
   ScrollView,
@@ -26,6 +27,7 @@ import {
 } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
+import MobileGradientHeader from "@/components/MobileGradientHeader";
 import type { Course } from "@/apis/services/course.service";
 import type { Semester as SemesterItem } from "@/apis/services/semester.service";
 import type {
@@ -90,6 +92,7 @@ export default function ClassListScreen() {
   const [selectedSemester, setSelectedSemester] = useState<string | null>(null);
   const [semesters, setSemesters] = useState<SemesterItem[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [refreshing, setRefreshing] = useState(false);
 
   const contentMaxWidth = "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
@@ -237,6 +240,15 @@ export default function ClassListScreen() {
       showToast("Không thể tải danh sách lớp", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await loadClasses();
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -494,6 +506,16 @@ export default function ClassListScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
+        refreshControl={
+          isMobile ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={["#1E3A8A"]}
+              tintColor="#1E3A8A"
+            />
+          ) : undefined
+        }
         contentContainerStyle={{
           paddingHorizontal,
           paddingTop: 14,
@@ -509,105 +531,30 @@ export default function ClassListScreen() {
           }}
         >
           {isMobile ? (
-            <View
+            <MobileGradientHeader
+              title="Danh sách lớp học"
+              subtitle={`${summary.totalClasses} lớp • ${summary.totalStudents} sinh viên`}
+              icon="school"
+              iconSize={24}
+              actions={[
+                {
+                  icon: "notifications",
+                  onPress: () => router.push("/teacher/notifications"),
+                  accessibilityLabel: "Mở thông báo",
+                },
+                {
+                  icon: "person",
+                  onPress: () => router.push("/teacher/profile"),
+                  accessibilityLabel: "Mở hồ sơ",
+                },
+              ]}
               style={{
-                borderRadius: 18,
-                padding: 18,
+                marginHorizontal: 0,
+                marginTop: 0,
                 marginBottom: 14,
-                borderWidth: 1,
                 borderColor: "#BFDBFE",
-                backgroundColor: "#1E3A8A",
               }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 10,
-                }}
-              >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 12,
-                    flex: 1,
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 14,
-                      backgroundColor: "rgba(255,255,255,0.2)",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderWidth: 1,
-                      borderColor: "rgba(255,255,255,0.32)",
-                    }}
-                  >
-                    <Ionicons name="school" size={24} color="#FFFFFF" />
-                  </View>
-
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontSize: 20,
-                        fontWeight: "800",
-                        color: "#FFFFFF",
-                      }}
-                    >
-                      Danh sách lớp học
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        color: "rgba(255,255,255,0.88)",
-                        marginTop: 2,
-                      }}
-                    >
-                      {summary.totalClasses} lớp • {summary.totalStudents} sinh
-                      viên
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={{ flexDirection: "row", gap: 10 }}>
-                  <TouchableOpacity
-                    onPress={() => router.push("/teacher/notifications")}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor: "rgba(255,255,255,0.2)",
-                      borderWidth: 1,
-                      borderColor: "rgba(255,255,255,0.35)",
-                    }}
-                  >
-                    <Ionicons name="notifications" size={19} color="#FFFFFF" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => router.push("/teacher/profile")}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor: "rgba(255,255,255,0.2)",
-                      borderWidth: 1,
-                      borderColor: "rgba(255,255,255,0.35)",
-                    }}
-                  >
-                    <Ionicons name="person" size={19} color="#FFFFFF" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
+            />
           ) : null}
 
           <View

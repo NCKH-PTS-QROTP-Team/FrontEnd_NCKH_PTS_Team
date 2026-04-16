@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
+  RefreshControl,
   View,
   Text,
   ScrollView,
@@ -136,6 +137,7 @@ export default function NotificationsScreen() {
   const [notifications, setNotifications] =
     useState<Notification[]>(DEMO_NOTIFICATIONS);
   const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [refreshing, setRefreshing] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const displayed =
@@ -151,6 +153,16 @@ export default function NotificationsScreen() {
 
   const removeNotif = (id: string) =>
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      // Current screen uses demo data, so refresh resets list to latest demo source.
+      setNotifications(DEMO_NOTIFICATIONS);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#f8fafc" }}>
@@ -233,6 +245,16 @@ export default function NotificationsScreen() {
 
       {/* ── Content ── */}
       <ScrollView
+        refreshControl={
+          isMobile ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={["#1E3A8A"]}
+              tintColor="#1E3A8A"
+            />
+          ) : undefined
+        }
         contentContainerStyle={{
           paddingHorizontal,
           paddingTop: 24,
