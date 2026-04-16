@@ -15,6 +15,8 @@ import {
  */
 export interface Schedule {
   id: string;
+  courseId?: string | null;
+  courseName?: string | null;
   classId: string;
   classCode: string;
   className: string;
@@ -54,6 +56,8 @@ export const scheduleService = {
    * Student: dùng enrolledClassIds để lấy lịch nhiều môn (nhiều lớp).
    */
   getSchedules: async (params?: {
+    courseId?: string;
+    courseIds?: string[];
     classId?: string;
     classIds?: string[];
     lecturerId?: string;
@@ -63,7 +67,9 @@ export const scheduleService = {
     toDate?: string;
   }): Promise<Schedule[]> => {
     const query: Record<string, string> = {};
-    if (params?.classIds?.length) query.classIds = params.classIds.join(',');
+    if (params?.courseIds?.length) query.courseIds = params.courseIds.join(',');
+    else if (params?.courseId) query.courseId = params.courseId;
+    else if (params?.classIds?.length) query.classIds = params.classIds.join(',');
     else if (params?.classId) query.classId = params.classId;
     if (params?.lecturerId) query.lecturerId = params.lecturerId;
     else if (params?.teacherId) query.teacherId = params.teacherId;

@@ -49,6 +49,7 @@ export const attendanceService = {
    * Lấy danh sách sessions
    */
   getSessions: async (params?: {
+    courseId?: string;
     classId?: string;
     subjectId?: string;
     lecturerId?: string;
@@ -56,12 +57,14 @@ export const attendanceService = {
     active?: boolean;
   }): Promise<AttendanceSessionResponse[]> => {
     const query: {
+      courseId?: string;
       classId?: string;
       subjectId?: string;
       lecturerId?: string;
       teacherId?: string;
       active?: boolean;
     } = {
+      courseId: params?.courseId,
       classId: params?.classId,
       subjectId: params?.subjectId,
       active: params?.active,
@@ -105,6 +108,7 @@ export const attendanceService = {
   getRecords: async (params?: {
     sessionId?: string;
     studentId?: string;
+    courseId?: string;
     classId?: string;
     subjectId?: string;
   }): Promise<AttendanceRecordResponse[]> => {

@@ -10,9 +10,10 @@ export interface Class {
   name: string;
   subjectId: string | null;
   subjectName: string | null;
+  semesterId?: string | null;
   teacherId: string | null;
   teacherName: string | null;
-  semester: string | null;
+  semester?: string | null;
   studentCount: number | null;
   createdAt: string;
 }
@@ -25,7 +26,7 @@ export interface CreateClassRequest {
   name: string;
   subjectId?: string;
   teacherId?: string;
-  semester?: string;
+  semesterId?: string;
   studentCount?: number;
 }
 
@@ -34,7 +35,7 @@ export interface UpdateClassRequest {
   name?: string;
   subjectId?: string;
   teacherId?: string;
-  semester?: string;
+  semesterId?: string;
   studentCount?: number;
 }
 

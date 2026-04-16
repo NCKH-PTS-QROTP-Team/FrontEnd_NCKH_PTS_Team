@@ -36,6 +36,11 @@ export default function Sidebar({
   const pathname = usePathname();
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [tooltip, setTooltip] = useState<{
+    label: string;
+    left: number;
+    top: number;
+  } | null>(null);
 
   // Use external state if provided, otherwise use internal state
   const collapsed =
@@ -44,6 +49,22 @@ export default function Sidebar({
     onToggleCollapse || (() => setInternalCollapsed(!internalCollapsed));
 
   const sidebarWidth = collapsed ? 80 : 260;
+
+  const renderMenuIcon = (
+    icon: React.ReactNode,
+    isActive: boolean,
+    isHovered: boolean,
+  ) => {
+    const iconColor = isActive ? "#FFFFFF" : isHovered ? "#1E40AF" : "#2563EB";
+
+    if (React.isValidElement(icon)) {
+      return React.cloneElement(icon as React.ReactElement<any>, {
+        color: iconColor,
+      });
+    }
+
+    return icon;
+  };
 
   // Only show sidebar on web
   if (Platform.OS !== "web") {
@@ -69,7 +90,7 @@ export default function Sidebar({
       style={{
         width: "100%",
         height: "100%",
-        backgroundColor: Colors.white,
+        backgroundColor: "#FFFFFF",
         borderRightWidth: 1,
         borderRightColor: "#E5E7EB",
         ...(Platform.OS === "web" &&
@@ -97,38 +118,33 @@ export default function Sidebar({
                 borderRadius: 8,
                 backgroundColor: "#FFFFFF",
                 borderWidth: 1,
-                borderColor: "#E5E7EB",
+                borderColor: "#CBD5E1",
                 alignItems: "center",
                 justifyContent: "center",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.1,
-                shadowRadius: 2,
-                elevation: 2,
               },
               Platform.OS === "web" &&
-              ({
-                transition: "all 0.2s ease",
-                cursor: "pointer",
-              } as any),
+                ({
+                  transition: "all 0.2s ease",
+                  cursor: "pointer",
+                } as any),
             ]}
             activeOpacity={0.7}
             {...(Platform.OS === "web" &&
               ({
                 onMouseEnter: (e: any) => {
-                  e.currentTarget.style.backgroundColor = "#F9FAFB";
-                  e.currentTarget.style.borderColor = Colors.primary;
+                  e.currentTarget.style.backgroundColor = "#EFF6FF";
+                  e.currentTarget.style.borderColor = "#93C5FD";
                 },
                 onMouseLeave: (e: any) => {
                   e.currentTarget.style.backgroundColor = "#FFFFFF";
-                  e.currentTarget.style.borderColor = "#E5E7EB";
+                  e.currentTarget.style.borderColor = "#CBD5E1";
                 },
               } as any))}
           >
             {collapsed ? (
-              <ChevronRightIcon size={16} color="#6B7280" />
+              <ChevronRightIcon size={16} color="#1E40AF" />
             ) : (
-              <ChevronLeftIcon size={16} color="#6B7280" />
+              <ChevronLeftIcon size={16} color="#1E40AF" />
             )}
           </TouchableOpacity>
         </View>
@@ -144,11 +160,11 @@ export default function Sidebar({
             // Normalize routes - handle both /student/home and /(student)/home formats
             const normalizedPathname = pathname?.replace(
               /^\/\(student\)/,
-              "/student"
+              "/student",
             );
             const normalizedRoute = item.route.replace(
               /^\/\(student\)/,
-              "/student"
+              "/student",
             );
             const isActive =
               normalizedPathname === normalizedRoute ||
@@ -164,8 +180,23 @@ export default function Sidebar({
                 }}
                 {...(Platform.OS === "web" &&
                   ({
-                    onMouseEnter: () => setHoveredIndex(index),
-                    onMouseLeave: () => setHoveredIndex(null),
+                    onMouseEnter: (e: any) => {
+                      setHoveredIndex(index);
+                      if (!collapsed) return;
+
+                      const rect = e.currentTarget?.getBoundingClientRect?.();
+                      if (!rect) return;
+
+                      setTooltip({
+                        label: item.label,
+                        left: rect.right + 10,
+                        top: rect.top + rect.height / 2,
+                      });
+                    },
+                    onMouseLeave: () => {
+                      setHoveredIndex(null);
+                      setTooltip(null);
+                    },
                   } as any))}
               >
                 <TouchableOpacity
@@ -180,12 +211,12 @@ export default function Sidebar({
                       borderRadius: 8,
                       height: 48,
                       backgroundColor: isActive
-                        ? "#CCFBF1"
+                        ? "#1E3A8A"
                         : isHovered
-                          ? "#F9FAFB"
+                          ? "#EFF6FF"
                           : "transparent",
-                      borderLeftWidth: isActive ? 3 : 0,
-                      borderLeftColor: isActive ? Colors.primary : "transparent",
+                      borderLeftWidth: 0,
+                      borderLeftColor: "transparent",
                       justifyContent: collapsed ? "center" : "flex-start",
                     },
                     {
@@ -202,10 +233,10 @@ export default function Sidebar({
                         height: 32,
                         borderRadius: 8,
                         backgroundColor: isActive
-                          ? Colors.primary
+                          ? "rgba(255,255,255,0.22)"
                           : isHovered
-                            ? "#E5E7EB"
-                            : "#F3F4F6",
+                            ? "#DBEAFE"
+                            : "transparent",
                         alignItems: "center",
                         justifyContent: "center",
                         marginLeft: collapsed ? 0 : 12,
@@ -216,7 +247,7 @@ export default function Sidebar({
                       } as any,
                     ]}
                   >
-                    {item.icon}
+                    {renderMenuIcon(item.icon, isActive, isHovered)}
                   </View>
                   {!collapsed && (
                     <>
@@ -225,7 +256,7 @@ export default function Sidebar({
                           flex: 1,
                           fontSize: 14,
                           fontWeight: isActive ? "600" : "400",
-                          color: isActive ? Colors.primary : "#111827",
+                          color: isActive ? "#FFFFFF" : "#1E3A8A",
                           opacity: collapsed ? 0 : 1,
                           ...(Platform.OS === "web" &&
                             ({
@@ -261,59 +292,55 @@ export default function Sidebar({
                     </>
                   )}
                 </TouchableOpacity>
-
-                {/* Tooltip when collapsed */}
-                {collapsed && isHovered && (
-                  <View
-                    style={{
-                      position: "absolute" as any,
-                      left: 88,
-                      top: "50%",
-                      transform: [{ translateY: -12 }],
-                      backgroundColor: "#111827",
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 6,
-                      zIndex: 1000,
-                      ...(Platform.OS === "web" &&
-                        ({
-                          pointerEvents: "none" as any,
-                        } as any)),
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: "#FFFFFF",
-                        fontSize: 12,
-                        fontWeight: "500",
-                      }}
-                    >
-                      {item.label}
-                    </Text>
-                    {/* Arrow */}
-                    <View
-                      style={{
-                        position: "absolute" as any,
-                        left: -4,
-                        top: "50%",
-                        transform: [{ translateY: -4 }],
-                        width: 0,
-                        height: 0,
-                        borderTopWidth: 4,
-                        borderBottomWidth: 4,
-                        borderRightWidth: 4,
-                        borderTopColor: "transparent",
-                        borderBottomColor: "transparent",
-                        borderRightColor: "#111827",
-                      }}
-                    />
-                  </View>
-                )}
               </View>
             );
           })}
         </View>
       </ScrollView>
+
+      {/* Global tooltip (only when collapsed) */}
+      {Platform.OS === "web" && collapsed && tooltip && (
+        <View
+          style={{
+            position: "fixed" as any,
+            left: tooltip.left,
+            top: tooltip.top,
+            transform: [{ translateY: -12 }],
+            backgroundColor: "#111827",
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: 6,
+            zIndex: 9999,
+            pointerEvents: "none" as any,
+          }}
+        >
+          <Text
+            style={{
+              color: "#FFFFFF",
+              fontSize: 12,
+              fontWeight: "500",
+            }}
+          >
+            {tooltip.label}
+          </Text>
+          <View
+            style={{
+              position: "absolute" as any,
+              left: -4,
+              top: "50%",
+              transform: [{ translateY: -4 }],
+              width: 0,
+              height: 0,
+              borderTopWidth: 4,
+              borderBottomWidth: 4,
+              borderRightWidth: 4,
+              borderTopColor: "transparent",
+              borderBottomColor: "transparent",
+              borderRightColor: "#111827",
+            }}
+          />
+        </View>
+      )}
 
       {/* Logout Button - Match Figma: positioned at bottom, padding 16px, height 48px */}
       <View
@@ -323,7 +350,7 @@ export default function Sidebar({
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: Colors.white,
+          backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
           borderTopColor: "#E5E7EB",
         }}

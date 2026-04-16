@@ -99,8 +99,8 @@ export const reportService = {
   /**
    * Get student attendance reports
    */
-  getStudentReports: async (classId?: string): Promise<StudentAttendanceReport[]> => {
-    const params = classId ? { classId } : {};
+  getStudentReports: async (courseId?: string): Promise<StudentAttendanceReport[]> => {
+    const params = courseId ? { courseId } : {};
     const response = await apiClient.get<ApiResponse<StudentAttendanceReport[]>>('/reports/students', { params });
     return response.data.data;
   },
@@ -118,12 +118,12 @@ export const reportService = {
   /**
    * Tải file Excel báo cáo điểm danh.
    * Trả về Blob để FE tạo link tải (web) hoặc lưu file (native).
-   * @param classId optional - nếu có thì sheet sinh viên chỉ gồm lớp đó
+   * @param courseId optional - nếu có thì sheet sinh viên chỉ gồm học phần đó
    * @param subjectId optional - nếu có thì chỉ xuất báo cáo của môn này
    */
-  exportExcel: async (classId?: string, subjectId?: string): Promise<Blob> => {
+  exportExcel: async (courseId?: string, subjectId?: string): Promise<Blob> => {
     const params: Record<string, string> = {};
-    if (classId) params.classId = classId;
+    if (courseId) params.courseId = courseId;
     if (subjectId) params.subjectId = subjectId;
     const response = await apiClient.get('/reports/export/excel', {
       params: Object.keys(params).length ? params : undefined,
@@ -135,10 +135,10 @@ export const reportService = {
   /**
    * URL đầy đủ để tải file Excel (dùng cho native - fetch + save + share).
    */
-  getExportExcelUrl: (classId?: string, subjectId?: string): string => {
+  getExportExcelUrl: (courseId?: string, subjectId?: string): string => {
     const base = getExportBaseUrl();
     const search = new URLSearchParams();
-    if (classId) search.set('classId', classId);
+    if (courseId) search.set('courseId', courseId);
     if (subjectId) search.set('subjectId', subjectId);
     const qs = search.toString();
     return `${base}/reports/export/excel${qs ? `?${qs}` : ''}`;
