@@ -22,6 +22,7 @@ import { CameraView, useCameraPermissions, BarcodeScanningResult } from "expo-ca
 import { useSocket } from "@/apis/socket/SocketProvider";
 import { CheckCircleIcon, CloseIcon, UserIcon } from "@/components/Icons";
 import { getFriendlyError } from "@/utils/errorMessages";
+import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 
 interface SessionInfo {
   id: string;
@@ -784,7 +785,21 @@ export default function QRAttendanceScreen() {
       <StatusBar style="dark" />
 
       {showCamera ? (
-        <View style={{ flex: 1 }}>
+        <View style={Platform.OS === 'web' ? {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          padding: 24,
+        } : { flex: 1 }}>
+          <View style={Platform.OS === 'web' ? {
+            width: '100%',
+            maxWidth: 800,
+            aspectRatio: 16 / 9,
+            borderRadius: 16,
+            overflow: 'hidden',
+            ...getWebShadow('xl'),
+          } : { flex: 1 }}>
           <CameraView
             ref={cameraRef}
             style={{ flex: 1 }}
@@ -837,7 +852,7 @@ export default function QRAttendanceScreen() {
                     ? "Xác thực Face ID"
                     : "Quét QR Code"}
                 </Text>
-                <TouchableOpacity onPress={handleCancel}>
+                <TouchableOpacity onPress={handleCancel} style={{ ...getWebCursor() }}>
                   <CloseIcon size={24} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
@@ -1160,6 +1175,7 @@ export default function QRAttendanceScreen() {
                 </Text>
               </View>
           </View>
+          </View>
         </View>
       ) : (
       <ScrollView
@@ -1182,11 +1198,7 @@ export default function QRAttendanceScreen() {
               marginBottom: 24,
               borderWidth: 1,
               borderColor: "#E5E7EB",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 3,
+              ...getWebShadow("md"),
             }}
           >
             <View
@@ -1242,6 +1254,7 @@ export default function QRAttendanceScreen() {
                               borderWidth: 1,
                               borderColor: isSelected ? "#10B981" : "#A7F3D0",
                               backgroundColor: isSelected ? "#10B981" : "#ECFDF5",
+                              ...getWebCursor(),
                             }}
                           >
                             <Text
@@ -1288,11 +1301,7 @@ export default function QRAttendanceScreen() {
               marginBottom: 24,
               borderWidth: 1,
               borderColor: "#E5E7EB",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 3,
+              ...getWebShadow("md"),
             }}
           >
                   <View
@@ -1404,11 +1413,7 @@ export default function QRAttendanceScreen() {
                     marginBottom: 24,
                     borderWidth: 1,
                     borderColor: "#E5E7EB",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 8,
-                    elevation: 3,
+                    ...getWebShadow("md"),
                   }}
                 >
                   <View

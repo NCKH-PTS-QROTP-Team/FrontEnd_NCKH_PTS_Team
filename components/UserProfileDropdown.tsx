@@ -100,28 +100,17 @@ export default function UserProfileDropdown({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          paddingHorizontal: 12,
+          paddingHorizontal: 8,
           paddingVertical: 8,
           minHeight: 44,
-          borderRadius: 999,
-          borderWidth: 1,
-          borderColor: "#1f3d8e",
-          overflow: "hidden",
-          boxShadow: "0 4px 12px rgba(31, 61, 142, 0.26)",
+          borderRadius: 8,
+          ...(Platform.OS === "web" ? { cursor: "pointer", transition: "background-color 0.2s" } : {})
         }}
+        {...(Platform.OS === "web" ? {
+          onMouseEnter: (e: any) => { e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.05)"; },
+          onMouseLeave: (e: any) => { e.currentTarget.style.backgroundColor = "transparent"; }
+        } : {})}
       >
-        <LinearGradient
-          colors={isOpen ? ["#162d67", "#1f3d8e"] : ["#1f3d8e", "#2f57bf"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          }}
-        />
 
         {/* Avatar */}
         <Avatar name={userName} src={userAvatar} size="small" bordered />
@@ -131,8 +120,8 @@ export default function UserProfileDropdown({
           style={{
             marginLeft: 10,
             fontSize: 14,
-            fontWeight: "600",
-            color: Colors.white,
+            fontWeight: "700",
+            color: "#1e3a8a",
             maxWidth: 150,
           }}
           numberOfLines={1}
@@ -145,7 +134,7 @@ export default function UserProfileDropdown({
           style={{
             marginLeft: 8,
             fontSize: 12,
-            color: Colors.white,
+            color: "#64748b",
             transform: isOpen ? [{ rotate: "180deg" }] : [{ rotate: "0deg" }],
             ...(Platform.OS === "web" &&
               ({

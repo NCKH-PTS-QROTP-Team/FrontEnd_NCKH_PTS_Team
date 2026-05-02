@@ -62,7 +62,7 @@ export default function StudentLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: "#FFFFFF" },
+        contentStyle: { backgroundColor: Platform.OS === "web" ? "#F8FAFC" : "#FFFFFF" },
       }}
     >
       <Stack.Screen name="home" />

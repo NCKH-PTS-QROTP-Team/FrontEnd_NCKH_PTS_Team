@@ -23,6 +23,7 @@ import { getFriendlyError } from "@/utils/errorMessages";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useSocket } from "@/apis/socket/SocketProvider";
 import { CloseIcon } from "@/components/Icons";
+import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 
 interface SessionInfo {
   id: string;
@@ -667,11 +668,7 @@ borderRadius: 16,
               marginBottom: 24,
               borderWidth: 1,
 borderColor: "#E5E7EB",
-              shadowColor: "#000",
-shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 3,
+              ...getWebShadow("md"),
             }}
           >
             {/* Countdown Section */}
@@ -767,6 +764,7 @@ Hết thời gian điểm danh
                               borderWidth: 1,
                               borderColor: isSelected ? Colors.primary : "#BFDBFE",
                               backgroundColor: isSelected ? "#1D4ED8" : "#EFF6FF",
+                              ...getWebCursor(),
                             }}
                           >
                             <Text
@@ -969,7 +967,18 @@ style={[
       {/* Trên web, không cần check permission.granted vì browser tự xử lý */}
       {showCamera && (isWeb || permission?.granted) && (
         <View
-          style={{
+          style={Platform.OS === 'web' ? {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            zIndex: 1000,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+          } : {
             position: "absolute",
             top: 0,
             left: 0,
@@ -979,6 +988,14 @@ style={[
             zIndex: 1000,
           }}
         >
+          <View style={Platform.OS === 'web' ? {
+            width: '100%',
+            maxWidth: 800,
+            aspectRatio: 16 / 9,
+            borderRadius: 16,
+            overflow: 'hidden',
+            ...getWebShadow('xl'),
+          } : { flex: 1 }}>
           <CameraView ref={cameraRef} style={{ flex: 1 }} facing="front" />
           {/* Overlay UI - dùng absolute positioning thay vì children */}
           <View
@@ -1311,6 +1328,7 @@ style={[
                   📸 Đưa khuôn mặt vào khung, đảm bảo ánh sáng đủ và nhấn nút để chụp ảnh xác thực Face ID. Đảm bảo khuôn mặt rõ, không che mắt và nằm trong khung.
                 </Text>
               </View>
+          </View>
           </View>
         </View>
       )}

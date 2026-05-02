@@ -15,15 +15,12 @@ export default function AIChatHeaderButton() {
       onPress={handleOpenChat}
       activeOpacity={0.85}
       style={{
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        overflow: "hidden",
-        borderWidth: 1,
-        borderColor: "#1f3d8e",
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "transparent",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: "0 4px 12px rgba(31, 61, 142, 0.28)",
         ...(Platform.OS === "web"
           ? ({
               cursor: "pointer",
@@ -31,48 +28,18 @@ export default function AIChatHeaderButton() {
             } as any)
           : {}),
       }}
+      {...(Platform.OS === "web" && {
+        onMouseEnter: (e: any) => { e.currentTarget.style.backgroundColor = "#f1f5f9"; },
+        onMouseLeave: (e: any) => { e.currentTarget.style.backgroundColor = "transparent"; }
+      } as any)}
       accessibilityRole="button"
       accessibilityLabel="Mở AI chat"
     >
-      <LinearGradient
-        colors={["#1f3d8e", "#2f57bf"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          position: "absolute",
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-        }}
-      />
-
       <Ionicons
-        name="chatbubble-ellipses"
-        size={19}
-        color="#FFFFFF"
-        style={
-          Platform.OS === "web"
-            ? ({ textShadow: "0 1px 4px rgba(0,0,0,0.28)" } as any)
-            : undefined
-        }
+        name="sparkles-outline"
+        size={20}
+        color="#1e3a8a"
       />
-
-      <View
-        style={{
-          position: "absolute",
-          bottom: 4,
-          right: 4,
-          borderRadius: 8,
-          backgroundColor: "rgba(255,255,255,0.22)",
-          paddingHorizontal: 4,
-          paddingVertical: 1,
-        }}
-      >
-        <Text style={{ fontSize: 8, fontWeight: "700", color: "#FFFFFF" }}>
-          AI
-        </Text>
-      </View>
     </TouchableOpacity>
   );
 }
