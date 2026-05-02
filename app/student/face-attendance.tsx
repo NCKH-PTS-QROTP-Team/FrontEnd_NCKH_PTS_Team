@@ -18,6 +18,7 @@ import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import { Colors } from "@/constants/colors";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import Toast, { useToast } from "@/components/Toast";
+import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 
 export default function FaceAttendanceScreen() {
   const router = useRouter();
@@ -25,12 +26,12 @@ export default function FaceAttendanceScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(false);
   const [captured, setCaptured] = useState(false);
+  const [mode, setMode] = useState<'authenticate' | 'register'>('authenticate');
   const cameraRef = useRef<CameraView>(null);
   const { toast, showToast, hideToast } = useToast();
 
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
-  const contentMaxWidth = isDesktop ? 500 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
 
   // Student ID - lấy từ JWT token
@@ -64,15 +65,11 @@ export default function FaceAttendanceScreen() {
     try {
       setScanning(true);
 
-      // Capture photo từ camera
-      // Tăng quality lên tối đa (1.0) để cải thiện nhận diện mặt trên mobile
-      // Mobile thường có độ phân giải thấp hơn web, cần quality cao hơn
       const photo = await cameraRef.current.takePictureAsync({
         quality: 1.0, // Maximum quality để tăng similarity trên mobile
         base64: true, // Quan trọng: lấy base64
         skipProcessing: false, // Đảm bảo xử lý đầy đủ
         exif: false, // Tắt EXIF để giảm kích thước
-        // Không set width/height để giữ nguyên resolution của camera
       });
 
       if (!photo.base64) {
@@ -81,32 +78,48 @@ export default function FaceAttendanceScreen() {
       }
 
       setCaptured(true);
-
-      // Gửi base64 thuần (backend sẽ tự strip prefix nếu có)
       const base64Image = photo.base64;
 
-      // Gọi API verify face
-      const verifyResult = await faceService.verifyFromCamera({
-        studentId,
-        base64Image,
-      });
+      if (mode === 'authenticate') {
+        // Gọi API verify face
+        const verifyResult = await faceService.verifyFromCamera({
+          studentId,
+          base64Image,
+        });
 
-      if (verifyResult.isMatch) {
-        showToast(
-          `Xác thực thành công! Độ tương đồng: ${(verifyResult.similarity * 100).toFixed(1)}%`,
-          "success"
-        );
+        if (verifyResult.isMatch) {
+          showToast(
+            `Xác thực thành công! Độ tương đồng: ${(verifyResult.similarity * 100).toFixed(1)}%`,
+            "success"
+          );
 
-        // Navigate back sau 1.5 giây
-        setTimeout(() => {
-          router.back();
-        }, 1500);
+          // Navigate back sau 1.5 giây
+          setTimeout(() => {
+            router.back();
+          }, 1500);
+        } else {
+          showToast(
+            `Xác thực thất bại. ${verifyResult.message}`,
+            "error"
+          );
+          setCaptured(false);
+        }
       } else {
-        showToast(
-          `Xác thực thất bại. ${verifyResult.message}`,
-          "error"
-        );
-        setCaptured(false);
+        // Mode Đăng ký
+        const registerResult = await faceService.registerFromCamera({
+          studentId,
+          base64Image,
+        });
+        
+        if (registerResult) {
+          showToast(`Đăng ký dữ liệu khuôn mặt thành công!`, "success");
+          setTimeout(() => {
+            router.back();
+          }, 1500);
+        } else {
+          showToast(`Đăng ký thất bại. Vui lòng thử lại.`, "error");
+          setCaptured(false);
+        }
       }
     } catch (error: any) {
       console.error("Face verification error:", error);
@@ -171,110 +184,186 @@ export default function FaceAttendanceScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
+    <View style={{ flex: 1, backgroundColor: Platform.OS === 'web' ? Colors.surface : "#000" }}>
       <StatusBar style="light" />
 
       {/* Camera View */}
-      <View style={{ flex: 1 }}>
-        <CameraView
-          ref={cameraRef}
-          style={{ flex: 1 }}
-          facing="front" // Front camera cho selfie
-        >
-          {/* Overlay với hướng dẫn */}
-          <View
-            style={{
-              flex: 1,
-              justifyContent: "flex-end",
-              padding: paddingHorizontal,
-              paddingBottom: 40,
-            }}
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: Platform.OS === 'web' ? 'center' : 'flex-start', padding: Platform.OS === 'web' ? 24 : 0 }}>
+        <View style={Platform.OS === 'web' ? {
+          width: '100%',
+          maxWidth: 800,
+          aspectRatio: 16 / 9,
+          borderRadius: 16,
+          overflow: "hidden",
+          backgroundColor: "#111827",
+          ...getWebShadow("xl"),
+        } : {
+          flex: 1,
+          alignSelf: 'stretch',
+        }}>
+          <CameraView
+            ref={cameraRef}
+            style={{ flex: 1 }}
+            facing="front" // Front camera cho selfie
           >
-            {/* Instruction */}
-            <View
-              style={{
-                backgroundColor: "rgba(0,0,0,0.7)",
-                borderRadius: 16,
-                padding: 20,
-                marginBottom: 24,
-                alignItems: "center",
-              }}
-            >
-              <Text
+            <SafeAreaView style={{ flex: 1, justifyContent: "space-between" }}>
+              {/* Top Toggle Mode */}
+              <View style={{ 
+                flexDirection: 'row', 
+                backgroundColor: 'rgba(0,0,0,0.5)', 
+                marginHorizontal: Platform.OS === 'web' ? 'auto' : 40, 
+                width: Platform.OS === 'web' ? 300 : undefined,
+                marginTop: 20,
+                borderRadius: 30,
+                padding: 4,
+                alignSelf: Platform.OS === 'web' ? 'center' : 'stretch'
+              }}>
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    backgroundColor: mode === 'authenticate' ? Colors.primary : 'transparent',
+                    borderRadius: 26,
+                    alignItems: 'center',
+                    ...getWebCursor(),
+                  }}
+                  onPress={() => { setMode('authenticate'); setCaptured(false); }}
+                  disabled={scanning}
+                >
+                  <Text style={{ color: 'white', fontWeight: 'bold' }}>Điểm danh</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    backgroundColor: mode === 'register' ? Colors.primary : 'transparent',
+                    borderRadius: 26,
+                    alignItems: 'center',
+                    ...getWebCursor(),
+                  }}
+                  onPress={() => { setMode('register'); setCaptured(false); }}
+                  disabled={scanning}
+                >
+                  <Text style={{ color: 'white', fontWeight: 'bold' }}>Đăng ký</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Face guide frame (visual guide) */}
+              {!captured && (
+                <View
+                  style={Platform.OS === 'web' ? {
+                    position: "absolute",
+                    top: "15%",
+                    bottom: "25%",
+                    alignSelf: "center",
+                    aspectRatio: 1,
+                    borderWidth: 2,
+                    borderColor: mode === 'authenticate' ? Colors.primary : '#38BDF8',
+                    borderRadius: 16,
+                    borderStyle: "dashed",
+                  } : {
+                    position: "absolute",
+                    top: "30%",
+                    left: "10%",
+                    right: "10%",
+                    aspectRatio: 0.75,
+                    borderWidth: 2,
+                    borderColor: mode === 'authenticate' ? Colors.primary : '#38BDF8',
+                    borderRadius: 12,
+                    borderStyle: "dashed",
+                  }}
+                />
+              )}
+
+              {/* Overlay với hướng dẫn */}
+              <View
                 style={{
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: "600",
-                  marginBottom: 8,
-                  textAlign: "center",
+                  padding: paddingHorizontal,
+                  paddingBottom: Platform.OS === 'web' ? 24 : 40,
                 }}
               >
-                {scanning
-                  ? "Đang xử lý..."
-                  : captured
-                  ? "Đã chụp ảnh"
-                  : "Đặt khuôn mặt trong khung"}
-              </Text>
-              <Text
-                style={{
-                  color: Colors.white,
-                  fontSize: 13,
-                  opacity: 0.8,
-                  textAlign: "center",
-                }}
-              >
-                {scanning
-                  ? "Vui lòng chờ..."
-                  : "Đảm bảo ánh sáng đủ và khuôn mặt rõ ràng"}
-              </Text>
-            </View>
+                {/* Instruction */}
+                <View
+                  style={{
+                    backgroundColor: "rgba(0,0,0,0.7)",
+                    borderRadius: 16,
+                    padding: 20,
+                    marginBottom: 24,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: "600",
+                      marginBottom: 8,
+                      textAlign: "center",
+                    }}
+                  >
+                    {scanning
+                      ? "Đang xử lý..."
+                      : captured
+                      ? "Đã chụp ảnh"
+                      : mode === 'authenticate' ? "Đặt khuôn mặt trong khung để điểm danh" : "Căn chỉnh khuôn mặt để đăng ký"}
+                  </Text>
+                  <Text
+                    style={{
+                      color: Colors.white,
+                      fontSize: 13,
+                      opacity: 0.8,
+                      textAlign: "center",
+                    }}
+                  >
+                    {scanning
+                      ? "Vui lòng chờ..."
+                      : "Đảm bảo ánh sáng đủ và khuôn mặt rõ ràng"}
+                  </Text>
+                </View>
 
-            {/* Capture Button */}
-            <PrimaryButton
-              title={scanning ? "Đang xử lý..." : "Quét mặt để điểm danh"}
-              onPress={handleCaptureAndVerify}
-              loading={scanning}
-              disabled={scanning || captured}
-            />
+                {/* Actions row for web (side by side), column for mobile */}
+                <View style={{
+                  flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+                  gap: 16,
+                  justifyContent: 'center',
+                  alignItems: 'center'
+                }}>
+                  <View style={{ width: Platform.OS === 'web' ? 300 : '100%' }}>
+                    <PrimaryButton
+                      title={scanning ? "Đang xử lý..." : mode === 'authenticate' ? "Quét mặt để điểm danh" : "Lưu khuôn mặt mới"}
+                      onPress={handleCaptureAndVerify}
+                      loading={scanning}
+                      disabled={scanning || captured}
+                    />
+                  </View>
 
-            {/* Back Button */}
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={{
-                marginTop: 16,
-                padding: 12,
-                alignItems: "center",
-              }}
-            >
-              <Text
-                style={{
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: "500",
-                }}
-              >
-                Hủy
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Face guide frame (visual guide) */}
-          {!captured && (
-            <View
-              style={{
-                position: "absolute",
-                top: "30%",
-                left: "10%",
-                right: "10%",
-                aspectRatio: 0.75,
-                borderWidth: 2,
-                borderColor: Colors.primary,
-                borderRadius: 12,
-                borderStyle: "dashed",
-              }}
-            />
-          )}
-        </CameraView>
+                  {/* Back Button */}
+                  <TouchableOpacity
+                    onPress={() => router.back()}
+                    style={{
+                      padding: 12,
+                      alignItems: "center",
+                      backgroundColor: Platform.OS === 'web' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                      borderRadius: 12,
+                      width: Platform.OS === 'web' ? 120 : 'auto',
+                      ...getWebCursor(),
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: "500",
+                      }}
+                    >
+                      Hủy
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </SafeAreaView>
+          </CameraView>
+        </View>
       </View>
 
       {/* Toast */}
@@ -284,7 +373,7 @@ export default function FaceAttendanceScreen() {
         type={toast.type}
         onHide={hideToast}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -22,6 +22,7 @@ import {
 import Toast, { useToast } from "@/components/Toast";
 import { LinearGradient } from "expo-linear-gradient";
 import { DropdownPicker } from "@/components/DropdownPicker";
+import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 
 const BLUE = "#3b82f6";
 
@@ -526,11 +527,8 @@ export default function HistoryScreen() {
                       backgroundColor: isActive ? BLUE : "#fff",
                       borderWidth: 1,
                       borderColor: isActive ? BLUE : "#e2e8f0",
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 2,
-                      elevation: 1,
+                      ...getWebShadow("sm"),
+                      ...getWebCursor(),
                     }}
                   >
                     <Text
@@ -590,11 +588,7 @@ export default function HistoryScreen() {
                       marginBottom: 14,
                       borderWidth: 1,
                       borderColor: "#f1f5f9",
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.04,
-                      shadowRadius: 6,
-                      elevation: 1,
+                      ...getWebShadow("md"),
                     }}
                   >
                     {/* Time indicator line */}
@@ -718,6 +712,7 @@ export default function HistoryScreen() {
                       paddingVertical: 8,
                       borderRadius: 8,
                       backgroundColor: page === 1 ? "#f1f5f9" : BLUE + "15",
+                      ...getWebCursor(),
                     }}
                   >
                     <Text
@@ -743,6 +738,7 @@ export default function HistoryScreen() {
                       borderRadius: 8,
                       backgroundColor:
                         page === totalPages ? "#f1f5f9" : BLUE + "15",
+                      ...getWebCursor(),
                     }}
                   >
                     <Text

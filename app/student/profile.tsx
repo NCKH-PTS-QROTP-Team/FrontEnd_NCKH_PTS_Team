@@ -17,6 +17,7 @@ import { authService, attendanceService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
 import ProfileAndSettings from "@/components/ProfileAndSettings";
+import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 
 export default function StudentProfileScreen() {
   const router = useRouter();
@@ -104,6 +105,9 @@ export default function StudentProfileScreen() {
           padding: 16,
           paddingTop: isMobile ? 18 : 24,
           paddingBottom: isMobile ? 120 : 32,
+          maxWidth: 600,
+          width: "100%" as any,
+          alignSelf: "center" as any,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -166,6 +170,8 @@ export default function StudentProfileScreen() {
             borderWidth: 1,
             borderColor: "#EF444415",
             marginBottom: 16,
+            ...getWebShadow("sm"),
+            ...getWebCursor(),
           }}
         >
           <LogoutIcon size={20} color="#EF4444" />

@@ -17,6 +17,7 @@ import { Colors } from "@/constants/colors";
 import Toast, { useToast } from "@/components/Toast";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
+import { getWebCursor } from "@/constants/webStyles";
 
 const SMOOTHING = 0.35; // thấp = bám mặt nhanh hơn
 const DETECT_INTERVAL_MS = 350;
@@ -176,6 +177,7 @@ export default function FaceDemoScreen() {
               paddingHorizontal: 24,
               paddingVertical: 12,
               borderRadius: 10,
+              ...getWebCursor(),
             }}
           >
             <Text style={{ color: Colors.white, fontWeight: "600" }}>Bật camera</Text>
@@ -199,7 +201,7 @@ export default function FaceDemoScreen() {
           </Text>
           <TouchableOpacity
             onPress={() => router.back()}
-            style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10 }}
+            style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10, ...getWebCursor() }}
           >
             <Text style={{ color: Colors.white, fontWeight: "600" }}>Quay lại</Text>
           </TouchableOpacity>

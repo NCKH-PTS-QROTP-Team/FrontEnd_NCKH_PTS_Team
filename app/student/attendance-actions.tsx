@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/colors";
 import { HashIcon, QrCodeIcon, UserIcon } from "@/components/Icons";
+import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 
 export default function StudentAttendanceActionsScreen() {
   const router = useRouter();
@@ -66,6 +67,7 @@ export default function StudentAttendanceActionsScreen() {
             alignItems: "center",
             justifyContent: "center",
             gap: 6,
+            ...getWebCursor(),
           }}
         >
           <QrCodeIcon
@@ -96,6 +98,7 @@ export default function StudentAttendanceActionsScreen() {
             alignItems: "center",
             justifyContent: "center",
             gap: 6,
+            ...getWebCursor(),
           }}
         >
           <HashIcon
@@ -127,6 +130,7 @@ export default function StudentAttendanceActionsScreen() {
             alignItems: "center",
             justifyContent: "center",
             gap: 6,
+            ...getWebCursor(),
           }}
         >
           <UserIcon
@@ -149,7 +153,7 @@ export default function StudentAttendanceActionsScreen() {
       {/* Content */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{ padding: 16, maxWidth: 600, width: "100%" as any, alignSelf: "center" as any }}
         showsVerticalScrollIndicator={false}
       >
         {activeTab === "qr" ? (
@@ -162,6 +166,8 @@ export default function StudentAttendanceActionsScreen() {
               borderWidth: 2,
               borderColor: "#D1FAE5",
               alignItems: "center",
+              ...getWebShadow("md"),
+              ...getWebCursor(),
             }}
           >
             <View
@@ -220,6 +226,8 @@ export default function StudentAttendanceActionsScreen() {
               borderWidth: 2,
               borderColor: "#DBEAFE",
               alignItems: "center",
+              ...getWebShadow("md"),
+              ...getWebCursor(),
             }}
           >
             <View
@@ -286,6 +294,8 @@ export default function StudentAttendanceActionsScreen() {
               borderWidth: 2,
               borderColor: "#EDE9FE",
               alignItems: "center",
+              ...getWebShadow("md"),
+              ...getWebCursor(),
             }}
           >
             <View
@@ -375,6 +385,7 @@ export default function StudentAttendanceActionsScreen() {
             marginTop: 16,
             borderWidth: 1,
             borderColor: Colors.border,
+            ...getWebShadow("sm"),
           }}
         >
           <Text

@@ -5,6 +5,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from "@expo/vector-icons";
 import { notificationService, NotificationResponse, NotificationType } from '@/apis';
 import Toast, { useToast } from '@/components/Toast';
+import { getWebShadow, getWebCursor } from '@/constants/webStyles';
 
 export default function Notifications() {
   const router = useRouter();
@@ -146,6 +147,7 @@ export default function Notifications() {
                 width: 40, height: 40, borderRadius: 12,
                 backgroundColor: "rgba(255,255,255,0.15)",
                 alignItems: "center", justifyContent: "center",
+                ...getWebCursor(),
               }}
             >
               <Ionicons name="arrow-back" size={22} color="#fff" />
@@ -171,6 +173,7 @@ export default function Notifications() {
                     paddingVertical: 8,
                     borderWidth: 1.5,
                     borderColor: "rgba(255,255,255,0.35)",
+                    ...getWebCursor(),
                   }}
                 >
                   <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>
@@ -205,11 +208,8 @@ export default function Notifications() {
                   backgroundColor: filter === f ? "#3b82f6" : "#fff",
                   borderWidth: 1.5,
                   borderColor: filter === f ? "#3b82f6" : "#e2e8f0",
-                  shadowColor: filter === f ? "#3b82f6" : "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: filter === f ? 0.2 : 0.04,
-                  shadowRadius: 6,
-                  elevation: filter === f ? 3 : 1,
+                  ...getWebShadow(filter === f ? "md" : "sm"),
+                  ...getWebCursor(),
                 }}
               >
                 <Text style={{
@@ -275,11 +275,8 @@ export default function Notifications() {
                     marginBottom: 12,
                     flexDirection: "row",
                     gap: 14,
-                    shadowColor: notification.isRead ? "#000" : "#3b82f6",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: notification.isRead ? 0.04 : 0.08,
-                    shadowRadius: 8,
-                    elevation: notification.isRead ? 1 : 3,
+                    ...getWebShadow(notification.isRead ? "sm" : "md"),
+                    ...getWebCursor(),
                   }}
                 >
                   {/* Icon */}
