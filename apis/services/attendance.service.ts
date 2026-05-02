@@ -49,14 +49,32 @@ export const attendanceService = {
    * Lấy danh sách sessions
    */
   getSessions: async (params?: {
+    courseId?: string;
     classId?: string;
     subjectId?: string;
+    lecturerId?: string;
     teacherId?: string;
     active?: boolean;
   }): Promise<AttendanceSessionResponse[]> => {
+    const query: {
+      courseId?: string;
+      classId?: string;
+      subjectId?: string;
+      lecturerId?: string;
+      teacherId?: string;
+      active?: boolean;
+    } = {
+      courseId: params?.courseId,
+      classId: params?.classId,
+      subjectId: params?.subjectId,
+      active: params?.active,
+    };
+    if (params?.lecturerId) query.lecturerId = params.lecturerId;
+    else if (params?.teacherId) query.teacherId = params.teacherId;
+
     const response = await apiClient.get<ApiResponse<AttendanceSessionResponse[]>>(
       '/attendance-sessions',
-      { params }
+      { params: query }
     );
     return response.data.data;
   },
@@ -90,6 +108,7 @@ export const attendanceService = {
   getRecords: async (params?: {
     sessionId?: string;
     studentId?: string;
+    courseId?: string;
     classId?: string;
     subjectId?: string;
   }): Promise<AttendanceRecordResponse[]> => {

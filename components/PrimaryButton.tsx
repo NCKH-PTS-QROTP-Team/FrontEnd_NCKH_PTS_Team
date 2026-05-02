@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { TouchableOpacity, Text, ViewStyle, Platform } from "react-native";
 import { Colors } from "@/constants/colors";
 import { Spinner } from "./Spinner";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface PrimaryButtonProps {
   title: string;
@@ -42,9 +43,17 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
     if (variant === "outline" || variant === "ghost") {
       return variant === "outline" ? Colors.white : "transparent";
     }
-    if (isPressed) return Colors.primaryDark;
-    if (isHovered) return Colors.primaryHover;
-    return Colors.primary;
+    return "transparent";
+  };
+
+  const getGradientColors = () => {
+    if (isPressed) {
+      return ["#1A3276", "#2F57BF"] as [string, string];
+    }
+    if (isHovered) {
+      return ["#23479F", "#4F8FF9"] as [string, string];
+    }
+    return ["#1F3D8E", "#3B82F6"] as [string, string];
   };
 
   const getBorderColor = () => {
@@ -142,6 +151,22 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
           onBlur: () => setIsFocused(false),
         } as any))}
     >
+      {!isDisabled && variant === "primary" ? (
+        <LinearGradient
+          colors={getGradientColors()}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            borderRadius: 8,
+          }}
+        />
+      ) : null}
+
       {loading ? (
         <Spinner size={20} color={getTextColor()} />
       ) : (

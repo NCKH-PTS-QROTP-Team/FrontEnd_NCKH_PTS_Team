@@ -38,8 +38,10 @@ export interface AttendanceRecordResponse {
   studentId: string;
   studentName: string;
   studentCode: string;
-  classId: string;
-  classCode: string;
+  courseId?: string;
+  courseName?: string;
+  classId?: string;
+  classCode?: string;
   subjectId: string;
   subjectCode: string;
   subjectName: string;
@@ -53,7 +55,8 @@ export interface AttendanceRecordResponse {
  * Attendance Session Request (align with backend AttendanceSessionDTO.Request)
  */
 export interface AttendanceSessionRequest {
-  classId: string;
+  courseId?: string;
+  classId?: string;
   subjectId: string;
   teacherId: string;
   method: AttendanceMethod;
@@ -66,9 +69,11 @@ export interface AttendanceSessionRequest {
  */
 export interface AttendanceSessionResponse {
   id: string;
-  classId: string;
+  courseId?: string;
+  courseName?: string;
+  classId?: string;
   classCode?: string;
-  className: string;
+  className?: string;
   subjectId: string;
   subjectName: string;
   teacherId?: string;

@@ -1,4 +1,3 @@
-import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -50,63 +49,36 @@ export default function DepartmentProfile() {
       style={[styles.container, { padding: 0 }]}
       contentContainerStyle={{ padding: 0, paddingBottom: 100 }}
     >
-      <LinearGradient
-        colors={["#1E3A8A", "#3B82F6"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          paddingTop: 64,
-          paddingBottom: 20,
-          paddingHorizontal: 20,
-          borderBottomLeftRadius: 32,
-          borderBottomRightRadius: 32,
-          zIndex: 10,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <View>
-            <Text style={{ fontSize: 24, fontWeight: "800", color: "#fff" }}>
-              Hồ sơ Giáo vụ
-            </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                color: "rgba(255,255,255,0.8)",
-                marginTop: 4,
-              }}
-            >
-              Thông tin cá nhân và tài khoản
-            </Text>
-          </View>
-          <View
+      <View style={{ padding: 16 }}>
+        <View style={{ maxWidth: 1200, width: "100%", alignSelf: "center" }}>
+          <Text
             style={{
-              width: 48,
-              height: 48,
-              backgroundColor: "rgba(255,255,255,0.2)",
-              borderRadius: 24,
-              justifyContent: "center",
-              alignItems: "center",
+              fontSize: 28,
+              fontWeight: "800",
+              color: "#0F172A",
+              marginBottom: 8,
             }}
           >
-            <Ionicons name="person" size={24} color="#fff" />
-          </View>
+            Hồ sơ giáo vụ
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: "#64748B",
+              marginBottom: 16,
+            }}
+          >
+            Cập nhật thông tin tài khoản và các cài đặt bảo mật.
+          </Text>
+
+          <ProfileAndSettings user={userInfo} onShowToast={showToast} />
+
+          {/* Logout Button */}
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={22} color="#ef4444" />
+            <Text style={styles.logoutText}>Đăng xuất</Text>
+          </TouchableOpacity>
         </View>
-      </LinearGradient>
-
-      <View style={{ padding: 16 }}>
-        <ProfileAndSettings user={userInfo} onShowToast={showToast} />
-
-        {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={22} color="#ef4444" />
-          <Text style={styles.logoutText}>Đăng xuất</Text>
-        </TouchableOpacity>
       </View>
     </ScrollView>
   );

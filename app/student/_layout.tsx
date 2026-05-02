@@ -43,11 +43,6 @@ export default function StudentLayout() {
     },
     {
       icon: <UserIcon size={20} color="#3FA9F5" />,
-      label: "Đăng ký Face",
-      route: "/student/register-face",
-    },
-    {
-      icon: <UserIcon size={20} color="#3FA9F5" />,
       label: "Điểm danh Face",
       route: "/student/face-demo",
     },
@@ -130,20 +125,6 @@ export default function StudentLayout() {
         ),
       },
       {
-        key: "/student/face-attendance",
-        label: "Điểm danh Face",
-        icon: (
-          <UserIcon
-            size={24}
-            color={
-              pathname === "/student/face-attendance"
-                ? Colors.primary
-                : Colors.textSecondary
-            }
-          />
-        ),
-      },
-      {
         key: "/student/profile",
         label: "Tài khoản",
         icon: (
@@ -181,10 +162,7 @@ export default function StudentLayout() {
   // On web, wrap with AppLayout - user info sẽ tự fetch từ API
   return (
     <>
-      <AppLayout
-        menuItems={menuItems}
-        userRole="student"
-      >
+      <AppLayout menuItems={menuItems} userRole="student">
         {stackContent}
       </AppLayout>
       <ChatBox />

@@ -1,41 +1,48 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Colors } from '@/constants/colors';
-import { BellIcon } from './Icons';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Platform,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { Colors } from "@/constants/colors";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 
 interface Notification {
   id: string;
   title: string;
   message: string;
-  type: 'success' | 'warning' | 'error' | 'info';
+  type: "success" | "warning" | "error" | "info";
   time: string;
   isRead: boolean;
 }
 
 const mockNotifications: Notification[] = [
   {
-    id: '1',
-    title: 'OTP sắp hết hạn',
-    message: 'OTP cho buổi học Lập trình cơ bản sẽ hết hạn trong 30 giây',
-    type: 'warning',
-    time: '2 phút trước',
+    id: "1",
+    title: "OTP sắp hết hạn",
+    message: "OTP cho buổi học Lập trình cơ bản sẽ hết hạn trong 30 giây",
+    type: "warning",
+    time: "2 phút trước",
     isRead: false,
   },
   {
-    id: '2',
-    title: 'Điểm danh thành công',
-    message: 'Bạn đã điểm danh thành công cho môn Cơ sở dữ liệu',
-    type: 'success',
-    time: '1 giờ trước',
+    id: "2",
+    title: "Điểm danh thành công",
+    message: "Bạn đã điểm danh thành công cho môn Cơ sở dữ liệu",
+    type: "success",
+    time: "1 giờ trước",
     isRead: false,
   },
   {
-    id: '3',
-    title: 'Nhắc nhở lịch học',
-    message: 'Buổi học Lập trình web sẽ bắt đầu trong 30 phút',
-    type: 'info',
-    time: '2 giờ trước',
+    id: "3",
+    title: "Nhắc nhở lịch học",
+    message: "Buổi học Lập trình web sẽ bắt đầu trong 30 phút",
+    type: "info",
+    time: "2 giờ trước",
     isRead: true,
   },
 ];
@@ -46,106 +53,141 @@ export default function NotificationDropdown() {
   const [notifications, setNotifications] = useState(mockNotifications);
   const dropdownRef = useRef<View>(null);
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   useEffect(() => {
-    if (Platform.OS === 'web' && isOpen) {
+    if (Platform.OS === "web" && isOpen) {
       const handleClickOutside = (event: any) => {
-        if (dropdownRef.current && !(dropdownRef.current as any).contains(event.target)) {
+        if (
+          dropdownRef.current &&
+          !(dropdownRef.current as any).contains(event.target)
+        ) {
           setIsOpen(false);
         }
       };
 
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isOpen]);
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'success': return '#10B981';
-      case 'warning': return '#F59E0B';
-      case 'error': return '#EF4444';
-      case 'info': return '#3FA9F5';
-      default: return '#6B7280';
+      case "success":
+        return "#10B981";
+      case "warning":
+        return "#F59E0B";
+      case "error":
+        return "#EF4444";
+      case "info":
+        return "#3FA9F5";
+      default:
+        return "#6B7280";
     }
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'success': return '✓';
-      case 'warning': return '⚠';
-      case 'error': return '✕';
-      case 'info': return 'ℹ';
-      default: return '•';
+      case "success":
+        return "✓";
+      case "warning":
+        return "⚠";
+      case "error":
+        return "✕";
+      case "info":
+        return "ℹ";
+      default:
+        return "•";
     }
   };
 
   const handleNotificationClick = (id: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
     );
   };
 
   const handleViewAll = () => {
     setIsOpen(false);
-    router.push('/student/notifications');
+    router.push("/student/notifications");
   };
 
   return (
-    <View ref={dropdownRef} style={{ position: 'relative' }}>
+    <View ref={dropdownRef} style={{ position: "relative" }}>
       {/* Bell Icon Button */}
       <TouchableOpacity
         onPress={() => setIsOpen(!isOpen)}
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          backgroundColor: isOpen ? '#F3F4F6' : 'transparent',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          ...(Platform.OS === 'web' && {
-            cursor: 'pointer',
-            transition: 'background-color 0.2s ease',
-          } as any),
+          width: 42,
+          height: 42,
+          borderRadius: 21,
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          borderWidth: 1,
+          borderColor: "#1f3d8e",
+          overflow: "hidden",
+          boxShadow: isOpen
+            ? "0 6px 16px rgba(31, 61, 142, 0.38)"
+            : "0 4px 12px rgba(31, 61, 142, 0.28)",
+          ...(Platform.OS === "web" &&
+            ({
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            } as any)),
         }}
-        {...(Platform.OS === 'web' && {
-          onMouseEnter: (e: any) => {
-            if (!isOpen) e.currentTarget.style.backgroundColor = '#F9FAFB';
-          },
-          onMouseLeave: (e: any) => {
-            if (!isOpen) e.currentTarget.style.backgroundColor = 'transparent';
-          },
-        } as any)}
       >
-        <BellIcon size={20} color={isOpen ? Colors.primary : '#6B7280'} />
-        
+        <LinearGradient
+          colors={isOpen ? ["#162d67", "#1f3d8e"] : ["#1f3d8e", "#2f57bf"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        />
+        <Ionicons
+          name="notifications"
+          size={20}
+          color="#FFFFFF"
+          style={
+            Platform.OS === "web"
+              ? ({ textShadow: "0 1px 4px rgba(0,0,0,0.28)" } as any)
+              : undefined
+          }
+        />
+
         {/* Badge */}
         {unreadCount > 0 && (
           <View
             style={{
-              position: 'absolute',
+              position: "absolute",
               top: 6,
               right: 6,
-              backgroundColor: '#EF4444',
+              backgroundColor: "#EF4444",
               borderRadius: 10,
               minWidth: 18,
               height: 18,
-              alignItems: 'center',
-              justifyContent: 'center',
+              alignItems: "center",
+              justifyContent: "center",
               paddingHorizontal: 4,
               borderWidth: 2,
-              borderColor: '#FFFFFF',
+              borderColor: "#FFFFFF",
             }}
           >
-            <Text style={{ 
-              color: '#FFFFFF', 
-              fontSize: 10, 
-              fontWeight: 'bold',
-              lineHeight: 14,
-            }}>
-              {unreadCount > 9 ? '9+' : unreadCount}
+            <Text
+              style={{
+                color: "#FFFFFF",
+                fontSize: 10,
+                fontWeight: "bold",
+                lineHeight: 14,
+              }}
+            >
+              {unreadCount > 9 ? "9+" : unreadCount}
             </Text>
           </View>
         )}
@@ -155,38 +197,39 @@ export default function NotificationDropdown() {
       {isOpen && (
         <View
           style={{
-            position: 'absolute' as any,
+            position: "absolute" as any,
             top: 48,
             right: 0,
             width: 380,
             maxHeight: 480,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: "#FFFFFF",
             borderRadius: 12,
-            shadowColor: '#000',
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.15,
             shadowRadius: 12,
             elevation: 8,
             borderWidth: 1,
-            borderColor: '#E5E7EB',
+            borderColor: "#E5E7EB",
             zIndex: 2000,
-            ...(Platform.OS === 'web' && {
-              animation: 'slideDown 0.2s ease',
-            } as any),
+            ...(Platform.OS === "web" &&
+              ({
+                animation: "slideDown 0.2s ease",
+              } as any)),
           }}
         >
           {/* Header */}
           <View
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
               padding: 16,
               borderBottomWidth: 1,
-              borderBottomColor: '#F3F4F6',
+              borderBottomColor: "#F3F4F6",
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827' }}>
+            <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827" }}>
               Thông báo
             </Text>
             {unreadCount > 0 && (
@@ -194,11 +237,17 @@ export default function NotificationDropdown() {
                 style={{
                   paddingHorizontal: 8,
                   paddingVertical: 2,
-                  backgroundColor: '#DBEAFE',
+                  backgroundColor: "#DBEAFE",
                   borderRadius: 12,
                 }}
               >
-                <Text style={{ fontSize: 12, fontWeight: '600', color: Colors.primary }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "600",
+                    color: Colors.primary,
+                  }}
+                >
                   {unreadCount} mới
                 </Text>
               </View>
@@ -208,8 +257,14 @@ export default function NotificationDropdown() {
           {/* Notifications List */}
           <ScrollView style={{ maxHeight: 360 }}>
             {notifications.length === 0 ? (
-              <View style={{ padding: 40, alignItems: 'center' }}>
-                <Text style={{ fontSize: 14, color: '#9CA3AF', textAlign: 'center' }}>
+              <View style={{ padding: 40, alignItems: "center" }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: "#9CA3AF",
+                    textAlign: "center",
+                  }}
+                >
                   Không có thông báo nào
                 </Text>
               </View>
@@ -220,24 +275,31 @@ export default function NotificationDropdown() {
                   onPress={() => handleNotificationClick(notification.id)}
                   style={{
                     padding: 16,
-                    backgroundColor: notification.isRead ? '#FFFFFF' : '#F9FAFB',
+                    backgroundColor: notification.isRead
+                      ? "#FFFFFF"
+                      : "#F9FAFB",
                     borderBottomWidth: 1,
-                    borderBottomColor: '#F3F4F6',
-                    ...(Platform.OS === 'web' && {
-                      cursor: 'pointer',
-                      transition: 'background-color 0.15s ease',
-                    } as any),
+                    borderBottomColor: "#F3F4F6",
+                    ...(Platform.OS === "web" &&
+                      ({
+                        cursor: "pointer",
+                        transition: "background-color 0.15s ease",
+                      } as any)),
                   }}
-                  {...(Platform.OS === 'web' && {
-                    onMouseEnter: (e: any) => {
-                      e.currentTarget.style.backgroundColor = '#F3F4F6';
-                    },
-                    onMouseLeave: (e: any) => {
-                      e.currentTarget.style.backgroundColor = notification.isRead ? '#FFFFFF' : '#F9FAFB';
-                    },
-                  } as any)}
+                  {...(Platform.OS === "web" &&
+                    ({
+                      onMouseEnter: (e: any) => {
+                        e.currentTarget.style.backgroundColor = "#F3F4F6";
+                      },
+                      onMouseLeave: (e: any) => {
+                        e.currentTarget.style.backgroundColor =
+                          notification.isRead ? "#FFFFFF" : "#F9FAFB";
+                      },
+                    } as any))}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                  <View
+                    style={{ flexDirection: "row", alignItems: "flex-start" }}
+                  >
                     {/* Type Icon */}
                     <View
                       style={{
@@ -245,29 +307,39 @@ export default function NotificationDropdown() {
                         height: 36,
                         borderRadius: 18,
                         backgroundColor: `${getTypeColor(notification.type)}15`,
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        alignItems: "center",
+                        justifyContent: "center",
                         marginRight: 12,
                       }}
                     >
-                      <Text style={{ 
-                        fontSize: 16, 
-                        color: getTypeColor(notification.type),
-                        fontWeight: 'bold',
-                      }}>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          color: getTypeColor(notification.type),
+                          fontWeight: "bold",
+                        }}
+                      >
                         {getTypeIcon(notification.type)}
                       </Text>
                     </View>
 
                     {/* Content */}
                     <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <Text style={{ 
-                          fontSize: 14, 
-                          fontWeight: '600', 
-                          color: '#111827',
-                          flex: 1,
-                        }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 4,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: "600",
+                            color: "#111827",
+                            flex: 1,
+                          }}
+                        >
                           {notification.title}
                         </Text>
                         {!notification.isRead && (
@@ -283,9 +355,9 @@ export default function NotificationDropdown() {
                         )}
                       </View>
                       <Text
-                        style={{ 
-                          fontSize: 13, 
-                          color: '#6B7280',
+                        style={{
+                          fontSize: 13,
+                          color: "#6B7280",
                           lineHeight: 18,
                           marginBottom: 4,
                         }}
@@ -293,7 +365,7 @@ export default function NotificationDropdown() {
                       >
                         {notification.message}
                       </Text>
-                      <Text style={{ fontSize: 12, color: '#9CA3AF' }}>
+                      <Text style={{ fontSize: 12, color: "#9CA3AF" }}>
                         {notification.time}
                       </Text>
                     </View>
@@ -308,27 +380,31 @@ export default function NotificationDropdown() {
             onPress={handleViewAll}
             style={{
               padding: 12,
-              alignItems: 'center',
+              alignItems: "center",
               borderTopWidth: 1,
-              borderTopColor: '#F3F4F6',
-              backgroundColor: '#FAFAFA',
+              borderTopColor: "#F3F4F6",
+              backgroundColor: "#FAFAFA",
               borderBottomLeftRadius: 12,
               borderBottomRightRadius: 12,
-              ...(Platform.OS === 'web' && {
-                cursor: 'pointer',
-                transition: 'background-color 0.15s ease',
-              } as any),
+              ...(Platform.OS === "web" &&
+                ({
+                  cursor: "pointer",
+                  transition: "background-color 0.15s ease",
+                } as any)),
             }}
-            {...(Platform.OS === 'web' && {
-              onMouseEnter: (e: any) => {
-                e.currentTarget.style.backgroundColor = '#F3F4F6';
-              },
-              onMouseLeave: (e: any) => {
-                e.currentTarget.style.backgroundColor = '#FAFAFA';
-              },
-            } as any)}
+            {...(Platform.OS === "web" &&
+              ({
+                onMouseEnter: (e: any) => {
+                  e.currentTarget.style.backgroundColor = "#F3F4F6";
+                },
+                onMouseLeave: (e: any) => {
+                  e.currentTarget.style.backgroundColor = "#FAFAFA";
+                },
+              } as any))}
           >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.primary }}>
+            <Text
+              style={{ fontSize: 14, fontWeight: "600", color: Colors.primary }}
+            >
               Xem tất cả
             </Text>
           </TouchableOpacity>

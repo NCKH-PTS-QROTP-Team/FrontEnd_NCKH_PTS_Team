@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -6,1314 +6,1130 @@ import {
   TouchableOpacity,
   Platform,
   useWindowDimensions,
-  Image,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import Tabs from "@/components/Tabs";
-import WeeklyCalendar from "@/components/WeeklyCalendar";
+import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/colors";
-import { getSlotIndexFromStartTime } from "@/constants/scheduleSlots";
-import { scheduleService, attendanceService, authService } from "@/apis";
+import { attendanceService, authService, scheduleService } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
 import type { Schedule } from "@/apis/services/schedule.service";
-import {
-  CalendarIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  InfoIcon,
-} from "@/components/Icons";
-import { LinearGradient } from "expo-linear-gradient";
 
-interface TeacherSchedule {
-  id: string;
-  subjectCode?: string;
-  subjectName: string;
-  className: string;
-  time: string;
-  room: string;
-  dayOfWeek: number;
-  studentCount?: number;
+interface TeacherStats {
+  totalStudents: number;
+  presentToday: number;
+  absentToday: number;
+  attendanceRate: number;
+  totalClasses: number;
+}
+
+interface CalendarCell {
+  iso: string;
+  day: number;
+  isCurrentMonth: boolean;
+}
+
+const WEEK_HEADERS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+
+function dateToISO(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function getBackendDayOfWeek(date: Date): number {
+  const jsDay = date.getDay();
+  return jsDay === 0 ? 8 : jsDay + 1;
+}
+
+function buildMonthGrid(year: number, month: number): CalendarCell[] {
+  const first = new Date(year, month, 1);
+  let startOffset = first.getDay() - 1;
+  if (startOffset < 0) startOffset = 6;
+
+  const startDate = new Date(year, month, 1 - startOffset);
+  const result: CalendarCell[] = [];
+
+  for (let i = 0; i < 42; i++) {
+    const cur = new Date(startDate);
+    cur.setDate(startDate.getDate() + i);
+    result.push({
+      iso: dateToISO(cur),
+      day: cur.getDate(),
+      isCurrentMonth: cur.getMonth() === month,
+    });
+  }
+
+  return result;
+}
+
+function scheduleAppliesOnDate(schedule: Schedule, isoDate: string): boolean {
+  const target = new Date(`${isoDate}T00:00:00`);
+
+  const isOneTime =
+    schedule.pattern === "ONE_TIME" ||
+    (!!schedule.date && schedule.pattern !== "RECURRING_WEEKLY");
+
+  if (isOneTime) {
+    return schedule.date === isoDate;
+  }
+
+  if (schedule.excludedDates?.includes(isoDate)) {
+    return false;
+  }
+
+  if (schedule.startDate && isoDate < schedule.startDate) {
+    return false;
+  }
+
+  if (schedule.endDate && isoDate > schedule.endDate) {
+    return false;
+  }
+
+  return schedule.dayOfWeek === getBackendDayOfWeek(target);
 }
 
 export default function TeacherDashboardScreen() {
   const router = useRouter();
-  const isWeb = Platform.OS === "web";
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 1024;
-  const isTablet = width >= 768 && width < 1024;
+  const isWeb = Platform.OS === "web";
+  const isDesktopWeb = isWeb && width >= 1100;
+  const isTablet = width >= 768 && width < 1100;
   const isMobile = width < 768;
-  const { showToast } = useToast();
+  const { showToast, toast, hideToast } = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [unreadNotifs, setUnreadNotifs] = useState(3); // demo – 3 thông báo chưa đọc
-  const [activeTab, setActiveTab] = useState<"overview" | "schedule">(
-    "overview",
-  );
-  const [teacherSchedules, setTeacherSchedules] = useState<TeacherSchedule[]>(
-    [],
-  );
-  const [stats, setStats] = useState({
+  const [teacherName, setTeacherName] = useState("Giảng viên");
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [stats, setStats] = useState<TeacherStats>({
     totalStudents: 0,
     presentToday: 0,
     absentToday: 0,
     attendanceRate: 0,
+    totalClasses: 0,
   });
 
-  const contentMaxWidth = isDesktop ? 1200 : "100%";
-  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
-  const quickActionWidth = isDesktop ? "48%" : "100%";
-  const [currentWeek, setCurrentWeek] = useState(new Date());
+  const todayISO = useMemo(() => dateToISO(new Date()), []);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+  const [selectedISO, setSelectedISO] = useState(todayISO);
+
+  const dayListRef = useRef<ScrollView>(null);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   useEffect(() => {
-    loadDashboardData();
-  }, [currentWeek]);
+    loadData();
+  }, []);
 
-  const getWeekRangeISO = () => {
-    const startDate = new Date(currentWeek);
-    // Move to Monday
-    startDate.setDate(startDate.getDate() - startDate.getDay() + 1);
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 6); // Sunday
+  const monthCells = useMemo(
+    () => buildMonthGrid(calendarMonth.year, calendarMonth.month),
+    [calendarMonth],
+  );
 
-    const formatISO = (d: Date) =>
-      `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d
-        .getDate()
-        .toString()
-        .padStart(2, "0")}`;
+  const monthLabel = useMemo(() => {
+    const d = new Date(calendarMonth.year, calendarMonth.month, 1);
+    const label = d.toLocaleDateString("vi-VN", {
+      month: "long",
+      year: "numeric",
+    });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }, [calendarMonth]);
 
-    return {
-      fromDate: formatISO(startDate),
-      toDate: formatISO(endDate),
-    };
-  };
+  const schedulesOnSelectedDay = useMemo(() => {
+    return schedules
+      .filter((s) => scheduleAppliesOnDate(s, selectedISO))
+      .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
+  }, [schedules, selectedISO]);
 
-  const loadDashboardData = async () => {
+  const schedulesToday = useMemo(() => {
+    return schedules
+      .filter((s) => scheduleAppliesOnDate(s, todayISO))
+      .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
+  }, [schedules, todayISO]);
+
+  useEffect(() => {
+    if (!isDesktopWeb || schedulesToday.length < 4) return;
+
+    const rowHeight = 78;
+    const visibleRows = 3;
+    const maxOffset = Math.max(
+      0,
+      schedulesToday.length * rowHeight - visibleRows * rowHeight,
+    );
+
+    const timer = setInterval(() => {
+      setScrollOffset((prev) => {
+        const next = prev + rowHeight;
+        const finalOffset = next > maxOffset ? 0 : next;
+        dayListRef.current?.scrollTo({ y: finalOffset, animated: true });
+        return finalOffset;
+      });
+    }, 2200);
+
+    return () => clearInterval(timer);
+  }, [isDesktopWeb, schedulesToday.length]);
+
+  const loadData = async () => {
     try {
       setLoading(true);
-      let teacherId = await getTeacherIdFromToken();
 
-      if (!teacherId) {
-        // Fallback: take teacherId from /users/me (JWT decoding might miss claim)
-        console.warn(
-          "No teacherId found in token, falling back to /users/me",
-        );
-        const tokenUser = await authService.getCurrentUser().catch(() => null);
-        teacherId = tokenUser?.teacherId ?? null;
+      let teacherId = await getTeacherIdFromToken();
+      const currentUser = await authService.getCurrentUser().catch(() => null);
+
+      if (currentUser?.name) {
+        setTeacherName(currentUser.name);
       }
 
       if (!teacherId) {
-        console.warn("No teacherId available, using empty dashboard data");
+        teacherId = currentUser?.teacherId ?? null;
+      }
+
+      if (!teacherId) {
+        showToast("Không tìm thấy thông tin giảng viên", "error");
         setLoading(false);
         return;
       }
 
-      const { fromDate, toDate } = getWeekRangeISO();
-
-      // Load schedules (theo tuần hiện tại) và sessions song song
-      const [allSchedules, todaySessions] = await Promise.all([
+      const [allSchedules, sessions] = await Promise.all([
         scheduleService
-          .getSchedules({ teacherId, fromDate, toDate })
-          .catch(() => []),
+          .getSchedules({ teacherId })
+          .catch(() => [] as Schedule[]),
         attendanceService
           .getSessions({ teacherId, active: true })
           .catch(() => []),
       ]);
 
-      // Debug logs để xem data thực tế từ backend
-      console.log("[TeacherDashboard] teacherId =", teacherId);
-      console.log("[TeacherDashboard] week range =", { fromDate, toDate });
-      console.log("[TeacherDashboard] schedules from API =", allSchedules);
-      console.log("[TeacherDashboard] sessions from API =", todaySessions);
+      setSchedules(allSchedules);
 
-      // Convert schedules to TeacherSchedule format (dữ liệu từ DB)
-      const schedules = allSchedules.map((s: Schedule) => ({
-        id: s.id,
-        subjectCode: s.subjectCode,
-        subjectName: s.subjectName,
-        className: s.className,
-        time: `${s.startTime} - ${s.endTime}`,
-        room: s.room,
-        dayOfWeek: s.dayOfWeek,
-      }));
-
-      setTeacherSchedules(schedules);
-
-      // Tính stats từ sessions
       let totalStudents = 0;
       let presentToday = 0;
 
-      for (const session of todaySessions) {
+      for (const session of sessions) {
         const records = await attendanceService
           .getRecords({ sessionId: session.id })
           .catch(() => []);
-        console.log(
-          "[TeacherDashboard] records for session",
-          session.id,
-          "=",
-          records,
-        );
+
         totalStudents += records.length;
         presentToday += records.filter(
           (r: any) => r.status === "PRESENT",
         ).length;
       }
 
-      const absentToday = totalStudents - presentToday;
+      const absentToday = Math.max(0, totalStudents - presentToday);
       const attendanceRate =
         totalStudents > 0
           ? Math.round((presentToday / totalStudents) * 100)
           : 0;
+
+      const uniqueClasses = new Set(allSchedules.map((s) => s.classId)).size;
 
       setStats({
         totalStudents,
         presentToday,
         absentToday,
         attendanceRate,
+        totalClasses: uniqueClasses,
       });
-
-      console.log("[TeacherDashboard] computed stats =", {
-        totalStudents,
-        presentToday,
-        absentToday,
-        attendanceRate,
-      });
-    } catch (error: any) {
-      console.error("Error loading dashboard:", error);
-      showToast("Không thể tải dữ liệu", "error");
+    } catch (error) {
+      console.error("Teacher dashboard load error:", error);
+      showToast("Không thể tải dữ liệu dashboard", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // Convert dayOfWeek (0=Sunday, 1=Monday, ...) to day name
-  const getDayName = (dayOfWeek: number): string => {
-    const days = [
-      "sunday",
-      "monday",
-      "tuesday",
-      "wednesday",
-      "thursday",
-      "friday",
-      "saturday",
-    ];
-    // Backend convention: 2=Mon ... 7=Sat, 8=Sun (FE expects day names)
-    if (dayOfWeek === 8) return "sunday";
-    // For Mon..Sat, convert 2..7 -> index 1..6 in `days`
-    const idx = dayOfWeek - 1;
-    return days[idx] ?? "monday";
+  const changeMonth = (direction: "prev" | "next") => {
+    setCalendarMonth((prev) => {
+      if (direction === "prev") {
+        if (prev.month === 0) {
+          return { year: prev.year - 1, month: 11 };
+        }
+        return { year: prev.year, month: prev.month - 1 };
+      }
+
+      if (prev.month === 11) {
+        return { year: prev.year + 1, month: 0 };
+      }
+      return { year: prev.year, month: prev.month + 1 };
+    });
   };
 
-  // Format week range
-  const formatWeekRange = () => {
-    const startDate = new Date(currentWeek);
-    startDate.setDate(startDate.getDate() - startDate.getDay() + 1); // Monday
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 6); // Sunday
-    return `${startDate.getDate().toString().padStart(2, "0")}/${(
-      startDate.getMonth() + 1
-    )
-      .toString()
-      .padStart(2, "0")} - ${endDate.getDate().toString().padStart(2, "0")}/${(
-      endDate.getMonth() + 1
-    )
-      .toString()
-      .padStart(2, "0")}/${endDate.getFullYear()}`;
-  };
-
-  const navigateWeek = (direction: "prev" | "next") => {
-    const newDate = new Date(currentWeek);
-    newDate.setDate(newDate.getDate() + (direction === "next" ? 7 : -7));
-    setCurrentWeek(newDate);
-  };
-
-  // Cột Sáng/Chiều/Tối như lịch thật; data theo giờ map đúng ca (tiết 1-6 sáng, 7-12 chiều, 13-15 tối)
-  const scheduleByDayPeriod: {
-    [day: string]: {
-      morning: TeacherSchedule[];
-      afternoon: TeacherSchedule[];
-      evening: TeacherSchedule[];
-    };
-  } = {};
-  const dayNames = [
-    "sunday",
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
-  ];
-  dayNames.forEach((d) => {
-    scheduleByDayPeriod[d] = { morning: [], afternoon: [], evening: [] };
-  });
-  teacherSchedules.forEach((schedule) => {
-    const dayName = getDayName(schedule.dayOfWeek);
-    const slotIndex = getSlotIndexFromStartTime(schedule.time ?? "");
-    const period: "morning" | "afternoon" | "evening" =
-      slotIndex <= 2 ? "morning" : slotIndex <= 5 ? "afternoon" : "evening";
-    scheduleByDayPeriod[dayName][period].push(schedule);
-  });
+  const statCard = (
+    icon: React.ComponentProps<typeof Ionicons>["name"],
+    label: string,
+    value: string | number,
+    tone: string,
+  ) => (
+    <View
+      style={{
+        flex: 1,
+        minWidth: 140,
+        borderRadius: 14,
+        padding: 14,
+        backgroundColor: "#fff",
+        borderWidth: 1,
+        borderColor: "#E5ECF6",
+      }}
+    >
+      <View
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 17,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: `${tone}18`,
+          marginBottom: 8,
+        }}
+      >
+        <Ionicons name={icon} size={18} color={tone} />
+      </View>
+      <Text
+        style={{
+          fontSize: 20,
+          fontWeight: "800",
+          color: "#0F172A",
+          marginBottom: 2,
+        }}
+      >
+        {value}
+      </Text>
+      <Text style={{ fontSize: 12, color: "#64748B", fontWeight: "600" }}>
+        {label}
+      </Text>
+    </View>
+  );
 
   if (loading) {
     return (
       <SafeAreaView
-        style={{ flex: 1, backgroundColor: "#F9FAFB" }}
+        style={{ flex: 1, backgroundColor: "#F8FAFC" }}
         edges={["top"]}
       >
         <StatusBar style="dark" />
         <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
         >
-          <ActivityIndicator size="large" color="#3FA9F5" />
-          <Text style={{ marginTop: 16, color: "#6B7280" }}>
-            Đang tải dữ liệu...
+          <ActivityIndicator size="large" color="#3B82F6" />
+          <Text style={{ marginTop: 12, color: "#64748B" }}>
+            Đang tải dashboard...
           </Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  const renderOverview = () => (
-    <View style={{ gap: 24 }}>
-      {/* ── Progress Bar Card (Thống kê hôm nay) ── */}
-      <View
-        style={{
-          backgroundColor: "#fff",
-          borderRadius: 20,
-          padding: 20,
-          shadowColor: "#3b82f6",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 12,
-          elevation: 4,
-          borderWidth: 1,
-          borderColor: "#eff6ff",
+  return (
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#F1F5F9" }}
+      edges={["top"]}
+    >
+      <StatusBar style="dark" />
+
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: isDesktopWeb ? 20 : isTablet ? 16 : 12,
+          paddingTop: 14,
+          paddingBottom: isMobile ? 96 : 24,
         }}
+        showsVerticalScrollIndicator={false}
       >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 16,
-          }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b" }}>
-            Tiến độ điểm danh hôm nay
-          </Text>
+        <View style={{ maxWidth: 1360, width: "100%", alignSelf: "center" }}>
           <View
             style={{
-              backgroundColor: "#ecfdf5",
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 12,
+              flexDirection: isDesktopWeb ? "row" : "column",
+              alignItems: "flex-start",
+              gap: 16,
             }}
           >
-            <Text style={{ fontSize: 12, fontWeight: "700", color: "#10b981" }}>
-              Tốt
-            </Text>
-          </View>
-        </View>
-
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "flex-end",
-            marginBottom: 16,
-            gap: 12,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 36,
-              fontWeight: "800",
-              color: "#3b82f6",
-              lineHeight: 40,
-            }}
-          >
-            {stats.attendanceRate}%
-          </Text>
-          <Text style={{ fontSize: 14, color: "#64748b", marginBottom: 6 }}>
-            {stats.presentToday} / {stats.totalStudents} sinh viên có mặt
-          </Text>
-        </View>
-
-        {/* Custom Progress Bar */}
-        <View
-          style={{
-            height: 10,
-            backgroundColor: "#e2e8f0",
-            borderRadius: 5,
-            overflow: "hidden",
-          }}
-        >
-          <View
-            style={{
-              height: "100%",
-              width: `${Math.max(0, Math.min(stats.attendanceRate, 100))}%`,
-              backgroundColor: "#3b82f6",
-              borderRadius: 5,
-            }}
-          />
-        </View>
-
-        {/* Small stats under bar */}
-        <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-          <View
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-              backgroundColor: "#f8fafc",
-              padding: 10,
-              borderRadius: 10,
-            }}
-          >
-            <Ionicons name="people" size={18} color="#6366f1" />
-            <View>
-              <Text
-                style={{ fontSize: 13, fontWeight: "700", color: "#1e293b" }}
+            {/* Left side - wider */}
+            <View
+              style={{ flex: isDesktopWeb ? 1.65 : 1, width: "100%", gap: 16 }}
+            >
+              {/* Gradient banner */}
+              <LinearGradient
+                colors={["#1E3A8A", "#3B82F6"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  borderRadius: 18,
+                  padding: 20,
+                  minHeight: isDesktopWeb ? 180 : 160,
+                  justifyContent: "space-between",
+                  boxShadow: "0 10px 24px rgba(30, 58, 138, 0.25)",
+                }}
               >
-                {stats.totalStudents}
-              </Text>
-              <Text style={{ fontSize: 11, color: "#64748b" }}>Tổng số</Text>
-            </View>
-          </View>
-          <View
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-              backgroundColor: "#fef2f2",
-              padding: 10,
-              borderRadius: 10,
-            }}
-          >
-            <Ionicons name="close-circle" size={18} color="#ef4444" />
-            <View>
-              <Text
-                style={{ fontSize: 13, fontWeight: "700", color: "#ef4444" }}
-              >
-                {stats.absentToday}
-              </Text>
-              <Text style={{ fontSize: 11, color: "#ef4444" }}>Vắng mặt</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* ── Quick Actions (Khởi tạo điểm danh) ── */}
-      <View>
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: "700",
-            color: "#1e293b",
-            marginBottom: 12,
-          }}
-        >
-          Khởi tạo điểm danh
-        </Text>
-        <View style={{ flexDirection: "row", gap: 16 }}>
-          <TouchableOpacity
-            onPress={() => router.push("/teacher/generate-otp")}
-            style={{
-              flex: 1,
-              backgroundColor: "#fff",
-              borderRadius: 16,
-              padding: 16,
-              alignItems: "center",
-              borderWidth: 1,
-              borderColor: "#f1f5f9",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 8,
-              elevation: 2,
-            }}
-            activeOpacity={0.7}
-          >
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                backgroundColor: "#eff6ff",
-                borderRadius: 14,
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 12,
-              }}
-            >
-              <Ionicons name="keypad" size={24} color="#3b82f6" />
-            </View>
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: "700",
-                color: "#1e293b",
-                marginBottom: 4,
-              }}
-            >
-              Mã OTP
-            </Text>
-            <Text
-              style={{ fontSize: 12, color: "#64748b", textAlign: "center" }}
-            >
-              Tạo mã số 6 số cho lớp
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => router.push("/teacher/generate-qr")}
-            style={{
-              flex: 1,
-              backgroundColor: "#fff",
-              borderRadius: 16,
-              padding: 16,
-              alignItems: "center",
-              borderWidth: 1,
-              borderColor: "#f1f5f9",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 8,
-              elevation: 2,
-            }}
-            activeOpacity={0.7}
-          >
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                backgroundColor: "#f0fdf4",
-                borderRadius: 14,
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 12,
-              }}
-            >
-              <Ionicons name="qr-code" size={24} color="#10b981" />
-            </View>
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: "700",
-                color: "#1e293b",
-                marginBottom: 4,
-              }}
-            >
-              Mã QR
-            </Text>
-            <Text
-              style={{ fontSize: 12, color: "#64748b", textAlign: "center" }}
-            >
-              Quét mã nhanh chóng
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* ── Management Links ── */}
-      <View>
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: "700",
-            color: "#1e293b",
-            marginBottom: 12,
-          }}
-        >
-          Quản lý chung
-        </Text>
-        <View
-          style={{
-            backgroundColor: "#fff",
-            borderRadius: 16,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.04,
-            shadowRadius: 8,
-            elevation: 1,
-            borderWidth: 1,
-            borderColor: "#f1f5f9",
-            overflow: "hidden",
-          }}
-        >
-          <TouchableOpacity
-            onPress={() => router.push("/teacher/advisee-class")}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: "#f1f5f9",
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                backgroundColor: "#f5f3ff",
-                borderRadius: 12,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 14,
-              }}
-            >
-              <Ionicons name="school" size={20} color="#8b5cf6" />
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 15,
-                fontWeight: "600",
-                color: "#1e293b",
-              }}
-            >
-              Lớp chủ nhiệm
-            </Text>
-            <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => router.push("/teacher/class-list")}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: "#f1f5f9",
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                backgroundColor: "#eff6ff",
-                borderRadius: 12,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 14,
-              }}
-            >
-              <Ionicons name="list" size={20} color="#3b82f6" />
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 15,
-                fontWeight: "600",
-                color: "#1e293b",
-              }}
-            >
-              Danh sách lớp học
-            </Text>
-            <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => router.push("/teacher/reports")}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-              borderBottomWidth: 1,
-              borderBottomColor: "#f1f5f9",
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                backgroundColor: "#fffbeb",
-                borderRadius: 12,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 14,
-              }}
-            >
-              <Ionicons name="pie-chart" size={20} color="#f59e0b" />
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 15,
-                fontWeight: "600",
-                color: "#1e293b",
-              }}
-            >
-              Báo cáo &amp; Thống kê
-            </Text>
-            <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => {
-              setUnreadNotifs(0);
-              router.push("/teacher/notifications");
-            }}
-            style={{ flexDirection: "row", alignItems: "center", padding: 16 }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                backgroundColor: "#eef2ff",
-                borderRadius: 12,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 14,
-                position: "relative",
-              }}
-            >
-              <Ionicons name="notifications" size={20} color="#6366f1" />
-              {unreadNotifs > 0 && (
-                <View
-                  style={{
-                    position: "absolute",
-                    top: -2,
-                    right: -2,
-                    width: 16,
-                    height: 16,
-                    borderRadius: 8,
-                    backgroundColor: "#ef4444",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderWidth: 1.5,
-                    borderColor: "#fff",
-                  }}
-                >
+                <View>
                   <Text
-                    style={{ fontSize: 9, fontWeight: "800", color: "#fff" }}
+                    style={{
+                      fontSize: 13,
+                      color: "rgba(255,255,255,0.82)",
+                      marginBottom: 6,
+                    }}
                   >
-                    {unreadNotifs > 9 ? "9+" : unreadNotifs}
+                    Teacher workspace
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: isDesktopWeb ? 30 : 24,
+                      fontWeight: "800",
+                      color: "#FFFFFF",
+                    }}
+                  >
+                    Xin chào, {teacherName}
+                  </Text>
+                  <Text
+                    style={{
+                      marginTop: 8,
+                      color: "rgba(255,255,255,0.9)",
+                      fontSize: 14,
+                    }}
+                  >
+                    Quản lý điểm danh, lớp học và lịch giảng dạy trong một màn
+                    hình.
                   </Text>
                 </View>
-              )}
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 15,
-                fontWeight: "600",
-                color: "#1e293b",
-              }}
-            >
-              Thông báo
-            </Text>
-            {unreadNotifs > 0 && (
+
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <TouchableOpacity
+                    onPress={() => router.push("/teacher/notifications")}
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 21,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "rgba(255,255,255,0.2)",
+                      borderWidth: 1,
+                      borderColor: "rgba(255,255,255,0.35)",
+                    }}
+                  >
+                    <Ionicons name="notifications" size={20} color="#FFFFFF" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => router.push("/teacher/profile")}
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 21,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "rgba(255,255,255,0.2)",
+                      borderWidth: 1,
+                      borderColor: "rgba(255,255,255,0.35)",
+                    }}
+                  >
+                    <Ionicons name="person" size={20} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              </LinearGradient>
+
+              {/* QR + OTP cluster */}
               <View
                 style={{
-                  backgroundColor: "#ef4444",
-                  paddingHorizontal: 8,
-                  paddingVertical: 3,
-                  borderRadius: 10,
-                  marginRight: 8,
-                }}
-              >
-                <Text
-                  style={{ fontSize: 11, fontWeight: "800", color: "#fff" }}
-                >
-                  {unreadNotifs} mới
-                </Text>
-              </View>
-            )}
-            <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-
-  const renderScheduleCell = (
-    day: string,
-    period: "morning" | "afternoon" | "evening",
-  ) => {
-    const schedules = scheduleByDayPeriod[day]?.[period] || [];
-    const columnMinWidth = isMobile ? 180 : 240;
-    const cellPadding = isMobile ? 8 : 10;
-    const cellMinHeight = isMobile ? 100 : 120;
-    return (
-      <View
-        key={`${day}-${period}`}
-        style={{
-          flex: 1,
-          minWidth: columnMinWidth,
-          minHeight: cellMinHeight,
-          padding: cellPadding,
-          borderRightWidth: 1,
-          borderRightColor: Colors.border,
-          borderBottomWidth: 1,
-          borderBottomColor: Colors.border,
-          backgroundColor: schedules.length > 0 ? Colors.white : Colors.gray50,
-        }}
-      >
-        {schedules.map((item, index) => (
-          <View
-            key={item.id}
-            style={{
-              backgroundColor: "#DBEAFE",
-              borderLeftWidth: 3,
-              borderLeftColor: Colors.primary,
-              padding: isMobile ? 6 : 8,
-              borderRadius: 4,
-              marginBottom:
-                index < schedules.length - 1 ? (isMobile ? 6 : 8) : 0,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: isMobile ? 12 : 13,
-                fontWeight: "700",
-                color: Colors.textHeading,
-                marginBottom: 2,
-              }}
-            >
-              {item.subjectName}
-            </Text>
-            <Text
-              style={{
-                fontSize: isMobile ? 10 : 11,
-                color: Colors.primary,
-                marginBottom: 1,
-              }}
-            >
-              {item.subjectCode}
-            </Text>
-            <Text
-              style={{ fontSize: isMobile ? 10 : 11, color: Colors.textLight }}
-            >
-              {item.time} • Phòng: {item.room}
-            </Text>
-          </View>
-        ))}
-      </View>
-    );
-  };
-
-  const renderSchedule = () => {
-    const headerPadding = isMobile ? 10 : 14;
-    const headerFontSize = isMobile ? 13 : 15;
-    const dayFontSize = isMobile ? 12 : 14;
-    const periodFontSize = isMobile ? 12 : 14;
-    const columnMinWidth = isMobile ? 180 : 240;
-
-    return (
-      <View style={{ marginBottom: 24, width: "100%" }}>
-        {/* Week Navigation - Simple and Clean */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: isMobile ? 16 : 20,
-            paddingVertical: isMobile ? 12 : 16,
-            paddingHorizontal: isMobile ? 16 : 0,
-          }}
-        >
-          <TouchableOpacity
-            onPress={() => navigateWeek("prev")}
-            activeOpacity={0.7}
-            style={{
-              width: isMobile ? 44 : 36,
-              height: isMobile ? 44 : 36,
-              borderRadius: isMobile ? 22 : 18,
-              backgroundColor: Colors.gray100,
-              alignItems: "center",
-              justifyContent: "center",
-              marginRight: isMobile ? 12 : 16,
-              minWidth: 44, // Touch-friendly minimum
-            }}
-          >
-            <ChevronLeftIcon size={isMobile ? 20 : 18} color={Colors.gray700} />
-          </TouchableOpacity>
-
-          <Text
-            style={{
-              fontSize: isMobile ? 13 : 15,
-              fontWeight: "600",
-              color: Colors.textHeading,
-              minWidth: isMobile ? 130 : 160,
-              textAlign: "center",
-              flex: isMobile ? 1 : 0,
-            }}
-          >
-            {formatWeekRange()}
-          </Text>
-
-          <TouchableOpacity
-            onPress={() => navigateWeek("next")}
-            activeOpacity={0.7}
-            style={{
-              width: isMobile ? 44 : 36,
-              height: isMobile ? 44 : 36,
-              borderRadius: isMobile ? 22 : 18,
-              backgroundColor: Colors.gray100,
-              alignItems: "center",
-              justifyContent: "center",
-              marginLeft: isMobile ? 12 : 16,
-              minWidth: 44, // Touch-friendly minimum
-            }}
-          >
-            <ChevronRightIcon
-              size={isMobile ? 20 : 18}
-              color={Colors.gray700}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Mobile Hint */}
-        {isMobile && (
-          <View
-            style={{
-              backgroundColor: "#EFF6FF",
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: 8,
-              marginBottom: 12,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <InfoIcon size={20} color="#1E40AF" />
-            <Text style={{ fontSize: 12, color: "#1E40AF", flex: 1 }}>
-              Vuốt sang ngang để xem lịch các ngày khác
-            </Text>
-          </View>
-        )}
-
-        {/* Schedule Table */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={Platform.OS === "web"}
-          style={{
-            backgroundColor: Colors.white,
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: Colors.border,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 2,
-            elevation: 1,
-          }}
-        >
-          <View style={{ minWidth: "100%" }}>
-            {/* Table Header */}
-            <View
-              style={{ flexDirection: "row", backgroundColor: Colors.gray50 }}
-            >
-              <View
-                style={{
-                  width: isMobile ? 80 : 120,
-                  padding: headerPadding,
-                  borderRightWidth: 1,
-                  borderRightColor: Colors.border,
-                  borderBottomWidth: 2,
-                  borderBottomColor: Colors.border,
-                  justifyContent: "center",
-                  alignItems: "center",
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: "#E5ECF6",
+                  padding: 16,
                 }}
               >
                 <Text
                   style={{
-                    fontSize: headerFontSize,
-                    fontWeight: "700",
-                    color: Colors.textHeading,
+                    fontSize: 16,
+                    fontWeight: "800",
+                    color: "#0F172A",
+                    marginBottom: 12,
                   }}
                 >
-                  {isMobile ? "Ca" : "Ca học"}
+                  Khởi tạo điểm danh
                 </Text>
-              </View>
-              {[
-                "Thứ 2",
-                "Thứ 3",
-                "Thứ 4",
-                "Thứ 5",
-                "Thứ 6",
-                "Thứ 7",
-                "Chủ nhật",
-              ].map((day, index) => (
+
                 <View
-                  key={day}
                   style={{
-                    flex: 1,
-                    minWidth: columnMinWidth,
-                    padding: headerPadding,
-                    borderRightWidth: index < 6 ? 1 : 0,
-                    borderRightColor: Colors.border,
-                    borderBottomWidth: 2,
-                    borderBottomColor: Colors.border,
-                    justifyContent: "center",
+                    flexDirection: isMobile ? "column" : "row",
+                    gap: 12,
+                  }}
+                >
+                  <TouchableOpacity
+                    onPress={() => router.push("/teacher/generate-qr")}
+                    style={{
+                      flex: 1,
+                      borderRadius: 14,
+                      overflow: "hidden",
+                      borderWidth: 1,
+                      borderColor: "#DCE7FB",
+                    }}
+                    activeOpacity={0.88}
+                  >
+                    <LinearGradient
+                      colors={["#1F3D8E", "#3B82F6"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{ padding: 14 }}
+                    >
+                      <Ionicons
+                        name="qr-code"
+                        size={22}
+                        color="#FFFFFF"
+                        style={{ marginBottom: 8 }}
+                      />
+                      <Text
+                        style={{
+                          color: "#FFFFFF",
+                          fontSize: 16,
+                          fontWeight: "800",
+                          marginBottom: 2,
+                        }}
+                      >
+                        Tạo mã QR
+                      </Text>
+                      <Text
+                        style={{ color: "rgba(255,255,255,0.9)", fontSize: 12 }}
+                      >
+                        Tạo mã quét điểm danh nhanh cho lớp.
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => router.push("/teacher/generate-otp")}
+                    style={{
+                      flex: 1,
+                      borderRadius: 14,
+                      overflow: "hidden",
+                      borderWidth: 1,
+                      borderColor: "#DCE7FB",
+                    }}
+                    activeOpacity={0.88}
+                  >
+                    <LinearGradient
+                      colors={["#23479F", "#5B9AFB"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{ padding: 14 }}
+                    >
+                      <Ionicons
+                        name="keypad"
+                        size={22}
+                        color="#FFFFFF"
+                        style={{ marginBottom: 8 }}
+                      />
+                      <Text
+                        style={{
+                          color: "#FFFFFF",
+                          fontSize: 16,
+                          fontWeight: "800",
+                          marginBottom: 2,
+                        }}
+                      >
+                        Tạo mã OTP
+                      </Text>
+                      <Text
+                        style={{ color: "rgba(255,255,255,0.9)", fontSize: 12 }}
+                      >
+                        Tạo mã OTP cho buổi học hiện tại.
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Stats cluster */}
+              <View
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: "#E5ECF6",
+                  padding: 16,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "800",
+                    color: "#0F172A",
+                    marginBottom: 12,
+                  }}
+                >
+                  Thống kê nhanh
+                </Text>
+
+                <View
+                  style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}
+                >
+                  {statCard(
+                    "people",
+                    "Tổng sinh viên",
+                    stats.totalStudents,
+                    "#1F3D8E",
+                  )}
+                  {statCard(
+                    "checkmark-circle",
+                    "Có mặt hôm nay",
+                    stats.presentToday,
+                    "#2563EB",
+                  )}
+                  {statCard(
+                    "close-circle",
+                    "Vắng hôm nay",
+                    stats.absentToday,
+                    "#1D4ED8",
+                  )}
+                  {statCard(
+                    "stats-chart",
+                    "Tỷ lệ điểm danh",
+                    `${stats.attendanceRate}%`,
+                    "#3B82F6",
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Right side */}
+            <View
+              style={{ flex: isDesktopWeb ? 1 : 1, width: "100%", gap: 16 }}
+            >
+              {/* Mini month calendar */}
+              <View
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: "#E5ECF6",
+                  padding: 14,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
                     alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 8,
                   }}
                 >
                   <Text
                     style={{
-                      fontSize: dayFontSize,
-                      fontWeight: "600",
-                      color: Colors.gray700,
+                      fontSize: 15,
+                      fontWeight: "800",
+                      color: "#0F172A",
                     }}
                   >
-                    {isMobile ? day.replace("Thứ ", "T") : day}
+                    Lịch tháng
                   </Text>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <TouchableOpacity
+                      onPress={() => changeMonth("prev")}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: "#EEF2FF",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Ionicons name="chevron-back" size={16} color="#1F3D8E" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => changeMonth("next")}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: "#EEF2FF",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Ionicons
+                        name="chevron-forward"
+                        size={16}
+                        color="#1F3D8E"
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              ))}
-            </View>
 
-            {/* Cột Sáng / Chiều / Tối như lịch thật; data map theo giờ vào đúng ca */}
-            <View style={{ flexDirection: "row" }}>
-              <View
-                style={{
-                  width: isMobile ? 80 : 120,
-                  padding: headerPadding,
-                  borderRightWidth: 1,
-                  borderRightColor: Colors.border,
-                  borderBottomWidth: 1,
-                  borderBottomColor: Colors.border,
-                  backgroundColor: "#FFFBEB",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  minHeight: isMobile ? 100 : 120,
-                }}
-              >
                 <Text
-                  style={{
-                    fontSize: isMobile ? 11 : periodFontSize,
-                    fontWeight: "600",
-                    color: "#92400E",
-                  }}
+                  style={{ fontSize: 13, color: "#64748B", marginBottom: 10 }}
                 >
-                  Sáng
+                  {monthLabel}
                 </Text>
+
+                <View style={{ flexDirection: "row", marginBottom: 6 }}>
+                  {WEEK_HEADERS.map((h) => (
+                    <View
+                      key={h}
+                      style={{ width: `${100 / 7}%`, alignItems: "center" }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: "700",
+                          color: "#64748B",
+                        }}
+                      >
+                        {h}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                  {monthCells.map((cell) => {
+                    const isToday = cell.iso === todayISO;
+                    const isSelected = cell.iso === selectedISO;
+                    const hasClass = schedules.some((s) =>
+                      scheduleAppliesOnDate(s, cell.iso),
+                    );
+                    return (
+                      <TouchableOpacity
+                        key={cell.iso}
+                        onPress={() => setSelectedISO(cell.iso)}
+                        style={{
+                          width: `${100 / 7}%`,
+                          height: 34,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderRadius: 9,
+                          backgroundColor: isSelected
+                            ? "#1F3D8E"
+                            : "transparent",
+                          opacity: cell.isCurrentMonth ? 1 : 0.35,
+                          borderWidth: isToday && !isSelected ? 1.5 : 0,
+                          borderColor: "#3B82F6",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontWeight: isSelected ? "800" : "600",
+                            color: isSelected ? "#FFFFFF" : "#1E293B",
+                          }}
+                        >
+                          {cell.day}
+                        </Text>
+                        {hasClass ? (
+                          <View
+                            style={{
+                              position: "absolute",
+                              bottom: 4,
+                              width: 4,
+                              height: 4,
+                              borderRadius: 2,
+                              backgroundColor: isSelected
+                                ? "#FFFFFF"
+                                : "#3B82F6",
+                            }}
+                          />
+                        ) : null}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
-              {[
-                "monday",
-                "tuesday",
-                "wednesday",
-                "thursday",
-                "friday",
-                "saturday",
-                "sunday",
-              ].map((day) => renderScheduleCell(day, "morning"))}
-            </View>
-            <View style={{ flexDirection: "row" }}>
+
+              {/* Auto-scrolling day classes */}
               <View
                 style={{
-                  width: isMobile ? 80 : 120,
-                  padding: headerPadding,
-                  borderRightWidth: 1,
-                  borderRightColor: Colors.border,
-                  borderBottomWidth: 1,
-                  borderBottomColor: Colors.border,
-                  backgroundColor: "#FEF3C7",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  minHeight: isMobile ? 100 : 120,
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: "#E5ECF6",
+                  padding: 14,
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: isMobile ? 11 : periodFontSize,
-                    fontWeight: "600",
-                    color: "#92400E",
-                  }}
-                >
-                  Chiều
-                </Text>
-              </View>
-              {[
-                "monday",
-                "tuesday",
-                "wednesday",
-                "thursday",
-                "friday",
-                "saturday",
-                "sunday",
-              ].map((day) => renderScheduleCell(day, "afternoon"))}
-            </View>
-            <View style={{ flexDirection: "row" }}>
-              <View
-                style={{
-                  width: isMobile ? 80 : 120,
-                  padding: headerPadding,
-                  borderRightWidth: 1,
-                  borderRightColor: Colors.border,
-                  borderBottomWidth: 1,
-                  borderBottomColor: Colors.border,
-                  backgroundColor: "#DBEAFE",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  minHeight: isMobile ? 100 : 120,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: isMobile ? 11 : periodFontSize,
-                    fontWeight: "600",
-                    color: "#1E3A8A",
-                  }}
-                >
-                  Tối
-                </Text>
-              </View>
-              {[
-                "monday",
-                "tuesday",
-                "wednesday",
-                "thursday",
-                "friday",
-                "saturday",
-                "sunday",
-              ].map((day) => renderScheduleCell(day, "evening"))}
-            </View>
-          </View>
-        </ScrollView>
-
-        {teacherSchedules.length === 0 && (
-          <View
-            style={{
-              backgroundColor: Colors.white,
-              borderRadius: 12,
-              padding: isDesktop ? 20 : 16,
-              borderWidth: 1,
-              borderColor: Colors.border,
-              alignItems: "center",
-              justifyContent: "center",
-              paddingVertical: 40,
-              marginTop: 12,
-            }}
-          >
-            <CalendarIcon size={48} color={Colors.primary} />
-            <Text
-              style={{
-                fontSize: isMobile ? 14 : 16,
-                lineHeight: isMobile ? 20 : 24,
-                fontWeight: "600",
-                color: Colors.text,
-                marginBottom: 4,
-              }}
-            >
-              Không có lịch dạy
-            </Text>
-            <Text
-              style={{
-                fontSize: isMobile ? 12 : 14,
-                lineHeight: isMobile ? 18 : 20,
-                color: Colors.textSecondary,
-              }}
-            >
-              Tuần này bạn không có lịch dạy
-            </Text>
-          </View>
-        )}
-      </View>
-    );
-  };
-
-  return (
-    <View style={{ flex: 1, backgroundColor: "#f8fafc" }}>
-      <StatusBar style="light" />
-
-      {/* ── Blue Hero Banner (Fixed at top) ── */}
-      <LinearGradient
-        colors={["#1E3A8A", "#3B82F6"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          paddingTop: isMobile ? 48 : 64, // leave space for status bar manually if needed
-          paddingBottom: 40,
-          paddingHorizontal: paddingHorizontal,
-          borderBottomLeftRadius: 32,
-          borderBottomRightRadius: 32,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <View>
-            <Text
-              style={{
-                fontSize: 15,
-                color: "rgba(255,255,255,0.8)",
-                marginBottom: 4,
-              }}
-            >
-              Chào mừng trở lại!
-            </Text>
-            <Text style={{ fontSize: 24, fontWeight: "800", color: "#ffffff" }}>
-              Xin chào, Giảng viên
-            </Text>
-          </View>
-
-          {/* Bell + Profile icons */}
-          <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
-            {/* Notification Bell */}
-            <TouchableOpacity
-              onPress={() => router.push("/teacher/notifications")}
-              style={{ position: "relative" }}
-              activeOpacity={0.75}
-            >
-              <View
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 23,
-                  backgroundColor: "rgba(255,255,255,0.18)",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 1.5,
-                  borderColor: "rgba(255,255,255,0.3)",
-                }}
-              >
-                <Ionicons name="notifications-outline" size={22} color="#fff" />
-              </View>
-              {unreadNotifs > 0 && (
                 <View
                   style={{
-                    position: "absolute",
-                    top: -3,
-                    right: -3,
-                    minWidth: 18,
-                    height: 18,
-                    borderRadius: 9,
-                    backgroundColor: "#ef4444",
+                    flexDirection: "row",
                     alignItems: "center",
-                    justifyContent: "center",
-                    paddingHorizontal: 4,
-                    borderWidth: 2,
-                    borderColor: "#3b82f6",
+                    justifyContent: "space-between",
+                    marginBottom: 10,
                   }}
                 >
                   <Text
-                    style={{ fontSize: 10, fontWeight: "800", color: "#fff" }}
+                    style={{
+                      fontSize: 15,
+                      fontWeight: "800",
+                      color: "#0F172A",
+                    }}
                   >
-                    {unreadNotifs > 9 ? "9+" : unreadNotifs}
+                    Lớp học trong ngày
                   </Text>
+                  <View
+                    style={{
+                      backgroundColor: "#EEF2FF",
+                      borderRadius: 999,
+                      paddingHorizontal: 10,
+                      paddingVertical: 3,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: "#1F3D8E",
+                        fontWeight: "700",
+                      }}
+                    >
+                      {schedulesToday.length} lớp
+                    </Text>
+                  </View>
                 </View>
-              )}
-            </TouchableOpacity>
 
-            {/* Profile avatar */}
-            <TouchableOpacity
-              onPress={() => router.push("/teacher/profile")}
-              activeOpacity={0.75}
-            >
+                {schedulesToday.length === 0 ? (
+                  <View
+                    style={{
+                      borderRadius: 12,
+                      backgroundColor: "#F8FAFC",
+                      padding: 14,
+                    }}
+                  >
+                    <Text style={{ color: "#64748B", fontSize: 13 }}>
+                      Hôm nay chưa có lịch dạy.
+                    </Text>
+                  </View>
+                ) : (
+                  <ScrollView
+                    ref={dayListRef}
+                    style={{ maxHeight: 234 }}
+                    showsVerticalScrollIndicator={false}
+                    onScroll={(e) =>
+                      setScrollOffset(e.nativeEvent.contentOffset.y)
+                    }
+                    scrollEventThrottle={16}
+                  >
+                    <View style={{ gap: 8 }}>
+                      {schedulesToday.map((item) => (
+                        <TouchableOpacity
+                          key={item.id}
+                          onPress={() => router.push("/teacher/class-list")}
+                          activeOpacity={0.82}
+                          style={{
+                            borderWidth: 1,
+                            borderColor: "#E2E8F0",
+                            borderRadius: 12,
+                            padding: 10,
+                            backgroundColor: "#F8FAFC",
+                          }}
+                        >
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              marginBottom: 4,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                fontWeight: "800",
+                                color: "#0F172A",
+                                flex: 1,
+                              }}
+                              numberOfLines={1}
+                            >
+                              {item.subjectName}
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: 11,
+                                color: "#1F3D8E",
+                                fontWeight: "700",
+                              }}
+                            >
+                              {item.startTime} - {item.endTime}
+                            </Text>
+                          </View>
+                          <Text
+                            style={{ fontSize: 12, color: "#475569" }}
+                            numberOfLines={1}
+                          >
+                            {item.className} • Phòng {item.room || "N/A"}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </ScrollView>
+                )}
+              </View>
+
+              {/* Right quick actions */}
               <View
                 style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 23,
-                  backgroundColor: "rgba(255,255,255,0.2)",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 2,
-                  borderColor: "rgba(255,255,255,0.3)",
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: "#E5ECF6",
+                  padding: 14,
                 }}
               >
-                <Ionicons name="person" size={22} color="#fff" />
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </LinearGradient>
-
-      {/* ── Tabs (Overlapping the banner) ── */}
-      <View
-        style={{
-          paddingHorizontal: paddingHorizontal,
-          marginTop: -24,
-          zIndex: 10,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            backgroundColor: "#fff",
-            borderRadius: 16,
-            padding: 6,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.08,
-            shadowRadius: 12,
-            elevation: 4,
-          }}
-        >
-          {(
-            [
-              { key: "overview", label: "Tổng quan", icon: "grid-outline" },
-              { key: "schedule", label: "Lịch học", icon: "calendar-outline" },
-            ] as const
-          ).map((tab) => {
-            const isActive = activeTab === tab.key;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                activeOpacity={0.8}
-                onPress={() => setActiveTab(tab.key)}
-                style={{
-                  flex: 1,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  paddingVertical: 12,
-                  borderRadius: 12,
-                  backgroundColor: isActive ? "#eff6ff" : "transparent",
-                }}
-              >
-                <Ionicons
-                  name={tab.icon as any}
-                  size={18}
-                  color={isActive ? "#3b82f6" : "#64748b"}
-                />
                 <Text
                   style={{
-                    fontSize: 14,
-                    fontWeight: "700",
-                    color: isActive ? "#3b82f6" : "#64748b",
+                    fontSize: 15,
+                    fontWeight: "800",
+                    color: "#0F172A",
+                    marginBottom: 10,
                   }}
                 >
-                  {tab.label}
+                  Quick actions
                 </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
 
-      {/* ── Scrollable Content ── */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          paddingHorizontal,
-          paddingTop: 24,
-          paddingBottom: isDesktop ? 40 : isMobile ? 100 : 64,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View
-          style={{
-            maxWidth: contentMaxWidth,
-            width: "100%",
-            alignSelf: "center",
-          }}
-        >
-          {activeTab === "overview" ? renderOverview() : renderSchedule()}
+                <View style={{ gap: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => router.push("/teacher/advisee-class")}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: "#E2E8F0",
+                      padding: 11,
+                      backgroundColor: "#FFFFFF",
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: "#DBEAFE",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 10,
+                      }}
+                    >
+                      <Ionicons name="school" size={16} color="#1F3D8E" />
+                    </View>
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#0F172A",
+                      }}
+                    >
+                      Quản lý lớp chủ nhiệm
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color="#94A3B8"
+                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => router.push("/teacher/class-list")}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: "#E2E8F0",
+                      padding: 11,
+                      backgroundColor: "#FFFFFF",
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: "#DBEAFE",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 10,
+                      }}
+                    >
+                      <Ionicons name="list" size={16} color="#1F3D8E" />
+                    </View>
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#0F172A",
+                      }}
+                    >
+                      Danh sách lớp học
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color="#94A3B8"
+                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => router.push("/teacher/reports")}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: "#E2E8F0",
+                      padding: 11,
+                      backgroundColor: "#FFFFFF",
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: "#DBEAFE",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 10,
+                      }}
+                    >
+                      <Ionicons name="bar-chart" size={16} color="#1F3D8E" />
+                    </View>
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#0F172A",
+                      }}
+                    >
+                      Báo cáo & thống kê
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color="#94A3B8"
+                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => router.push("/teacher/notifications")}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: "#E2E8F0",
+                      padding: 11,
+                      backgroundColor: "#FFFFFF",
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: "#DBEAFE",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 10,
+                      }}
+                    >
+                      <Ionicons
+                        name="notifications"
+                        size={16}
+                        color="#1F3D8E"
+                      />
+                    </View>
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#0F172A",
+                      }}
+                    >
+                      Thông báo
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color="#94A3B8"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Selected date classes detail */}
+              {!isDesktopWeb ? (
+                <View
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: "#E5ECF6",
+                    padding: 14,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: "800",
+                      color: "#0F172A",
+                      marginBottom: 10,
+                    }}
+                  >
+                    Lịch theo ngày đã chọn
+                  </Text>
+                  {schedulesOnSelectedDay.length === 0 ? (
+                    <Text style={{ fontSize: 13, color: "#64748B" }}>
+                      Không có lớp học trong ngày này.
+                    </Text>
+                  ) : (
+                    <View style={{ gap: 8 }}>
+                      {schedulesOnSelectedDay.map((s) => (
+                        <View
+                          key={s.id}
+                          style={{
+                            borderWidth: 1,
+                            borderColor: "#E2E8F0",
+                            borderRadius: 12,
+                            padding: 10,
+                            backgroundColor: "#F8FAFC",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              fontWeight: "800",
+                              color: "#0F172A",
+                              marginBottom: 2,
+                            }}
+                          >
+                            {s.subjectName}
+                          </Text>
+                          <Text style={{ fontSize: 12, color: "#475569" }}>
+                            {s.className} • {s.startTime} - {s.endTime} • Phòng{" "}
+                            {s.room || "N/A"}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              ) : null}
+            </View>
+          </View>
         </View>
       </ScrollView>
-    </View>
+
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+      />
+    </SafeAreaView>
   );
 }

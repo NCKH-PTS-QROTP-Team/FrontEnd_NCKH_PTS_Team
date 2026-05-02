@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,23 +7,16 @@ import {
   useWindowDimensions,
   Alert,
   ActivityIndicator,
-  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/colors";
-import {
-  UserIcon,
-  BellIcon,
-  LogoutIcon,
-  ChevronRightIcon,
-} from "@/components/Icons";
+import { LogoutIcon } from "@/components/Icons";
 import { authService, attendanceService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import Toast, { useToast } from "@/components/Toast";
 import ProfileAndSettings from "@/components/ProfileAndSettings";
-import { LinearGradient } from "expo-linear-gradient";
 
 export default function StudentProfileScreen() {
   const router = useRouter();
@@ -101,143 +94,18 @@ export default function StudentProfileScreen() {
     ]);
   };
 
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const HEADER_MAX_HEIGHT = isMobile ? 320 : 290;
-  const HEADER_MIN_HEIGHT = isMobile ? 120 : HEADER_MAX_HEIGHT;
-  const HEADER_SCROLL_DISTANCE = Math.max(
-    1,
-    HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT,
-  );
-
-  const headerHeight = isMobile
-    ? scrollY.interpolate({
-        inputRange: [0, HEADER_SCROLL_DISTANCE],
-        outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
-        extrapolate: "clamp",
-      })
-    : HEADER_MAX_HEIGHT;
-
-  const contentOpacity = isMobile
-    ? scrollY.interpolate({
-        inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
-        outputRange: [1, 0.2, 0],
-        extrapolate: "clamp",
-      })
-    : 1;
-
-  const contentTranslateY = isMobile
-    ? scrollY.interpolate({
-        inputRange: [0, HEADER_SCROLL_DISTANCE],
-        outputRange: [0, -10],
-        extrapolate: "clamp",
-      })
-    : 0;
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
-      {/* ── Blue Hero Header ── */}
-      <Animated.View
-        style={{
-          paddingTop: isMobile ? 48 : 64,
-          paddingHorizontal: 16,
-          borderBottomLeftRadius: 32,
-          borderBottomRightRadius: 32,
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: headerHeight,
-          zIndex: 10,
-          overflow: "hidden",
-          shadowColor: "#3B82F6",
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.3,
-          shadowRadius: 16,
-          elevation: 8,
-          alignItems: "center",
-        }}
-      >
-        <LinearGradient
-          colors={["#1E3A8A", "#3B82F6"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
-        />
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: "600",
-            color: "rgba(255,255,255,0.8)",
-            marginBottom: 16,
-          }}
-        >
-          Tài khoản
-        </Text>
-        <Animated.View
-          style={{
-            alignItems: "center",
-            opacity: contentOpacity,
-            transform: [{ translateY: contentTranslateY }],
-          }}
-        >
-          <View
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: 40,
-              backgroundColor: "rgba(255,255,255,0.2)",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 16,
-            }}
-          >
-            <UserIcon size={40} color="#fff" />
-          </View>
-          <Text
-            style={{
-              fontSize: 22,
-              fontWeight: "800",
-              color: "#ffffff",
-              marginBottom: 4,
-            }}
-          >
-            {user?.name || "N/A"}
-          </Text>
-          <Text
-            style={{
-              fontSize: 14,
-              color: "rgba(255,255,255,0.8)",
-              marginBottom: 2,
-            }}
-          >
-            MSSV: {user?.studentId || "N/A"}
-          </Text>
-          <Text
-            style={{
-              fontSize: 14,
-              color: "rgba(255,255,255,0.8)",
-            }}
-          >
-            {user?.email || "N/A"}
-          </Text>
-        </Animated.View>
-      </Animated.View>
-
-      <Animated.ScrollView
+      <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
           padding: 16,
-          paddingTop: HEADER_MAX_HEIGHT + 24,
+          paddingTop: isMobile ? 18 : 24,
           paddingBottom: isMobile ? 120 : 32,
         }}
         showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false },
-        )}
-        scrollEventThrottle={16}
       >
         {loading ? (
           <View
@@ -264,143 +132,26 @@ export default function StudentProfileScreen() {
             <ProfileAndSettings
               user={user}
               onShowToast={showToast}
-              headerContent={
-                <View
-                  style={{
-                    flexDirection: "row",
-                    gap: 12,
-                    marginBottom: -8, // slight adjustment to fit the gap pattern of ProfileAndSettings
-                  }}
-                >
-                  <View
-                    style={{
-                      flex: 1,
-                      backgroundColor: Colors.white,
-                      borderRadius: 16,
-                      padding: 16,
-                      borderWidth: 1,
-                      borderColor: Colors.border,
-                      alignItems: "center",
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 8,
-                      elevation: 2,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: "600",
-                        color: Colors.textSecondary,
-                        marginBottom: 8,
-                      }}
-                    >
-                      Tỷ lệ điểm danh
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 28,
-                        fontWeight: "800",
-                        color: "#10B981",
-                      }}
-                    >
-                      {attendanceStats.attendanceRate}%
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      flex: 1,
-                      backgroundColor: Colors.white,
-                      borderRadius: 16,
-                      padding: 16,
-                      borderWidth: 1,
-                      borderColor: Colors.border,
-                      alignItems: "center",
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 8,
-                      elevation: 2,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: "600",
-                        color: Colors.textSecondary,
-                        marginBottom: 8,
-                      }}
-                    >
-                      Tổng buổi học
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 28,
-                        fontWeight: "800",
-                        color: Colors.primary,
-                      }}
-                    >
-                      {attendanceStats.totalSessions}
-                    </Text>
-                  </View>
-                </View>
-              }
+              statsItems={[
+                {
+                  label: "Tỷ lệ điểm danh",
+                  value: `${attendanceStats.attendanceRate}%`,
+                  tone: "#10B981",
+                },
+                {
+                  label: "Tổng buổi học",
+                  value: attendanceStats.totalSessions,
+                  tone: Colors.primary,
+                },
+                {
+                  label: "Mã sinh viên",
+                  value: user?.studentId || "N/A",
+                  tone: "#1f3d8e",
+                },
+              ]}
             />
           </>
         )}
-
-        {/* Menu Items */}
-        <View
-          style={{
-            backgroundColor: Colors.white,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: Colors.border,
-            marginTop: 24,
-            marginBottom: 16,
-            overflow: "hidden",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 8,
-            elevation: 2,
-          }}
-        >
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 16,
-            }}
-            onPress={() => router.push("/student/register-face")}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#8B5CF615",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-              }}
-            >
-              <UserIcon size={20} color="#8B5CF6" />
-            </View>
-            <Text
-              style={{
-                flex: 1,
-                fontSize: 15,
-                color: Colors.textHeading,
-                fontWeight: "500",
-              }}
-            >
-              Cập nhật dữ liệu khuôn mặt
-            </Text>
-            <ChevronRightIcon size={20} color={Colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
 
         {/* Logout Button */}
         <TouchableOpacity
@@ -440,7 +191,7 @@ export default function StudentProfileScreen() {
         >
           Phiên bản 1.0.0
         </Text>
-      </Animated.ScrollView>
+      </ScrollView>
 
       {/* Toast Notification */}
       <Toast visible={false} message="" type="success" onHide={() => {}} />

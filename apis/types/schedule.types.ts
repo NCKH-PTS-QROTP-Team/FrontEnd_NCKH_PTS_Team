@@ -4,7 +4,9 @@
  */
 export interface ScheduleResponse {
     id: string;
-    classId: string | null;
+        classId: string | null;
+        courseId?: string | null;
+        courseName?: string | null;
     classCode: string | null;
     className: string | null;
     subjectId: string | null;
@@ -34,6 +36,7 @@ export interface ScheduleResponse {
 
 export interface CreateScheduleRequest {
     classId: string;
+        courseId?: string;
     subjectId?: string;
     teacherId?: string;
     scheduleType?: 'CLASS' | 'EXAM';
@@ -53,6 +56,7 @@ export interface CreateScheduleRequest {
 
 export interface UpdateScheduleRequest {
     classId?: string;
+        courseId?: string;
     subjectId?: string;
     teacherId?: string;
     scheduleType?: 'CLASS' | 'EXAM';
@@ -79,6 +83,7 @@ export interface ExcludeScheduleRequest {
 export interface BulkExcludeRangeRequest {
     scheduleIds?: string[];
     classId?: string;
+        courseId?: string;
     subjectId?: string;
     teacherId?: string;
     scheduleType?: 'CLASS' | 'EXAM';
@@ -88,6 +93,7 @@ export interface BulkExcludeRangeRequest {
 
 export interface BulkInsertScheduleRequest {
     classId: string;
+        courseId?: string;
     subjectId: string;
     teacherId: string;
     scheduleType?: 'CLASS' | 'EXAM';

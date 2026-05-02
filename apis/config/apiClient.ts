@@ -1,60 +1,53 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
-// Base URL - có thể config từ env
-// Sử dụng IP local của máy tính chạy backend thay vì localhost cho mobile
-// 
-// 📌 HƯỚNG DẪN TÌM IP:
-// - Windows: chạy lệnh 'ipconfig' → tìm "IPv4 Address" (không phải 127.0.0.1)
-// - Mac/Linux: chạy lệnh 'ifconfig' → tìm "inet" (không phải 127.0.0.1)
-// - Hoặc dùng environment variable: EXPO_PUBLIC_API_URL=http://YOUR_IP:8080/api
-//
-// ⚠️ LƯU Ý:
-// - Điện thoại và máy tính PHẢI cùng mạng Wi-Fi
-// - Backend phải đang chạy trên IP đó (port 8080)
-// - Firewall có thể chặn kết nối, cần allow port 8080
+// Base URL strategy:
+// - Web: ưu tiên EXPO_PUBLIC_API_URL_WEB, sau đó auto theo hostname hiện tại.
+// - Native: ưu tiên EXPO_PUBLIC_API_URL (IP LAN cho thiết bị thật).
 const getApiBaseUrl = () => {
-  // Ưu tiên: Environment variable (cho production hoặc custom config)
-  // Có thể set trong .env hoặc .env.local:
-  // EXPO_PUBLIC_API_URL=http://192.168.1.7:8080/api
-  if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+  const envApiUrl = typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_API_URL?.trim() : undefined;
+  const envWebApiUrl = typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_API_URL_WEB?.trim() : undefined;
+
+  if (Platform.OS === 'web') {
+    if (envWebApiUrl) {
+      return envWebApiUrl;
+    }
+
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const normalizedHost = host === '0.0.0.0' ? 'localhost' : host;
+      return `http://${normalizedHost}:8080/api`;
+    }
+
+    return envApiUrl || 'http://localhost:8080/api';
   }
 
-  // Development mode hoặc khi serve từ dist folder
-  if (__DEV__ || (typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1' ||
-      window.location.hostname.startsWith('192.168.') ||
-      window.location.hostname.startsWith('10.')))) {
-    if (Platform.OS === 'web') {
-      return 'http://localhost:8080/api';
-    } else if (Platform.OS === 'android') {
-      // 10.0.2.2 là địa chỉ đặc biệt cho Android Emulator trỏ về localhost của máy host
-      // Nếu dùng thiết bị thật, thay bằng IP của máy: http://192.168.1.25:8080/api
-      // Default for this project (avoid wrong IP issues on device)
-      return process.env.EXPO_PUBLIC_API_URL || 'http://192.168.30.91:8080/api';
-    } else {
-      // iOS Simulator có thể dùng localhost
-      // iOS thiết bị thật cần IP của máy tính (giống Android)
-      return process.env.EXPO_PUBLIC_API_URL || 'http://192.168.30.91:8080/api';
+  if (envApiUrl) {
+    return envApiUrl;
+  }
+
+  // Native fallback (device/emulator): derive host from Expo dev host to avoid stale LAN IP configs.
+  // Example hostUri: "192.168.1.23:8081" -> API: "http://192.168.1.23:8080/api"
+  const hostUri =
+    (Constants.expoConfig as any)?.hostUri ||
+    (Constants as any)?.manifest2?.extra?.expoClient?.hostUri ||
+    (Constants as any)?.manifest?.debuggerHost;
+
+  if (hostUri) {
+    const host = String(hostUri).split(':')[0];
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      return `http://${host}:8080/api`;
     }
   }
 
-  // Production fallback - CHỈ dùng khi thực sự deploy production
-  // Nếu chạy local nhưng build production, vẫn dùng localhost
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    // Nếu đang chạy local (localhost, 127.0.0.1, local IP), dùng localhost
-    if (hostname === 'localhost' || hostname === '127.0.0.1' ||
-      hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
-      return 'http://localhost:8080/api';
-    }
+  if (Platform.OS === 'android') {
+    // Android emulator -> localhost của máy host
+    return 'http://10.0.2.2:8080/api';
   }
 
-  // Production URL - CHỈ dùng khi thực sự deploy lên production domain
-  return 'https://your-production-api.com/api';
+  return 'http://localhost:8080/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();

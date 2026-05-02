@@ -10,11 +10,24 @@ export interface Class {
   name: string;
   subjectId: string | null;
   subjectName: string | null;
+  semesterId?: string | null;
   teacherId: string | null;
   teacherName: string | null;
-  semester: string | null;
+  semester?: string | null;
   studentCount: number | null;
   createdAt: string;
+}
+
+export interface ClassStudent {
+  id: string;
+  email: string;
+  name: string;
+  studentId: string | null;
+  classId: string | null;
+  role: 'ADMIN' | 'TEACHER' | 'STUDENT' | 'ACADEMIC_STAFF';
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 /**
@@ -25,7 +38,7 @@ export interface CreateClassRequest {
   name: string;
   subjectId?: string;
   teacherId?: string;
-  semester?: string;
+  semesterId?: string;
   studentCount?: number;
 }
 
@@ -34,7 +47,7 @@ export interface UpdateClassRequest {
   name?: string;
   subjectId?: string;
   teacherId?: string;
-  semester?: string;
+  semesterId?: string;
   studentCount?: number;
 }
 
@@ -69,8 +82,8 @@ export const classService = {
   /**
    * Get students by class ID
    */
-  getStudentsByClass: async (classId: string): Promise<any[]> => {
-    const response = await apiClient.get<ApiResponse<any[]>>(`/classes/${classId}/students`);
+  getStudentsByClass: async (classId: string): Promise<ClassStudent[]> => {
+    const response = await apiClient.get<ApiResponse<ClassStudent[]>>(`/classes/${classId}/students`);
     return response.data.data;
   },
 

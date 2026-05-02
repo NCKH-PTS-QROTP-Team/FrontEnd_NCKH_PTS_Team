@@ -11,6 +11,8 @@ export * from './import.service';
 export * from './user.service';
 export * from './report.service';
 export * from './class.service';
+export * from './course.service';
 export * from './subject.service';
 export * from './schedule.service';
+export * from './semester.service';
 
