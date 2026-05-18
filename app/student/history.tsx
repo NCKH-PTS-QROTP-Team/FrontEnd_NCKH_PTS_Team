@@ -19,7 +19,7 @@ import {
   AttendanceStatus,
   AttendanceMethod,
 } from "@/apis/types/attendance.types";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import { LinearGradient } from "expo-linear-gradient";
 import { DropdownPicker } from "@/components/DropdownPicker";
 import { getWebShadow, getWebCursor } from "@/constants/webStyles";
@@ -36,7 +36,7 @@ export default function HistoryScreen() {
   const [selectedYear, setSelectedYear] = useState<string | null>("all");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
 
   const scrollY = React.useRef(new Animated.Value(0)).current;
 
@@ -756,12 +756,6 @@ export default function HistoryScreen() {
           )}
         </View>
       </Animated.ScrollView>
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
     </View>
   );
 }

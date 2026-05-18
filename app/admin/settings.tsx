@@ -1,7 +1,7 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, ScrollView } from "react-native";
 import ProfileAndSettings from "@/components/ProfileAndSettings";
-import { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import { authService } from "@/apis/services/auth.service";
 
 export default function Settings() {

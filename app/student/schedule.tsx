@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Animated,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -45,6 +46,8 @@ export default function ScheduleScreen() {
   const [daySchedules, setDaySchedules] = useState<DayScheduleItem[]>([]);
   const [rawSchedules, setRawSchedules] = useState<ApiSchedule[]>([]);
   const [page, setPage] = useState(1);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<DayScheduleItem | null>(null);
   const PAGE_SIZE = 15;
 
   const scrollY = React.useRef(new Animated.Value(0)).current;
@@ -53,13 +56,13 @@ export default function ScheduleScreen() {
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
 
-  const contentMaxWidth = isDesktop ? (timeFilter === "day" ? 900 : 1200) : "100%";
+  const contentMaxWidth = isDesktop ? (timeFilter === "day" ? 1000 : 1200) : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const cardPadding = isDesktop ? 24 : 16;
 
   const BLUE = "#3b82f6";
 
-  const HEADER_MAX_HEIGHT = isDesktop ? 160 : isMobile ? 200 : 190;
+  const HEADER_MAX_HEIGHT = isDesktop ? 140 : isMobile ? 220 : 210;
   const HEADER_MIN_HEIGHT = isMobile ? 120 : HEADER_MAX_HEIGHT;
   const HEADER_SCROLL_DISTANCE = Math.max(
     1,
@@ -286,6 +289,9 @@ export default function ScheduleScreen() {
             width: "100%",
             alignSelf: "center",
             flex: 1,
+            flexDirection: isDesktop ? "row" : "column",
+            justifyContent: isDesktop ? "space-between" : "flex-start",
+            alignItems: isDesktop ? "center" : "stretch",
           }}
         >
           <View
@@ -293,7 +299,7 @@ export default function ScheduleScreen() {
               flexDirection: "row",
               alignItems: "center",
               gap: 14,
-              marginBottom: 12,
+              marginBottom: isDesktop ? 0 : 12,
             }}
           >
             <View
@@ -308,7 +314,7 @@ export default function ScheduleScreen() {
             >
               <Ionicons name="calendar" size={24} color="#fff" />
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: isDesktop ? undefined : 1 }}>
               <Text
                 style={{
                   fontSize: 13,
@@ -332,6 +338,7 @@ export default function ScheduleScreen() {
             style={{
               opacity: contentOpacity,
               transform: [{ translateY: contentTranslateY }],
+              width: isDesktop ? 360 : "100%",
             }}
           >
             {/* Filter Tabs in Header */}
@@ -341,7 +348,7 @@ export default function ScheduleScreen() {
                 backgroundColor: "rgba(255,255,255,0.15)",
                 borderRadius: 12,
                 padding: 4,
-                marginTop: 8,
+                marginTop: isDesktop ? 0 : 8,
               }}
             >
               {[
@@ -589,6 +596,10 @@ export default function ScheduleScreen() {
                   <TouchableOpacity
                     key={schedule.id}
                     activeOpacity={0.8}
+                    onPress={() => {
+                      setSelectedSchedule(schedule);
+                      setModalVisible(true);
+                    }}
                     style={{
                       backgroundColor: Colors.white,
                       borderRadius: 20,
@@ -758,6 +769,92 @@ export default function ScheduleScreen() {
           </View>
         </View>
       </Animated.ScrollView>
+
+      {/* Schedule Detail Modal */}
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 16 }}
+          activeOpacity={1}
+          onPress={() => setModalVisible(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{
+              width: "100%",
+              maxWidth: 380,
+              backgroundColor: Colors.white,
+              borderRadius: 16,
+              padding: 24,
+              ...getWebShadow("sm"),
+            }}
+          >
+            {selectedSchedule && (
+              <>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+                  <View style={{ flex: 1, paddingRight: 16 }}>
+                    <Text style={{ fontSize: 20, fontWeight: "700", color: Colors.textHeading, lineHeight: 28, marginBottom: 4 }}>
+                      {selectedSchedule.courseName}
+                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: selectedSchedule.scheduleType === "EXAM" ? Colors.error : Colors.primary }}>
+                        {selectedSchedule.scheduleType === "EXAM" ? "LỊCH THI" : "LỊCH HỌC"}
+                      </Text>
+                      {selectedSchedule.dayOfWeekStr && (
+                        <>
+                          <Text style={{ fontSize: 13, color: Colors.textLight || "#9CA3AF" }}>•</Text>
+                          <Text style={{ fontSize: 13, color: Colors.textSecondary, fontWeight: "500" }}>
+                            {selectedSchedule.dayOfWeekStr}
+                          </Text>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                  <TouchableOpacity onPress={() => setModalVisible(false)} style={{ padding: 4, marginTop: -4 }}>
+                    <Ionicons name="close" size={24} color={Colors.textLight || "#9CA3AF"} />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ gap: 16 }}>
+                  <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
+                    <Ionicons name="person-outline" size={20} color={Colors.textSecondary} style={{ marginTop: 2 }} />
+                    <View>
+                      <Text style={{ fontSize: 13, color: Colors.textSecondary, marginBottom: 2 }}>Giảng viên</Text>
+                      <Text style={{ fontSize: 15, fontWeight: "500", color: Colors.textHeading }}>
+                        {selectedSchedule.teacher.replace("GV: ", "")}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
+                    <Ionicons name="business-outline" size={20} color={Colors.textSecondary} style={{ marginTop: 2 }} />
+                    <View>
+                      <Text style={{ fontSize: 13, color: Colors.textSecondary, marginBottom: 2 }}>Phòng học</Text>
+                      <Text style={{ fontSize: 15, fontWeight: "500", color: Colors.textHeading }}>
+                        {selectedSchedule.room.replace("Phòng: ", "")}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
+                    <Ionicons name="time-outline" size={20} color={Colors.textSecondary} style={{ marginTop: 2 }} />
+                    <View>
+                      <Text style={{ fontSize: 13, color: Colors.textSecondary, marginBottom: 2 }}>Thời gian</Text>
+                      <Text style={{ fontSize: 15, fontWeight: "500", color: Colors.textHeading }}>
+                        {selectedSchedule.time}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }

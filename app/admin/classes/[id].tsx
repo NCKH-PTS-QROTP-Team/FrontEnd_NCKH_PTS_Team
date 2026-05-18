@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Alert } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Colors } from "../../../constants/colors";
 import { mockClasses, mockStudents } from "../../../constants/mockData";
@@ -9,11 +9,15 @@ import PrimaryButton from "../../../components/PrimaryButton";
 import Tabs from "../../../components/Tabs";
 import StudentCard from "../../../components/StudentCard";
 import AttendanceStatusTag from "../../../components/AttendanceStatusTag";
+import ConfirmDialog, { useConfirmDialog } from "../../../components/ConfirmDialog";
+import { useToast } from "../../../components/ToastProvider";
 
 export default function ClassDetail() {
   const { id } = useLocalSearchParams();
   const classData = mockClasses.find((c) => c.id === id);
   const [activeTab, setActiveTab] = useState("info");
+  const { confirm, dialogProps } = useConfirmDialog();
+  const { showToast } = useToast();
 
   if (!classData) {
     return (
@@ -26,17 +30,16 @@ export default function ClassDetail() {
   }
 
   const handleDelete = () => {
-    Alert.alert("Xác nhận xóa", `Bạn có chắc muốn xóa lớp ${classData.code}?`, [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Xóa",
-        style: "destructive",
-        onPress: () => {
-          alert("Đã xóa lớp học");
-          router.back();
-        },
+    confirm({
+      title: "Xác nhận xóa",
+      message: `Bạn có chắc muốn xóa lớp ${classData.code}?`,
+      confirmText: "Xóa",
+      variant: "danger",
+      onConfirm: () => {
+        showToast("Đã xóa lớp học", "success");
+        router.back();
       },
-    ]);
+    });
   };
 
   return (
@@ -212,6 +215,7 @@ export default function ClassDetail() {
           )}
         </View>
       </ScrollView>
+      <ConfirmDialog {...dialogProps} />
     </View>
   );
 }

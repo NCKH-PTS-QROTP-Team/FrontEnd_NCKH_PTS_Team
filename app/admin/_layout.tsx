@@ -4,6 +4,8 @@ import { Platform, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppLayout from "@/components/AppLayout";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { RoleGuard } from "@/components/RoleGuard";
+import { UserRole } from "@/apis/types/auth.types";
 import {
   HomeIcon,
   UsersIcon,
@@ -114,33 +116,37 @@ export default function AdminLayout() {
     const currentRoute = pathname || "/admin/dashboard";
 
     return (
-      <SafeAreaView
-        style={{ flex: 1, backgroundColor: "#FFFFFF" }}
-        edges={["top", "bottom"]}
-      >
-        {stackContent}
-        <BottomNavigation
-          items={bottomNavItems}
-          activeKey={currentRoute}
-          onItemPress={(route) => router.push(route as any)}
-        />
-      </SafeAreaView>
+      <RoleGuard allowedRoles={[UserRole.ADMIN]}>
+        <SafeAreaView
+          style={{ flex: 1, backgroundColor: "#FFFFFF" }}
+          edges={["top", "bottom"]}
+        >
+          {stackContent}
+          <BottomNavigation
+            items={bottomNavItems}
+            activeKey={currentRoute}
+            onItemPress={(route) => router.push(route as any)}
+          />
+        </SafeAreaView>
+      </RoleGuard>
     );
   }
 
   // On web, wrap with AppLayout and SafeAreaView
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#FFFFFF" }}
-      edges={["top", "left", "right"]}
-    >
-      <AppLayout
-        menuItems={menuItems}
-        userRole="admin"
-        userName="Admin Hệ thống"
+    <RoleGuard allowedRoles={[UserRole.ADMIN]}>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: "#FFFFFF" }}
+        edges={["top", "left", "right"]}
       >
-        {stackContent}
-      </AppLayout>
-    </SafeAreaView>
+        <AppLayout
+          menuItems={menuItems}
+          userRole="admin"
+          userName="Admin Hệ thống"
+        >
+          {stackContent}
+        </AppLayout>
+      </SafeAreaView>
+    </RoleGuard>
   );
 }

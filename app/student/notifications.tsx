@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from "@expo/vector-icons";
 import { notificationService, NotificationResponse, NotificationType } from '@/apis';
-import Toast, { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ToastProvider';
 import { getWebShadow, getWebCursor } from '@/constants/webStyles';
 
 export default function Notifications() {
@@ -13,7 +13,7 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadNotifications();
@@ -331,12 +331,6 @@ export default function Notifications() {
           )}
         </View>
       </ScrollView>
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
     </View>
   );
 }

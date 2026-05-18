@@ -17,7 +17,7 @@ import { faceService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import { Colors } from "@/constants/colors";
 import { PrimaryButton } from "@/components/PrimaryButton";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import { useSocket } from "@/apis/socket/SocketProvider";
 import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 import {
@@ -97,7 +97,7 @@ export default function RegisterFaceScreen() {
   const [capturing, setCapturing] = useState(false);
   const [cameraActive, setCameraActive] = useState(true);
   const [faceDetected, setFaceDetected] = useState<FaceDetection | null>(null);
-  const [detecting, setDetecting] = useState(false);
+  const detectingRef = useRef(false);
   const [isReadyToCapture, setIsReadyToCapture] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [previewLayout, setPreviewLayout] = useState<{ width: number; height: number }>({
@@ -111,7 +111,7 @@ export default function RegisterFaceScreen() {
   const faceBoxRef = useRef<FaceDetection | null>(null);
   // Lưu image dimensions để scale coordinates chính xác
   const lastImageDimensions = useRef<{ width: number; height: number } | null>(null);
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const { socket, isConnected, connect, disconnect, emit, on, off } = useSocket();
 
@@ -388,16 +388,16 @@ export default function RegisterFaceScreen() {
 
   // Detect face realtime qua socket (fallback về API nếu socket chưa ready)
   useEffect(() => {
-    if (!cameraActive || capturing || detecting || !cameraRef.current) {
+    if (!cameraActive || capturing || detectingRef.current || !cameraRef.current) {
       return;
     }
 
     // Capture frame và detect
     detectIntervalRef.current = setInterval(async () => {
-      if (!cameraRef.current || detecting) return;
+      if (!cameraRef.current || detectingRef.current) return;
 
       try {
-        setDetecting(true);
+        detectingRef.current = true;
 
         // Capture frame nhỏ để detect (quality thấp để nhanh)
         // Tăng quality để cải thiện nhận diện mặt
@@ -409,7 +409,7 @@ export default function RegisterFaceScreen() {
         });
 
         if (!photo.base64) {
-          setDetecting(false);
+          detectingRef.current = false;
           return;
         }
 
@@ -521,7 +521,7 @@ export default function RegisterFaceScreen() {
           }
           // Silently handle other errors
       } finally {
-        setDetecting(false);
+        detectingRef.current = false;
       }
     }, useSocketForDetection && isConnected ? 400 : 500); // Socket: 400ms (tối ưu) vs API: 500ms
 
@@ -530,7 +530,7 @@ export default function RegisterFaceScreen() {
         clearInterval(detectIntervalRef.current);
       }
     };
-  }, [cameraActive, capturing, detecting, isConnected, emit, width, height, previewLayout]);
+  }, [cameraActive, capturing, isConnected, emit, width, height, previewLayout]);
 
   const handleCapture = async (opts?: { isAuto?: boolean }) => {
     if (!cameraRef.current || !studentId || capturing) {
@@ -900,7 +900,7 @@ export default function RegisterFaceScreen() {
               }
             }}
           >
-            <CameraView ref={cameraRef} style={{ flex: 1 }} facing="front" />
+            <CameraView ref={cameraRef} style={{ flex: 1 }} facing="front" animateShutter={false} />
           
             {/* Overlay - Tách ra ngoài CameraView để tránh warning */}
             <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
@@ -1319,12 +1319,6 @@ export default function RegisterFaceScreen() {
       )}
 
       {/* Toast */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
     </View>
   );
 }

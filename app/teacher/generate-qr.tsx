@@ -16,7 +16,7 @@ import { PrimaryButton } from "@/components/PrimaryButton";
 import { QRViewer } from "@/components/QRViewer";
 import { qrService, attendanceService, scheduleService } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import { QRStatus } from "@/apis/types/qr.types";
 import type { AttendanceSessionResponse } from "@/apis/types/attendance.types";
 import { Colors } from "@/constants/colors";
@@ -269,7 +269,7 @@ export default function GenerateQRScreen() {
       edges={["top"]}
     >
       <StatusBar style="dark" />
-      <Toast />
+
 
       <ScrollView
         contentContainerStyle={{

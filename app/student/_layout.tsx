@@ -4,6 +4,8 @@ import { Platform, View } from "react-native";
 import AppLayout from "@/components/AppLayout";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { ChatBox } from "@/components/ChatBox";
+import { RoleGuard } from "@/components/RoleGuard";
+import { UserRole } from "@/apis/types/auth.types";
 import {
   HomeIcon,
   CalendarIcon,
@@ -143,29 +145,31 @@ export default function StudentLayout() {
     const currentRoute = pathname || "/student/home";
 
     return (
-      <View style={{ flex: 1 }}>
-        {stackContent}
-        <BottomNavigation
-          items={bottomNavItems}
-          activeKey={currentRoute}
-          onItemPress={(route) => router.push(route as any)}
-          centerButton={{
-            icon: <QrCodeIcon size={32} color={Colors.white} />,
-            onPress: () => router.push("/student/attendance-actions"),
-          }}
-        />
-        <ChatBox />
-      </View>
+      <RoleGuard allowedRoles={[UserRole.STUDENT]}>
+        <View style={{ flex: 1 }}>
+          {stackContent}
+          <BottomNavigation
+            items={bottomNavItems}
+            activeKey={currentRoute}
+            onItemPress={(route) => router.push(route as any)}
+            centerButton={{
+              icon: <QrCodeIcon size={32} color={Colors.white} />,
+              onPress: () => router.push("/student/attendance-actions"),
+            }}
+          />
+          <ChatBox />
+        </View>
+      </RoleGuard>
     );
   }
 
   // On web, wrap with AppLayout - user info sẽ tự fetch từ API
   return (
-    <>
+    <RoleGuard allowedRoles={[UserRole.STUDENT]}>
       <AppLayout menuItems={menuItems} userRole="student">
         {stackContent}
       </AppLayout>
       <ChatBox />
-    </>
+    </RoleGuard>
   );
 }

@@ -1,385 +1,287 @@
-import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
-  TouchableOpacity,
   ScrollView,
+  TouchableOpacity,
   Platform,
-  Modal,
+  useWindowDimensions,
 } from "react-native";
-import { SchoolIcon, UserGroupIcon } from "@/components/Icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
+import { importService } from "@/apis";
+import type { ImportResponse, ImportStudentResponse } from "@/apis/services/import.service";
+import { useToast } from "@/components/ToastProvider";
+
+type ImportType = "classes" | "students" | null;
 
 export default function ImportDataScreen() {
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+  const paddingH = isDesktop ? 32 : isTablet ? 24 : 16;
 
-  const importOptions = [
-    {
-      id: "classes",
-      title: "Import lớp học",
-      description: "Tải lên file Excel chứa thông tin các lớp học",
-      icon: <SchoolIcon size={32} color="#0891b2" />,
-    },
-    {
-      id: "students",
-      title: "Import sinh viên",
-      description: "Tải lên file Excel chứa thông tin sinh viên",
-      icon: <UserGroupIcon size={32} color="#0891b2" />,
-    },
-  ];
+  const [selectedType, setSelectedType] = useState<ImportType>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<ImportResponse | ImportStudentResponse | null>(null);
+  const { showToast } = useToast();
+
+  const handleFileSelect = (type: ImportType) => {
+    setSelectedType(type);
+    setResult(null);
+
+    if (Platform.OS === "web") {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".xlsx,.xls";
+      input.onchange = (e: any) => {
+        const f = e.target.files?.[0];
+        if (f) {
+          if (!f.name.endsWith(".xlsx") && !f.name.endsWith(".xls")) {
+            showToast("Vui lòng chọn file Excel (.xlsx hoặc .xls)", "error");
+            return;
+          }
+          setFile(f);
+        }
+      };
+      input.click();
+    } else {
+      showToast("Chức năng import chỉ hỗ trợ trên web", "error");
+    }
+  };
+
+  const handleImport = async () => {
+    if (!file || !selectedType) return;
+    setLoading(true);
+    try {
+      let res: ImportResponse | ImportStudentResponse;
+      if (selectedType === "classes") {
+        res = await importService.importClasses(file);
+      } else {
+        res = await importService.importStudents(file);
+      }
+      setResult(res);
+      const label = selectedType === "classes" ? "lớp học" : "sinh viên";
+      if (res.errorCount === 0) {
+        showToast(`Import thành công ${res.successCount} ${label}!`, "success");
+      } else {
+        showToast(
+          `${res.successCount} thành công, ${res.errorCount} lỗi`,
+          res.successCount > 0 ? "success" : "error",
+        );
+      }
+    } catch (error: any) {
+      console.error("Import error:", error);
+      showToast(error.message || "Lỗi khi import. Vui lòng thử lại.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetState = () => {
+    setFile(null);
+    setResult(null);
+    setSelectedType(null);
+  };
 
   return (
-    <ScrollView
-      style={[styles.container, { padding: 0 }]}
-      contentContainerStyle={[styles.contentContainer, { padding: 0 }]}
-    >
-      <LinearGradient
-        colors={["#1E3A8A", "#3B82F6"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          paddingTop: 64,
-          paddingBottom: 20,
-          paddingHorizontal: 20,
-          borderBottomLeftRadius: 32,
-          borderBottomRightRadius: 32,
-          zIndex: 10,
-          marginBottom: 20,
-        }}
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F8FAFC" }} edges={["top"]}>
+      <StatusBar style="dark" />
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: paddingH, paddingVertical: 24 }}
+        showsVerticalScrollIndicator={false}
       >
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <View>
-            <Text style={{ fontSize: 24, fontWeight: "800", color: "#fff" }}>
+        <View style={{ maxWidth: 720, width: "100%", alignSelf: "center" }}>
+          {/* Header */}
+          <View style={{ marginBottom: 28 }}>
+            <Text style={{ fontSize: 26, fontWeight: "700", color: "#111827", marginBottom: 6 }}>
               Import dữ liệu
             </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                color: "rgba(255,255,255,0.8)",
-                marginTop: 4,
-              }}
-            >
-              Chọn loại dữ liệu bạn muốn import từ Excel
+            <Text style={{ fontSize: 14, color: "#6B7280", lineHeight: 20 }}>
+              Tải lên file Excel để import hàng loạt lớp học hoặc sinh viên vào hệ thống.
             </Text>
           </View>
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              backgroundColor: "rgba(255,255,255,0.2)",
-              borderRadius: 24,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Ionicons name="cloud-upload" size={24} color="#fff" />
-          </View>
-        </View>
-      </LinearGradient>
 
-      <View style={[styles.optionsContainer, { paddingHorizontal: 16 }]}>
-        {importOptions.map((option) => {
-          const isSelected = selectedOption === option.id;
-          return (
-            <TouchableOpacity
-              key={option.id}
-              style={[
-                styles.optionCard,
-                isSelected && styles.optionCardSelected,
-              ]}
-              onPress={() => {
-                setSelectedOption(option.id);
-                setIsModalVisible(true);
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.iconContainer}>{option.icon}</View>
-              <View style={styles.optionTextContainer}>
-                <Text style={styles.optionTitle}>{option.title}</Text>
-                <Text style={styles.optionDesc}>{option.description}</Text>
-              </View>
-              <View style={styles.arrowContainer}>
-                <Ionicons name="arrow-forward" size={16} color="#fff" />
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      <View style={styles.guidanceBox}>
-        <Text style={styles.guideTitle}>Lưu ý khi import</Text>
-        <View style={styles.guideContent}>
-          <Text style={styles.guideItem}>
-            • File Excel phải đúng định dạng (.xlsx hoặc .xls)
-          </Text>
-          <Text style={styles.guideItem}>
-            • Dòng đầu tiên là header, các dòng tiếp theo là dữ liệu
-          </Text>
-          <Text style={styles.guideItem}>
-            • Kiểm tra kỹ dữ liệu trước khi import để tránh lỗi
-          </Text>
-          <Text style={styles.guideItem}>
-            • Hệ thống sẽ báo cáo chi tiết các dòng lỗi sau khi import
-          </Text>
-        </View>
-      </View>
-
-      <Modal
-        visible={isModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {selectedOption === "classes"
-                  ? "Import lớp học"
-                  : "Import sinh viên"}
-              </Text>
-              <TouchableOpacity onPress={() => setIsModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#64748b" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.uploadArea}>
-              <Ionicons name="cloud-upload-outline" size={48} color="#0891b2" />
-              <Text style={styles.uploadText}>
-                Nhấn để chọn file hoặc kéo thả file vào đây
-              </Text>
-              <Text style={styles.uploadSubtext}>
-                Chỉ hỗ trợ file .xlsx, .xls
+          {/* Step 1: Choose type (if no file selected yet) */}
+          {!file && (
+            <View style={{ gap: 12, marginBottom: 24 }}>
+              <Text style={{ fontSize: 13, fontWeight: "600", color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+                Chọn loại dữ liệu
               </Text>
 
-              <TouchableOpacity style={styles.selectFileBtn}>
-                <Text style={styles.selectFileBtnText}>Chọn file</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalFooter}>
               <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => setIsModalVisible(false)}
+                onPress={() => handleFileSelect("classes")}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 14,
+                  padding: 18,
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB",
+                  gap: 14,
+                  ...(Platform.OS === "web" ? { cursor: "pointer", transition: "border-color 0.2s" } as any : {}),
+                }}
               >
-                <Text style={styles.cancelBtnText}>Hủy</Text>
+                <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name="school-outline" size={24} color="#2563EB" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827", marginBottom: 2 }}>Import lớp học</Text>
+                  <Text style={{ fontSize: 13, color: "#6B7280" }}>Tải file Excel chứa danh sách lớp học</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.importBtn}>
-                <Text style={styles.importBtnText}>Tiến hành Import</Text>
+
+              <TouchableOpacity
+                onPress={() => handleFileSelect("students")}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 14,
+                  padding: 18,
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB",
+                  gap: 14,
+                  ...(Platform.OS === "web" ? { cursor: "pointer", transition: "border-color 0.2s" } as any : {}),
+                }}
+              >
+                <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: "#F0FDF4", alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name="people-outline" size={24} color="#16A34A" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827", marginBottom: 2 }}>Import sinh viên</Text>
+                  <Text style={{ fontSize: 13, color: "#6B7280" }}>Tải file Excel chứa danh sách sinh viên</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
               </TouchableOpacity>
             </View>
+          )}
+
+          {/* Step 2: File selected — show file info + import button */}
+          {file && !result && (
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 14,
+                padding: 24,
+                marginBottom: 24,
+                borderWidth: 1,
+                borderColor: "#2563EB",
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20, gap: 12 }}>
+                <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name="document-text" size={24} color="#2563EB" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: "600", color: "#111827", marginBottom: 2 }} numberOfLines={1}>
+                    {file.name}
+                  </Text>
+                  <Text style={{ fontSize: 13, color: "#6B7280" }}>
+                    {(file.size / 1024).toFixed(1)} KB • {selectedType === "classes" ? "Lớp học" : "Sinh viên"}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={resetState} style={{ padding: 8 }}>
+                  <Ionicons name="close-circle" size={22} color="#9CA3AF" />
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                onPress={handleImport}
+                disabled={loading}
+                activeOpacity={0.8}
+                style={{
+                  backgroundColor: loading ? "#93C5FD" : "#2563EB",
+                  borderRadius: 10,
+                  paddingVertical: 14,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: "row",
+                  gap: 8,
+                }}
+              >
+                {loading ? (
+                  <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600" }}>Đang import...</Text>
+                ) : (
+                  <>
+                    <Ionicons name="cloud-upload" size={18} color="#FFFFFF" />
+                    <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600" }}>Tiến hành Import</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Step 3: Import result */}
+          {result && (
+            <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, padding: 24, borderWidth: 1, borderColor: "#E5E7EB", marginBottom: 24 }}>
+              <Text style={{ fontSize: 18, fontWeight: "600", color: "#111827", marginBottom: 16 }}>
+                Kết quả Import
+              </Text>
+
+              <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
+                <View style={{ flex: 1, backgroundColor: "#F0FDF4", borderRadius: 10, padding: 14, borderWidth: 1, borderColor: "#BBF7D0" }}>
+                  <Text style={{ fontSize: 22, fontWeight: "700", color: "#16A34A", marginBottom: 2 }}>{result.successCount}</Text>
+                  <Text style={{ fontSize: 13, color: "#15803D" }}>Thành công</Text>
+                </View>
+                <View style={{ flex: 1, backgroundColor: "#FEF2F2", borderRadius: 10, padding: 14, borderWidth: 1, borderColor: "#FECACA" }}>
+                  <Text style={{ fontSize: 22, fontWeight: "700", color: "#DC2626", marginBottom: 2 }}>{result.errorCount}</Text>
+                  <Text style={{ fontSize: 13, color: "#B91C1C" }}>Lỗi</Text>
+                </View>
+                <View style={{ flex: 1, backgroundColor: "#F9FAFB", borderRadius: 10, padding: 14, borderWidth: 1, borderColor: "#E5E7EB" }}>
+                  <Text style={{ fontSize: 22, fontWeight: "700", color: "#6B7280", marginBottom: 2 }}>{result.totalRows}</Text>
+                  <Text style={{ fontSize: 13, color: "#4B5563" }}>Tổng dòng</Text>
+                </View>
+              </View>
+
+              {/* Error details */}
+              {result.errors && result.errors.length > 0 && (
+                <View>
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827", marginBottom: 8 }}>Chi tiết lỗi:</Text>
+                  <ScrollView style={{ maxHeight: 180, backgroundColor: "#FEF2F2", borderRadius: 8, padding: 12 }}>
+                    {result.errors.map((err: any, i: number) => (
+                      <Text key={i} style={{ fontSize: 13, color: "#DC2626", lineHeight: 20, marginBottom: 4 }}>
+                        Dòng {err.rowNumber}: {err.message}
+                      </Text>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              <TouchableOpacity
+                onPress={resetState}
+                activeOpacity={0.7}
+                style={{
+                  marginTop: 16,
+                  backgroundColor: "#F3F4F6",
+                  borderRadius: 10,
+                  paddingVertical: 12,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ color: "#374151", fontSize: 14, fontWeight: "600" }}>Import thêm</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Guide section */}
+          <View style={{ backgroundColor: "#FFFBEB", borderRadius: 12, padding: 18, borderWidth: 1, borderColor: "#FDE68A" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
+              <Ionicons name="information-circle" size={18} color="#92400E" />
+              <Text style={{ fontSize: 14, fontWeight: "600", color: "#92400E" }}>Lưu ý khi import</Text>
+            </View>
+            <Text style={{ fontSize: 13, color: "#78350F", lineHeight: 20 }}>
+              {"• File phải đúng định dạng .xlsx hoặc .xls\n• Dòng đầu tiên là header\n• Kiểm tra kỹ dữ liệu trước khi import\n• Hệ thống sẽ báo cáo chi tiết các dòng lỗi"}
+            </Text>
           </View>
         </View>
-      </Modal>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-  },
-  contentContainer: {
-    padding: 32,
-    maxWidth: 800,
-    width: "100%",
-    alignSelf: "center",
-  },
-  header: {
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#0f172a",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#64748b",
-  },
-  optionsContainer: {
-    gap: 16,
-    marginBottom: 40,
-  },
-  optionCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1.5,
-    borderColor: "#e2e8f0",
-    ...(Platform.OS === "web"
-      ? { boxShadow: "0 2px 4px rgba(0,0,0,0.03)" }
-      : {
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
-          shadowRadius: 2,
-          elevation: 2,
-        }),
-  },
-  optionCardSelected: {
-    borderColor: "#0891b2",
-  },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#f1f5f9",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 20,
-  },
-  optionTextContainer: {
-    flex: 1,
-  },
-  optionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1e293b",
-    marginBottom: 4,
-  },
-  optionDesc: {
-    fontSize: 14,
-    color: "#64748b",
-  },
-  arrowContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#0891b2",
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 16,
-  },
-  guidanceBox: {
-    backgroundColor: "#f0f9ff",
-    borderRadius: 12,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: "#bae6fd",
-  },
-  guideTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1d4ed8",
-    marginBottom: 16,
-  },
-  guideContent: {
-    gap: 12,
-  },
-  guideItem: {
-    fontSize: 14,
-    color: "#1e3a8a",
-    lineHeight: 22,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
-    width: "100%",
-    maxWidth: 500,
-    ...(Platform.OS === "web"
-      ? { boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }
-      : {
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 10,
-          elevation: 10,
-        }),
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1e293b",
-  },
-  uploadArea: {
-    borderWidth: 2,
-    borderColor: "#e2e8f0",
-    borderStyle: "dashed",
-    borderRadius: 12,
-    padding: 32,
-    alignItems: "center",
-    backgroundColor: "#f8fafc",
-    marginBottom: 24,
-  },
-  uploadText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#334155",
-    marginTop: 16,
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  uploadSubtext: {
-    fontSize: 13,
-    color: "#64748b",
-    marginBottom: 20,
-  },
-  selectFileBtn: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#0891b2",
-  },
-  selectFileBtnText: {
-    color: "#0891b2",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  modalFooter: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 12,
-  },
-  cancelBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: "#f1f5f9",
-  },
-  cancelBtnText: {
-    color: "#64748b",
-    fontWeight: "600",
-    fontSize: 15,
-  },
-  importBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: "#0891b2",
-  },
-  importBtnText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 15,
-  },
-});

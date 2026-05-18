@@ -28,7 +28,7 @@ import { ResponsiveText, ResponsiveSpacing } from '../utils/responsive';
  * - Activity timeline with avatars
  */
 export default function DashboardDemo() {
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
   const screenSize = useScreenSize();
 
   // Sample data
@@ -369,7 +369,6 @@ export default function DashboardDemo() {
       </ScrollView>
 
       {/* Toast */}
-      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
     </PageTransition>
   );
 }

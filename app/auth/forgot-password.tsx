@@ -13,7 +13,7 @@ import {
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import { Colors } from "@/constants/colors";
 import { Spinner } from "@/components/Spinner";
 
@@ -23,7 +23,7 @@ export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
 
   const isTablet = width >= 768 && width < 1024;
   const isDesktop = width >= 1024;
@@ -275,12 +275,6 @@ export default function ForgotPasswordScreen() {
       </ScrollView>
 
       {/* Toast Notification */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
     </KeyboardAvoidingView>
   );
 }

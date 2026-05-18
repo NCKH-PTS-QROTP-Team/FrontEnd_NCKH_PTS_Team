@@ -19,7 +19,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle } from "react-native-svg";
 import { scheduleService, attendanceService, authService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import { Colors } from "@/constants/colors";
 import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 import WebFooter from "@/components/WebFooter";
@@ -570,12 +570,12 @@ export default function StudentHomeScreen() {
               isDesktop ? (
                 <View style={{ 
                   backgroundColor: "#FFFFFF",
-                  borderRadius: 16,
+                  borderRadius: 20,
                   borderWidth: 1,
-                  borderColor: "#f1f5f9",
+                  borderColor: "#E5E7EB",
                   overflow: "hidden",
                   flex: 1,
-                  ...getWebShadow("md"),
+                  ...getWebShadow("sm"),
                 }}>
                   <ScrollView style={{ ...(Platform.OS === "web" ? { maxHeight: 500 } : { maxHeight: 500 }) }} showsVerticalScrollIndicator={false}>
                     {todaySchedules.slice(0, 10).map((sched, idx) => {
@@ -592,45 +592,44 @@ export default function StudentHomeScreen() {
                             paddingVertical: 16,
                             paddingHorizontal: 20,
                             borderBottomWidth: idx === Math.min(todaySchedules.length, 10) - 1 ? 0 : 1,
-                            borderColor: '#f1f5f9',
+                            borderColor: '#F3F4F6',
                             backgroundColor: '#FFFFFF',
                             ...getWebCursor(),
                             ...(Platform.OS === "web" ? { transition: "background-color 0.2s" } : {})
                           }}
-                          onMouseEnter={(e: any) => { e.target.style.backgroundColor = "#f8fafc"; }}
+                          onMouseEnter={(e: any) => { e.target.style.backgroundColor = "#F9FAFB"; }}
                           onMouseLeave={(e: any) => { e.target.style.backgroundColor = "#FFFFFF"; }}
                           activeOpacity={0.7}
                         >
                           {/* Time Block */}
-                          <View style={{ width: 70, borderRightWidth: 2, borderColor: '#e2e8f0', paddingRight: 16, marginRight: 16, alignItems: 'center' }}>
-                            <Text style={{ fontSize: 16, fontWeight: "800", color: "#3b82f6" }}>{startTime}</Text>
-                            {endTime ? <Text style={{ fontSize: 12, color: "#94a3b8", marginTop: 4, fontWeight: "600" }}>{endTime}</Text> : null}
+                          <View style={{ width: 70, paddingRight: 16, marginRight: 16, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827" }}>{startTime}</Text>
+                            {endTime ? <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 4, fontWeight: "500" }}>{endTime}</Text> : null}
                           </View>
 
                           {/* Info Block */}
                           <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b", marginBottom: 8 }} numberOfLines={1}>
+                            <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827", marginBottom: 6 }} numberOfLines={1}>
                               {sched.courseName || sched.subjectName || "Không có thông tin"}
                             </Text>
                             <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
                                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                                  <Ionicons name="person-circle-outline" size={18} color="#64748b" />
-                                  <Text style={{ fontSize: 13, color: "#64748b", fontWeight: "500" }}>{sched.teacher || sched.teacherName || "N/A"}</Text>
+                                  <Ionicons name="person-circle-outline" size={16} color="#6B7280" />
+                                  <Text style={{ fontSize: 13, color: "#4B5563", fontWeight: "500" }}>{sched.teacher || sched.teacherName || "N/A"}</Text>
                                </View>
                                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                                  <Ionicons name="location-outline" size={18} color="#64748b" />
-                                  <Text style={{ fontSize: 13, color: "#64748b", fontWeight: "500" }}>{sched.room || "N/A"}</Text>
+                                  <Ionicons name="location-outline" size={16} color="#6B7280" />
+                                  <Text style={{ fontSize: 13, color: "#4B5563", fontWeight: "500" }}>{sched.room || "N/A"}</Text>
                                </View>
                             </View>
                           </View>
                           
                           {/* Action Icon */}
                           <View style={{ 
-                            width: 36, height: 36, borderRadius: 18, 
-                            backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center',
-                            borderWidth: 1, borderColor: '#f1f5f9'
+                            width: 32, height: 32, borderRadius: 16, 
+                            alignItems: 'center', justifyContent: 'center'
                           }}>
-                            <Ionicons name="chevron-forward" size={18} color="#94a3b8" />
+                            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
                           </View>
                         </TouchableOpacity>
                       );
@@ -872,24 +871,24 @@ export default function StudentHomeScreen() {
             <View
               style={{
                 backgroundColor: "#fff",
-                borderRadius: 16,
+                borderRadius: 20,
                 padding: 24,
                 borderWidth: 1,
-                borderColor: "#f1f5f9",
+                borderColor: "#E5E7EB",
                 flex: 1,
                 justifyContent: "center",
-                ...getWebShadow("md"),
+                ...getWebShadow("sm"),
               }}
             >
               <View style={{ flexDirection: "column", alignItems: "center", justifyContent: "center", gap: isDesktop ? 40 : 24, flex: 1, paddingVertical: 12 }}>
                 {/* SVG Circular Progress - BIG */}
-                <View style={{ position: "relative", alignItems: "center", justifyContent: "center", width: isDesktop ? 240 : 160, height: isDesktop ? 240 : 160 }}>
-                  <Svg width={isDesktop ? 240 : 160} height={isDesktop ? 240 : 160} viewBox={isDesktop ? "0 0 240 240" : "0 0 160 160"}>
-                    <Circle cx={isDesktop ? 120 : 80} cy={isDesktop ? 120 : 80} r={isDesktop ? 100 : 65} stroke="#f1f5f9" strokeWidth={isDesktop ? 18 : 12} fill="none" />
+                <View style={{ position: "relative", alignItems: "center", justifyContent: "center", width: isDesktop ? 220 : 160, height: isDesktop ? 220 : 160 }}>
+                  <Svg width={isDesktop ? 220 : 160} height={isDesktop ? 220 : 160} viewBox={isDesktop ? "0 0 240 240" : "0 0 160 160"}>
+                    <Circle cx={isDesktop ? 120 : 80} cy={isDesktop ? 120 : 80} r={isDesktop ? 100 : 65} stroke="#F3F4F6" strokeWidth={isDesktop ? 12 : 8} fill="none" />
                     <Circle 
                       cx={isDesktop ? 120 : 80} cy={isDesktop ? 120 : 80} r={isDesktop ? 100 : 65} 
-                      stroke="#3b82f6" 
-                      strokeWidth={isDesktop ? 18 : 12} 
+                      stroke="#2563EB" 
+                      strokeWidth={isDesktop ? 12 : 8} 
                       fill="none" 
                       strokeDasharray={isDesktop ? 628.32 : 408.41} 
                       strokeDashoffset={(isDesktop ? 628.32 : 408.41) - (Math.max(0, Math.min(attendanceStats.attendanceRate, 100)) / 100) * (isDesktop ? 628.32 : 408.41)} 
@@ -898,32 +897,32 @@ export default function StudentHomeScreen() {
                     />
                   </Svg>
                   <View style={{ position: "absolute", alignItems: "center", justifyContent: "center" }}>
-                    <Text style={{ fontSize: isDesktop ? 52 : 36, fontWeight: "800", color: "#1e293b" }}>{attendanceStats.attendanceRate}%</Text>
-                    <Text style={{ fontSize: isDesktop ? 14 : 11, color: "#64748b", fontWeight: "700", textTransform: "uppercase", marginTop: isDesktop ? 4 : 2, letterSpacing: 1 }}>Tỷ lệ</Text>
+                    <Text style={{ fontSize: isDesktop ? 48 : 36, fontWeight: "800", color: "#111827" }}>{attendanceStats.attendanceRate}%</Text>
+                    <Text style={{ fontSize: isDesktop ? 13 : 11, color: "#6B7280", fontWeight: "600", textTransform: "uppercase", marginTop: isDesktop ? 4 : 2, letterSpacing: 1 }}>Tỷ lệ</Text>
                   </View>
                 </View>
 
                 {/* Stats Details - BIGGER */}
                 <View style={{ flexDirection: "row", width: "100%", gap: isDesktop ? 20 : 12 }}>
                   {/* Có mặt */}
-                  <View style={{ flex: 1, backgroundColor: "#ecfdf5", borderRadius: 16, padding: isDesktop ? 20 : 16, alignItems: "center", flexDirection: isDesktop ? "row" : "column", gap: isDesktop ? 16 : 8 }}>
-                    <View style={{ width: isDesktop ? 48 : 40, height: isDesktop ? 48 : 40, borderRadius: 12, backgroundColor: "#d1fae5", alignItems: "center", justifyContent: "center" }}>
-                      <Ionicons name="checkmark-outline" size={isDesktop ? 28 : 24} color="#10b981" />
+                  <View style={{ flex: 1, backgroundColor: "#FAFAFA", borderWidth: 1, borderColor: "#F3F4F6", borderRadius: 16, padding: isDesktop ? 20 : 16, alignItems: "center", flexDirection: isDesktop ? "row" : "column", gap: isDesktop ? 16 : 8 }}>
+                    <View style={{ width: isDesktop ? 44 : 40, height: isDesktop ? 44 : 40, borderRadius: 12, backgroundColor: "#E0F2FE", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="checkmark-outline" size={isDesktop ? 24 : 20} color="#0284C7" />
                     </View>
                     <View style={{ alignItems: isDesktop ? "flex-start" : "center" }}>
-                      <Text style={{ fontSize: isDesktop ? 28 : 20, fontWeight: "800", color: "#10b981" }}>{attendanceStats.present}</Text>
-                      <Text style={{ fontSize: isDesktop ? 14 : 12, fontWeight: "600", color: "#059669" }}>Có mặt</Text>
+                      <Text style={{ fontSize: isDesktop ? 24 : 20, fontWeight: "800", color: "#111827" }}>{attendanceStats.present}</Text>
+                      <Text style={{ fontSize: isDesktop ? 13 : 12, fontWeight: "500", color: "#4B5563" }}>Có mặt</Text>
                     </View>
                   </View>
 
                   {/* Vắng mặt */}
-                  <View style={{ flex: 1, backgroundColor: "#fef2f2", borderRadius: 16, padding: isDesktop ? 20 : 16, alignItems: "center", flexDirection: isDesktop ? "row" : "column", gap: isDesktop ? 16 : 8 }}>
-                    <View style={{ width: isDesktop ? 48 : 40, height: isDesktop ? 48 : 40, borderRadius: 12, backgroundColor: "#fee2e2", alignItems: "center", justifyContent: "center" }}>
-                      <Ionicons name="close-outline" size={isDesktop ? 28 : 24} color="#ef4444" />
+                  <View style={{ flex: 1, backgroundColor: "#FAFAFA", borderWidth: 1, borderColor: "#F3F4F6", borderRadius: 16, padding: isDesktop ? 20 : 16, alignItems: "center", flexDirection: isDesktop ? "row" : "column", gap: isDesktop ? 16 : 8 }}>
+                    <View style={{ width: isDesktop ? 44 : 40, height: isDesktop ? 44 : 40, borderRadius: 12, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="close-outline" size={isDesktop ? 24 : 20} color="#EF4444" />
                     </View>
                     <View style={{ alignItems: isDesktop ? "flex-start" : "center" }}>
-                      <Text style={{ fontSize: isDesktop ? 28 : 20, fontWeight: "800", color: "#ef4444" }}>{attendanceStats.absent}</Text>
-                      <Text style={{ fontSize: isDesktop ? 14 : 12, fontWeight: "600", color: "#dc2626" }}>Vắng mặt</Text>
+                      <Text style={{ fontSize: isDesktop ? 24 : 20, fontWeight: "800", color: "#111827" }}>{attendanceStats.absent}</Text>
+                      <Text style={{ fontSize: isDesktop ? 13 : 12, fontWeight: "500", color: "#4B5563" }}>Vắng mặt</Text>
                     </View>
                   </View>
                 </View>
@@ -937,14 +936,14 @@ export default function StudentHomeScreen() {
             style={{
               width: isDesktop ? (Platform.OS === "web" ? "calc(60% - 12px)" : "58%") : "100%",
               backgroundColor: "#FFFFFF",
-              borderRadius: 16,
+              borderRadius: 20,
               padding: 16,
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
               borderWidth: 1,
-              borderColor: "#f1f5f9",
-              ...getWebShadow("md"),
+              borderColor: "#E5E7EB",
+              ...getWebShadow("sm"),
               ...getWebCursor(),
             }}
             activeOpacity={0.7}

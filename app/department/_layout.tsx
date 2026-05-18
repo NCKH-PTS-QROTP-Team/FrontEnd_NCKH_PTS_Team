@@ -3,6 +3,9 @@ import { Stack, useRouter, usePathname } from "expo-router";
 import { Platform, View } from "react-native";
 import AppLayout from "@/components/AppLayout";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { ChatBox } from "@/components/ChatBox";
+import { RoleGuard } from "@/components/RoleGuard";
+import { UserRole } from "@/apis/types/auth.types";
 import {
   HomeIcon,
   UserGroupIcon,
@@ -149,30 +152,34 @@ export default function DepartmentLayout() {
 
     const currentRoute = pathname || "/department/dashboard";
     return (
-      <View style={{ flex: 1 }}>
-        {stackContent}
-        <BottomNavigation
-          items={bottomNavItems}
-          activeKey={currentRoute}
-          onItemPress={(route) => router.push(route as any)}
-          centerButton={{
-            icon: <CogIcon size={32} color={Colors.white} />,
-            onPress: () => router.push("/department/settings"),
-          }}
-        />
-      </View>
+      <RoleGuard allowedRoles={[UserRole.ACADEMIC_STAFF]}>
+        <View style={{ flex: 1 }}>
+          {stackContent}
+          <BottomNavigation
+            items={bottomNavItems}
+            activeKey={currentRoute}
+            onItemPress={(route) => router.push(route as any)}
+            centerButton={{
+              icon: <CogIcon size={32} color={Colors.white} />,
+              onPress: () => router.push("/department/settings"),
+            }}
+          />
+          <ChatBox />
+        </View>
+      </RoleGuard>
     );
   }
 
   // On web, wrap with AppLayout
   return (
-    <AppLayout
-      menuItems={menuItems}
-      userRole="department"
-      userName="Giáo vụ khoa"
-      userEmail="department@iuh.edu.vn"
-    >
-      {stackContent}
-    </AppLayout>
+    <RoleGuard allowedRoles={[UserRole.ACADEMIC_STAFF]}>
+      <AppLayout
+        menuItems={menuItems}
+        userRole="department"
+      >
+        {stackContent}
+      </AppLayout>
+      <ChatBox />
+    </RoleGuard>
   );
 }

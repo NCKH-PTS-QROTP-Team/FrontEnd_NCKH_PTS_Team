@@ -4,6 +4,7 @@ import { Spinner } from "@/components/Spinner";
 import { useEffect, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { SocketProvider } from "@/apis/socket/SocketProvider";
+import { ToastProvider } from "@/components/ToastProvider";
 // Temporarily disabled to fix web text node errors
 // import '../global.css';
 
@@ -45,6 +46,7 @@ export default function RootLayout() {
   }
 
   return (
+    <ToastProvider>
     <SocketProvider autoConnect={false}>
       <Stack
         screenOptions={{
@@ -58,9 +60,10 @@ export default function RootLayout() {
         <Stack.Screen name="student" options={{ headerShown: false }} />
         <Stack.Screen name="admin" options={{ headerShown: false }} />
         <Stack.Screen name="teacher" options={{ headerShown: false }} />
-        <Stack.Screen name="academic-staff" options={{ headerShown: false }} />
+        <Stack.Screen name="department" options={{ headerShown: false }} />
       </Stack>
     </SocketProvider>
+    </ToastProvider>
   );
 }
 

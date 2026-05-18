@@ -9,11 +9,12 @@ import {
   TouchableWithoutFeedback,
   TextInput,
   Modal,
-  Alert,
   ActivityIndicator,
   RefreshControl,
   Animated,
 } from "react-native";
+import { useToast } from "@/components/ToastProvider";
+import ConfirmDialog, { useConfirmDialog } from "@/components/ConfirmDialog";
 import { Ionicons } from "@expo/vector-icons";
 import { classService } from "@/apis/services/class.service";
 import {
@@ -79,6 +80,8 @@ function ClassStudentsModal({
   const [studentIdInput, setStudentIdInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [searchQ, setSearchQ] = useState("");
+  const { showToast } = useToast();
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const fetchStudents = useCallback(async () => {
     if (!cls) return;
@@ -87,7 +90,7 @@ function ClassStudentsModal({
       const data = await classService.getStudentsByClass(cls.id);
       setStudents(data);
     } catch (err: any) {
-      Alert.alert("Lỗi", err?.message || "Không thể tải danh sách sinh viên");
+      showToast(err?.message || "Không thể tải danh sách sinh viên", "error");
     } finally {
       setLoading(false);
     }
@@ -105,7 +108,7 @@ function ClassStudentsModal({
   const handleAdd = async () => {
     const sid = studentIdInput.trim();
     if (!sid) {
-      Alert.alert("Thiếu thông tin", "Vui lòng nhập mã số sinh viên.");
+      showToast("Vui lòng nhập mã số sinh viên.", "error");
       return;
     }
     if (!cls) return;
@@ -115,9 +118,9 @@ function ClassStudentsModal({
       setStudents((prev) => [...prev, added]);
       setStudentIdInput("");
       setAddingMode(false);
-      Alert.alert("Thành công", `Đã thêm sinh viên ${added.name} vào lớp!`);
+      showToast(`Đã thêm sinh viên ${added.name} vào lớp!`, "success");
     } catch (err: any) {
-      Alert.alert("Lỗi", err?.message || "Không thể thêm sinh viên");
+      showToast(err?.message || "Không thể thêm sinh viên", "error");
     } finally {
       setSubmitting(false);
     }
@@ -125,24 +128,23 @@ function ClassStudentsModal({
 
   const handleRemove = (student: ClassStudentResponse) => {
     if (!cls) return;
-    Alert.alert("Xác nhận", `Xóa ${student.name} khỏi lớp "${cls.name}"?`, [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Xóa",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await classService.removeStudentFromClass(
-              cls.id,
-              student.studentId ?? student.id,
-            );
-            setStudents((prev) => prev.filter((sv) => sv.id !== student.id));
-          } catch (err: any) {
-            Alert.alert("Lỗi", err?.message || "Không thể xóa sinh viên");
-          }
-        },
+    confirm({
+      title: "Xác nhận",
+      message: `Xóa ${student.name} khỏi lớp "${cls.name}"?`,
+      confirmText: "Xóa",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await classService.removeStudentFromClass(
+            cls.id,
+            student.studentId ?? student.id,
+          );
+          setStudents((prev) => prev.filter((sv) => sv.id !== student.id));
+        } catch (err: any) {
+          showToast(err?.message || "Không thể xóa sinh viên", "error");
+        }
       },
-    ]);
+    });
   };
 
   if (!cls) return null;
@@ -325,6 +327,7 @@ function ClassStudentsModal({
           )}
         </View>
       </View>
+      <ConfirmDialog {...dialogProps} />
     </Modal>
   );
 }
@@ -794,6 +797,8 @@ export default function ClassesManagement() {
     name: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const { showToast } = useToast();
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const [editVisible, setEditVisible] = useState(false);
   const [editingClass, setEditingClass] = useState<ClassResponse | null>(null);
@@ -854,7 +859,7 @@ export default function ClassesManagement() {
 
   const handleAdd = async () => {
     if (!addForm.code.trim() || !addForm.name.trim()) {
-      Alert.alert("Thiếu thông tin", "Vui lòng nhập mã lớp và tên lớp.");
+      showToast("Vui lòng nhập mã lớp và tên lớp.", "error");
       return;
     }
     try {
@@ -863,9 +868,9 @@ export default function ClassesManagement() {
       setClasses((p) => [created, ...p]);
       setAddVisible(false);
       setAddForm({ code: "", name: "" });
-      Alert.alert("Thành công", "Đã tạo lớp học mới!");
+      showToast("Đã tạo lớp học mới!", "success");
     } catch (err: any) {
-      Alert.alert("Lỗi", err?.message || "Không thể tạo lớp học");
+      showToast(err?.message || "Không thể tạo lớp học", "error");
     } finally {
       setSubmitting(false);
     }
@@ -887,7 +892,7 @@ export default function ClassesManagement() {
   const handleSaveEdit = async () => {
     if (!editingClass) return;
     if (!editForm.code?.trim() || !editForm.name?.trim()) {
-      Alert.alert("Thiếu thông tin", "Vui lòng nhập mã lớp và tên lớp.");
+      showToast("Vui lòng nhập mã lớp và tên lớp.", "error");
       return;
     }
     try {
@@ -895,34 +900,30 @@ export default function ClassesManagement() {
       const updated = await classService.updateClass(editingClass.id, editForm);
       setClasses((p) => p.map((c) => (c.id === updated.id ? updated : c)));
       setEditVisible(false);
-      Alert.alert("Thành công", "Đã cập nhật lớp học!");
+      showToast("Đã cập nhật lớp học!", "success");
     } catch (err: any) {
-      Alert.alert("Lỗi", err?.message || "Không thể cập nhật lớp học");
+      showToast(err?.message || "Không thể cập nhật lớp học", "error");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = (cls: ClassResponse) => {
-    Alert.alert(
-      "Xác nhận xóa",
-      `Xóa lớp "${cls.name}"? Hành động này không thể hoàn tác.`,
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xóa",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await classService.deleteClass(cls.id);
-              setClasses((p) => p.filter((c) => c.id !== cls.id));
-            } catch (err: any) {
-              Alert.alert("Lỗi", err?.message || "Không thể xóa lớp học");
-            }
-          },
-        },
-      ],
-    );
+    confirm({
+      title: "Xác nhận xóa",
+      message: `Xóa lớp "${cls.name}"? Hành động này không thể hoàn tác.`,
+      confirmText: "Xóa",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await classService.deleteClass(cls.id);
+          setClasses((p) => p.filter((c) => c.id !== cls.id));
+          showToast("Đã xóa lớp học", "success");
+        } catch (err: any) {
+          showToast(err?.message || "Không thể xóa lớp học", "error");
+        }
+      },
+    });
   };
 
   return (
@@ -1125,6 +1126,7 @@ export default function ClassesManagement() {
         visible={studentsVisible}
         onClose={() => setStudentsVisible(false)}
       />
+      <ConfirmDialog {...dialogProps} />
     </View>
   );
 }

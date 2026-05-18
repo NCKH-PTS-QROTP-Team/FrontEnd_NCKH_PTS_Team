@@ -1,495 +1,242 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   useWindowDimensions,
+  ActivityIndicator,
+  Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { LineChart, BarChart, PieChart } from "react-native-chart-kit";
+import { reportService } from "@/apis";
+import type { AttendanceSummary, ClassAttendanceReport } from "@/apis/services/report.service";
+import { getAuthToken } from "@/apis/config/apiClient";
+import { useToast } from "@/components/ToastProvider";
 
-export default function ReportsManagement() {
+export default function ReportsScreen() {
   const { width } = useWindowDimensions();
-  const [selectedPeriod, setSelectedPeriod] = useState<
-    "week" | "month" | "year"
-  >("month");
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+  const paddingH = isDesktop ? 32 : isTablet ? 24 : 16;
 
-  const chartConfig = {
-    backgroundColor: "#fff",
-    backgroundGradientFrom: "#fff",
-    backgroundGradientTo: "#fff",
-    decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-    style: {
-      borderRadius: 16,
-    },
-    propsForDots: {
-      r: "6",
-      strokeWidth: "2",
-      stroke: "#3b82f6",
-    },
+  const [summary, setSummary] = useState<AttendanceSummary | null>(null);
+  const [classReports, setClassReports] = useState<ClassAttendanceReport[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    loadReports();
+  }, []);
+
+  const loadReports = async () => {
+    try {
+      setLoading(true);
+      const [summaryData, classData] = await Promise.all([
+        reportService.getAttendanceSummary().catch(() => null),
+        reportService.getClassReports().catch(() => []),
+      ]);
+      setSummary(summaryData);
+      setClassReports(classData || []);
+    } catch (error: any) {
+      console.error("Error loading reports:", error);
+      showToast("Không thể tải báo cáo", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const attendanceData = {
-    labels: ["T2", "T3", "T4", "T5", "T6", "T7"],
-    datasets: [
-      {
-        data: [85, 92, 88, 95, 90, 87],
-        color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-        strokeWidth: 3,
-      },
-    ],
+  const handleExportExcel = async () => {
+    try {
+      setExportingExcel(true);
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        const blob = await reportService.exportExcel();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Bao_cao_diem_danh_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("Đã tải file Excel thành công", "success");
+      } else {
+        showToast("Vui lòng sử dụng web để tải file Excel", "error");
+      }
+    } catch (error: any) {
+      console.error("Export error:", error);
+      showToast(error?.message || "Không thể xuất file Excel", "error");
+    } finally {
+      setExportingExcel(false);
+    }
   };
 
-  const enrollmentData = {
-    labels: ["CNTT", "KTPM", "HTTT", "KHMT", "MMT"],
-    datasets: [
-      {
-        data: [450, 380, 320, 290, 260],
-      },
-    ],
-  };
+  const statCards = summary
+    ? [
+        { label: "Tỷ lệ điểm danh TB", value: `${summary.averageAttendanceRate.toFixed(1)}%`, color: "#10B981", icon: "checkmark-circle" as const },
+        { label: "Tổng buổi học", value: summary.totalSessions.toString(), color: "#2563EB", icon: "calendar" as const },
+        { label: "Tổng sinh viên", value: summary.totalStudents.toString(), color: "#7C3AED", icon: "people" as const },
+        { label: "Có mặt", value: summary.totalPresent.toString(), color: "#059669", icon: "person-add" as const },
+      ]
+    : [];
 
-  const statusDistribution = [
-    {
-      name: "Đang học",
-      population: 1234,
-      color: "#10b981",
-      legendFontColor: "#64748b",
-      legendFontSize: 14,
-    },
-    {
-      name: "Tạm nghỉ",
-      population: 45,
-      color: "#f59e0b",
-      legendFontColor: "#64748b",
-      legendFontSize: 14,
-    },
-    {
-      name: "Đã tốt nghiệp",
-      population: 890,
-      color: "#6366f1",
-      legendFontColor: "#64748b",
-      legendFontSize: 14,
-    },
-  ];
-
-  const stats = [
-    {
-      id: "1",
-      title: "Tỷ lệ điểm danh",
-      value: "89.5%",
-      icon: "checkmark-circle" as const,
-      color: "#10b981",
-      trend: "+2.3%",
-    },
-    {
-      id: "2",
-      title: "Tỷ lệ đỗ",
-      value: "92.1%",
-      icon: "trophy" as const,
-      color: "#f59e0b",
-      trend: "+1.5%",
-    },
-    {
-      id: "3",
-      title: "Điểm TB",
-      value: "7.8",
-      icon: "star" as const,
-      color: "#3b82f6",
-      trend: "+0.2",
-    },
-    {
-      id: "4",
-      title: "Tỷ lệ bỏ học",
-      value: "3.2%",
-      icon: "alert-circle" as const,
-      color: "#ef4444",
-      trend: "-0.5%",
-    },
-  ];
-
-  const numCols = width >= 1024 ? 4 : width >= 640 ? 2 : 1;
-  const cardGap = 16;
-  const paddingTotal = 40; // paddingHorizontal 20 * 2
-  const availableWidth = width - paddingTotal;
-  const cardWidth = (availableWidth - cardGap * (numCols - 1)) / numCols;
-
-  const reportNumCols = width >= 1024 ? 4 : width >= 768 ? 2 : 1;
-  const reportCardWidth =
-    (availableWidth - cardGap * (reportNumCols - 1)) / reportNumCols;
+  const statColumns = isDesktop ? 4 : isTablet ? 2 : 2;
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#f8fafc" }}>
-      {/* Header */}
-      <LinearGradient
-        colors={["#1E3A8A", "#3B82F6"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          paddingTop: 64,
-          paddingBottom: 24,
-          paddingHorizontal: 20,
-          borderBottomLeftRadius: 32,
-          borderBottomRightRadius: 32,
-          marginBottom: 16,
-          zIndex: 10,
-        }}
-      >
-        <Text style={{ fontSize: 24, fontWeight: "800", color: "#fff" }}>
-          Báo cáo & Thống kê
-        </Text>
-        <Text
-          style={{ fontSize: 14, color: "rgba(255,255,255,0.8)", marginTop: 4 }}
-        >
-          Số liệu tổng quan toàn khoa
-        </Text>
-      </LinearGradient>
-
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F8FAFC" }} edges={["top"]}>
+      <StatusBar style="dark" />
       <ScrollView
-        style={styles.container}
-        contentContainerStyle={{ paddingTop: 0 }}
+        contentContainerStyle={{ paddingHorizontal: paddingH, paddingVertical: 24 }}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Period Selector */}
-        <View style={styles.periodContainer}>
-          <View style={styles.periodSelector}>
-            {(["week", "month", "year"] as const).map((period) => (
-              <TouchableOpacity
-                key={period}
-                style={[
-                  styles.periodButton,
-                  selectedPeriod === period && styles.periodButtonActive,
-                ]}
-                onPress={() => setSelectedPeriod(period)}
-              >
-                <Text
-                  style={[
-                    styles.periodText,
-                    selectedPeriod === period && styles.periodTextActive,
-                  ]}
-                >
-                  {period === "week"
-                    ? "Tuần"
-                    : period === "month"
-                      ? "Tháng"
-                      : "Năm"}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        <View style={{ maxWidth: 1100, width: "100%", alignSelf: "center" }}>
+          {/* Header */}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+            <View>
+              <Text style={{ fontSize: 26, fontWeight: "700", color: "#111827", marginBottom: 4 }}>
+                Báo cáo & Thống kê
+              </Text>
+              <Text style={{ fontSize: 14, color: "#6B7280" }}>
+                Tổng hợp điểm danh toàn khoa
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={handleExportExcel}
+              disabled={exportingExcel || loading}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                backgroundColor: exportingExcel ? "#D1FAE5" : "#10B981",
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderRadius: 10,
+                ...(Platform.OS === "web" ? { cursor: exportingExcel ? "not-allowed" : "pointer" } as any : {}),
+              }}
+            >
+              {exportingExcel ? (
+                <ActivityIndicator size="small" color="#059669" />
+              ) : (
+                <Ionicons name="download-outline" size={18} color="#FFFFFF" />
+              )}
+              <Text style={{ fontSize: 14, fontWeight: "600", color: exportingExcel ? "#059669" : "#FFFFFF" }}>
+                {exportingExcel ? "Đang tải..." : "Xuất Excel"}
+              </Text>
+            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Key Stats */}
-        <View style={styles.statsContainer}>
-          <View style={[styles.statsGrid, { gap: cardGap }]}>
-            {stats.map((stat) => (
-              <View
-                key={stat.id}
-                style={[styles.statCard, { width: cardWidth }]}
-              >
-                <View
-                  style={[
-                    styles.statIconContainer,
-                    { backgroundColor: stat.color + "20" },
-                  ]}
-                >
-                  <Ionicons name={stat.icon} size={24} color={stat.color} />
-                </View>
-                <Text style={styles.statValue}>{stat.value}</Text>
-                <Text style={styles.statTitle}>{stat.title}</Text>
-                <View style={styles.trendContainer}>
-                  <Ionicons
-                    name={
-                      stat.trend.startsWith("+")
-                        ? "trending-up"
-                        : "trending-down"
-                    }
-                    size={14}
-                    color={stat.trend.startsWith("+") ? "#10b981" : "#ef4444"}
-                  />
-                  <Text
-                    style={[
-                      styles.trendText,
-                      {
-                        color: stat.trend.startsWith("+")
-                          ? "#10b981"
-                          : "#ef4444",
-                      },
-                    ]}
+          {loading ? (
+            <View style={{ alignItems: "center", justifyContent: "center", paddingVertical: 64 }}>
+              <ActivityIndicator size="large" color="#2563EB" />
+              <Text style={{ fontSize: 14, color: "#6B7280", marginTop: 16 }}>Đang tải báo cáo...</Text>
+            </View>
+          ) : (
+            <>
+              {/* Stats Grid */}
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
+                {statCards.map((stat, i) => (
+                  <View
+                    key={i}
+                    style={{
+                      flex: statColumns === 1 ? 1 : 0,
+                      flexBasis: `${100 / statColumns - 2}%`,
+                      minWidth: 140,
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 14,
+                      padding: 18,
+                      borderWidth: 1,
+                      borderColor: "#E5E7EB",
+                    }}
                   >
-                    {stat.trend}
+                    <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: stat.color + "12", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+                      <Ionicons name={stat.icon} size={20} color={stat.color} />
+                    </View>
+                    <Text style={{ fontSize: 24, fontWeight: "700", color: "#111827", marginBottom: 2 }}>{stat.value}</Text>
+                    <Text style={{ fontSize: 13, color: "#6B7280" }}>{stat.label}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Class Reports Table */}
+              {classReports.length > 0 && (
+                <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, padding: 20, borderWidth: 1, borderColor: "#E5E7EB", marginBottom: 24 }}>
+                  <Text style={{ fontSize: 18, fontWeight: "600", color: "#111827", marginBottom: 16 }}>
+                    Báo cáo theo lớp ({classReports.length})
+                  </Text>
+
+                  {classReports.map((report, i) => {
+                    const rate = report.attendanceRate ?? 0;
+                    const rateColor = rate >= 80 ? "#10B981" : rate >= 60 ? "#F59E0B" : "#EF4444";
+                    return (
+                      <View
+                        key={i}
+                        style={{
+                          padding: 14,
+                          backgroundColor: i % 2 === 0 ? "#F9FAFB" : "#FFFFFF",
+                          borderRadius: 10,
+                          marginBottom: 6,
+                          flexDirection: isDesktop ? "row" : "column",
+                          alignItems: isDesktop ? "center" : "flex-start",
+                          gap: isDesktop ? 16 : 8,
+                        }}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }} numberOfLines={1}>
+                            {report.className || report.classCode}
+                          </Text>
+                          {report.classCode && report.className && (
+                            <Text style={{ fontSize: 12, color: "#9CA3AF" }}>{report.classCode}</Text>
+                          )}
+                        </View>
+
+                        <View style={{ flexDirection: "row", gap: 16, flexWrap: "wrap" }}>
+                          <View style={{ alignItems: "center", minWidth: 50 }}>
+                            <Text style={{ fontSize: 13, color: "#6B7280" }}>SV</Text>
+                            <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}>{report.totalStudents}</Text>
+                          </View>
+                          <View style={{ alignItems: "center", minWidth: 50 }}>
+                            <Text style={{ fontSize: 13, color: "#6B7280" }}>Buổi</Text>
+                            <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}>{report.totalSessions}</Text>
+                          </View>
+                          <View style={{ alignItems: "center", minWidth: 50 }}>
+                            <Text style={{ fontSize: 13, color: "#6B7280" }}>Có mặt</Text>
+                            <Text style={{ fontSize: 14, fontWeight: "600", color: "#10B981" }}>{report.totalPresent}</Text>
+                          </View>
+                          <View style={{ alignItems: "center", minWidth: 50 }}>
+                            <Text style={{ fontSize: 13, color: "#6B7280" }}>Vắng</Text>
+                            <Text style={{ fontSize: 14, fontWeight: "600", color: "#EF4444" }}>{report.totalAbsent}</Text>
+                          </View>
+                          <View style={{ alignItems: "center", minWidth: 60 }}>
+                            <Text style={{ fontSize: 13, color: "#6B7280" }}>Tỷ lệ</Text>
+                            <Text style={{ fontSize: 14, fontWeight: "700", color: rateColor }}>{rate.toFixed(1)}%</Text>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Empty state */}
+              {classReports.length === 0 && (
+                <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, padding: 48, alignItems: "center", borderWidth: 1, borderColor: "#E5E7EB" }}>
+                  <Ionicons name="bar-chart-outline" size={48} color="#D1D5DB" />
+                  <Text style={{ fontSize: 16, fontWeight: "600", color: "#6B7280", marginTop: 16 }}>
+                    Chưa có dữ liệu báo cáo
+                  </Text>
+                  <Text style={{ fontSize: 13, color: "#9CA3AF", marginTop: 4, textAlign: "center" }}>
+                    Dữ liệu sẽ xuất hiện sau khi có phiên điểm danh
                   </Text>
                 </View>
-              </View>
-            ))}
-          </View>
+              )}
+            </>
+          )}
         </View>
-
-        {/* Attendance Chart */}
-        <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Tỷ lệ điểm danh theo ngày</Text>
-          <LineChart
-            data={attendanceData}
-            width={width - 48}
-            height={220}
-            chartConfig={{
-              ...chartConfig,
-              color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-            }}
-            bezier
-            style={styles.chart}
-          />
-        </View>
-
-        {/* Enrollment Chart */}
-        <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Số lượng sinh viên theo ngành</Text>
-          <BarChart
-            data={enrollmentData}
-            width={width - 48}
-            height={220}
-            chartConfig={chartConfig}
-            style={styles.chart}
-            yAxisLabel=""
-            yAxisSuffix=""
-            showValuesOnTopOfBars
-          />
-        </View>
-
-        {/* Status Distribution */}
-        <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Phân bố trạng thái sinh viên</Text>
-          <PieChart
-            data={statusDistribution}
-            width={width - 48}
-            height={220}
-            chartConfig={chartConfig}
-            accessor="population"
-            backgroundColor="transparent"
-            paddingLeft="15"
-            style={styles.chart}
-          />
-        </View>
-
-        {/* Quick Reports */}
-        <View style={styles.reportsContainer}>
-          <Text style={styles.sectionTitle}>Báo cáo nhanh</Text>
-          <View
-            style={{ flexDirection: "row", flexWrap: "wrap", gap: cardGap }}
-          >
-            <TouchableOpacity
-              style={[styles.reportCard, { width: reportCardWidth }]}
-            >
-              <View style={styles.reportIcon}>
-                <Ionicons name="document-text" size={24} color="#3b82f6" />
-              </View>
-              <View style={styles.reportInfo}>
-                <Text style={styles.reportTitle}>Báo cáo điểm danh</Text>
-                <Text style={styles.reportSubtitle}>
-                  Tổng hợp điểm danh theo lớp, môn học
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.reportCard, { width: reportCardWidth }]}
-            >
-              <View style={styles.reportIcon}>
-                <Ionicons name="stats-chart" size={24} color="#10b981" />
-              </View>
-              <View style={styles.reportInfo}>
-                <Text style={styles.reportTitle}>Báo cáo kết quả học tập</Text>
-                <Text style={styles.reportSubtitle}>
-                  Điểm số, xếp loại, tỷ lệ đỗ
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.reportCard, { width: reportCardWidth }]}
-            >
-              <View style={styles.reportIcon}>
-                <Ionicons name="people" size={24} color="#8b5cf6" />
-              </View>
-              <View style={styles.reportInfo}>
-                <Text style={styles.reportTitle}>Báo cáo sinh viên</Text>
-                <Text style={styles.reportSubtitle}>
-                  Thông tin, trạng thái sinh viên
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.reportCard, { width: reportCardWidth }]}
-            >
-              <View style={styles.reportIcon}>
-                <Ionicons name="school" size={24} color="#f59e0b" />
-              </View>
-              <View style={styles.reportInfo}>
-                <Text style={styles.reportTitle}>Báo cáo giảng viên</Text>
-                <Text style={styles.reportSubtitle}>
-                  Lịch dạy, số lượng lớp, đánh giá
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#94a3b8" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={{ height: 30 }} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-  },
-  periodContainer: {
-    padding: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#1e293b",
-    marginBottom: 16,
-  },
-  periodSelector: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 4,
-    gap: 4,
-  },
-  periodButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  periodButtonActive: {
-    backgroundColor: "#3b82f6",
-  },
-  periodText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#64748b",
-  },
-  periodTextActive: {
-    color: "#fff",
-  },
-  statsContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  statCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  statIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#1e293b",
-    marginBottom: 4,
-  },
-  statTitle: {
-    fontSize: 13,
-    color: "#64748b",
-    marginBottom: 8,
-  },
-  trendContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  trendText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  chartContainer: {
-    backgroundColor: "#fff",
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  chartTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1e293b",
-    marginBottom: 16,
-  },
-  chart: {
-    borderRadius: 12,
-  },
-  reportsContainer: {
-    padding: 20,
-    paddingTop: 0,
-  },
-  reportCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  reportIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: "#f8fafc",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  reportInfo: {
-    flex: 1,
-  },
-  reportTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#1e293b",
-    marginBottom: 4,
-  },
-  reportSubtitle: {
-    fontSize: 13,
-    color: "#64748b",
-  },
-});
