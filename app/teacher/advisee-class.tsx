@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Modal,
   Platform,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -14,7 +15,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import MobileGradientHeader from "@/components/MobileGradientHeader";
 import { Colors } from "@/constants/colors";
 import {
   classService,
@@ -207,6 +208,7 @@ export default function AdviseeClass() {
   const [studentRecordsLoading, setStudentRecordsLoading] = useState(false);
   const [studentsPage, setStudentsPage] = useState(1);
   const [atRiskPage, setAtRiskPage] = useState(1);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { showToast } = useToast();
 
@@ -323,7 +325,11 @@ export default function AdviseeClass() {
       }
 
       setTeacherClasses(classes);
-      await loadStudentsForClass(classes[0].id, classes);
+      const preferredClassId =
+        selectedClassId && classes.some((c) => c.id === selectedClassId)
+          ? selectedClassId
+          : classes[0].id;
+      await loadStudentsForClass(preferredClassId, classes);
     } catch (error: any) {
       const msg =
         error?.response?.data?.message ||
@@ -332,6 +338,15 @@ export default function AdviseeClass() {
       showToast(msg, "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await loadAdvisorClassData();
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -534,103 +549,23 @@ export default function AdviseeClass() {
       <StatusBar style={isMobile ? "light" : "dark"} />
 
       {isMobile && (
-        <LinearGradient
-          colors={["#1E3A8A", "#2563EB"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{
-            borderRadius: 16,
-            marginHorizontal: 16,
-            marginTop: 10,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: "#93C5FD",
-          }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 10,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 12,
-                flex: 1,
-              }}
-            >
-              <View
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
-                  backgroundColor: "rgba(255,255,255,0.2)",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 1,
-                  borderColor: "rgba(255,255,255,0.32)",
-                }}
-              >
-                <Ionicons name="school" size={22} color="#FFFFFF" />
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{ fontSize: 19, fontWeight: "800", color: "#FFFFFF" }}
-                >
-                  Lớp chủ nhiệm
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: "rgba(255,255,255,0.9)",
-                    marginTop: 2,
-                  }}
-                >
-                  {className} • {totalStudents} sinh viên
-                </Text>
-              </View>
-            </View>
-
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              <TouchableOpacity
-                onPress={() => router.push("/teacher/notifications")}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "rgba(255,255,255,0.2)",
-                  borderWidth: 1,
-                  borderColor: "rgba(255,255,255,0.35)",
-                }}
-              >
-                <Ionicons name="notifications" size={19} color="#FFFFFF" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => router.push("/teacher/profile")}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "rgba(255,255,255,0.2)",
-                  borderWidth: 1,
-                  borderColor: "rgba(255,255,255,0.35)",
-                }}
-              >
-                <Ionicons name="person" size={19} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </LinearGradient>
+        <MobileGradientHeader
+          title="Lớp chủ nhiệm"
+          subtitle={`${className} • ${totalStudents} sinh viên`}
+          icon="school"
+          actions={[
+            {
+              icon: "notifications",
+              onPress: () => router.push("/teacher/notifications"),
+              accessibilityLabel: "Mở thông báo",
+            },
+            {
+              icon: "person",
+              onPress: () => router.push("/teacher/profile"),
+              accessibilityLabel: "Mở hồ sơ",
+            },
+          ]}
+        />
       )}
 
       {loading ? (
@@ -645,6 +580,16 @@ export default function AdviseeClass() {
       ) : (
         <ScrollView
           style={{ flex: 1 }}
+          refreshControl={
+            isMobile ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={PRIMARY_BLUE}
+                colors={[PRIMARY_BLUE]}
+              />
+            ) : undefined
+          }
           contentContainerStyle={{
             paddingHorizontal,
             paddingTop: isMobile ? 12 : 16,

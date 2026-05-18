@@ -14,7 +14,7 @@ import {
   GraduationIcon,
   ChartIcon,
   UserIcon,
-  PlusIcon,
+  CalendarIcon,
   BellIcon,
 } from "@/components/Icons";
 import { Colors } from "@/constants/colors";
@@ -29,6 +29,11 @@ export default function TeacherLayout() {
       icon: <HomeIcon size={20} color="#3FA9F5" />,
       label: "Dashboard",
       route: "/teacher/dashboard",
+    },
+    {
+      icon: <CalendarIcon size={20} color="#3FA9F5" />,
+      label: "Lịch theo tuần",
+      route: "/teacher/schedule",
     },
     {
       icon: <ClipboardIcon size={20} color="#3FA9F5" />,
@@ -74,6 +79,7 @@ export default function TeacherLayout() {
       <Stack.Screen name="generate-otp" />
       <Stack.Screen name="generate-qr" />
       <Stack.Screen name="advisee-class" />
+      <Stack.Screen name="schedule" />
       <Stack.Screen name="reports" />
       <Stack.Screen name="attendance-actions" />
       <Stack.Screen name="profile" />
@@ -99,13 +105,13 @@ export default function TeacherLayout() {
         ),
       },
       {
-        key: "/teacher/class-list",
-        label: "Lớp học",
+        key: "/teacher/schedule",
+        label: "Lịch tuần",
         icon: (
-          <ClipboardIcon
+          <CalendarIcon
             size={24}
             color={
-              pathname === "/teacher/class-list"
+              pathname === "/teacher/schedule"
                 ? Colors.primary
                 : Colors.textSecondary
             }
@@ -113,13 +119,13 @@ export default function TeacherLayout() {
         ),
       },
       {
-        key: "/teacher/reports",
-        label: "Báo cáo",
+        key: "/teacher/class-list",
+        label: "Lớp học",
         icon: (
-          <ChartIcon
+          <ClipboardIcon
             size={24}
             color={
-              pathname === "/teacher/reports"
+              pathname === "/teacher/class-list"
                 ? Colors.primary
                 : Colors.textSecondary
             }

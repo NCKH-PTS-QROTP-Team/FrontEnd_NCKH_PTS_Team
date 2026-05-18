@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
+  RefreshControl,
   View,
   Text,
   ScrollView,
@@ -115,10 +116,10 @@ export default function GenerateOTPScreen() {
         teacherId,
         active: true,
       });
-      
+
       // Tìm session OTP của teacher
       const otpSession = sessions.find(
-        (s) => s.method === AttendanceMethod.OTP && s.status === "ACTIVE"
+        (s) => s.method === AttendanceMethod.OTP && s.status === "ACTIVE",
       );
 
       if (otpSession) {
@@ -131,7 +132,7 @@ export default function GenerateOTPScreen() {
           subjectName: otpSession.subjectName || "",
         });
         setCurrentSessionId(otpSession.id);
-        
+
         // Load current OTP if exists
         try {
           const otpResponse = await otpService.getCurrent(otpSession.id);
@@ -152,7 +153,7 @@ export default function GenerateOTPScreen() {
 
   const refreshOTPInfo = async () => {
     if (!currentSessionId) return;
-    
+
     try {
       const otpResponse = await otpService.getCurrent(currentSessionId);
       if (otpResponse && otpResponse.remainingSeconds !== undefined) {
@@ -196,8 +197,10 @@ export default function GenerateOTPScreen() {
       const backendMessage =
         error?.response?.data?.message || error?.response?.data?.error;
       showToast(
-        backendMessage || error.message || "Không thể tạo mã OTP. Vui lòng thử lại.",
-        "error"
+        backendMessage ||
+          error.message ||
+          "Không thể tạo mã OTP. Vui lòng thử lại.",
+        "error",
       );
     } finally {
       setLoading(false);
@@ -279,6 +282,15 @@ export default function GenerateOTPScreen() {
 
   const isExpired = countdown === 0;
 
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await Promise.all([loadActiveSession(), loadTodaySchedules()]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: "#F9FAFB" }}
@@ -287,6 +299,16 @@ export default function GenerateOTPScreen() {
       <StatusBar style="dark" />
 
       <ScrollView
+        refreshControl={
+          isMobile ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={["#1E3A8A"]}
+              tintColor="#1E3A8A"
+            />
+          ) : undefined
+        }
         contentContainerStyle={{
           paddingHorizontal,
           paddingVertical: isDesktop ? 32 : 24,
@@ -756,7 +778,7 @@ export default function GenerateOTPScreen() {
           )}
         </View>
       </ScrollView>
-      
+
       {/* Toast Notification */}
     </SafeAreaView>
   );

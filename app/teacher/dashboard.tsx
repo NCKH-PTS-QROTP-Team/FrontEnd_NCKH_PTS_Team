@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  RefreshControl,
   View,
   Text,
   ScrollView,
@@ -123,6 +124,7 @@ export default function TeacherDashboardScreen() {
 
   const dayListRef = useRef<ScrollView>(null);
   const [scrollOffset, setScrollOffset] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -142,26 +144,20 @@ export default function TeacherDashboardScreen() {
     return label.charAt(0).toUpperCase() + label.slice(1);
   }, [calendarMonth]);
 
-  const schedulesOnSelectedDay = useMemo(() => {
+  const schedulesForSelectedDay = useMemo(() => {
     return schedules
       .filter((s) => scheduleAppliesOnDate(s, selectedISO))
       .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
   }, [schedules, selectedISO]);
 
-  const schedulesToday = useMemo(() => {
-    return schedules
-      .filter((s) => scheduleAppliesOnDate(s, todayISO))
-      .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
-  }, [schedules, todayISO]);
-
   useEffect(() => {
-    if (!isDesktopWeb || schedulesToday.length < 4) return;
+    if (!isDesktopWeb || schedulesForSelectedDay.length < 4) return;
 
     const rowHeight = 78;
     const visibleRows = 3;
     const maxOffset = Math.max(
       0,
-      schedulesToday.length * rowHeight - visibleRows * rowHeight,
+      schedulesForSelectedDay.length * rowHeight - visibleRows * rowHeight,
     );
 
     const timer = setInterval(() => {
@@ -174,11 +170,13 @@ export default function TeacherDashboardScreen() {
     }, 2200);
 
     return () => clearInterval(timer);
-  }, [isDesktopWeb, schedulesToday.length]);
+  }, [isDesktopWeb, schedulesForSelectedDay.length]);
 
-  const loadData = async () => {
+  const loadData = async (showPageLoading = true) => {
     try {
-      setLoading(true);
+      if (showPageLoading) {
+        setLoading(true);
+      }
 
       let teacherId = await getTeacherIdFromToken();
       const currentUser = await authService.getCurrentUser().catch(() => null);
@@ -193,7 +191,9 @@ export default function TeacherDashboardScreen() {
 
       if (!teacherId) {
         showToast("Không tìm thấy thông tin giảng viên", "error");
-        setLoading(false);
+        if (showPageLoading) {
+          setLoading(false);
+        }
         return;
       }
 
@@ -241,7 +241,18 @@ export default function TeacherDashboardScreen() {
       console.error("Teacher dashboard load error:", error);
       showToast("Không thể tải dữ liệu dashboard", "error");
     } finally {
-      setLoading(false);
+      if (showPageLoading) {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await loadData(false);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -335,6 +346,16 @@ export default function TeacherDashboardScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
+        refreshControl={
+          isMobile ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={["#1E3A8A"]}
+              tintColor="#1E3A8A"
+            />
+          ) : undefined
+        }
         contentContainerStyle={{
           paddingHorizontal: isDesktopWeb ? 20 : isTablet ? 16 : 12,
           paddingTop: 14,
@@ -782,12 +803,12 @@ export default function TeacherDashboardScreen() {
                         fontWeight: "700",
                       }}
                     >
-                      {schedulesToday.length} lớp
+                      {schedulesForSelectedDay.length} lớp
                     </Text>
                   </View>
                 </View>
 
-                {schedulesToday.length === 0 ? (
+                {schedulesForSelectedDay.length === 0 ? (
                   <View
                     style={{
                       borderRadius: 12,
@@ -796,7 +817,7 @@ export default function TeacherDashboardScreen() {
                     }}
                   >
                     <Text style={{ color: "#64748B", fontSize: 13 }}>
-                      Hôm nay chưa có lịch dạy.
+                      Ngày đã chọn chưa có lịch dạy.
                     </Text>
                   </View>
                 ) : (
@@ -810,7 +831,7 @@ export default function TeacherDashboardScreen() {
                     scrollEventThrottle={16}
                   >
                     <View style={{ gap: 8 }}>
-                      {schedulesToday.map((item) => (
+                      {schedulesForSelectedDay.map((item) => (
                         <TouchableOpacity
                           key={item.id}
                           onPress={() => router.push("/teacher/class-list")}
@@ -887,6 +908,48 @@ export default function TeacherDashboardScreen() {
                 </Text>
 
                 <View style={{ gap: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => router.push("/teacher/schedule")}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: "#E2E8F0",
+                      padding: 11,
+                      backgroundColor: "#FFFFFF",
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: "#DBEAFE",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 10,
+                      }}
+                    >
+                      <Ionicons name="calendar" size={16} color="#1F3D8E" />
+                    </View>
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#0F172A",
+                      }}
+                    >
+                      Lịch theo tuần
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color="#94A3B8"
+                    />
+                  </TouchableOpacity>
+
                   <TouchableOpacity
                     onPress={() => router.push("/teacher/advisee-class")}
                     style={{
@@ -1060,65 +1123,6 @@ export default function TeacherDashboardScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-
-              {/* Selected date classes detail */}
-              {!isDesktopWeb ? (
-                <View
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    borderRadius: 16,
-                    borderWidth: 1,
-                    borderColor: "#E5ECF6",
-                    padding: 14,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      fontWeight: "800",
-                      color: "#0F172A",
-                      marginBottom: 10,
-                    }}
-                  >
-                    Lịch theo ngày đã chọn
-                  </Text>
-                  {schedulesOnSelectedDay.length === 0 ? (
-                    <Text style={{ fontSize: 13, color: "#64748B" }}>
-                      Không có lớp học trong ngày này.
-                    </Text>
-                  ) : (
-                    <View style={{ gap: 8 }}>
-                      {schedulesOnSelectedDay.map((s) => (
-                        <View
-                          key={s.id}
-                          style={{
-                            borderWidth: 1,
-                            borderColor: "#E2E8F0",
-                            borderRadius: 12,
-                            padding: 10,
-                            backgroundColor: "#F8FAFC",
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 13,
-                              fontWeight: "800",
-                              color: "#0F172A",
-                              marginBottom: 2,
-                            }}
-                          >
-                            {s.subjectName}
-                          </Text>
-                          <Text style={{ fontSize: 12, color: "#475569" }}>
-                            {s.className} • {s.startTime} - {s.endTime} • Phòng{" "}
-                            {s.room || "N/A"}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              ) : null}
             </View>
           </View>
         </View>
