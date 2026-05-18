@@ -28,7 +28,7 @@ import {
   type StudentAttendanceReport,
 } from "@/apis/services/report.service";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 
 const PRIMARY_BLUE = "#1E3A8A";
 const PRIMARY_BLUE_SOFT = "#DBEAFE";
@@ -210,7 +210,7 @@ export default function AdviseeClass() {
   const [atRiskPage, setAtRiskPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
 
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadAdvisorClassData();
@@ -1269,14 +1269,7 @@ export default function AdviseeClass() {
         </View>
       </Modal>
 
-      {toast && (
-        <Toast
-          visible={toast.visible}
-          message={toast.message}
-          type={toast.type}
-          onHide={hideToast}
-        />
-      )}
+
     </SafeAreaView>
   );
 }

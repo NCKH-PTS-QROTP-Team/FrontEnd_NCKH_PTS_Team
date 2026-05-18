@@ -1,9 +1,9 @@
 export const Colors = {
-  // Primary - Sky Blue (WCAG AA compliant on white)
-  primary: '#0E7490', // Contrast ratio 5.02:1 on white
-  primaryLight: '#22D3EE',
-  primaryDark: '#075985',
-  primaryHover: '#0C6481',
+  // Primary - Royal Blue (Matches dashboard system color)
+  primary: '#3b82f6', // Contrast ratio 4.5:1 on white
+  primaryLight: '#60a5fa',
+  primaryDark: '#2563eb',
+  primaryHover: '#1d4ed8',
   
   // Neutral
   white: '#FFFFFF',
@@ -28,8 +28,8 @@ export const Colors = {
   warningLight: '#FEF3C7',
   error: '#DC2626', // Contrast 5.51:1 on white
   errorLight: '#FEE2E2',
-  info: '#0E7490',
-  infoLight: '#E0F2FE',
+  info: '#3b82f6',
+  infoLight: '#eff6ff',
   
   // Background
   background: '#FFFFFF',
@@ -46,7 +46,7 @@ export const Colors = {
   borderLight: '#F3F4F6',
   
   // Focus (for keyboard navigation)
-  focus: '#0E7490',
-  focusRing: 'rgba(14, 116, 144, 0.5)',
+  focus: '#3b82f6',
+  focusRing: 'rgba(59, 130, 246, 0.5)',
 };
 

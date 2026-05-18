@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
+import { useToast } from "@/components/ToastProvider";
+import ConfirmDialog, { useConfirmDialog } from "@/components/ConfirmDialog";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { teacherService } from "@/apis/services/teacher.service";
@@ -395,6 +396,9 @@ export default function TeachersManagement() {
   });
   const [submitting, setSubmitting] = useState(false);
 
+  const { showToast } = useToast();
+  const { confirm, dialogProps } = useConfirmDialog();
+
   // ── Fetch ──
   const fetchTeachers = useCallback(async (showRefresh = false) => {
     try {
@@ -486,10 +490,7 @@ export default function TeachersManagement() {
   // ── Add teacher ──
   const handleAddTeacher = async () => {
     if (!form.teacherId || !form.name || !form.email || !form.password) {
-      Alert.alert(
-        "Thiếu thông tin",
-        "Vui lòng nhập đầy đủ mã GV, tên, email và mật khẩu.",
-      );
+      showToast("Vui lòng nhập đầy đủ mã GV, tên, email và mật khẩu.", "error");
       return;
     }
     try {
@@ -498,9 +499,9 @@ export default function TeachersManagement() {
       setTeachers((prev) => [created, ...prev]);
       setModalVisible(false);
       setForm({ teacherId: "", name: "", email: "", password: "" });
-      Alert.alert("Thành công", "Đã thêm giảng viên mới!");
+      showToast("Đã thêm giảng viên mới!", "success");
     } catch (err: any) {
-      Alert.alert("Lỗi", err?.message || "Không thể thêm giảng viên");
+      showToast(err?.message || "Không thể thêm giảng viên", "error");
     } finally {
       setSubmitting(false);
     }
@@ -529,7 +530,7 @@ export default function TeachersManagement() {
   const handleSaveEdit = async () => {
     if (!editingTeacher) return;
     if (!editForm.name?.trim() || !editForm.email?.trim()) {
-      Alert.alert("Thiếu thông tin", "Vui lòng nhập đầy đủ tên và email.");
+      showToast("Vui lòng nhập đầy đủ tên và email.", "error");
       return;
     }
     try {
@@ -543,13 +544,12 @@ export default function TeachersManagement() {
         editingTeacher.id,
         payload,
       );
-      // Lưu lại teacherStatus ở phía client (backend có thể chưa phản hồi field này)
       const merged: TeacherResponse = { ...updated, teacherStatus: editStatus };
       setTeachers((prev) => prev.map((t) => (t.id === merged.id ? merged : t)));
       setEditVisible(false);
-      Alert.alert("Thành công", "Đã cập nhật thông tin giảng viên!");
+      showToast("Đã cập nhật thông tin giảng viên!", "success");
     } catch (err: any) {
-      Alert.alert("Lỗi", err?.message || "Không thể cập nhật giảng viên");
+      showToast(err?.message || "Không thể cập nhật giảng viên", "error");
     } finally {
       setSaving(false);
     }
@@ -557,25 +557,21 @@ export default function TeachersManagement() {
 
   // ── Delete ──
   const handleDelete = (teacher: TeacherResponse) => {
-    Alert.alert(
-      "Xác nhận xóa",
-      `Bạn có chắc muốn xóa giảng viên "${teacher.name}"?`,
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xóa",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await teacherService.deleteTeacher(teacher.id);
-              setTeachers((prev) => prev.filter((t) => t.id !== teacher.id));
-            } catch (err: any) {
-              Alert.alert("Lỗi", err?.message || "Không thể xóa giảng viên");
-            }
-          },
-        },
-      ],
-    );
+    confirm({
+      title: "Xác nhận xóa",
+      message: `Bạn có chắc muốn xóa giảng viên "${teacher.name}"?`,
+      confirmText: "Xóa",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await teacherService.deleteTeacher(teacher.id);
+          setTeachers((prev) => prev.filter((t) => t.id !== teacher.id));
+          showToast("Đã xóa giảng viên!", "success");
+        } catch (err: any) {
+          showToast(err?.message || "Không thể xóa giảng viên", "error");
+        }
+      },
+    });
   };
 
   // ── Accent color per status ──
@@ -1000,6 +996,7 @@ export default function TeachersManagement() {
         visible={detailVisible}
         onClose={() => setDetailVisible(false)}
       />
+      <ConfirmDialog {...dialogProps} />
     </View>
   );
 }

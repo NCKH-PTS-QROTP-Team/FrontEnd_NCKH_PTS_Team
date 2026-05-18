@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { View, ScrollView, Text, TouchableOpacity, Alert } from "react-native";
+import { View, ScrollView, Text, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import ProfileAndSettings from "@/components/ProfileAndSettings";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import { authService } from "@/apis/services/auth.service";
 import { Ionicons } from "@expo/vector-icons";
+import ConfirmDialog, { useConfirmDialog } from "@/components/ConfirmDialog";
 
 export default function DepartmentSettingsScreen() {
   const router = useRouter();
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
   const [userInfo, setUserInfo] = useState<any>(null);
 
   useEffect(() => {
@@ -24,17 +25,21 @@ export default function DepartmentSettingsScreen() {
     fetchUserData();
   }, []);
 
+  const { confirm, dialogProps } = useConfirmDialog();
+
   const handleLogout = () => {
-    Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Đăng xuất",
-        style: "destructive",
-        onPress: () => {
-          router.replace("/auth/login");
-        },
+    confirm({
+      title: "Đăng xuất",
+      message: "Bạn có chắc chắn muốn đăng xuất?",
+      confirmText: "Đăng xuất",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await authService.logout();
+        } catch (e) {}
+        router.replace("/auth/login");
       },
-    ]);
+    });
   };
 
   return (
@@ -85,13 +90,7 @@ export default function DepartmentSettingsScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
+      <ConfirmDialog {...dialogProps} />
     </View>
   );
 }

@@ -2,21 +2,16 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
   RefreshControl,
-  Image,
-  ImageBackground,
+  ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-
 import { StatusBar } from "expo-status-bar";
-import { LinearGradient } from "expo-linear-gradient";
-
-const { width } = Dimensions.get("window");
 
 interface StatCard {
   id: string;
@@ -24,12 +19,12 @@ interface StatCard {
   value: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
-  trend?: string;
 }
 
 interface QuickAction {
   id: string;
   title: string;
+  description: string;
   icon: keyof typeof Ionicons.glyphMap;
   route: string;
   color: string;
@@ -37,470 +32,175 @@ interface QuickAction {
 
 export default function DepartmentDashboard() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+  const paddingH = isDesktop ? 32 : isTablet ? 24 : 16;
+
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<StatCard[]>([
-    {
-      id: "1",
-      title: "Tổng sinh viên",
-      value: "0",
-      icon: "people",
-      color: "#3b82f6",
-      trend: "",
-    },
-    {
-      id: "2",
-      title: "Giảng viên",
-      value: "0",
-      icon: "person",
-      color: "#8b5cf6",
-      trend: "",
-    },
-    {
-      id: "3",
-      title: "Lớp học",
-      value: "0",
-      icon: "school",
-      color: "#ec4899",
-      trend: "",
-    },
-    {
-      id: "4",
-      title: "Khóa học",
-      value: "0",
-      icon: "book",
-      color: "#f59e0b",
-      trend: "",
-    },
+    { id: "1", title: "Tổng sinh viên", value: "—", icon: "people", color: "#2563EB" },
+    { id: "2", title: "Giảng viên", value: "—", icon: "person", color: "#7C3AED" },
+    { id: "3", title: "Lớp học", value: "—", icon: "school", color: "#EC4899" },
+    { id: "4", title: "Khóa học", value: "—", icon: "book", color: "#D97706" },
   ]);
-  // Fetch stats from API
-  useEffect(() => {
-    fetchStats();
-  }, []);
 
   const fetchStats = async () => {
     try {
       setLoading(true);
       const { statsService } = await import("@/apis/statsService");
       const data = await statsService.getDepartmentStats();
-      console.log("📊 Stats data received:", data);
-      // Update stats with real data
       setStats([
-        {
-          id: "1",
-          title: "Tổng sinh viên",
-          value: (data.totalStudents ?? 0).toLocaleString(),
-          icon: "people",
-          color: "#3b82f6",
-          trend: data.studentTrend || "",
-        },
-        {
-          id: "2",
-          title: "Giảng viên",
-          value: (data.totalTeachers ?? 0).toLocaleString(),
-          icon: "person",
-          color: "#8b5cf6",
-          trend: data.teacherTrend || "",
-        },
-        {
-          id: "3",
-          title: "Lớp học",
-          value: (data.totalClasses ?? 0).toLocaleString(),
-          icon: "school",
-          color: "#ec4899",
-          trend: data.classTrend || "",
-        },
-        {
-          id: "4",
-          title: "Khóa học",
-          value: (data.totalSubjects ?? 0).toLocaleString(),
-          icon: "book",
-          color: "#f59e0b",
-          trend: data.subjectTrend || "",
-        },
+        { id: "1", title: "Tổng sinh viên", value: (data.totalStudents ?? 0).toLocaleString(), icon: "people", color: "#2563EB" },
+        { id: "2", title: "Giảng viên", value: (data.totalTeachers ?? 0).toLocaleString(), icon: "person", color: "#7C3AED" },
+        { id: "3", title: "Lớp học", value: (data.totalClasses ?? 0).toLocaleString(), icon: "school", color: "#EC4899" },
+        { id: "4", title: "Khóa học", value: (data.totalSubjects ?? 0).toLocaleString(), icon: "book", color: "#D97706" },
       ]);
     } catch (error) {
       console.error("Error fetching stats:", error);
-      // Keep default values on error
     } finally {
       setLoading(false);
     }
   };
 
-  // Responsive columns for stats grid
-  const getStatsColumns = () => {
-    if (width < 360) return 1; // Very small phones - 1 column
-    if (width < 768) return 2; // Mobile - 2x2 grid
-    return 4; // Tablet & Desktop - 1 row with 4 cards
-  };
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
-  const statsColumns = getStatsColumns();
-
-  const quickActions: QuickAction[] = [
-    {
-      id: "1",
-      title: "Quản lý sinh viên",
-      icon: "people-outline",
-      route: "/department/students",
-      color: "#3b82f6",
-    },
-    {
-      id: "2",
-      title: "Quản lý giảng viên",
-      icon: "person-outline",
-      route: "/department/teachers",
-      color: "#8b5cf6",
-    },
-    {
-      id: "3",
-      title: "Quản lý lớp học",
-      icon: "school-outline",
-      route: "/department/classes",
-      color: "#ec4899",
-    },
-    {
-      id: "4",
-      title: "Quản lý khóa học",
-      icon: "book-outline",
-      route: "/department/courses",
-      color: "#f59e0b",
-    },
-    {
-      id: "5",
-      title: "Lịch học",
-      icon: "calendar-outline",
-      route: "/department/schedules",
-      color: "#10b981",
-    },
-    {
-      id: "6",
-      title: "Báo cáo",
-      icon: "stats-chart-outline",
-      route: "/department/reports",
-      color: "#06b6d4",
-    },
-  ];
-
-  const onRefresh = React.useCallback(async () => {
+  const onRefresh = async () => {
     setRefreshing(true);
     await fetchStats();
     setRefreshing(false);
-  }, []);
+  };
+
+  const statColumns = isDesktop ? 4 : isTablet ? 4 : 2;
+
+  const quickActions: QuickAction[] = [
+    { id: "1", title: "Quản lý sinh viên", description: "Xem, tìm kiếm và quản lý danh sách sinh viên", icon: "people-outline", route: "/department/students", color: "#2563EB" },
+    { id: "2", title: "Quản lý giảng viên", description: "Quản lý thông tin giảng viên trong khoa", icon: "person-outline", route: "/department/teachers", color: "#7C3AED" },
+    { id: "3", title: "Quản lý lớp học", description: "Tạo, sửa và phân lớp học phần", icon: "school-outline", route: "/department/classes", color: "#EC4899" },
+    { id: "4", title: "Lịch học", description: "Xem và quản lý thời khóa biểu", icon: "calendar-outline", route: "/department/schedules", color: "#059669" },
+    { id: "5", title: "Import dữ liệu", description: "Nhập danh sách lớp hoặc sinh viên từ Excel", icon: "cloud-upload-outline", route: "/department/import-data", color: "#0EA5E9" },
+    { id: "6", title: "Giám sát điểm danh", description: "Theo dõi phiên điểm danh theo thời gian thực", icon: "checkmark-circle-outline", route: "/department/attendance", color: "#F59E0B" },
+    { id: "7", title: "Báo cáo & Thống kê", description: "Xem báo cáo tổng hợp điểm danh và học vụ", icon: "stats-chart-outline", route: "/department/reports", color: "#EF4444" },
+    { id: "8", title: "Khóa học", description: "Quản lý danh sách khóa học theo kỳ", icon: "book-outline", route: "/department/courses", color: "#D97706" },
+  ];
+
+  const actionColumns = isDesktop ? 4 : isTablet ? 2 : 1;
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#f8fafc" }}>
-      <StatusBar style="light" />
-      <LinearGradient
-        colors={["#1E3A8A", "#3B82F6"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          paddingTop: 64,
-          paddingBottom: 40,
-          paddingHorizontal: 20,
-          borderBottomLeftRadius: 32,
-          borderBottomRightRadius: 32,
-          zIndex: 10,
-        }}
+    <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
+      <StatusBar style="dark" />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: paddingH, paddingTop: 28, paddingBottom: 40 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
       >
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <View>
-            <Text style={{ fontSize: 24, fontWeight: "800", color: "#fff" }}>
+        <View style={{ maxWidth: 1100, width: "100%", alignSelf: "center" }}>
+          {/* Header */}
+          <View style={{ marginBottom: 28 }}>
+            <Text style={{ fontSize: 28, fontWeight: "700", color: "#111827", marginBottom: 4 }}>
               Giáo vụ Khoa
             </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                color: "rgba(255,255,255,0.8)",
-                marginTop: 4,
-              }}
-            >
-              Dashboard tổng quan hiển thị số liệu
+            <Text style={{ fontSize: 14, color: "#6B7280" }}>
+              Tổng quan hệ thống quản lý điểm danh
             </Text>
           </View>
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              backgroundColor: "rgba(255,255,255,0.2)",
-              borderRadius: 24,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Ionicons name="stats-chart" size={24} color="#fff" />
-          </View>
-        </View>
-      </LinearGradient>
 
-      <ScrollView
-        style={{ flex: 1, marginTop: -20 }}
-        contentContainerStyle={{ paddingTop: 20 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {/* Statistics Cards */}
-        <View style={styles.statsContainer}>
-          <Text style={styles.sectionTitle}>Thống kê tổng quan</Text>
-          <View style={styles.statsGrid}>
+          {/* Stats Grid */}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14, marginBottom: 32 }}>
             {stats.map((stat) => (
               <View
                 key={stat.id}
-                style={[
-                  styles.statCard,
-                  {
-                    flex: statsColumns === 1 ? 1 : 0,
-                    flexBasis:
-                      statsColumns === 1
-                        ? "100%"
-                        : `${100 / statsColumns - 2}%`,
-                    minWidth: statsColumns === 1 ? undefined : 150,
-                  },
-                ]}
+                style={{
+                  flex: statColumns === 1 ? 1 : 0,
+                  flexBasis: statColumns === 1 ? "100%" : `${100 / statColumns - 2}%`,
+                  minWidth: 160,
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 14,
+                  padding: 20,
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB",
+                }}
               >
                 <View
-                  style={[
-                    styles.statIconContainer,
-                    { backgroundColor: stat.color + "20" },
-                  ]}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    backgroundColor: stat.color + "12",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 14,
+                  }}
                 >
-                  <Ionicons name={stat.icon} size={28} color={stat.color} />
+                  <Ionicons name={stat.icon} size={22} color={stat.color} />
                 </View>
-                <Text style={styles.statValue}>{stat.value}</Text>
-                <Text style={styles.statTitle}>{stat.title}</Text>
-                {stat.trend && (
-                  <View style={styles.trendContainer}>
-                    <Ionicons name="trending-up" size={14} color="#10b981" />
-                    <Text style={styles.trendText}>{stat.trend}</Text>
-                  </View>
+                {loading ? (
+                  <ActivityIndicator size="small" color={stat.color} />
+                ) : (
+                  <Text style={{ fontSize: 28, fontWeight: "700", color: "#111827", marginBottom: 4 }}>
+                    {stat.value}
+                  </Text>
                 )}
+                <Text style={{ fontSize: 13, color: "#6B7280", fontWeight: "500" }}>{stat.title}</Text>
               </View>
             ))}
           </View>
-        </View>
 
-        {/* Quick Actions */}
-        <View style={styles.actionsContainer}>
-          <Text style={styles.sectionTitle}>Chức năng chính</Text>
-          <View style={styles.actionsGrid}>
+          {/* Quick Actions */}
+          <Text style={{ fontSize: 18, fontWeight: "600", color: "#111827", marginBottom: 16 }}>
+            Chức năng chính
+          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
             {quickActions.map((action) => (
               <TouchableOpacity
                 key={action.id}
-                style={styles.actionCard}
                 onPress={() => router.push(action.route as any)}
                 activeOpacity={0.7}
+                style={{
+                  flex: actionColumns === 1 ? 1 : 0,
+                  flexBasis: actionColumns === 1 ? "100%" : `${100 / actionColumns - 2}%`,
+                  minWidth: 200,
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 14,
+                  padding: 18,
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 14,
+                  ...(Platform.OS === "web" ? { cursor: "pointer", transition: "border-color 0.2s, box-shadow 0.2s" } as any : {}),
+                }}
               >
                 <View
-                  style={[
-                    styles.actionIconContainer,
-                    { backgroundColor: action.color + "15" },
-                  ]}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    backgroundColor: action.color + "12",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
                 >
-                  <Ionicons name={action.icon} size={32} color={action.color} />
+                  <Ionicons name={action.icon} size={22} color={action.color} />
                 </View>
-                <Text style={styles.actionTitle}>{action.title}</Text>
-                <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827", marginBottom: 2 }}>
+                    {action.title}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#9CA3AF" }} numberOfLines={1}>
+                    {action.description}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
               </TouchableOpacity>
             ))}
           </View>
         </View>
-
-        {/* Recent Activities */}
-        <View style={styles.activitiesContainer}>
-          <Text style={styles.sectionTitle}>Hoạt động gần đây</Text>
-          <View style={styles.activityCard}>
-            <View style={styles.activityItem}>
-              <View
-                style={[styles.activityDot, { backgroundColor: "#3b82f6" }]}
-              />
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>
-                  Thêm mới 15 sinh viên vào lớp CNTT-K18
-                </Text>
-                <Text style={styles.activityTime}>2 giờ trước</Text>
-              </View>
-            </View>
-            <View style={styles.activityItem}>
-              <View
-                style={[styles.activityDot, { backgroundColor: "#8b5cf6" }]}
-              />
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>
-                  Cập nhật lịch giảng dạy cho GV Nguyễn Văn A
-                </Text>
-                <Text style={styles.activityTime}>5 giờ trước</Text>
-              </View>
-            </View>
-            <View style={styles.activityItem}>
-              <View
-                style={[styles.activityDot, { backgroundColor: "#10b981" }]}
-              />
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>
-                  Tạo lịch học mới cho học kỳ 2
-                </Text>
-                <Text style={styles.activityTime}>1 ngày trước</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        <View style={{ height: 30 }} />
       </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-  },
-  bannerWrapper: {
-    overflow: "hidden",
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    marginBottom: 0,
-  },
-  bannerContainer: {
-    height: 180,
-    width: "100%",
-  },
-  bannerImage: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-  },
-  statsContainer: {
-    padding: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#1e293b",
-    marginBottom: 16,
-  },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  statCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  statIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#1e293b",
-    marginBottom: 4,
-  },
-  statTitle: {
-    fontSize: 13,
-    color: "#64748b",
-    marginBottom: 8,
-  },
-  trendContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  trendText: {
-    fontSize: 12,
-    color: "#10b981",
-    fontWeight: "600",
-  },
-  actionsContainer: {
-    padding: 20,
-    paddingTop: 0,
-  },
-  actionsGrid: {
-    gap: 12,
-  },
-  actionCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  actionIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
-  },
-  actionTitle: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1e293b",
-  },
-  activitiesContainer: {
-    padding: 20,
-    paddingTop: 0,
-  },
-  activityCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  activityItem: {
-    flexDirection: "row",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
-  },
-  activityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginTop: 6,
-    marginRight: 12,
-  },
-  activityContent: {
-    flex: 1,
-  },
-  activityTitle: {
-    fontSize: 14,
-    color: "#1e293b",
-    marginBottom: 4,
-  },
-  activityTime: {
-    fontSize: 12,
-    color: "#94a3b8",
-  },
-});

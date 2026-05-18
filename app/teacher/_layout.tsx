@@ -4,6 +4,8 @@ import { Platform, View } from "react-native";
 import AppLayout from "@/components/AppLayout";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { ChatBox } from "@/components/ChatBox";
+import { RoleGuard } from "@/components/RoleGuard";
+import { UserRole } from "@/apis/types/auth.types";
 import {
   HomeIcon,
   ClipboardIcon,
@@ -148,29 +150,34 @@ export default function TeacherLayout() {
 
     const currentRoute = pathname || "/teacher/dashboard";
     return (
-      <View style={{ flex: 1 }}>
-        {stackContent}
-        <BottomNavigation
-          items={bottomNavItems}
-          activeKey={currentRoute}
-          onItemPress={(route) => router.push(route as any)}
-          centerButton={{
-            icon: <QrCodeIcon size={32} color={Colors.white} />,
-            onPress: () => router.push("/teacher/attendance-actions"),
-          }}
-        />
-        <ChatBox />
-      </View>
+      <RoleGuard allowedRoles={[UserRole.TEACHER]}>
+        <View style={{ flex: 1 }}>
+          {stackContent}
+          <BottomNavigation
+            items={bottomNavItems}
+            activeKey={currentRoute}
+            onItemPress={(route) => router.push(route as any)}
+            centerButton={{
+              icon: <QrCodeIcon size={32} color={Colors.white} />,
+              onPress: () => router.push("/teacher/attendance-actions"),
+            }}
+          />
+          <ChatBox />
+        </View>
+      </RoleGuard>
     );
   }
 
   // On web, wrap with AppLayout
   return (
-    <>
-      <AppLayout menuItems={menuItems} userRole="teacher">
+    <RoleGuard allowedRoles={[UserRole.TEACHER]}>
+      <AppLayout
+        menuItems={menuItems}
+        userRole="teacher"
+      >
         {stackContent}
       </AppLayout>
       <ChatBox />
-    </>
+    </RoleGuard>
   );
 }

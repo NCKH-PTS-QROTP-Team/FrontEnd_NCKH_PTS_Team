@@ -26,8 +26,7 @@ import {
   semesterService,
 } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
-import Toast, { useToast } from "@/components/Toast";
-import MobileGradientHeader from "@/components/MobileGradientHeader";
+import { useToast } from "@/components/ToastProvider";
 import type { Course } from "@/apis/services/course.service";
 import type { Semester as SemesterItem } from "@/apis/services/semester.service";
 import type {
@@ -148,8 +147,8 @@ export default function ClassListScreen() {
           semesterService.getAllSemesters().catch(() => [] as SemesterItem[]),
         ]);
 
-      setSemesters(semesterList);
-      const semesterMap = new Map(semesterList.map((s) => [s.id, s.name]));
+      setSemesters(semesterList || []);
+      const semesterMap = new Map((semesterList || []).map((s) => [s.id, s.name]));
 
       const scheduledCourseIds = new Set(
         teacherSchedules
@@ -348,7 +347,7 @@ export default function ClassListScreen() {
 
   const subjectOptions = useMemo(() => {
     const subjects = Array.from(
-      new Set(classes.map((item) => item.subject).filter(Boolean) as string[]),
+      new Set((classes || []).map((item) => item.subject).filter(Boolean) as string[]),
     );
 
     return [
@@ -360,7 +359,7 @@ export default function ClassListScreen() {
   const semesterOptions = useMemo(() => {
     return [
       { label: "Tất cả học kỳ", value: null },
-      ...semesters.map((semester) => ({
+      ...(semesters || []).map((semester) => ({
         label: semester.name,
         value: semester.id,
       })),
@@ -370,7 +369,7 @@ export default function ClassListScreen() {
   const filteredClasses = useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase();
 
-    return classes.filter((item) => {
+    return (classes || []).filter((item) => {
       const matchesKeyword =
         keyword.length === 0 ||
         [item.name, item.code, item.subject, item.semester, item.scheduleText]

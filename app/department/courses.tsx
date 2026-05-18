@@ -1,620 +1,225 @@
-import { LinearGradient } from "expo-linear-gradient";
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Modal,
-  Alert,
+  ActivityIndicator,
+  useWindowDimensions,
+  Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-
-interface Course {
-  id: string;
-  courseId: string;
-  courseName: string;
-  credits: number;
-  semester: string;
-  department: string;
-  instructor: string;
-  totalStudents: number;
-  maxStudents: number;
-  status: "active" | "completed" | "upcoming";
-}
+import { courseService, semesterService } from "@/apis";
+import type { Course } from "@/apis/services/course.service";
+import type { Semester } from "@/apis/services/semester.service";
+import { useToast } from "@/components/ToastProvider";
 
 export default function CoursesManagement() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+  const paddingH = isDesktop ? 32 : isTablet ? 24 : 16;
+
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [modalVisible, setModalVisible] = useState(false);
-  const [courses, setCourses] = useState<Course[]>([
-    {
-      id: "1",
-      courseId: "IT101",
-      courseName: "Lập trình Web",
-      credits: 3,
-      semester: "HK1 2023-2024",
-      department: "Khoa CNTT",
-      instructor: "TS. Nguyễn Văn A",
-      totalStudents: 45,
-      maxStudents: 50,
-      status: "active",
-    },
-    {
-      id: "2",
-      courseId: "IT102",
-      courseName: "Cơ sở dữ liệu",
-      credits: 4,
-      semester: "HK1 2023-2024",
-      department: "Khoa CNTT",
-      instructor: "ThS. Trần Thị B",
-      totalStudents: 38,
-      maxStudents: 45,
-      status: "active",
-    },
-    {
-      id: "3",
-      courseId: "IT103",
-      courseName: "Mạng máy tính",
-      credits: 3,
-      semester: "HK2 2023-2024",
-      department: "Khoa CNTT",
-      instructor: "PGS.TS. Lê Văn C",
-      totalStudents: 0,
-      maxStudents: 40,
-      status: "upcoming",
-    },
-  ]);
+  const [selectedSemester, setSelectedSemester] = useState<string | null>(null);
+  const { showToast } = useToast();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "#10b981";
-      case "completed":
-        return "#6366f1";
-      case "upcoming":
-        return "#f59e0b";
-      default:
-        return "#94a3b8";
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [courseList, semList] = await Promise.all([
+        courseService.getAllCourses().catch(() => [] as Course[]),
+        semesterService.getAllSemesters().catch(() => [] as Semester[]),
+      ]);
+      setCourses(courseList || []);
+      setSemesters(semList || []);
+    } catch (error) {
+      console.error("Error loading courses:", error);
+      showToast("Không thể tải danh sách khóa học", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "active":
-        return "Đang mở";
-      case "completed":
-        return "Đã kết thúc";
-      case "upcoming":
-        return "Sắp mở";
-      default:
-        return status;
-    }
-  };
+  const filteredCourses = useMemo(() => {
+    const keyword = searchQuery.trim().toLowerCase();
+    return (courses || []).filter((c) => {
+      const matchSearch =
+        !keyword ||
+        c.name?.toLowerCase().includes(keyword) ||
+        c.subjectName?.toLowerCase().includes(keyword) ||
+        c.theoryLectureName?.toLowerCase().includes(keyword);
+      const matchSemester =
+        !selectedSemester || c.semesterId === selectedSemester;
+      return matchSearch && matchSemester;
+    });
+  }, [courses, searchQuery, selectedSemester]);
 
-  const filteredCourses = courses.filter((course) => {
-    const matchesSearch =
-      course.courseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.courseId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.instructor.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter =
-      filterStatus === "all" || course.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  const semesterOptions = useMemo(() => {
+    return [
+      { label: "Tất cả học kỳ", value: null },
+      ...(semesters || []).map((s) => ({ label: s.name, value: s.id })),
+    ];
+  }, [semesters]);
 
-  const getEnrollmentPercentage = (current: number, max: number) => {
-    return Math.round((current / max) * 100);
-  };
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F8FAFC" }}>
+        <ActivityIndicator size="large" color="#2563EB" />
+        <Text style={{ color: "#6B7280", marginTop: 12, fontSize: 14 }}>Đang tải dữ liệu...</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={[styles.container, { padding: 0 }]}>
-      <LinearGradient
-        colors={["#1E3A8A", "#3B82F6"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          paddingTop: 64,
-          paddingBottom: 20,
-          paddingHorizontal: 20,
-          borderBottomLeftRadius: 32,
-          borderBottomRightRadius: 32,
-          zIndex: 10,
-        }}
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F8FAFC" }} edges={["top"]}>
+      <StatusBar style="dark" />
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: paddingH, paddingVertical: 24 }}
+        showsVerticalScrollIndicator={false}
       >
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <View>
-            <Text style={{ fontSize: 24, fontWeight: "800", color: "#fff" }}>
-              Quản lý Khóa học
+        <View style={{ maxWidth: 960, width: "100%", alignSelf: "center" }}>
+          {/* Header */}
+          <View style={{ marginBottom: 24 }}>
+            <Text style={{ fontSize: 26, fontWeight: "700", color: "#111827", marginBottom: 6 }}>
+              Quản lý khóa học
             </Text>
-            <Text
+            <Text style={{ fontSize: 14, color: "#6B7280" }}>
+              {filteredCourses.length} khóa học{selectedSemester ? " trong học kỳ đã chọn" : " trong hệ thống"}
+            </Text>
+          </View>
+
+          {/* Search + Filter */}
+          <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: "#E5E7EB" }}>
+            <View
               style={{
-                fontSize: 14,
-                color: "rgba(255,255,255,0.8)",
-                marginTop: 4,
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#F9FAFB",
+                borderRadius: 10,
+                paddingHorizontal: 12,
+                height: 44,
+                borderWidth: 1,
+                borderColor: "#E5E7EB",
+                marginBottom: 12,
               }}
             >
-              Xem và quản lý các khóa học
-            </Text>
-          </View>
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              backgroundColor: "rgba(255,255,255,0.2)",
-              borderRadius: 24,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Ionicons name="book" size={24} color="#fff" />
-          </View>
-        </View>
-      </LinearGradient>
-
-      {/* Search and Filter Bar */}
-      <View
-        style={[
-          styles.searchContainer,
-          { marginTop: 10, paddingHorizontal: 16 },
-        ]}
-      >
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#94a3b8" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Tìm kiếm khóa học..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Filter Tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-      >
-        {["all", "active", "upcoming", "completed"].map((status) => (
-          <TouchableOpacity
-            key={status}
-            style={[
-              styles.filterTab,
-              filterStatus === status && styles.filterTabActive,
-            ]}
-            onPress={() => setFilterStatus(status)}
-          >
-            <Text
-              style={[
-                styles.filterTabText,
-                filterStatus === status && styles.filterTabTextActive,
-              ]}
-            >
-              {status === "all"
-                ? "Tất cả"
-                : status === "active"
-                  ? "Đang mở"
-                  : status === "upcoming"
-                    ? "Sắp mở"
-                    : "Đã kết thúc"}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Courses List */}
-      <ScrollView style={styles.listContainer}>
-        {filteredCourses.map((course) => (
-          <View key={course.id} style={styles.courseCard}>
-            <View style={styles.courseHeader}>
-              <View style={styles.iconContainer}>
-                <Ionicons name="book" size={28} color="#f59e0b" />
-              </View>
-              <View style={styles.courseInfo}>
-                <Text style={styles.courseName}>{course.courseName}</Text>
-                <Text style={styles.courseId}>{course.courseId}</Text>
-              </View>
-              <View
-                style={[
-                  styles.statusBadge,
-                  { backgroundColor: getStatusColor(course.status) + "20" },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.statusText,
-                    { color: getStatusColor(course.status) },
-                  ]}
-                >
-                  {getStatusText(course.status)}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.courseDetails}>
-              <View style={styles.detailRow}>
-                <Ionicons name="star-outline" size={16} color="#64748b" />
-                <Text style={styles.detailText}>{course.credits} tín chỉ</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Ionicons name="calendar-outline" size={16} color="#64748b" />
-                <Text style={styles.detailText}>{course.semester}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Ionicons name="business-outline" size={16} color="#64748b" />
-                <Text style={styles.detailText}>{course.department}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Ionicons name="person-outline" size={16} color="#64748b" />
-                <Text style={styles.detailText}>GV: {course.instructor}</Text>
-              </View>
-            </View>
-
-            {/* Enrollment Progress */}
-            <View style={styles.enrollmentContainer}>
-              <View style={styles.enrollmentHeader}>
-                <Text style={styles.enrollmentLabel}>Đăng ký</Text>
-                <Text style={styles.enrollmentValue}>
-                  {course.totalStudents}/{course.maxStudents} sinh viên
-                </Text>
-              </View>
-              <View style={styles.progressBar}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    {
-                      width: `${getEnrollmentPercentage(
-                        course.totalStudents,
-                        course.maxStudents,
-                      )}%`,
-                      backgroundColor:
-                        getEnrollmentPercentage(
-                          course.totalStudents,
-                          course.maxStudents,
-                        ) >= 90
-                          ? "#ef4444"
-                          : getEnrollmentPercentage(
-                                course.totalStudents,
-                                course.maxStudents,
-                              ) >= 70
-                            ? "#f59e0b"
-                            : "#10b981",
-                    },
-                  ]}
-                />
-              </View>
-            </View>
-
-            <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="list-outline" size={20} color="#10b981" />
-                <Text style={[styles.actionButtonText, { color: "#10b981" }]}>
-                  Danh sách SV
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="create-outline" size={20} color="#3b82f6" />
-                <Text style={[styles.actionButtonText, { color: "#3b82f6" }]}>
-                  Sửa
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons
-                  name="information-circle-outline"
-                  size={20}
-                  color="#8b5cf6"
-                />
-                <Text style={[styles.actionButtonText, { color: "#8b5cf6" }]}>
-                  Chi tiết
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
-
-      {/* Add Course Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Tạo khóa học mới</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#64748b" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView>
-              <Text style={styles.label}>Mã khóa học</Text>
-              <TextInput style={styles.input} placeholder="VD: IT101" />
-
-              <Text style={styles.label}>Tên khóa học</Text>
-              <TextInput style={styles.input} placeholder="VD: Lập trình Web" />
-
-              <Text style={styles.label}>Số tín chỉ</Text>
+              <Ionicons name="search" size={18} color="#9CA3AF" />
               <TextInput
-                style={styles.input}
-                placeholder="VD: 3"
-                keyboardType="numeric"
+                placeholder="Tìm theo tên khóa học, môn học, giảng viên..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholderTextColor="#9CA3AF"
+                style={{ flex: 1, fontSize: 14, color: "#111827", marginLeft: 8, ...(Platform.OS === "web" ? { outlineStyle: "none" } as any : {}) }}
               />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                </TouchableOpacity>
+              )}
+            </View>
 
-              <Text style={styles.label}>Học kỳ</Text>
-              <TextInput style={styles.input} placeholder="VD: HK1 2023-2024" />
-
-              <Text style={styles.label}>Khoa</Text>
-              <TextInput style={styles.input} placeholder="VD: Khoa CNTT" />
-
-              <Text style={styles.label}>Giảng viên</Text>
-              <TextInput style={styles.input} placeholder="Chọn giảng viên" />
-
-              <Text style={styles.label}>Số lượng sinh viên tối đa</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="VD: 50"
-                keyboardType="numeric"
-              />
-
-              <TouchableOpacity
-                style={styles.submitButton}
-                onPress={() => {
-                  Alert.alert("Thành công", "Đã tạo khóa học mới");
-                  setModalVisible(false);
-                }}
-              >
-                <Text style={styles.submitButtonText}>Tạo khóa học</Text>
-              </TouchableOpacity>
+            {/* Semester filter chips */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                {semesterOptions.map((opt, i) => {
+                  const isActive = selectedSemester === opt.value;
+                  return (
+                    <TouchableOpacity
+                      key={i}
+                      onPress={() => setSelectedSemester(opt.value)}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderRadius: 8,
+                        backgroundColor: isActive ? "#2563EB" : "#F3F4F6",
+                        ...(Platform.OS === "web" ? { cursor: "pointer" } as any : {}),
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: isActive ? "#FFFFFF" : "#4B5563" }}>
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </ScrollView>
           </View>
+
+          {/* Courses Grid */}
+          {filteredCourses.length === 0 ? (
+            <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, padding: 48, alignItems: "center", borderWidth: 1, borderColor: "#E5E7EB" }}>
+              <Ionicons name="book-outline" size={48} color="#D1D5DB" />
+              <Text style={{ fontSize: 16, fontWeight: "600", color: "#6B7280", marginTop: 16 }}>
+                {searchQuery || selectedSemester ? "Không tìm thấy khóa học phù hợp" : "Chưa có khóa học nào"}
+              </Text>
+            </View>
+          ) : (
+            <View style={{ gap: 12 }}>
+              {filteredCourses.map((course) => (
+                <View
+                  key={course.id}
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 14,
+                    padding: 18,
+                    borderWidth: 1,
+                    borderColor: "#E5E7EB",
+                    ...(Platform.OS === "web" ? { transition: "box-shadow 0.2s" } as any : {}),
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 14 }}>
+                    <View style={{ width: 44, height: 44, borderRadius: 10, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="book" size={22} color="#D97706" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, fontWeight: "600", color: "#111827", marginBottom: 4 }} numberOfLines={2}>
+                        {course.name}
+                      </Text>
+                      {course.subjectName && (
+                        <Text style={{ fontSize: 13, color: "#6B7280", marginBottom: 2 }}>
+                          Môn: {course.subjectName}
+                        </Text>
+                      )}
+                      {course.semesterName && (
+                        <Text style={{ fontSize: 12, color: "#9CA3AF" }}>
+                          {course.semesterName}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Meta info */}
+                  <View style={{ flexDirection: "row", gap: 16, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F3F4F6", flexWrap: "wrap" }}>
+                    {course.theoryLectureName && (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Ionicons name="person-outline" size={14} color="#6B7280" />
+                        <Text style={{ fontSize: 13, color: "#4B5563" }}>GV: {course.theoryLectureName}</Text>
+                      </View>
+                    )}
+                    {course.practiceTeacherName && course.practiceTeacherName !== course.theoryLectureName && (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Ionicons name="construct-outline" size={14} color="#6B7280" />
+                        <Text style={{ fontSize: 13, color: "#4B5563" }}>TH: {course.practiceTeacherName}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
-      </Modal>
-    </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    padding: 16,
-    gap: 12,
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 48,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 15,
-    color: "#1e293b",
-  },
-  addButton: {
-    width: 48,
-    height: 48,
-    backgroundColor: "#f59e0b",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#f59e0b",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  filterContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  filterTab: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: "#fff",
-    marginRight: 8,
-  },
-  filterTabActive: {
-    backgroundColor: "#f59e0b",
-  },
-  filterTabText: {
-    fontSize: 14,
-    color: "#64748b",
-    fontWeight: "600",
-  },
-  filterTabTextActive: {
-    color: "#fff",
-  },
-  listContainer: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  courseCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  courseHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: "#fef3c7",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  courseInfo: {
-    flex: 1,
-  },
-  courseName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1e293b",
-    marginBottom: 2,
-  },
-  courseId: {
-    fontSize: 13,
-    color: "#64748b",
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  courseDetails: {
-    gap: 8,
-    marginBottom: 12,
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  detailText: {
-    fontSize: 14,
-    color: "#64748b",
-    flex: 1,
-  },
-  enrollmentContainer: {
-    marginBottom: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#f1f5f9",
-  },
-  enrollmentHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  enrollmentLabel: {
-    fontSize: 13,
-    color: "#64748b",
-    fontWeight: "600",
-  },
-  enrollmentValue: {
-    fontSize: 13,
-    color: "#1e293b",
-    fontWeight: "600",
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: "#f1f5f9",
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: 4,
-  },
-  actionButtons: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#f1f5f9",
-  },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    maxHeight: "90%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#1e293b",
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1e293b",
-    marginBottom: 8,
-    marginTop: 12,
-  },
-  input: {
-    backgroundColor: "#f8fafc",
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 15,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-  submitButton: {
-    backgroundColor: "#f59e0b",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    marginTop: 24,
-    marginBottom: 20,
-  },
-  submitButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

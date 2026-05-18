@@ -313,27 +313,15 @@ export default function ProfileAndSettings({
   const cardBaseStyle = {
     backgroundColor: "#fff",
     borderRadius: 18,
-    padding: 20,
+    padding: isDesktop ? 24 : 20,
     shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 14,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: "#E6EBF2",
+    borderColor: "#F1F5F9",
   } as const;
-
-  const desktopGridStyle = {
-    display: "grid",
-    gridTemplateColumns:
-      "minmax(280px,1.15fr) minmax(280px,1fr) minmax(220px,0.85fr)",
-    gridTemplateAreas: `
-      "identity update stats"
-      "identity actions actions"
-    `,
-    gap: "16px",
-    alignItems: "stretch",
-  } as any;
 
   if (loading || !user) {
     return (
@@ -352,23 +340,20 @@ export default function ProfileAndSettings({
   }
 
   return (
-    <View style={{ gap: 20 }}>
-      <View style={isDesktop ? desktopGridStyle : { gap: 16 }}>
+    <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 24, alignItems: isDesktop ? "flex-start" : "stretch" }}>
+      {/* LEFT COLUMN (Identity) */}
+      <View style={{ width: isDesktop ? 340 : "100%", gap: 20, position: isDesktop ? ("sticky" as any) : "relative", top: isDesktop ? 0 : 0 }}>
         {/* 1) Profile Gradient Cluster */}
         <View
-          style={[
-            isDesktop && ({ gridArea: "identity", minHeight: 360 } as any),
-            {
-              minHeight: isDesktop ? 360 : undefined,
-              borderRadius: 18,
-              overflow: "hidden",
-              shadowColor: "#0F172A",
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.16,
-              shadowRadius: 20,
-              elevation: 5,
-            },
-          ]}
+          style={{
+            borderRadius: 20,
+            overflow: "hidden",
+            shadowColor: "#0F172A",
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.15,
+            shadowRadius: 16,
+            elevation: 4,
+          }}
         >
           <LinearGradient
             colors={roleConfig.gradient}
@@ -377,362 +362,101 @@ export default function ProfileAndSettings({
             style={StyleSheet.absoluteFillObject}
           />
 
-          <View style={{ padding: 22, minHeight: isDesktop ? 360 : undefined }}>
-            <Text
-              style={{
-                fontSize: 13,
-                color: "rgba(255,255,255,0.82)",
-                marginBottom: 8,
-              }}
-            >
+          <View style={{ padding: isDesktop ? 28 : 24 }}>
+            <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1, fontWeight: "600" }}>
               Hồ sơ vai trò
             </Text>
-            <Text
-              style={{
-                fontSize: 24,
-                fontWeight: "800",
-                color: "#fff",
-                marginBottom: 4,
-              }}
-            >
+            <Text style={{ fontSize: 26, fontWeight: "800", color: "#fff", marginBottom: 6 }}>
               {roleConfig.title}
             </Text>
-            <Text style={{ fontSize: 14, color: "rgba(255,255,255,0.85)" }}>
+            <Text style={{ fontSize: 14, color: "rgba(255,255,255,0.9)", lineHeight: 20 }}>
               {roleConfig.subtitle}
             </Text>
 
             <View
               style={{
-                marginTop: 20,
+                marginTop: 28,
                 borderWidth: 1,
                 borderColor: "rgba(255,255,255,0.25)",
-                borderRadius: 14,
-                backgroundColor: "rgba(255,255,255,0.12)",
-                padding: 14,
+                borderRadius: 16,
+                backgroundColor: "rgba(255,255,255,0.15)",
+                padding: 20,
               }}
             >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 14,
-                  marginBottom: 16,
-                }}
-              >
+              <View style={{ flexDirection: "column", alignItems: "center", gap: 16, marginBottom: 24 }}>
                 <Avatar
                   name={user?.name || "User"}
                   src={user?.avatar}
                   size="xlarge"
                   bordered
                 />
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 20,
-                      fontWeight: "700",
-                      color: "#FFFFFF",
-                      marginBottom: 4,
-                    }}
-                  >
+                <View style={{ alignItems: "center" }}>
+                  <Text style={{ fontSize: 22, fontWeight: "700", color: "#FFFFFF", marginBottom: 4, textAlign: "center" }}>
                     {user?.name}
                   </Text>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      color: "rgba(255,255,255,0.9)",
-                      marginBottom: 8,
-                    }}
-                  >
+                  <Text style={{ fontSize: 14, color: "rgba(255,255,255,0.9)", marginBottom: 12, textAlign: "center" }}>
                     {user?.email}
                   </Text>
-                  <View
-                    style={{
-                      alignSelf: "flex-start",
-                      backgroundColor: "rgba(255,255,255,0.2)",
-                      paddingHorizontal: 10,
-                      paddingVertical: 5,
-                      borderRadius: 999,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "700",
-                        color: "#FFFFFF",
-                      }}
-                    >
+                  <View style={{ backgroundColor: "rgba(255,255,255,0.25)", paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999 }}>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFFFFF" }}>
                       {getRoleName(user?.role)}
                     </Text>
                   </View>
                 </View>
               </View>
 
-              <View style={{ gap: 10 }}>
+              <View style={{ gap: 0 }}>
                 {user?.studentId ? (
-                  <Text
-                    style={{ color: "rgba(255,255,255,0.92)", fontSize: 14 }}
-                  >
-                    MSSV: {user.studentId}
-                  </Text>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.15)", paddingVertical: 14 }}>
+                    <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 14 }}>MSSV</Text>
+                    <Text style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "600" }}>{user.studentId}</Text>
+                  </View>
                 ) : null}
                 {user?.teacherId ? (
-                  <Text
-                    style={{ color: "rgba(255,255,255,0.92)", fontSize: 14 }}
-                  >
-                    MSGV: {user.teacherId}
-                  </Text>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.15)", paddingVertical: 14 }}>
+                    <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 14 }}>MSGV</Text>
+                    <Text style={{ color: "#FFFFFF", fontSize: 14, fontWeight: "600" }}>{user.teacherId}</Text>
+                  </View>
                 ) : null}
-                <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 13 }}>
-                  Trạng thái: {user?.isActive ? "Đang hoạt động" : "Tạm khóa"}
-                </Text>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.15)", paddingTop: 14 }}>
+                  <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 14 }}>Trạng thái</Text>
+                  <Text style={{ color: user?.isActive ? "#4ade80" : "#fbbf24", fontSize: 14, fontWeight: "600" }}>
+                    {user?.isActive ? "Đang hoạt động" : "Tạm khóa"}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
         </View>
+      </View>
 
-        {/* 2) Update Info Cluster */}
-        <View
-          style={[cardBaseStyle, isDesktop && ({ gridArea: "update" } as any)]}
-        >
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: "700",
-              color: "#111827",
-              marginBottom: 14,
-            }}
-          >
-            Cập nhật thông tin
-          </Text>
-
-          <View style={{ gap: 12, marginBottom: 14 }}>
-            <View style={{ gap: 6 }}>
-              <Text
-                style={{ fontSize: 13, color: "#6B7280", fontWeight: "600" }}
-              >
-                Họ và tên
-              </Text>
-              <TextInput
-                value={displayName}
-                onChangeText={setDisplayName}
-                placeholder="Nhập họ và tên"
-                placeholderTextColor="#9CA3AF"
-                style={{
-                  borderWidth: 1,
-                  borderColor: "#D1D5DB",
-                  borderRadius: 10,
-                  backgroundColor: "#F9FAFB",
-                  paddingHorizontal: 12,
-                  height: 46,
-                  color: "#111827",
-                  fontSize: 15,
-                }}
-              />
-            </View>
-
-            <View style={{ gap: 6 }}>
-              <Text
-                style={{ fontSize: 13, color: "#6B7280", fontWeight: "600" }}
-              >
-                Email
-              </Text>
-              <View
-                style={{
-                  borderWidth: 1,
-                  borderColor: "#E5E7EB",
-                  borderRadius: 10,
-                  backgroundColor: "#F3F4F6",
-                  paddingHorizontal: 12,
-                  height: 46,
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={{ color: "#6B7280", fontSize: 14 }}>
-                  {user?.email || "N/A"}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <PrimaryButton
-            title="Lưu thông tin"
-            onPress={handleUpdateProfile}
-            loading={savingProfile}
-            style={{ marginBottom: 16 }}
-          />
-
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: "700",
-              color: "#111827",
-              marginBottom: 10,
-            }}
-          >
-            Đổi mật khẩu
-          </Text>
-
-          <View style={{ gap: 10 }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                borderWidth: 1,
-                borderColor: "#D1D5DB",
-                borderRadius: 10,
-                paddingHorizontal: 12,
-                height: 46,
-                backgroundColor: "#F9FAFB",
-              }}
-            >
-              <Ionicons
-                name="lock-closed-outline"
-                size={19}
-                color="#9CA3AF"
-                style={{ marginRight: 8 }}
-              />
-              <TextInput
-                style={{ flex: 1, fontSize: 14, color: "#111827" }}
-                secureTextEntry={!showOldPass}
-                value={oldPassword}
-                onChangeText={setOldPassword}
-                placeholder="Mật khẩu hiện tại"
-                placeholderTextColor="#9CA3AF"
-              />
-              <TouchableOpacity
-                onPress={() => setShowOldPass(!showOldPass)}
-                style={{ padding: 4 }}
-              >
-                <Ionicons
-                  name={showOldPass ? "eye-outline" : "eye-off-outline"}
-                  size={18}
-                  color="#9CA3AF"
-                />
-              </TouchableOpacity>
-            </View>
-
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                borderWidth: 1,
-                borderColor: "#D1D5DB",
-                borderRadius: 10,
-                paddingHorizontal: 12,
-                height: 46,
-                backgroundColor: "#F9FAFB",
-              }}
-            >
-              <Ionicons
-                name="lock-closed-outline"
-                size={19}
-                color="#9CA3AF"
-                style={{ marginRight: 8 }}
-              />
-              <TextInput
-                style={{ flex: 1, fontSize: 14, color: "#111827" }}
-                secureTextEntry={!showNewPass}
-                value={newPassword}
-                onChangeText={setNewPassword}
-                placeholder="Mật khẩu mới"
-                placeholderTextColor="#9CA3AF"
-              />
-              <TouchableOpacity
-                onPress={() => setShowNewPass(!showNewPass)}
-                style={{ padding: 4 }}
-              >
-                <Ionicons
-                  name={showNewPass ? "eye-outline" : "eye-off-outline"}
-                  size={18}
-                  color="#9CA3AF"
-                />
-              </TouchableOpacity>
-            </View>
-
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                borderWidth: 1,
-                borderColor: "#D1D5DB",
-                borderRadius: 10,
-                paddingHorizontal: 12,
-                height: 46,
-                backgroundColor: "#F9FAFB",
-              }}
-            >
-              <Ionicons
-                name="lock-closed-outline"
-                size={19}
-                color="#9CA3AF"
-                style={{ marginRight: 8 }}
-              />
-              <TextInput
-                style={{ flex: 1, fontSize: 14, color: "#111827" }}
-                secureTextEntry={!showConfirmPass}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Nhập lại mật khẩu mới"
-                placeholderTextColor="#9CA3AF"
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPass(!showConfirmPass)}
-                style={{ padding: 4 }}
-              >
-                <Ionicons
-                  name={showConfirmPass ? "eye-outline" : "eye-off-outline"}
-                  size={18}
-                  color="#9CA3AF"
-                />
-              </TouchableOpacity>
-            </View>
-
-            <PrimaryButton
-              title="Cập nhật mật khẩu"
-              onPress={handleChangePassword}
-              loading={submitting}
-            />
-          </View>
-        </View>
-
-        {/* 3) Stats Cluster */}
-        <View
-          style={[cardBaseStyle, isDesktop && ({ gridArea: "stats" } as any)]}
-        >
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: "700",
-              color: "#111827",
-              marginBottom: 14,
-            }}
-          >
+      {/* RIGHT COLUMN (Content) */}
+      <View style={{ flex: 1, gap: 24, width: "100%" }}>
+        
+        {/* Stats Grid */}
+        <View style={cardBaseStyle}>
+          <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F172A", marginBottom: 16 }}>
             Thống kê nhanh
           </Text>
-          <View style={{ gap: 10 }}>
+          <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 16 }}>
             {effectiveStats.map((item, index) => (
               <View
                 key={`${item.label}-${index}`}
                 style={{
+                  flex: 1,
                   backgroundColor: "#F8FAFC",
-                  borderRadius: 12,
+                  borderRadius: 16,
                   borderWidth: 1,
                   borderColor: "#E2E8F0",
-                  padding: 12,
+                  padding: 20,
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <Text
-                  style={{ fontSize: 12, color: "#64748B", marginBottom: 4 }}
-                >
+                <Text style={{ fontSize: 14, color: "#64748B", marginBottom: 8, fontWeight: "500", textAlign: "center" }}>
                   {item.label}
                 </Text>
-                <Text
-                  style={{
-                    fontSize: 20,
-                    fontWeight: "800",
-                    color: item.tone || Colors.primaryDark,
-                  }}
-                >
+                <Text style={{ fontSize: 28, fontWeight: "800", color: item.tone || Colors.primaryDark }}>
                   {item.value}
                 </Text>
               </View>
@@ -740,80 +464,108 @@ export default function ProfileAndSettings({
           </View>
         </View>
 
-        {/* 4) Quick Actions Cluster */}
-        <View
-          style={[cardBaseStyle, isDesktop && ({ gridArea: "actions" } as any)]}
-        >
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: "700",
-              color: "#111827",
-              marginBottom: 14,
-            }}
-          >
-            Quick actions
+        {/* Quick Actions Grid */}
+        <View style={cardBaseStyle}>
+          <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F172A", marginBottom: 16 }}>
+            Lối tắt chức năng
           </Text>
-
-          <View style={{ gap: 10 }}>
+          <View style={{ flexDirection: isDesktop ? "row" : "column", flexWrap: "wrap", gap: 16 }}>
             {roleConfig.actions.map((action) => (
               <TouchableOpacity
                 key={action.label}
                 onPress={() => navigateQuickAction(action.route)}
                 style={{
+                  width: isDesktop ? "calc(50% - 8px)" as any : "100%",
                   flexDirection: "row",
                   alignItems: "center",
-                  gap: 12,
+                  gap: 16,
                   borderWidth: 1,
                   borderColor: "#E2E8F0",
-                  borderRadius: 12,
-                  padding: 12,
+                  borderRadius: 16,
+                  padding: 16,
                   backgroundColor: "#FFFFFF",
                 }}
-                activeOpacity={0.85}
+                activeOpacity={0.7}
               >
-                <View
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 19,
-                    backgroundColor: Colors.primary + "18",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Ionicons
-                    name={action.icon as any}
-                    size={20}
-                    color={Colors.primaryDark}
-                  />
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.primary + "15", alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name={action.icon as any} size={22} color={Colors.primaryDark} />
                 </View>
-
                 <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: "700",
-                      color: "#0F172A",
-                      marginBottom: 2,
-                    }}
-                  >
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: "#0F172A", marginBottom: 4 }}>
                     {action.label}
                   </Text>
-                  <Text style={{ fontSize: 12, color: "#64748B" }}>
+                  <Text style={{ fontSize: 13, color: "#64748B", lineHeight: 18 }}>
                     {action.description}
                   </Text>
                 </View>
-
-                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
               </TouchableOpacity>
             ))}
           </View>
         </View>
-      </View>
 
-      {/* Mobile/Table: keep more spacing between clusters */}
-      {!isDesktop ? <View style={{ height: 4 }} /> : null}
+        {/* Update Info */}
+        <View style={cardBaseStyle}>
+          <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F172A", marginBottom: 20 }}>
+            Cập nhật thông tin
+          </Text>
+
+          <View style={{ gap: 16, marginBottom: 24 }}>
+            <View style={{ gap: 8 }}>
+              <Text style={{ fontSize: 14, color: "#475569", fontWeight: "600" }}>Họ và tên</Text>
+              <TextInput
+                value={displayName}
+                onChangeText={setDisplayName}
+                placeholder="Nhập họ và tên"
+                placeholderTextColor="#9CA3AF"
+                style={{ borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 12, backgroundColor: "#F8FAFC", paddingHorizontal: 16, height: 50, color: "#0F172A", fontSize: 15 }}
+              />
+            </View>
+
+            <View style={{ gap: 8 }}>
+              <Text style={{ fontSize: 14, color: "#475569", fontWeight: "600" }}>Email</Text>
+              <View style={{ borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, backgroundColor: "#F1F5F9", paddingHorizontal: 16, height: 50, justifyContent: "center" }}>
+                <Text style={{ color: "#64748B", fontSize: 15 }}>{user?.email || "N/A"}</Text>
+              </View>
+            </View>
+          </View>
+
+          <PrimaryButton title="Lưu thông tin" onPress={handleUpdateProfile} loading={savingProfile} style={{ marginBottom: 32, borderRadius: 12 }} />
+
+          <Text style={{ fontSize: 18, fontWeight: "700", color: "#0F172A", marginBottom: 20, borderTopWidth: 1, borderTopColor: "#E2E8F0", paddingTop: 24 }}>
+            Đổi mật khẩu
+          </Text>
+
+          <View style={{ gap: 16 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 12, paddingHorizontal: 16, height: 50, backgroundColor: "#F8FAFC" }}>
+              <Ionicons name="lock-closed-outline" size={20} color="#94A3B8" style={{ marginRight: 12 }} />
+              <TextInput style={{ flex: 1, fontSize: 15, color: "#0F172A" }} secureTextEntry={!showOldPass} value={oldPassword} onChangeText={setOldPassword} placeholder="Mật khẩu hiện tại" placeholderTextColor="#94A3B8" />
+              <TouchableOpacity onPress={() => setShowOldPass(!showOldPass)} style={{ padding: 6 }}>
+                <Ionicons name={showOldPass ? "eye-outline" : "eye-off-outline"} size={20} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 12, paddingHorizontal: 16, height: 50, backgroundColor: "#F8FAFC" }}>
+              <Ionicons name="lock-closed-outline" size={20} color="#94A3B8" style={{ marginRight: 12 }} />
+              <TextInput style={{ flex: 1, fontSize: 15, color: "#0F172A" }} secureTextEntry={!showNewPass} value={newPassword} onChangeText={setNewPassword} placeholder="Mật khẩu mới" placeholderTextColor="#94A3B8" />
+              <TouchableOpacity onPress={() => setShowNewPass(!showNewPass)} style={{ padding: 6 }}>
+                <Ionicons name={showNewPass ? "eye-outline" : "eye-off-outline"} size={20} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 12, paddingHorizontal: 16, height: 50, backgroundColor: "#F8FAFC", marginBottom: 8 }}>
+              <Ionicons name="lock-closed-outline" size={20} color="#94A3B8" style={{ marginRight: 12 }} />
+              <TextInput style={{ flex: 1, fontSize: 15, color: "#0F172A" }} secureTextEntry={!showConfirmPass} value={confirmPassword} onChangeText={setConfirmPassword} placeholder="Nhập lại mật khẩu mới" placeholderTextColor="#94A3B8" />
+              <TouchableOpacity onPress={() => setShowConfirmPass(!showConfirmPass)} style={{ padding: 6 }}>
+                <Ionicons name={showConfirmPass ? "eye-outline" : "eye-off-outline"} size={20} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+
+            <PrimaryButton title="Cập nhật mật khẩu" onPress={handleChangePassword} loading={submitting} style={{ borderRadius: 12 }} />
+          </View>
+        </View>
+
+      </View>
     </View>
   );
 }

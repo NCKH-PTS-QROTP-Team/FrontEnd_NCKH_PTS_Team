@@ -33,7 +33,7 @@ import {
   subjectService,
   reportService,
 } from "@/apis";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 
 export default function AdminDashboard() {
   const { width } = useWindowDimensions();

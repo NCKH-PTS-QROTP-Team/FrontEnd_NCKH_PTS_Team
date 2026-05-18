@@ -17,7 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "@/constants/colors";
 import { attendanceService, authService, scheduleService } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import type { Schedule } from "@/apis/services/schedule.service";
 
 interface TeacherStats {
@@ -102,7 +102,7 @@ export default function TeacherDashboardScreen() {
   const isDesktopWeb = isWeb && width >= 1100;
   const isTablet = width >= 768 && width < 1100;
   const isMobile = width < 768;
-  const { showToast, toast, hideToast } = useToast();
+  const { showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [teacherName, setTeacherName] = useState("Giảng viên");
@@ -1045,12 +1045,7 @@ export default function TeacherDashboardScreen() {
         </View>
       </ScrollView>
 
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
+
     </SafeAreaView>
   );
 }

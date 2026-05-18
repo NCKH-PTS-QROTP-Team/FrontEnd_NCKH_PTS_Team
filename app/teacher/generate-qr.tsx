@@ -16,7 +16,7 @@ import { PrimaryButton } from "@/components/PrimaryButton";
 import { QRViewer } from "@/components/QRViewer";
 import { qrService, attendanceService, scheduleService } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import { QRStatus } from "@/apis/types/qr.types";
 import {
   AttendanceMethod,
@@ -932,7 +932,7 @@ export default function GenerateQRScreen() {
                         console.error("Error completing session:", error);
                         showToast(
                           error?.response?.data?.message ||
-                            "Không thể kết thúc phiên điểm danh.",
+                          "Không thể kết thúc phiên điểm danh.",
                           "error",
                         );
                       }

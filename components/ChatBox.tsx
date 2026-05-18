@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Colors } from "@/constants/colors";
+import { Ionicons } from "@expo/vector-icons";
 import {
   getRoleFromToken,
   getUserIdFromToken,
@@ -237,17 +238,38 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${CHAT_SERVICE_URL}/chat`, {
+      const groqMessages = [
+        {
+          role: "system",
+          content: `Bạn là trợ lý ảo thông minh của hệ thống giáo dục trường Đại học. Bạn CẦN TUÂN THỦ NGHIÊM NGẶT các quy tắc sau:
+1. Bạn đang hỗ trợ người dùng có vai trò: ${currentRole ?? "Chưa rõ"}. Tên của họ là: ${currentName ?? "Bạn"}.
+2. Nếu là Sinh viên: Xưng hô là "bạn" và "mình/trợ lý". CHỈ cung cấp/tư vấn thông tin về lịch học, lịch thi, điểm danh, và quy chế học vụ của cá nhân họ. Tuyệt đối KHÔNG tiết lộ thông tin của sinh viên khác hay quyền hạn của Giảng viên/Admin.
+3. Nếu là Giảng viên: Xưng hô là "thầy/cô" và "trợ lý". Hỗ trợ các vấn đề về lịch giảng dạy, xem danh sách lớp, và điểm danh.
+4. NẾU người dùng hỏi các vấn đề không liên quan đến giáo dục, học vụ, hệ thống đại học, HOẶC hỏi vượt quá thẩm quyền của vai trò ${currentRole ?? "Sinh viên"}, hãy từ chối trả lời một cách lịch sự.`,
+        },
+        ...messages
+          .filter(m => m.id !== "1") // Bỏ qua câu chào mặc định ban đầu để tiết kiệm token
+          .map((m) => ({
+            role: m.sender === "user" ? "user" : "assistant",
+            content: m.text,
+          })),
+        {
+          role: "user",
+          content: userMessage.text,
+        },
+      ];
+
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: "Bearer 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",
         },
         body: JSON.stringify({
-          message: userMessage.text,
-          sessionId: "fe-default",
-          role: currentRole ?? "UNKNOWN",
-          userId: currentUserId,
-          display_name: currentName,
+          model: "llama3-70b-8192", // Sử dụng LLaMA 3 70B cho tiếng Việt tốt
+          messages: groqMessages,
+          temperature: 0.7,
+          max_tokens: 1024,
         }),
       });
 
@@ -255,26 +277,11 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const data = (await response.json()) as {
-        answer?: string;
-        intent?: string;
-        downloadExcel?: boolean;
-        download_excel?: boolean;
-        subjectName?: string | null;
-        subject_name?: string | null;
-      };
+      const data = await response.json();
+      const answerText = data.choices?.[0]?.message?.content ?? "Xin lỗi, tôi không thể xử lý yêu cầu lúc này.";
 
-      const answerText =
-        data.answer ??
-        "Chat-service không trả về nội dung. Vui lòng kiểm tra lại service AI/chat-service.";
-      const hasDownloadExcelFlag =
-        data.downloadExcel === true || data.download_excel === true;
-      // Fallback: nếu API không trả downloadExcel nhưng nội dung có nhắc nút Tải file Excel → vẫn hiển thị nút
-      const showExcelButton =
-        hasDownloadExcelFlag ||
-        (answerText.includes("Tải file Excel") &&
-          answerText.includes("Bấm nút"));
-      const subjectName = data.subjectName ?? data.subject_name ?? undefined;
+      // Vẫn giữ lại logic nút tải Excel nếu AI tình cờ nhắc đến
+      const showExcelButton = answerText.includes("Tải file Excel") && answerText.includes("Bấm nút");
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -282,7 +289,6 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
         sender: "bot",
         timestamp: new Date(),
         downloadExcel: showExcelButton,
-        subjectName: subjectName || undefined,
       };
 
       setMessages((prev) => [...prev, botMessage]);
@@ -290,10 +296,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
       console.error("Chat error:", error);
       const botMessage: Message = {
         id: (Date.now() + 2).toString(),
-        text:
-          "Không kết nối được tới AI/chat-service. Hãy kiểm tra:\n" +
-          "- Service đã được chạy với `uvicorn app.main:app --port 8091` chưa?\n" +
-          "- IP/port trong CHAT_SERVICE_URL đã đúng chưa?",
+        text: "Không kết nối được tới AI (Groq API). Vui lòng kiểm tra lại mạng hoặc API Key.",
         sender: "bot",
         timestamp: new Date(),
       };
@@ -341,16 +344,16 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
           backgroundColor: Colors.primary,
           alignItems: "center",
           justifyContent: "center",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.2,
-          shadowRadius: 8,
+          shadowColor: Colors.primary,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.3,
+          shadowRadius: 16,
           elevation: 8,
           zIndex: 1000,
         }}
         activeOpacity={0.8}
       >
-        <Text style={{ fontSize: 24 }}>💬</Text>
+        <Ionicons name="chatbubbles" size={30} color={Colors.white} />
       </TouchableOpacity>
     );
   }
@@ -397,53 +400,58 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          backgroundColor: Colors.primary,
-          minHeight: 56,
+          paddingHorizontal: 20,
+          paddingVertical: 14,
+          backgroundColor: Colors.white,
+          borderBottomWidth: 1,
+          borderBottomColor: "#F3F4F6",
+          minHeight: 64,
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
           <View
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: 16,
-              backgroundColor: Colors.white + "30",
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: Colors.primary + "15",
               alignItems: "center",
               justifyContent: "center",
               marginRight: 12,
             }}
           >
-            <Text style={{ fontSize: 18 }}>💬</Text>
+            <Ionicons name="chatbubbles" size={20} color={Colors.primary} />
           </View>
           {!isMinimized && (
             <View style={{ flex: 1 }}>
               <Text
                 style={{
-                  fontSize: 15,
-                  fontWeight: "600",
-                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: "700",
+                  color: Colors.textHeading,
                 }}
               >
                 Trợ lý ảo
               </Text>
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: Colors.white + "CC",
-                }}
-              >
-                Sẵn sàng hỗ trợ
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#10B981", marginRight: 6 }} />
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: Colors.textSecondary,
+                  }}
+                >
+                  Trực tuyến
+                </Text>
+              </View>
             </View>
           )}
           {isMinimized && isWeb && (
             <Text
               style={{
-                fontSize: 14,
-                fontWeight: "500",
-                color: Colors.white,
+                fontSize: 15,
+                fontWeight: "600",
+                color: Colors.textHeading,
                 flex: 1,
               }}
             >
@@ -452,36 +460,35 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
           )}
         </View>
         <View style={{ flexDirection: "row", gap: 8 }}>
-          {/* Nút thu gọn chỉ hiển thị trên web và khi không minimized */}
           {!isMinimized && isWeb && (
             <TouchableOpacity
               onPress={toggleChat}
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: 14,
-                backgroundColor: Colors.white + "20",
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: "#F3F4F6",
                 alignItems: "center",
                 justifyContent: "center",
               }}
               activeOpacity={0.7}
             >
-              <Text style={{ fontSize: 14, color: Colors.white }}>−</Text>
+              <Ionicons name="remove" size={18} color={Colors.textSecondary} />
             </TouchableOpacity>
           )}
           <TouchableOpacity
             onPress={handleClose}
             style={{
-              width: 28,
-              height: 28,
-              borderRadius: 14,
-              backgroundColor: Colors.white + "20",
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: "#F3F4F6",
               alignItems: "center",
               justifyContent: "center",
             }}
             activeOpacity={0.7}
           >
-            <Text style={{ fontSize: 16, color: Colors.white }}>×</Text>
+            <Ionicons name="close" size={18} color={Colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -520,16 +527,16 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
                 >
                   <View
                     style={{
-                      maxWidth: "75%",
-                      paddingHorizontal: 14,
-                      paddingVertical: 10,
-                      borderRadius: 12,
+                      maxWidth: "80%",
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderRadius: 20,
+                      borderTopLeftRadius: message.sender === "bot" ? 4 : 20,
+                      borderTopRightRadius: message.sender === "user" ? 4 : 20,
                       backgroundColor:
                         message.sender === "user"
                           ? Colors.primary
-                          : Colors.white,
-                      borderWidth: message.sender === "bot" ? 1 : 0,
-                      borderColor: Colors.border,
+                          : "#F3F4F6",
                     }}
                   >
                     <Text
@@ -624,29 +631,30 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              paddingHorizontal: 12,
+              paddingHorizontal: 16,
               paddingVertical: 12,
               backgroundColor: Colors.white,
               borderTopWidth: 1,
-              borderTopColor: Colors.border,
-              gap: 8,
+              borderTopColor: "#F3F4F6",
+              gap: 12,
             }}
           >
             <TextInput
               value={inputText}
               onChangeText={setInputText}
-              placeholder="Nhập tin nhắn..."
+              placeholder="Hỏi trợ lý ảo..."
               placeholderTextColor={Colors.textSecondary}
               style={{
                 flex: 1,
-                fontSize: 14,
+                fontSize: 15,
                 color: Colors.textHeading,
-                paddingHorizontal: 14,
-                paddingVertical: 10,
-                backgroundColor: Colors.surface,
-                borderRadius: 20,
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                backgroundColor: "#F9FAFB",
+                borderRadius: 24,
                 borderWidth: 1,
-                borderColor: Colors.border,
+                borderColor: "#E5E7EB",
+                ...(Platform.OS === "web" ? { outlineStyle: "none" } : {}),
               }}
               multiline
               maxLength={500}
@@ -669,17 +677,16 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
               }}
               activeOpacity={0.7}
             >
-              <Text
-                style={{
-                  fontSize: 16,
-                  color:
-                    inputText.trim() && !isLoading
-                      ? Colors.white
-                      : Colors.textSecondary,
-                }}
-              >
-                ➤
-              </Text>
+              <Ionicons
+                name="send"
+                size={16}
+                color={
+                  inputText.trim() && !isLoading
+                    ? Colors.white
+                    : Colors.textSecondary
+                }
+                style={{ marginLeft: 4 }}
+              />
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>

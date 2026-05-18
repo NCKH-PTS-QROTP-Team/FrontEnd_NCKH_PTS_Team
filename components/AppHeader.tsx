@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
+import ConfirmDialog, { useConfirmDialog } from "@/components/ConfirmDialog";
 import { Colors } from "@/constants/colors";
 import Breadcrumbs from "./Breadcrumbs";
 import UserProfileDropdown from "./UserProfileDropdown";
@@ -51,6 +52,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   const [isBackHovered, setIsBackHovered] = useState(false);
   const [isLogoutHovered, setIsLogoutHovered] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   useEffect(() => {
     if (Platform.OS === "web") {
@@ -64,14 +66,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   }, []);
 
   const handleLogout = () => {
-    Alert.alert("Đăng xuất", "Bạn có chắc muốn đăng xuất?", [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Đăng xuất",
-        style: "destructive",
-        onPress: () => router.replace("/auth/login"),
-      },
-    ]);
+    confirm({
+      title: "Đăng xuất",
+      message: "Bạn có chắc muốn đăng xuất?",
+      confirmText: "Đăng xuất",
+      variant: "danger",
+      onConfirm: () => router.replace("/auth/login"),
+    });
   };
 
   return (
@@ -223,6 +224,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </View>
         </View>
       </View>
+      <ConfirmDialog {...dialogProps} />
     </View>
   );
 };
