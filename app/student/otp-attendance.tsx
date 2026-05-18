@@ -18,7 +18,7 @@ import { Colors } from "@/constants/colors";
 import { otpService, attendanceService, faceService, authService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import { AttendanceMethod, AttendanceSessionResponse } from "@/apis/types/attendance.types";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import { getFriendlyError } from "@/utils/errorMessages";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useSocket } from "@/apis/socket/SocketProvider";
@@ -71,7 +71,7 @@ export default function OTPAttendanceScreen() {
   const faceBoxRef = useRef<FaceDetection | null>(null);
   const lastImageDimensions = useRef<{ width: number; height: number } | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
   const { socket, isConnected, connect, disconnect, emit, on, off } = useSocket();
   const { width, height } = useWindowDimensions();
   const [previewLayout] = useState<{ width: number; height: number }>({
@@ -1334,12 +1334,6 @@ style={[
       )}
 
       {/* Toast Notification */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
     </SafeAreaView>
   );
 }

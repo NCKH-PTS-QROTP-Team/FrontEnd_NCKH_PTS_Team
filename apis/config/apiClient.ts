@@ -4,47 +4,32 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 // Base URL strategy:
-// - Web: ưu tiên EXPO_PUBLIC_API_URL_WEB, sau đó auto theo hostname hiện tại.
-// - Native: ưu tiên EXPO_PUBLIC_API_URL (IP LAN cho thiết bị thật).
+// - Bắt buộc sử dụng cấu hình từ file .env (EXPO_PUBLIC_API_URL) để đồng nhất.
+// - Web: fallback về hostname hiện tại nếu không có .env.
 const getApiBaseUrl = () => {
   const envApiUrl = typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_API_URL?.trim() : undefined;
   const envWebApiUrl = typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_API_URL_WEB?.trim() : undefined;
 
   if (Platform.OS === 'web') {
-    if (envWebApiUrl) {
-      return envWebApiUrl;
-    }
-
+    if (envWebApiUrl) return envWebApiUrl;
+    if (envApiUrl) return envApiUrl;
+    
     if (typeof window !== 'undefined') {
       const host = window.location.hostname;
       const normalizedHost = host === '0.0.0.0' ? 'localhost' : host;
       return `http://${normalizedHost}:8080/api`;
     }
-
-    return envApiUrl || 'http://localhost:8080/api';
+    return 'http://localhost:8080/api';
   }
 
+  // Native (iOS/Android): Ưu tiên tuyệt đối dùng file .env
   if (envApiUrl) {
     return envApiUrl;
   }
 
-  // Native fallback (device/emulator): derive host from Expo dev host to avoid stale LAN IP configs.
-  // Example hostUri: "192.168.1.23:8081" -> API: "http://192.168.1.23:8080/api"
-  const hostUri =
-    (Constants.expoConfig as any)?.hostUri ||
-    (Constants as any)?.manifest2?.extra?.expoClient?.hostUri ||
-    (Constants as any)?.manifest?.debuggerHost;
-
-  if (hostUri) {
-    const host = String(hostUri).split(':')[0];
-    if (host && host !== 'localhost' && host !== '127.0.0.1') {
-      return `http://${host}:8080/api`;
-    }
-  }
-
+  // Fallback duy nhất nếu bạn vô tình xóa mất file .env
   if (Platform.OS === 'android') {
-    // Android emulator -> localhost của máy host
-    return 'http://10.0.2.2:8080/api';
+    return 'http://10.0.2.2:8080/api'; // Android Emulator
   }
 
   return 'http://localhost:8080/api';
@@ -77,6 +62,7 @@ const apiClient: AxiosInstance = axios.create({
 
 // Storage keys
 const TOKEN_KEY = 'auth_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
 const CURRENT_USER_KEY = 'current_user';
 
 /**
@@ -119,10 +105,50 @@ export const getAuthToken = async (): Promise<string | null> => {
 };
 
 /**
- * Xóa token
+ * Lưu refresh token
+ */
+export const setRefreshToken = async (token: string | null): Promise<void> => {
+  try {
+    if (token) {
+      if (Platform.OS === 'web') {
+        localStorage.setItem(REFRESH_TOKEN_KEY, token);
+      } else {
+        await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, token);
+      }
+    } else {
+      if (Platform.OS === 'web') {
+        localStorage.removeItem(REFRESH_TOKEN_KEY);
+      } else {
+        await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+      }
+    }
+  } catch (error) {
+    console.error('Error saving refresh token:', error);
+  }
+};
+
+/**
+ * Lấy refresh token
+ */
+export const getRefreshToken = async (): Promise<string | null> => {
+  try {
+    if (Platform.OS === 'web') {
+      return localStorage.getItem(REFRESH_TOKEN_KEY);
+    } else {
+      return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+    }
+  } catch (error) {
+    console.error('Error getting refresh token:', error);
+    return null;
+  }
+};
+
+/**
+ * Xóa cả 2 token
  */
 export const removeAuthToken = async (): Promise<void> => {
   await setAuthToken(null);
+  await setRefreshToken(null);
   await setCurrentUserProfile(null);
 };
 
@@ -195,10 +221,36 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      // Xóa token và redirect về login
+      try {
+        const refreshToken = await getRefreshToken();
+        if (refreshToken) {
+          // Dùng axios cơ bản để tránh vòng lặp interceptor
+          const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+            refreshToken: refreshToken,
+          });
+
+          if (res.data?.success && res.data?.data) {
+            const newAccessToken = res.data.data.accessToken;
+            const newRefreshToken = res.data.data.refreshToken;
+
+            await setAuthToken(newAccessToken);
+            await setRefreshToken(newRefreshToken);
+
+            // Cập nhật lại header của request bị lỗi
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            // Thực hiện lại request ban đầu
+            return apiClient(originalRequest);
+          }
+        }
+      } catch (refreshError) {
+        console.error('Lỗi khi refresh token:', refreshError);
+        // Refresh token cũng hết hạn hoặc lỗi -> xóa hết
+      }
+
+      // Xóa token và redirect về login nếu refresh thất bại
       await removeAuthToken();
 
-      // Emit event để logout (có thể dùng với context hoặc event emitter)
+      // Emit event để logout
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('auth:logout'));
       }

@@ -17,7 +17,7 @@ import { faceService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import { Colors } from "@/constants/colors";
 import { PrimaryButton } from "@/components/PrimaryButton";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 
 export default function FaceAttendanceScreen() {
@@ -28,7 +28,7 @@ export default function FaceAttendanceScreen() {
   const [captured, setCaptured] = useState(false);
   const [mode, setMode] = useState<'authenticate' | 'register'>('authenticate');
   const cameraRef = useRef<CameraView>(null);
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
 
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
@@ -205,6 +205,7 @@ export default function FaceAttendanceScreen() {
             ref={cameraRef}
             style={{ flex: 1 }}
             facing="front" // Front camera cho selfie
+            animateShutter={false}
           >
             <SafeAreaView style={{ flex: 1, justifyContent: "space-between" }}>
               {/* Top Toggle Mode */}
@@ -367,12 +368,6 @@ export default function FaceAttendanceScreen() {
       </View>
 
       {/* Toast */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
     </View>
   );
 }

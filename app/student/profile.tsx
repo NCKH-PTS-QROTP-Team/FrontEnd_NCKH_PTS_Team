@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   useWindowDimensions,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,15 +14,17 @@ import { Colors } from "@/constants/colors";
 import { LogoutIcon } from "@/components/Icons";
 import { authService, attendanceService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import ProfileAndSettings from "@/components/ProfileAndSettings";
 import { getWebShadow, getWebCursor } from "@/constants/webStyles";
+import ConfirmDialog, { useConfirmDialog } from "@/components/ConfirmDialog";
 
 export default function StudentProfileScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const { showToast } = useToast();
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -77,22 +78,21 @@ export default function StudentProfileScreen() {
   };
 
   const handleLogout = async () => {
-    Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Đăng xuất",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await authService.logout();
-            router.replace("/auth/login");
-          } catch (error) {
-            console.error("Logout error:", error);
-            router.replace("/auth/login");
-          }
-        },
+    confirm({
+      title: "Đăng xuất",
+      message: "Bạn có chắc chắn muốn đăng xuất?",
+      confirmText: "Đăng xuất",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await authService.logout();
+        } catch (error) {
+          console.error("Logout error:", error);
+        } finally {
+          router.replace("/auth/login");
+        }
       },
-    ]);
+    });
   };
 
   return (
@@ -105,7 +105,7 @@ export default function StudentProfileScreen() {
           padding: 16,
           paddingTop: isMobile ? 18 : 24,
           paddingBottom: isMobile ? 120 : 32,
-          maxWidth: 600,
+          maxWidth: isMobile ? 600 : 1100,
           width: "100%" as any,
           alignSelf: "center" as any,
         }}
@@ -199,8 +199,7 @@ export default function StudentProfileScreen() {
         </Text>
       </ScrollView>
 
-      {/* Toast Notification */}
-      <Toast visible={false} message="" type="success" onHide={() => {}} />
+      <ConfirmDialog {...dialogProps} />
     </SafeAreaView>
   );
 }

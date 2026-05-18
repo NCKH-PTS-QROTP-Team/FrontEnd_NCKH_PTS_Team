@@ -31,7 +31,7 @@ import {
  * - Success feedback with toasts
  */
 export default function PolishDemo() {
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
   const deleteConfirm = useConfirmation();
   const logoutConfirm = useConfirmation();
   const warningConfirm = useConfirmation();
@@ -513,7 +513,6 @@ export default function PolishDemo() {
       />
 
       {/* Toast */}
-      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
     </PageTransition>
   );
 }

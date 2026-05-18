@@ -17,7 +17,7 @@ import { Colors } from "@/constants/colors";
 import { qrService, attendanceService, faceService, authService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import { AttendanceMethod, AttendanceSessionResponse } from "@/apis/types/attendance.types";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from "expo-camera";
 import { useSocket } from "@/apis/socket/SocketProvider";
 import { CheckCircleIcon, CloseIcon, UserIcon } from "@/components/Icons";
@@ -65,7 +65,7 @@ export default function QRAttendanceScreen() {
   const detectIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
   const { socket, isConnected, connect, disconnect, emit, on, off } = useSocket();
   const { width, height } = useWindowDimensions();
   const [previewLayout, setPreviewLayout] = useState<{ width: number; height: number }>({
@@ -1591,12 +1591,6 @@ export default function QRAttendanceScreen() {
         </View>
       </ScrollView>
       )}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
     </SafeAreaView>
   );
 }

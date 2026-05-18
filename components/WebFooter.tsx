@@ -16,7 +16,9 @@ export default function WebFooter() {
   return (
     <View
       style={{
-        backgroundColor: "#1e3a8a", // Dark blue from the image
+        backgroundColor: "#ffffff",
+        borderTopWidth: 1,
+        borderTopColor: "#e5e7eb",
         paddingVertical: 48,
         paddingHorizontal: isMobile ? 24 : 48,
         marginTop: 60,
@@ -41,12 +43,12 @@ export default function WebFooter() {
               resizeMode="contain"
             />
             <View>
-              <Text style={{ color: "#ffffff", fontSize: 16, fontWeight: "700" }}>Industrial</Text>
-              <Text style={{ color: "#ffffff", fontSize: 16, fontWeight: "700" }}>University of</Text>
-              <Text style={{ color: "#ffffff", fontSize: 16, fontWeight: "700" }}>Ho Chi Minh City</Text>
+              <Text style={{ color: "#1e3a8a", fontSize: 16, fontWeight: "700" }}>Industrial</Text>
+              <Text style={{ color: "#1e3a8a", fontSize: 16, fontWeight: "700" }}>University of</Text>
+              <Text style={{ color: "#1e3a8a", fontSize: 16, fontWeight: "700" }}>Ho Chi Minh City</Text>
             </View>
           </View>
-          <Text style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: 14, lineHeight: 22 }}>
+          <Text style={{ color: "#4b5563", fontSize: 14, lineHeight: 22 }}>
             Số 12 Nguyễn Văn Bảo, P.4, Q. Gò Vấp, TP.HCM
           </Text>
         </View>
@@ -62,29 +64,29 @@ export default function WebFooter() {
         >
           {/* Column 1: Liên kết nhanh */}
           <View style={{ flex: isMobile ? undefined : 1 }}>
-            <Text style={{ color: "#ffffff", fontSize: 14, fontWeight: "700", marginBottom: 16, textTransform: "uppercase" }}>
+            <Text style={{ color: "#1e3a8a", fontSize: 14, fontWeight: "700", marginBottom: 16, textTransform: "uppercase" }}>
               Liên kết nhanh
             </Text>
-            <View style={{ height: 1, backgroundColor: "rgba(255,255,255,0.2)", marginBottom: 16, width: "100%" }} />
+            <View style={{ height: 1, backgroundColor: "#e5e7eb", marginBottom: 16, width: "100%" }} />
             <TouchableOpacity style={{ marginBottom: 12, ...getWebCursor() }}>
-              <Text style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: 14 }}>Trang chủ</Text>
+              <Text style={{ color: "#4b5563", fontSize: 14 }}>Trang chủ</Text>
             </TouchableOpacity>
             <TouchableOpacity style={{ marginBottom: 12, ...getWebCursor() }}>
-              <Text style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: 14 }}>Website IUH</Text>
+              <Text style={{ color: "#4b5563", fontSize: 14 }}>Website IUH</Text>
             </TouchableOpacity>
             <TouchableOpacity style={{ marginBottom: 12, ...getWebCursor() }}>
-              <Text style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: 14 }}>Cổng sinh viên</Text>
+              <Text style={{ color: "#4b5563", fontSize: 14 }}>Cổng sinh viên</Text>
             </TouchableOpacity>
           </View>
 
           {/* Column 2: Hệ thống */}
           <View style={{ flex: isMobile ? undefined : 1 }}>
-            <Text style={{ color: "#ffffff", fontSize: 14, fontWeight: "700", marginBottom: 16, textTransform: "uppercase" }}>
+            <Text style={{ color: "#1e3a8a", fontSize: 14, fontWeight: "700", marginBottom: 16, textTransform: "uppercase" }}>
               Hệ thống
             </Text>
-            <View style={{ height: 1, backgroundColor: "rgba(255,255,255,0.2)", marginBottom: 16, width: "100%" }} />
+            <View style={{ height: 1, backgroundColor: "#e5e7eb", marginBottom: 16, width: "100%" }} />
             <TouchableOpacity style={{ marginBottom: 12, ...getWebCursor() }}>
-              <Text style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: 14 }}>Đăng nhập</Text>
+              <Text style={{ color: "#4b5563", fontSize: 14 }}>Đăng nhập</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -99,11 +101,11 @@ export default function WebFooter() {
           marginTop: 48,
           paddingTop: 24,
           borderTopWidth: 1,
-          borderColor: "rgba(255, 255, 255, 0.2)",
+          borderColor: "#e5e7eb",
           alignItems: "center",
         }}
       >
-        <Text style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: 12 }}>
+        <Text style={{ color: "#6b7280", fontSize: 12 }}>
           © 2026 Hệ thống điểm danh - Đại học Công nghiệp TP.HCM
         </Text>
       </View>

@@ -10,10 +10,11 @@ import {
   Image,
   useWindowDimensions,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import { Colors } from "@/constants/colors";
 import { mockUsers } from "@/constants/mockData";
 import { authService } from "@/apis";
@@ -155,7 +156,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [usernameError, setUsernameError] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
 
   // ── Captcha State ──
   const [captchaText, setCaptchaText] = useState("");
@@ -165,7 +166,7 @@ export default function LoginScreen() {
   const isTablet = width >= 768 && width < 1024;
   const isDesktop = width >= 1024;
   const isMobile = width < 768;
-  const containerPadding = isDesktop ? 48 : isTablet ? 32 : 16;
+  const containerPadding = isDesktop ? 48 : isTablet ? 32 : 0; // 0 for mobile so it spans full width
 
   const logoNameImage = require("../../assets/logoname.png");
 
@@ -341,10 +342,11 @@ export default function LoginScreen() {
   // ══════════════════════════════════════════════════════════════════
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1, backgroundColor: "#f0f4f8" }}
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: isMobile ? Colors.white : "#f0f4f8" }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
       <StatusBar style="dark" />
       <ScrollView
         style={{ flex: 1 }}
@@ -354,27 +356,29 @@ export default function LoginScreen() {
         }}
         keyboardShouldPersistTaps="handled"
       >
-        <View
-          style={{
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
+          <View
+            style={{
+              flex: 1,
+              alignItems: "center",
+              justifyContent: "center",
+              paddingTop: isMobile ? 16 : 0,
+              backgroundColor: isMobile ? Colors.white : "transparent",
+            }}
+          >
           {/* ── Login Card ── */}
           <View
             style={{
               width: "100%",
               maxWidth: 440,
               backgroundColor: Colors.white,
-              borderRadius: 16,
-              paddingHorizontal: isDesktop ? 32 : isTablet ? 28 : 16,
-              paddingVertical: isDesktop ? 36 : isTablet ? 30 : 20,
-              ...(Platform.OS === "web"
+              borderRadius: isMobile ? 0 : 16,
+              paddingHorizontal: isDesktop ? 32 : isTablet ? 28 : 24,
+              paddingVertical: isDesktop ? 36 : isTablet ? 30 : 24,
+              ...(Platform.OS === "web" && !isMobile
                 ? ({
                     boxShadow: "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
                   } as any)
-                : {
+                : isMobile ? {} : {
                     shadowColor: "#000",
                     shadowOffset: { width: 0, height: 8 },
                     shadowOpacity: 0.12,
@@ -383,14 +387,14 @@ export default function LoginScreen() {
                   }),
             }}
           >
-            <View style={{ alignItems: "center", marginBottom: isMobile ? 16 : 28 }}>
+            <View style={{ alignItems: "center", marginBottom: isMobile ? 24 : 28 }}>
               <Image
                 source={logoNameImage}
-                style={{ height: isMobile ? 32 : 50, resizeMode: "contain", marginBottom: isMobile ? 8 : 14 }}
+                style={{ height: isMobile ? 40 : 50, resizeMode: "contain", marginBottom: isMobile ? 12 : 14 }}
               />
               <Text
                 style={{
-                  fontSize: isMobile ? 15 : 18,
+                  fontSize: isMobile ? 18 : 18,
                   fontWeight: "800",
                   color: "#1e3a5f",
                   letterSpacing: 1,
@@ -403,13 +407,13 @@ export default function LoginScreen() {
             </View>
 
             {/* ── Mã tài khoản ── */}
-            <View style={{ marginBottom: isMobile ? 12 : 18 }}>
+            <View style={{ marginBottom: isMobile ? 16 : 18 }}>
               <Text style={getLabelStyle(isMobile)}>Mã tài khoản</Text>
               <View
                 style={[
                   inputContainerStyle,
                   {
-                    height: isMobile ? 40 : 48,
+                    height: isMobile ? 48 : 48,
                     borderColor: usernameError
                       ? "#ef4444"
                       : "#e2e8f0",
@@ -432,7 +436,7 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                   autoCorrect={false}
                   returnKeyType="next"
-                  style={getTextInputStyle(isMobile)}
+                  style={[getTextInputStyle(isMobile), { outlineStyle: 'none' } as any]}
                 />
               </View>
               {usernameError ? (
@@ -441,13 +445,13 @@ export default function LoginScreen() {
             </View>
 
             {/* ── Mật khẩu ── */}
-            <View style={{ marginBottom: isMobile ? 12 : 18 }}>
+            <View style={{ marginBottom: isMobile ? 16 : 18 }}>
               <Text style={getLabelStyle(isMobile)}>Mật khẩu</Text>
               <View
                 style={[
                   inputContainerStyle,
                   {
-                    height: isMobile ? 40 : 48,
+                    height: isMobile ? 48 : 48,
                     borderColor: passwordError
                       ? "#ef4444"
                       : "#e2e8f0",
@@ -622,15 +626,8 @@ export default function LoginScreen() {
           </View>
         </View>
       </ScrollView>
-
-      {/* Toast Notification */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

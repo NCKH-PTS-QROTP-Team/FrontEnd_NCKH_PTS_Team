@@ -22,7 +22,7 @@ import {
 } from "@/components/EmptyStateIllustration";
 import { SkeletonCard } from "@/components/Skeleton";
 import { ErrorState } from "@/components/ErrorState";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import AppHeader from "@/components/AppHeader";
 
 export default function UserManagement() {
@@ -32,7 +32,7 @@ export default function UserManagement() {
   >("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
@@ -501,12 +501,6 @@ export default function UserManagement() {
       </ScrollView>
 
       {/* Toast Notification */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
     </View>
   );
 }

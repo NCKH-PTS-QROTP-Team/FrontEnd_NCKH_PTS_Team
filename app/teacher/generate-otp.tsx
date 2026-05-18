@@ -14,7 +14,7 @@ import { PrimaryButton } from "@/components/PrimaryButton";
 import { otpService, attendanceService, scheduleService } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import { AttendanceMethod } from "@/apis/types/attendance.types";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import type { Schedule } from "@/apis/services/schedule.service";
 import { CalendarIcon, LocationIcon } from "@/components/Icons";
 import { Colors } from "@/constants/colors";
@@ -36,7 +36,7 @@ export default function GenerateOTPScreen() {
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [todaySchedules, setTodaySchedules] = useState<Schedule[]>([]);
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
   
   const isWeb = Platform.OS === "web";
   const { width } = useWindowDimensions();
@@ -758,12 +758,6 @@ export default function GenerateOTPScreen() {
       </ScrollView>
       
       {/* Toast Notification */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
     </SafeAreaView>
   );
 }

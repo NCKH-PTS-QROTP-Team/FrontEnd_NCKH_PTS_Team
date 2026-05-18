@@ -14,7 +14,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { facePythonService } from "@/apis/services/facePython.service";
 import { faceService } from "@/apis";
 import { Colors } from "@/constants/colors";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import { getWebCursor } from "@/constants/webStyles";
@@ -39,7 +39,7 @@ export default function FaceDemoScreen() {
   const cameraRef = useRef<CameraView>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const boxRef = useRef<Box | null>(null);
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
   const [studentId, setStudentId] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
 
@@ -399,7 +399,6 @@ export default function FaceDemoScreen() {
           )}
         </CameraView>
       </View>
-      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
     </SafeAreaView>
   );
 }

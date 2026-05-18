@@ -153,16 +153,16 @@ export default function UserProfileDropdown({
             position: "absolute" as any,
             top: 56,
             right: 0,
-            width: 280,
+            width: 240,
             backgroundColor: "#FFFFFF",
-            borderRadius: 12,
+            borderRadius: 16,
             shadowColor: "#000",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.15,
-            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.08,
+            shadowRadius: 24,
             elevation: 8,
             borderWidth: 1,
-            borderColor: "#E5E7EB",
+            borderColor: "#F3F4F6",
             zIndex: 2000,
             overflow: "hidden",
             ...(Platform.OS === "web" &&
@@ -175,24 +175,17 @@ export default function UserProfileDropdown({
           <View
             style={{
               padding: 16,
-              backgroundColor: "#F9FAFB",
               borderBottomWidth: 1,
-              borderBottomColor: "#E5E7EB",
+              borderBottomColor: "#F3F4F6",
             }}
           >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 8,
-              }}
-            >
-              <Avatar name={userName} src={userAvatar} size="medium" bordered />
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Avatar name={userName} src={userAvatar} size="medium" />
               <View style={{ marginLeft: 12, flex: 1 }}>
                 <Text
                   style={{
                     fontSize: 15,
-                    fontWeight: "700",
+                    fontWeight: "600",
                     color: "#111827",
                     marginBottom: 2,
                   }}
@@ -200,43 +193,23 @@ export default function UserProfileDropdown({
                 >
                   {userName}
                 </Text>
-                <View
-                  style={{
-                    alignSelf: "flex-start",
-                    paddingHorizontal: 8,
-                    paddingVertical: 2,
-                    backgroundColor: Colors.primary + "15",
-                    borderRadius: 4,
-                  }}
-                >
+                {userEmail && (
                   <Text
                     style={{
-                      fontSize: 11,
-                      fontWeight: "600",
-                      color: Colors.primary,
+                      fontSize: 13,
+                      color: "#6B7280",
                     }}
+                    numberOfLines={1}
                   >
-                    {getRoleName(userRole)}
+                    {userEmail}
                   </Text>
-                </View>
+                )}
               </View>
             </View>
-            {userEmail && (
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: "#6B7280",
-                  marginTop: 4,
-                }}
-                numberOfLines={1}
-              >
-                {userEmail}
-              </Text>
-            )}
           </View>
 
           {/* Menu Items */}
-          <View style={{ paddingVertical: 4 }}>
+          <View style={{ paddingVertical: 8 }}>
             {/* Profile and Settings */}
             <TouchableOpacity
               onPress={handleProfileAndSettings}
@@ -244,7 +217,7 @@ export default function UserProfileDropdown({
                 flexDirection: "row",
                 alignItems: "center",
                 paddingHorizontal: 16,
-                paddingVertical: 12,
+                paddingVertical: 10,
                 ...(Platform.OS === "web" &&
                   ({
                     cursor: "pointer",
@@ -261,36 +234,19 @@ export default function UserProfileDropdown({
                   },
                 } as any))}
             >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: Colors.primary + "15",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 12,
-                }}
-              >
-                <UserIcon size={18} color={Colors.primary} />
+              <View style={{ marginRight: 12 }}>
+                <UserIcon size={18} color="#4B5563" />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}
-                >
-                  Tài khoản & Cài đặt
-                </Text>
-                <Text style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>
-                  Thông tin cá nhân, mật khẩu
-                </Text>
-              </View>
+              <Text style={{ fontSize: 14, fontWeight: "500", color: "#374151" }}>
+                Tài khoản & Cài đặt
+              </Text>
             </TouchableOpacity>
 
             {/* Divider */}
             <View
               style={{
                 height: 1,
-                backgroundColor: "#E5E7EB",
+                backgroundColor: "#F3F4F6",
                 marginVertical: 4,
               }}
             />
@@ -302,7 +258,7 @@ export default function UserProfileDropdown({
                 flexDirection: "row",
                 alignItems: "center",
                 paddingHorizontal: 16,
-                paddingVertical: 12,
+                paddingVertical: 10,
                 ...(Platform.OS === "web" &&
                   ({
                     cursor: "pointer",
@@ -319,33 +275,12 @@ export default function UserProfileDropdown({
                   },
                 } as any))}
             >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: "#FEE2E2",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 12,
-                }}
-              >
+              <View style={{ marginRight: 12 }}>
                 <LogoutIcon size={18} color={Colors.error} />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "600",
-                    color: Colors.error,
-                  }}
-                >
-                  Đăng xuất
-                </Text>
-                <Text style={{ fontSize: 12, color: "#FCA5A5", marginTop: 2 }}>
-                  Thoát khỏi tài khoản
-                </Text>
-              </View>
+              <Text style={{ fontSize: 14, fontWeight: "500", color: Colors.error }}>
+                Đăng xuất
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

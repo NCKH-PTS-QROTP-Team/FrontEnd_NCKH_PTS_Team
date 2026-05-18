@@ -1,194 +1,288 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, Platform, useWindowDimensions } from 'react-native';
-import { Colors } from '../constants/colors';
+import { View, Text, Animated, Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
-interface ToastProps {
-  visible: boolean;
+interface ToastItemProps {
+  id: string;
   message: string;
-  type?: ToastType;
-  duration?: number;
-  onHide?: () => void;
+  title?: string;
+  type: ToastType;
+  duration: number;
+  onHide: (id: string) => void;
+  index: number;
 }
 
-export default function Toast({
-  visible,
-  message,
-  type = 'success',
-  duration = 3000,
-  onHide,
-}: ToastProps) {
-  const { width, height } = useWindowDimensions();
+const TOAST_CONFIG = {
+  success: {
+    accent: '#059669',
+    bg: '#f0fdf4',
+    border: '#bbf7d0',
+    icon: '✓',
+    iconBg: '#dcfce7',
+    iconColor: '#059669',
+    textColor: '#166534',
+    titleColor: '#14532d',
+  },
+  error: {
+    accent: '#dc2626',
+    bg: '#fef2f2',
+    border: '#fecaca',
+    icon: '✕',
+    iconBg: '#fee2e2',
+    iconColor: '#dc2626',
+    textColor: '#991b1b',
+    titleColor: '#7f1d1d',
+  },
+  warning: {
+    accent: '#d97706',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    icon: '!',
+    iconBg: '#fef3c7',
+    iconColor: '#d97706',
+    textColor: '#92400e',
+    titleColor: '#78350f',
+  },
+  info: {
+    accent: '#2563eb',
+    bg: '#eff6ff',
+    border: '#bfdbfe',
+    icon: 'i',
+    iconBg: '#dbeafe',
+    iconColor: '#2563eb',
+    textColor: '#1e40af',
+    titleColor: '#1e3a8a',
+  },
+};
+
+function ToastItem({ id, message, title, type, duration, onHide, index }: ToastItemProps) {
+  const { width } = useWindowDimensions();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current; // Bắt đầu từ dưới (50px)
-  
-  // Responsive: Desktop/Tablet/Mobile
+  const slideAnim = useRef(new Animated.Value(-20)).current;
+  const progressAnim = useRef(new Animated.Value(1)).current;
+
   const isDesktop = width >= 1024;
-  const isTablet = width >= 768 && width < 1024;
+  const isMobile = width < 768;
+  const config = TOAST_CONFIG[type];
 
   useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      Animated.spring(slideAnim, {
-        toValue: 0, // Slide từ dưới lên (50 -> 0)
-        tension: 65,
-        friction: 10,
-        useNativeDriver: true,
-      }),
-      ]).start();
-
-      const timer = setTimeout(() => {
-        onHide?.();
-      }, duration);
-
-      return () => clearTimeout(timer);
-    }
-  }, [visible, duration, onHide]);
-
-  const handleHide = () => {
+    // Slide in
     Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 50, // Slide xuống dưới khi hide (0 -> 50)
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onHide?.();
-    });
+      Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, tension: 80, friction: 12, useNativeDriver: true }),
+    ]).start();
+
+    // Progress bar countdown
+    Animated.timing(progressAnim, {
+      toValue: 0,
+      duration: duration,
+      useNativeDriver: false,
+    }).start();
+
+    const timer = setTimeout(() => dismiss(), duration);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const dismiss = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: -20, duration: 200, useNativeDriver: true }),
+    ]).start(() => onHide(id));
   };
 
-  const hideToast = handleHide;
-
-  if (!visible) return null;
-
-  const getToastStyle = () => {
-    switch (type) {
-      case 'success':
-        return {
-          backgroundColor: Colors.success,
-          icon: '✓',
-        };
-      case 'error':
-        return {
-          backgroundColor: Colors.error,
-          icon: '✕',
-        };
-      case 'warning':
-        return {
-          backgroundColor: Colors.warning,
-          icon: '⚠',
-        };
-      case 'info':
-        return {
-          backgroundColor: Colors.primary,
-          icon: 'ℹ',
-        };
-    }
-  };
-
-  const toastStyle = getToastStyle();
-
-  // Tính toán vị trí responsive
-  const getToastPosition = () => {
-    if (Platform.OS === 'web') {
-      // Web: Hiển thị ở góc trên bên phải, xuống dưới một chút
-      return {
-        top: isDesktop ? 80 : isTablet ? 70 : 60,
-        right: isDesktop ? 32 : isTablet ? 24 : 16,
-        left: undefined,
-        maxWidth: isDesktop ? 480 : isTablet ? 420 : width - 32,
-      };
-    } else {
-      // Mobile: Hiển thị ở trên cùng, xuống dưới một chút
-      return {
-        top: 80, // Xuống dưới một chút so với trước (từ 60 -> 80)
-        right: 16,
-        left: 16,
-        maxWidth: width - 32,
-      };
-    }
-  };
-
-  const position = getToastPosition();
+  const toastWidth = isMobile ? width - 32 : isDesktop ? 380 : 340;
 
   return (
     <Animated.View
       style={[
         {
-          position: 'absolute',
-          ...position,
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }],
-          zIndex: 9999,
+          marginBottom: 8,
+          width: toastWidth,
+          zIndex: 10000 - index,
         },
         Platform.OS === 'web' && {
-          position: 'fixed' as any,
+          // @ts-ignore
+          pointerEvents: 'auto',
         },
       ]}
     >
       <View
-        className="rounded-lg flex-row items-start"
         style={{
-          backgroundColor: toastStyle.backgroundColor,
-          padding: isDesktop ? 16 : 14,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 8,
-          minWidth: isDesktop ? 320 : 280,
+          backgroundColor: config.bg,
+          borderWidth: 1,
+          borderColor: config.border,
+          borderLeftWidth: 4,
+          borderLeftColor: config.accent,
+          borderRadius: 10,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          ...(Platform.OS === 'web'
+            ? { boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }
+            : {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 8,
+                elevation: 4,
+              }),
         }}
       >
+        {/* Icon */}
         <View
           style={{
-            width: isDesktop ? 32 : 28,
-            height: isDesktop ? 32 : 28,
-            borderRadius: isDesktop ? 16 : 14,
-            backgroundColor: 'rgba(255, 255, 255, 0.3)',
+            width: 28,
+            height: 28,
+            borderRadius: 14,
+            backgroundColor: config.iconBg,
             alignItems: 'center',
             justifyContent: 'center',
-            marginRight: 12,
-            marginTop: 2, // Align với text đầu tiên
+            marginRight: 10,
+            marginTop: 1,
           }}
         >
-          <Text style={{ 
-            color: Colors.white, 
-            fontSize: isDesktop ? 18 : 16, 
-            fontWeight: 'bold' 
-          }}>
-            {toastStyle.icon}
+          <Text style={{ color: config.iconColor, fontSize: 14, fontWeight: '800' }}>
+            {config.icon}
           </Text>
         </View>
-        <Text
-          className="flex-1"
-          style={{ 
-            color: Colors.white, 
-            fontSize: isDesktop ? 15 : 14,
-            lineHeight: isDesktop ? 22 : 20,
-            fontWeight: '500',
-            // Hỗ trợ multi-line
-            flexShrink: 1,
+
+        {/* Content */}
+        <View style={{ flex: 1, marginRight: 8 }}>
+          {title && (
+            <Text
+              style={{
+                color: config.titleColor,
+                fontSize: 14,
+                fontWeight: '700',
+                marginBottom: 2,
+              }}
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+          )}
+          <Text
+            style={{
+              color: config.textColor,
+              fontSize: 13,
+              lineHeight: 18,
+              fontWeight: '500',
+            }}
+            numberOfLines={3}
+          >
+            {message}
+          </Text>
+        </View>
+
+        {/* Close Button */}
+        <TouchableOpacity
+          onPress={dismiss}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: 11,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: 1,
+            ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
           }}
         >
-          {message}
-        </Text>
+          <Text style={{ color: config.textColor, fontSize: 15, fontWeight: '600', opacity: 0.5 }}>
+            ×
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Progress Bar */}
+      <View
+        style={{
+          height: 2.5,
+          backgroundColor: config.border,
+          borderBottomLeftRadius: 10,
+          borderBottomRightRadius: 10,
+          marginTop: -1,
+          marginHorizontal: 1,
+          overflow: 'hidden',
+        }}
+      >
+        <Animated.View
+          style={{
+            height: '100%',
+            backgroundColor: config.accent,
+            borderRadius: 2,
+            width: progressAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['0%', '100%'],
+            }),
+          }}
+        />
       </View>
     </Animated.View>
   );
 }
 
-// Toast Manager Hook
+// ===================== Toast Container (rendered by ToastProvider) =====================
+export interface ToastData {
+  id: string;
+  message: string;
+  title?: string;
+  type: ToastType;
+  duration: number;
+}
+
+interface ToastContainerProps {
+  toasts: ToastData[];
+  onDismiss: (id: string) => void;
+}
+
+export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+
+  if (toasts.length === 0) return null;
+
+  return (
+    <View
+      style={[
+        {
+          position: 'absolute',
+          zIndex: 99999,
+        },
+        Platform.OS === 'web' && {
+          position: 'fixed' as any,
+        },
+        isMobile
+          ? { top: 54, left: 16, right: 16, alignItems: 'center' }
+          : { top: 76, right: 24 },
+      ]}
+      // @ts-ignore
+      pointerEvents="box-none"
+    >
+      {toasts.map((t, index) => (
+        <ToastItem
+          key={t.id}
+          id={t.id}
+          message={t.message}
+          title={t.title}
+          type={t.type}
+          duration={t.duration}
+          onHide={onDismiss}
+          index={index}
+        />
+      ))}
+    </View>
+  );
+}
+
+// ===================== Legacy exports (backward compat during migration) =====================
+export type { ToastItemProps };
+export default ToastItem;
+
 export const useToast = () => {
   const [toast, setToast] = React.useState<{
     visible: boolean;
@@ -208,9 +302,5 @@ export const useToast = () => {
     setToast((prev) => ({ ...prev, visible: false }));
   };
 
-  return {
-    toast,
-    showToast,
-    hideToast,
-  };
+  return { toast, showToast, hideToast };
 };

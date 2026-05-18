@@ -15,12 +15,12 @@ import {
   TouchableWithoutFeedback,
   TextInput,
   Modal,
-  Alert,
   ActivityIndicator,
   RefreshControl,
   Animated,
   Dimensions,
 } from "react-native";
+import { useToast } from "@/components/ToastProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { scheduleService } from "@/apis/services/schedule.service";
 import { ScheduleResponse } from "@/apis/types/schedule.types";
@@ -630,6 +630,7 @@ export default function SchedulesManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDepartment, setFilterDepartment] = useState<string | null>(null);
   const [filterSubject, setFilterSubject] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   // Form
   const todayISO = new Date().toISOString().slice(0, 10);
@@ -809,7 +810,7 @@ export default function SchedulesManagement() {
       if (formMode === "add") {
         const created = await scheduleService.createSchedule(payload);
         setSchedules((p) => [created, ...p]);
-        Alert.alert("Thành công", "Đã tạo lịch học mới!");
+        showToast("Đã tạo lịch học mới!", "success");
       } else {
         if (!editingId) return;
         const updated = await scheduleService.updateSchedule(
@@ -819,11 +820,11 @@ export default function SchedulesManagement() {
         setSchedules((p) =>
           p.map((sc) => (sc.id === updated.id ? updated : sc)),
         );
-        Alert.alert("Thành công", "Đã cập nhật lịch học!");
+        showToast("Đã cập nhật lịch học!", "success");
       }
       setFormVisible(false);
     } catch (err: any) {
-      Alert.alert("Lỗi", err?.message || "Không thể lưu lịch học");
+      showToast(err?.message || "Không thể lưu lịch học", "error");
       throw err; // let modal know submit failed
     }
   };
