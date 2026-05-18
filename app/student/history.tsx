@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -7,10 +7,13 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Platform,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { PieChart, BarChart, LineChart } from "react-native-chart-kit";
 import { AttendanceStatusTag } from "@/components/AttendanceStatusTag";
 import { attendanceService, semesterService, scheduleService, authService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
@@ -21,7 +24,6 @@ import {
 } from "@/apis/types/attendance.types";
 import type { Semester } from "@/apis/services/semester.service";
 import { useToast } from "@/components/ToastProvider";
-import { LinearGradient } from "expo-linear-gradient";
 import { DropdownPicker } from "@/components/DropdownPicker";
 import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 import { useRouter } from "expo-router";
@@ -46,8 +48,26 @@ export default function HistoryScreen() {
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
 
-  const contentMaxWidth = isDesktop ? 1024 : isTablet ? 800 : "100%";
-  const paddingHorizontal = isDesktop ? 32 : isTablet ? 24 : 16;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: Platform.OS !== 'web',
+      })
+    ]).start();
+  }, []);
+
+  const contentMaxWidth = isDesktop ? "100%" : isTablet ? 800 : "100%";
+  const paddingHorizontal = isDesktop ? 40 : isTablet ? 24 : 16;
 
   // Extract unique subjects (from both enrollment and records)
   const subjectOptions = useMemo(() => {
@@ -198,6 +218,109 @@ export default function HistoryScreen() {
   const totalPages = Math.ceil(filteredRecords.length / PAGE_SIZE);
   const paginatedRecords = filteredRecords.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  const pieData = [
+    {
+      name: "Có mặt",
+      population: stats.present,
+      color: "#34d399",
+      legendFontColor: "#475569",
+      legendFontSize: 12
+    },
+    {
+      name: "Đi muộn",
+      population: stats.late,
+      color: "#fbbf24",
+      legendFontColor: "#475569",
+      legendFontSize: 12
+    },
+    {
+      name: "Vắng",
+      population: stats.absent,
+      color: "#fb7185",
+      legendFontColor: "#475569",
+      legendFontSize: 12
+    }
+  ].filter(item => item.population > 0);
+
+  // Default empty pie to show something if no data
+  if (pieData.length === 0) {
+    pieData.push({
+      name: "Trống",
+      population: 1,
+      color: "#e2e8f0",
+      legendFontColor: "#94a3b8",
+      legendFontSize: 12
+    });
+  }
+
+  // Bar Chart Data & Warning Subjects
+  const subjectMap: Record<string, { present: number, total: number }> = {};
+  contextRecords.forEach((r) => {
+    if (r.subjectName) {
+       if (!subjectMap[r.subjectName]) subjectMap[r.subjectName] = { present: 0, total: 0 };
+       subjectMap[r.subjectName].total += 1;
+       if (r.status === AttendanceStatus.PRESENT || r.status === AttendanceStatus.LATE) {
+          subjectMap[r.subjectName].present += 1;
+       }
+    }
+  });
+
+  let barChartLabels: string[] = [];
+  let barChartValues: number[] = [];
+  let warningSubjects: { name: string, rate: number }[] = [];
+
+  const subjectEntries = Object.entries(subjectMap).sort((a, b) => b[1].present - a[1].present);
+  
+  if (subjectEntries.length > 0) {
+    subjectEntries.slice(0, 5).forEach(([name, data]) => {
+       let shortName = name.split("-")[0].trim();
+       shortName = shortName.split(" ")[0] + (shortName.split(" ").length > 1 ? "..." : "");
+       if (shortName.length > 10) shortName = shortName.substring(0, 10) + '...';
+       
+       barChartLabels.push(shortName);
+       barChartValues.push(data.present);
+    });
+
+    subjectEntries.forEach(([name, data]) => {
+      const rate = data.total > 0 ? Math.round((data.present / data.total) * 100) : 0;
+      if (rate <= 70 && data.total >= 3) {
+        warningSubjects.push({ name, rate });
+      }
+    });
+  } else {
+     barChartLabels = ["Chưa có"];
+     barChartValues = [0];
+  }
+
+  const barChartData = { labels: barChartLabels, data: barChartValues };
+
+  // Data cho Line Chart (Điểm danh theo tháng)
+  const monthMap: Record<string, number> = {};
+  contextRecords.forEach((r) => {
+    if (r.status === AttendanceStatus.PRESENT || r.status === AttendanceStatus.LATE) {
+       const dateStr = r.attendedAt || r.createdAt;
+       if (dateStr) {
+          const date = new Date(dateStr);
+          const monthStr = `Th${date.getMonth() + 1}`;
+          monthMap[monthStr] = (monthMap[monthStr] || 0) + 1;
+       }
+    }
+  });
+
+  let lineLabels = Object.keys(monthMap).sort((a, b) => parseInt(a.slice(2)) - parseInt(b.slice(2)));
+  let lineValues = lineLabels.map((m) => monthMap[m]);
+  
+  if (lineLabels.length === 0) {
+     lineLabels = ["Chưa có"];
+     lineValues = [0];
+  }
+  const lineChartData = { labels: lineLabels, datasets: [{ data: lineValues }] };
+
+  // Responsive calculations for Desktop Chart Grid
+  // Desktop has Left flex:1, Right flex:2 with gap 32. Right is approx (width - padding*2 - 32) * 2 / 3
+  const rightColWidth = isDesktop ? (width - (paddingHorizontal * 2) - 32) * 0.65 : width - paddingHorizontal * 2;
+  const gridItemWidth = isDesktop ? (rightColWidth - 20) / 2 : rightColWidth; // 20 is gap between items
+
   return (
     <View style={{ flex: 1, backgroundColor: "#f8fafc", ...(Platform.OS === "web" ? { height: "100vh" as any, overflow: "hidden" as any } : {}) }}>
       <StatusBar style="light" />
@@ -218,8 +341,6 @@ export default function HistoryScreen() {
               shadowOpacity: 0.3,
               shadowRadius: 12,
               elevation: 8,
-              borderBottomLeftRadius: 24,
-              borderBottomRightRadius: 24,
             }}
           >
             {/* Title row */}
@@ -247,7 +368,7 @@ export default function HistoryScreen() {
                 <View style={{
                   height: "100%",
                   width: `${Math.min(presentPercent, 100)}%`,
-                  backgroundColor: presentPercent >= 90 ? "#34d399" : presentPercent >= 75 ? "#fbbf24" : "#f87171",
+                  backgroundColor: presentPercent >= 90 ? "#34d399" : presentPercent >= 75 ? "#fbbf24" : "#fb7185",
                   borderRadius: 3,
                 }} />
               </View>
@@ -259,8 +380,8 @@ export default function HistoryScreen() {
         <View style={{ paddingHorizontal: paddingHorizontal, paddingTop: isMobile ? 16 : 32, paddingBottom: isMobile ? 100 : 48 }}>
           <View style={{ maxWidth: contentMaxWidth, width: "100%", alignSelf: "center", flexDirection: isDesktop ? "row" : "column", gap: 32 }}>
             
-            {/* ── LEFT COLUMN ── */}
-            <View style={{ flex: isDesktop ? 2 : undefined }}>
+            {/* ── LEFT COLUMN (List & Filters) ── */}
+            <View style={{ flex: isDesktop ? 1 : undefined, minWidth: isDesktop ? 360 : undefined }}>
               
               {/* DESKTOP TITLE */}
               {isDesktop && (
@@ -283,9 +404,9 @@ export default function HistoryScreen() {
             {!isDesktop && (
               <View style={{ flexDirection: "row", backgroundColor: "#fff", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#e5e7eb", marginBottom: 24, ...getWebShadow("sm") }}>
                 {[
-                  { label: "Có mặt", value: String(stats.present), icon: "checkmark-circle", color: "#10b981" },
-                  { label: "Muộn", value: String(stats.late), icon: "time", color: "#f59e0b" },
-                  { label: "Vắng", value: String(stats.absent), icon: "close-circle", color: "#ef4444" },
+                  { label: "Có mặt", value: String(stats.present), icon: "checkmark-circle", color: "#34d399" },
+                  { label: "Muộn", value: String(stats.late), icon: "time", color: "#fbbf24" },
+                  { label: "Vắng", value: String(stats.absent), icon: "close-circle", color: "#fb7185" },
                 ].map((item, idx) => (
                   <View key={idx} style={{ flex: 1, alignItems: "center", borderLeftWidth: idx > 0 ? 1 : 0, borderLeftColor: "#f1f5f9", paddingLeft: idx > 0 ? 16 : 0 }}>
                     <Ionicons name={item.icon as any} size={20} color={item.color} style={{ marginBottom: 4 }} />
@@ -388,7 +509,7 @@ export default function HistoryScreen() {
                         ...getWebShadow("sm"),
                       }}
                     >
-                      <View style={{ width: 4, height: "100%", backgroundColor: uiStatus === "present" ? "#10b981" : uiStatus === "late" ? "#f59e0b" : "#ef4444", borderRadius: 4, marginRight: 16 }} />
+                      <View style={{ width: 4, height: "100%", backgroundColor: uiStatus === "present" ? "#34d399" : uiStatus === "late" ? "#fbbf24" : "#fb7185", borderRadius: 4, marginRight: 16 }} />
                       
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
@@ -449,18 +570,153 @@ export default function HistoryScreen() {
                     </TouchableOpacity>
                   </View>
                 )}
+
               </View>
+            )}
+
+            {/* ── MOBILE CHARTS AT THE BOTTOM ── */}
+            {!isDesktop && (
+              <Animated.View style={{ gap: 24, marginTop: 32, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+                {/* Line Chart */}
+                <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#e5e7eb", ...getWebShadow("sm") }}>
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b", marginBottom: 8 }}>
+                    Tiến độ điểm danh theo tháng
+                  </Text>
+                  <View style={{ marginLeft: -20, alignItems: "center" }}>
+                    <LineChart
+                      data={lineChartData}
+                      width={width - (paddingHorizontal * 2) - 16}
+                      height={200}
+                      yAxisLabel=""
+                      yAxisSuffix=""
+                      chartConfig={{
+                        backgroundColor: "#ffffff",
+                        backgroundGradientFrom: "#ffffff",
+                        backgroundGradientTo: "#ffffff",
+                        decimalPlaces: 0,
+                        color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
+                        labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                        style: { borderRadius: 16 },
+                        propsForDots: { r: "4", strokeWidth: "2", stroke: "#8b5cf6" },
+                      }}
+                      bezier
+                      style={{ marginVertical: 8, borderRadius: 16 }}
+                    />
+                  </View>
+                </View>
+
+                {/* Pie Chart */}
+                <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#e5e7eb", ...getWebShadow("sm"), alignItems: "center" }}>
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b", marginBottom: 8, alignSelf: "flex-start" }}>
+                    Phân bố trạng thái
+                  </Text>
+                  <PieChart
+                    data={pieData}
+                    width={width - (paddingHorizontal * 2) - 32}
+                    height={140}
+                    chartConfig={{
+                      backgroundColor: "#ffffff",
+                      backgroundGradientFrom: "#ffffff",
+                      backgroundGradientTo: "#ffffff",
+                      color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                    }}
+                    accessor={"population"}
+                    backgroundColor={"transparent"}
+                    paddingLeft={"0"}
+                    absolute
+                  />
+                </View>
+
+                {/* Bar Chart */}
+                <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#e5e7eb", ...getWebShadow("sm"), alignItems: "center" }}>
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b", marginBottom: 8, alignSelf: "flex-start" }}>
+                    Tần suất điểm danh (Top 5)
+                  </Text>
+                  <View style={{ marginLeft: -20 }}>
+                    <BarChart
+                      data={{
+                        labels: barChartData.labels,
+                        datasets: [{ data: barChartData.data }]
+                      }}
+                      width={width - (paddingHorizontal * 2) - 16}
+                      height={200}
+                      yAxisLabel=""
+                      yAxisSuffix=""
+                      fromZero={true}
+                      showValuesOnTopOfBars={true}
+                      chartConfig={{
+                        backgroundColor: "#ffffff",
+                        backgroundGradientFrom: "#ffffff",
+                        backgroundGradientTo: "#ffffff",
+                        decimalPlaces: 0,
+                        color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+                        labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                        style: { borderRadius: 16 },
+                        barPercentage: 0.5,
+                        propsForLabels: { fontSize: 10, fontWeight: "600" }
+                      }}
+                      style={{ marginVertical: 8, borderRadius: 16 }}
+                    />
+                  </View>
+                </View>
+
+                {/* Warning Card */}
+                {warningSubjects.length > 0 && (
+                  <View style={{ backgroundColor: "#fef2f2", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#fca5a5" }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                      <Ionicons name="warning" size={20} color="#ef4444" />
+                      <Text style={{ fontSize: 16, fontWeight: "700", color: "#ef4444" }}>Cảnh báo điểm danh</Text>
+                    </View>
+                    <View style={{ gap: 12 }}>
+                      {warningSubjects.map((subj, idx) => (
+                        <View key={idx} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                          <Text style={{ fontSize: 13, color: "#7f1d1d", fontWeight: "600", flex: 1 }} numberOfLines={1}>{subj.name}</Text>
+                          <Text style={{ fontSize: 13, color: "#ef4444", fontWeight: "800" }}>{subj.rate}%</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </Animated.View>
             )}
 
             </View>
 
             {/* ── RIGHT COLUMN (Desktop ONLY) ── */}
             {isDesktop && (
-              <View style={{ flex: 1 }}>
-                <View style={{ position: "sticky" as any, top: 32, gap: 24 }}>
+              <Animated.View style={{ flex: 2, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 20 }}>
                   
-                  {/* Progress Card */}
-                  <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 20, borderWidth: 1, borderColor: "#e5e7eb", ...getWebShadow("sm") }}>
+                  {/* Line Chart (100% width) */}
+                  <View style={{ width: "100%", backgroundColor: "#fff", borderRadius: 16, padding: 20, borderWidth: 1, borderColor: "#e5e7eb", ...getWebShadow("sm") }}>
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b", marginBottom: 16 }}>
+                      Tiến độ điểm danh theo tháng
+                    </Text>
+                    <View style={{ marginLeft: -20, alignItems: "center" }}>
+                      <LineChart
+                        data={lineChartData}
+                        width={rightColWidth - 8}
+                        height={240}
+                        yAxisLabel=""
+                        yAxisSuffix=""
+                        chartConfig={{
+                          backgroundColor: "#ffffff",
+                          backgroundGradientFrom: "#ffffff",
+                          backgroundGradientTo: "#ffffff",
+                          decimalPlaces: 0,
+                          color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
+                          labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                          style: { borderRadius: 16 },
+                          propsForDots: { r: "4", strokeWidth: "2", stroke: "#8b5cf6" },
+                        }}
+                        bezier
+                        style={{ marginVertical: 8, borderRadius: 16 }}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Progress Card (48%) */}
+                  <View style={{ width: gridItemWidth, backgroundColor: "#fff", borderRadius: 16, padding: 20, borderWidth: 1, borderColor: "#e5e7eb", ...getWebShadow("sm") }}>
                     <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b", marginBottom: 16 }}>
                       Tiến độ đi học
                     </Text>
@@ -468,26 +724,29 @@ export default function HistoryScreen() {
                       <Text style={{ fontSize: 14, fontWeight: "600", color: "#64748b" }}>Tỷ lệ hiện tại</Text>
                       <Text style={{ fontSize: 14, fontWeight: "800", color: "#1e293b" }}>{presentPercent}%</Text>
                     </View>
-                    <View style={{ height: 8, backgroundColor: "#f1f5f9", borderRadius: 4, overflow: "hidden" }}>
+                    <View style={{ height: 8, backgroundColor: "#f1f5f9", borderRadius: 4, overflow: "hidden", marginBottom: 16 }}>
                       <View style={{
                         height: "100%",
                         width: `${Math.min(presentPercent, 100)}%`,
-                        backgroundColor: presentPercent >= 90 ? "#10b981" : presentPercent >= 75 ? "#f59e0b" : "#ef4444",
+                        backgroundColor: presentPercent >= 90 ? "#34d399" : presentPercent >= 75 ? "#fbbf24" : "#fb7185",
                         borderRadius: 4,
                       }} />
                     </View>
+                    <Text style={{ fontSize: 13, color: "#64748b", lineHeight: 20 }}>
+                      Đã hoàn thành {stats.present} trên tổng số {stats.total} buổi học được ghi nhận.
+                    </Text>
                   </View>
 
-                  {/* Stats Grid Card */}
-                  <View style={{ backgroundColor: "#fff", borderRadius: 16, padding: 20, borderWidth: 1, borderColor: "#e5e7eb", ...getWebShadow("sm") }}>
+                  {/* Stats Grid Card (48%) */}
+                  <View style={{ width: gridItemWidth, backgroundColor: "#fff", borderRadius: 16, padding: 20, borderWidth: 1, borderColor: "#e5e7eb", ...getWebShadow("sm") }}>
                     <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b", marginBottom: 16 }}>
                       Thống kê tổng quan
                     </Text>
                     <View style={{ gap: 16 }}>
                       {[
-                        { label: "Có mặt", value: String(stats.present), icon: "checkmark-circle", color: "#10b981", bgColor: "#d1fae5" },
-                        { label: "Đi muộn", value: String(stats.late), icon: "time", color: "#f59e0b", bgColor: "#fef3c7" },
-                        { label: "Vắng mặt", value: String(stats.absent), icon: "close-circle", color: "#ef4444", bgColor: "#fee2e2" },
+                        { label: "Có mặt", value: String(stats.present), icon: "checkmark-circle", color: "#34d399", bgColor: "#ecfdf5" },
+                        { label: "Đi muộn", value: String(stats.late), icon: "time", color: "#fbbf24", bgColor: "#fffbeb" },
+                        { label: "Vắng mặt", value: String(stats.absent), icon: "close-circle", color: "#fb7185", bgColor: "#fff1f2" },
                       ].map((item, idx) => (
                         <View key={idx} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: idx < 2 ? 16 : 0, borderBottomWidth: idx < 2 ? 1 : 0, borderBottomColor: "#f1f5f9" }}>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
@@ -502,8 +761,87 @@ export default function HistoryScreen() {
                     </View>
                   </View>
 
+                  {/* Pie Chart Card (48%) */}
+                  <View style={{ width: gridItemWidth, backgroundColor: "#fff", borderRadius: 16, padding: 20, borderWidth: 1, borderColor: "#e5e7eb", ...getWebShadow("sm") }}>
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b", marginBottom: 16 }}>
+                      Phân bố trạng thái
+                    </Text>
+                    <View style={{ alignItems: "center" }}>
+                      <PieChart
+                        data={pieData}
+                        width={gridItemWidth - 40}
+                        height={160}
+                        chartConfig={{
+                          backgroundColor: "#ffffff",
+                          backgroundGradientFrom: "#ffffff",
+                          backgroundGradientTo: "#ffffff",
+                          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                        }}
+                        accessor={"population"}
+                        backgroundColor={"transparent"}
+                        paddingLeft={"15"}
+                        absolute
+                      />
+                    </View>
+                  </View>
+
+                  {/* Bar Chart Card (48%) */}
+                  <View style={{ width: gridItemWidth, backgroundColor: "#fff", borderRadius: 16, padding: 20, borderWidth: 1, borderColor: "#e5e7eb", ...getWebShadow("sm") }}>
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b", marginBottom: 16 }}>
+                      Tần suất điểm danh (Top 5)
+                    </Text>
+                    <View style={{ alignItems: "center", marginLeft: -20 }}>
+                      <BarChart
+                        data={{
+                          labels: barChartData.labels,
+                          datasets: [{ data: barChartData.data }]
+                        }}
+                        width={gridItemWidth}
+                        height={200}
+                        yAxisLabel=""
+                        yAxisSuffix=""
+                        fromZero={true}
+                        showValuesOnTopOfBars={true}
+                        chartConfig={{
+                          backgroundColor: "#ffffff",
+                          backgroundGradientFrom: "#ffffff",
+                          backgroundGradientTo: "#ffffff",
+                          decimalPlaces: 0,
+                          color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+                          labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                          style: { borderRadius: 16 },
+                          barPercentage: 0.5,
+                          propsForLabels: { fontSize: 10, fontWeight: "600" }
+                        }}
+                        style={{ marginVertical: 8, borderRadius: 16 }}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Warning Card (48%) */}
+                  <View style={{ width: gridItemWidth, backgroundColor: warningSubjects.length > 0 ? "#fef2f2" : "#fff", borderRadius: 16, padding: 20, borderWidth: 1, borderColor: warningSubjects.length > 0 ? "#fca5a5" : "#e5e7eb", ...getWebShadow("sm") }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                      <Ionicons name={warningSubjects.length > 0 ? "warning" : "checkmark-circle"} size={20} color={warningSubjects.length > 0 ? "#ef4444" : "#10b981"} />
+                      <Text style={{ fontSize: 16, fontWeight: "700", color: warningSubjects.length > 0 ? "#ef4444" : "#1e293b" }}>Cảnh báo điểm danh</Text>
+                    </View>
+                    <View style={{ gap: 12 }}>
+                      {warningSubjects.length > 0 ? (
+                        warningSubjects.map((subj, idx) => (
+                          <View key={idx} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingBottom: idx < warningSubjects.length - 1 ? 12 : 0, borderBottomWidth: idx < warningSubjects.length - 1 ? 1 : 0, borderBottomColor: "#fecaca" }}>
+                            <Text style={{ fontSize: 14, color: "#7f1d1d", fontWeight: "600", flex: 1 }} numberOfLines={2}>{subj.name}</Text>
+                            <Text style={{ fontSize: 16, color: "#ef4444", fontWeight: "800" }}>{subj.rate}%</Text>
+                          </View>
+                        ))
+                      ) : (
+                        <Text style={{ fontSize: 13, color: "#64748b", lineHeight: 20 }}>
+                          Không có môn học nào có tỷ lệ điểm danh dưới 70%. Chúc mừng bạn đã duy trì tốt việc lên lớp!
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+
                 </View>
-              </View>
+              </Animated.View>
             )}
 
           </View>

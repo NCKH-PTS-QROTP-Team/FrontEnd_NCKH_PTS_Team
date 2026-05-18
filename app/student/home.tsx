@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BookIcon, SchoolIcon } from "@/components/Icons";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle } from "react-native-svg";
+import { BarChart } from "react-native-chart-kit";
 import { scheduleService, attendanceService, authService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import { useToast } from "@/components/ToastProvider";
@@ -55,6 +56,7 @@ export default function StudentHomeScreen() {
   });
   const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0);
   const [unreadNotifs, setUnreadNotifs] = useState(3); // demo – 3 thông báo chưa đọc
+  const [chartData, setChartData] = useState<{labels: string[], data: number[]}>({ labels: ["Chưa có"], data: [0] });
 
   // Load data từ backend
   useEffect(() => {
@@ -204,6 +206,36 @@ export default function StudentHomeScreen() {
         absent,
         attendanceRate,
       });
+
+      // ── Tính dữ liệu biểu đồ BarChart (Số buổi có mặt theo môn học) ──
+      const subjectMap: Record<string, number> = {};
+      allRecords.forEach((r: any) => {
+        if (r.subjectName && (r.status === "PRESENT" || r.status === "LATE")) {
+           subjectMap[r.subjectName] = (subjectMap[r.subjectName] || 0) + 1;
+        }
+      });
+      
+      let chartLabels: string[] = [];
+      let chartValues: number[] = [];
+      
+      const entries = Object.entries(subjectMap).sort((a, b) => b[1] - a[1]).slice(0, 5); // Lấy top 5 môn học
+      
+      if (entries.length > 0) {
+        entries.forEach(([name, count]) => {
+           let shortName = name.split("-")[0].trim(); // Xử lý nếu tên có dấu "-"
+           shortName = shortName.split(" ")[0] + (shortName.split(" ").length > 1 ? "..." : ""); // Lấy chữ đầu
+           if (shortName.length > 10) shortName = shortName.substring(0, 10) + '...';
+           
+           chartLabels.push(shortName);
+           chartValues.push(count as number);
+        });
+      } else {
+         chartLabels = ["Chưa có"];
+         chartValues = [0];
+      }
+      
+      setChartData({ labels: chartLabels, data: chartValues });
+
     } catch (error: any) {
       console.error("❌ Error loading dashboard:", error);
       showToast(
@@ -266,8 +298,6 @@ export default function StudentHomeScreen() {
             paddingTop: isDesktop ? 60 : (isMobile ? 48 : 80),
             paddingBottom: isDesktop ? 60 : (isMobile ? 40 : 80),
             paddingHorizontal: padding,
-            borderBottomLeftRadius: isMobile ? 32 : 0,
-            borderBottomRightRadius: isMobile ? 32 : 0,
             minHeight: isDesktop ? 360 : 'auto',
             justifyContent: "center",
           }}
@@ -285,8 +315,8 @@ export default function StudentHomeScreen() {
           >
             {/* ── Left Column: Welcome Text ── */}
             <View style={{ flex: isDesktop ? 1 : undefined, paddingRight: isDesktop ? 40 : 16, width: "100%" }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <View>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                <View style={{ flex: 1 }}>
                   <Text
                     style={{
                       fontSize: isDesktop ? 18 : 15,
@@ -836,6 +866,60 @@ export default function StudentHomeScreen() {
                     <Ionicons name="time-outline" size={16} color="#3b82f6" />
                     <Text style={{ fontSize: 13, fontWeight: "700", color: "#3b82f6" }}>Xem lịch sử điểm danh</Text>
                   </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* ── BAR CHART CARD ── */}
+              <View style={{
+                  backgroundColor: "#fff",
+                  borderRadius: 20,
+                  padding: 24,
+                  borderWidth: 1,
+                  borderColor: "#e5e7eb",
+                  ...getWebShadow("sm"),
+                  gap: 16,
+              }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <View style={{ width: 4, height: 18, backgroundColor: "#3b82f6", borderRadius: 2 }} />
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b" }}>Tần suất điểm danh (Top 5)</Text>
+                </View>
+                <View style={{ alignItems: "center", marginLeft: -20 }}>
+                  <BarChart
+                    data={{
+                      labels: chartData.labels,
+                      datasets: [
+                        {
+                          data: chartData.data,
+                        },
+                      ],
+                    }}
+                    width={isDesktop ? Math.min(1200 * 0.36 - 48, windowWidth * 0.36 - 48) : windowWidth - 48}
+                    height={220}
+                    yAxisLabel=""
+                    yAxisSuffix=""
+                    fromZero={true}
+                    showValuesOnTopOfBars={true}
+                    chartConfig={{
+                      backgroundColor: "#fff",
+                      backgroundGradientFrom: "#fff",
+                      backgroundGradientTo: "#fff",
+                      decimalPlaces: 0,
+                      color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+                      labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                      style: {
+                        borderRadius: 16,
+                      },
+                      barPercentage: 0.5,
+                      propsForLabels: {
+                        fontSize: 10,
+                        fontWeight: "600",
+                      }
+                    }}
+                    style={{
+                      marginVertical: 8,
+                      borderRadius: 16,
+                    }}
+                  />
                 </View>
               </View>
 
