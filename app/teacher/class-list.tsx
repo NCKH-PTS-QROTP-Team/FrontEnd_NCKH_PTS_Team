@@ -35,6 +35,7 @@ import type {
   StudentAttendanceReport,
 } from "@/apis/services/report.service";
 import type { Schedule } from "@/apis/services/schedule.service";
+import type { AttendanceRecordResponse } from "@/apis/types/attendance.types";
 
 interface TeacherClassCard {
   id: string;
@@ -85,7 +86,9 @@ export default function ClassListScreen() {
   const [selectedStudent, setSelectedStudent] =
     useState<StudentAttendanceReport | null>(null);
   const [studentHistoryVisible, setStudentHistoryVisible] = useState(false);
-  const [studentRecords, setStudentRecords] = useState<any[]>([]);
+  const [studentRecords, setStudentRecords] = useState<
+    AttendanceRecordResponse[]
+  >([]);
   const [studentRecordsLoading, setStudentRecordsLoading] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
@@ -286,16 +289,29 @@ export default function ClassListScreen() {
   };
 
   const handleStudentPress = async (student: StudentAttendanceReport) => {
+    if (!selectedClass?.id) {
+      showToast("Không xác định được lớp học hiện tại", "error");
+      return;
+    }
+
     setSelectedStudent(student);
     setStudentHistoryVisible(true);
     setStudentRecordsLoading(true);
     try {
       const { attendanceService } = await import("@/apis");
+
       const records = await attendanceService.getRecords({
-        courseId: selectedClass?.id,
+        courseId: selectedClass.id,
         studentId: student.studentId,
       });
-      setStudentRecords(records || []);
+
+      const sorted = [...(records || [])].sort((a, b) => {
+        const ta = new Date(a.attendedAt || a.createdAt || 0).getTime();
+        const tb = new Date(b.attendedAt || b.createdAt || 0).getTime();
+        return tb - ta;
+      });
+
+      setStudentRecords(sorted);
     } catch (error) {
       console.error("Error loading student history:", error);
       showToast("Lỗi khi tải lịch sử điểm danh", "error");

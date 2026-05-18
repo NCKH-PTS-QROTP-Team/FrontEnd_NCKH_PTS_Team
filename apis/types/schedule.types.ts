@@ -35,8 +35,9 @@ export interface ScheduleResponse {
 }
 
 export interface CreateScheduleRequest {
-    classId: string;
+    classId?: string;
         courseId?: string;
+    lecturerId?: string;
     subjectId?: string;
     teacherId?: string;
     scheduleType?: 'CLASS' | 'EXAM';
@@ -57,6 +58,7 @@ export interface CreateScheduleRequest {
 export interface UpdateScheduleRequest {
     classId?: string;
         courseId?: string;
+    lecturerId?: string;
     subjectId?: string;
     teacherId?: string;
     scheduleType?: 'CLASS' | 'EXAM';
