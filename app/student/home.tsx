@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -249,7 +249,7 @@ export default function StudentHomeScreen() {
   const logoNameImage = require("../../assets/logoname.png");
 
   const content = (
-    <View style={{ flex: 1, backgroundColor: "#f8fafc", ...(Platform.OS === "web" ? { height: "calc(100vh - 64px)", overflow: "hidden" } : {}) }}>
+    <View style={{ flex: 1, backgroundColor: "#f8fafc", ...(Platform.OS === "web" ? { height: "100vh" as any, overflow: "hidden" as any } : {}) }}>
       <StatusBar style="light" />
 
       {/* ── Scrollable Content (Wraps everything including Hero Banner) ── */}
@@ -500,495 +500,395 @@ export default function StudentHomeScreen() {
         </LinearGradient>
 
         {/* ── Main Content Area ── */}
-        <View
-          style={{
-            paddingHorizontal: padding,
-            paddingTop: 24,
-            paddingBottom: isMobile ? 100 : 40,
-          }}
-        >
-          <View
-            style={{
-              maxWidth: contentMaxWidth,
-              width: "100%",
-              alignSelf: "center",
-              ...(isDesktop
-                ? {
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  alignItems: "stretch",
-                  justifyContent: "space-between",
-                  gap: 24,
-                }
-                : {
-                  flexDirection: "column",
-                  gap: 24,
-                }),
-            }}
-          >
-            {/* Lịch học hôm nay block */}
-            <View style={{ width: isDesktop ? (Platform.OS === "web" ? "calc(60% - 12px)" : "58%") : "100%" }}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 12,
-                  flexWrap: "wrap",
-                  gap: 12,
-                }}
-              >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, justifyContent: "space-between", width: "100%" }}>
-                  <Text
-                    style={{ fontSize: 16, fontWeight: "700", color: "#1e293b", flexShrink: 0 }}
-                  >
-                    Lịch học hôm nay
-                  </Text>
-                  {/* nút để chuyển sang schedule */}
-                  <TouchableOpacity style={{}}>Xem chi tiết</TouchableOpacity>
-                </View>
-                {!isDesktop && todaySchedules.length > 1 && (
-                  <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", flex: 1, justifyContent: "flex-end" }}>
-                    {todaySchedules.slice(0, 8).map((_, index) => (
-                      <TouchableOpacity
-                        key={index}
-                        onPress={() => setCurrentScheduleIndex(index)}
-                        style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: 4,
-                          backgroundColor:
-                            index === currentScheduleIndex
-                              ? "#3b82f6"
-                              : "#cbd5e1",
-                        }}
-                      />
-                    ))}
-                    {todaySchedules.length > 8 && (
-                      <Text style={{ fontSize: 10, color: "#94a3b8", alignSelf: "center" }}>+{todaySchedules.length - 8}</Text>
-                    )}
-                  </View>
-                )}
-              </View>
-              {todaySchedules.length > 0 ? (
-                isDesktop ? (
-                  <View style={{
-                    backgroundColor: "#FFFFFF",
-                    borderRadius: 20,
-                    borderWidth: 1,
-                    borderColor: "#E5E7EB",
-                    overflow: "hidden",
-                    flex: 1,
-                    ...getWebShadow("sm"),
-                  }}>
-                    <ScrollView style={{ ...(Platform.OS === "web" ? { maxHeight: 500 } : { maxHeight: 500 }) }} showsVerticalScrollIndicator={false}>
-                      {todaySchedules.slice(0, 10).map((sched, idx) => {
-                        const timeParts = sched.time ? sched.time.split('-').map(t => t.trim()) : ["", ""];
-                        const startTime = timeParts[0] || "";
-                        const endTime = timeParts[1] || "";
-                        return (
-                          <TouchableOpacity
-                            key={idx}
-                            onPress={() => router.push("/student/schedule")}
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              paddingVertical: 16,
-                              paddingHorizontal: 20,
-                              borderBottomWidth: idx === Math.min(todaySchedules.length, 10) - 1 ? 0 : 1,
-                              borderColor: '#F3F4F6',
-                              backgroundColor: '#FFFFFF',
-                              ...getWebCursor(),
-                              ...(Platform.OS === "web" ? { transition: "background-color 0.2s" } : {})
-                            }}
-                            onMouseEnter={(e: any) => { e.target.style.backgroundColor = "#F9FAFB"; }}
-                            onMouseLeave={(e: any) => { e.target.style.backgroundColor = "#FFFFFF"; }}
-                            activeOpacity={0.7}
-                          >
-                            {/* Time Block */}
-                            <View style={{ width: 70, paddingRight: 16, marginRight: 16, alignItems: 'center' }}>
-                              <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827" }}>{startTime}</Text>
-                              {endTime ? <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 4, fontWeight: "500" }}>{endTime}</Text> : null}
-                            </View>
+        <View style={{ paddingHorizontal: padding, paddingTop: 24, paddingBottom: isMobile ? 100 : 48 }}>
+          <View style={{
+            maxWidth: contentMaxWidth,
+            width: "100%",
+            alignSelf: "center",
+            flexDirection: isDesktop ? "row" : "column",
+            alignItems: isDesktop ? "flex-start" : "stretch",
+            gap: 24,
+          }}>
 
-                            {/* Info Block */}
-                            <View style={{ flex: 1 }}>
-                              <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827", marginBottom: 6 }} numberOfLines={1}>
-                                {sched.courseName || sched.subjectName || "Không có thông tin"}
-                              </Text>
-                              <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
-                                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                                  <Ionicons name="person-circle-outline" size={16} color="#6B7280" />
-                                  <Text style={{ fontSize: 13, color: "#4B5563", fontWeight: "500" }}>{sched.teacher || sched.teacherName || "N/A"}</Text>
-                                </View>
-                                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                                  <Ionicons name="location-outline" size={16} color="#6B7280" />
-                                  <Text style={{ fontSize: 13, color: "#4B5563", fontWeight: "500" }}>{sched.room || "N/A"}</Text>
-                                </View>
-                              </View>
-                            </View>
+            {/* ───── LEFT COLUMN (desktop 62%, mobile 100%) ───── */}
+            <View style={{ flex: isDesktop ? 62 : undefined, width: isDesktop ? undefined : "100%", gap: 20 }}>
 
-                            {/* Action Icon */}
-                            <View style={{
-                              width: 32, height: 32, borderRadius: 16,
-                              alignItems: 'center', justifyContent: 'center'
-                            }}>
-                              <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </ScrollView>
-                  </View>
-                ) : (
+              {/* ── 1. STATS STRIP ── */}
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                {[
+                  { label: "Tỷ lệ điểm danh", value: `${attendanceStats.attendanceRate}%`, icon: "stats-chart", color: "#3b82f6", bg: "#eff6ff" },
+                  { label: "Có mặt", value: String(attendanceStats.present), icon: "checkmark-circle", color: "#10b981", bg: "#f0fdf4" },
+                  { label: "Vắng", value: String(attendanceStats.absent), icon: "close-circle", color: "#ef4444", bg: "#fef2f2" },
+                ].map((stat) => (
                   <TouchableOpacity
-                    onPress={() => router.push("/student/schedule")}
+                    key={stat.label}
+                    onPress={() => router.push("/student/history")}
+                    activeOpacity={0.8}
                     style={{
-                      backgroundColor: "#FFFFFF",
+                      flex: 1,
+                      backgroundColor: "#fff",
                       borderRadius: 16,
-                      padding: 20,
+                      padding: 16,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 10,
                       borderWidth: 1,
                       borderColor: "#f1f5f9",
-                      ...getWebShadow("md"),
+                      ...getWebShadow("sm"),
                       ...getWebCursor(),
                     }}
-                    activeOpacity={0.7}
                   >
-                    <Text
-                      style={{
-                        fontSize: 18,
-                        fontWeight: "700",
-                        color: "#1e293b",
-                        marginBottom: 4,
-                      }}
-                    >
-                      {todaySchedules[currentScheduleIndex]?.courseName ||
-                        todaySchedules[currentScheduleIndex]?.subjectName ||
-                        "Không có thông tin"}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        color: "#64748b",
-                        marginBottom: 12,
-                      }}
-                    >
-                      Giảng viên:{" "}
-                      {todaySchedules[currentScheduleIndex]?.teacher ||
-                        todaySchedules[currentScheduleIndex]?.teacherName ||
-                        "N/A"}
-                    </Text>
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                      <View
-                        style={{
-                          width: 3,
-                          height: 24,
-                          backgroundColor: "#3b82f6",
-                          borderRadius: 2,
-                          marginRight: 10,
-                        }}
-                      />
-                      <View>
-                        <Text
-                          style={{
-                            fontSize: 15,
-                            fontWeight: "600",
-                            color: "#1e293b",
-                          }}
-                        >
-                          {todaySchedules[currentScheduleIndex]?.time || ""}
-                        </Text>
-                        <Text
-                          style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}
-                        >
-                          Phòng:{" "}
-                          {todaySchedules[currentScheduleIndex]?.room || "N/A"}
-                        </Text>
-                      </View>
+                    <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: stat.bg, alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name={stat.icon as any} size={20} color={stat.color} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: isMobile ? 20 : 22, fontWeight: "800", color: "#111827" }}>{stat.value}</Text>
+                      <Text style={{ fontSize: 11, color: "#6b7280", fontWeight: "500", marginTop: 1 }}>{stat.label}</Text>
                     </View>
                   </TouchableOpacity>
-                )
-              ) : (
-                <View
-                  style={{
-                    backgroundColor: Colors.white,
+                ))}
+              </View>
+
+              {/* ── 2. WARNING BANNER (nếu vắng nhiều) ── */}
+              {attendanceStats.attendanceRate > 0 && attendanceStats.attendanceRate < 70 && (
+                <View style={{
+                  backgroundColor: "#fff7ed",
+                  borderRadius: 14,
+                  padding: 14,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  borderWidth: 1,
+                  borderColor: "#fed7aa",
+                }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#ffedd5", alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name="warning" size={18} color="#f97316" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#c2410c", marginBottom: 2 }}>Tỷ lệ điểm danh thấp</Text>
+                    <Text style={{ fontSize: 12, color: "#ea580c", lineHeight: 18 }}>
+                      Bạn chỉ điểm danh được {attendanceStats.attendanceRate}% — dưới mức 70%. Hãy đi học đều hơn!
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => router.push("/student/history")} style={{ ...getWebCursor() }}>
+                    <Ionicons name="chevron-forward" size={18} color="#f97316" />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* ── 3. LỊCH HỌC HÔM NAY ── */}
+              <View>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <View style={{ width: 4, height: 18, backgroundColor: "#3b82f6", borderRadius: 2 }} />
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b" }}>Lịch học hôm nay</Text>
+                    {loading && <ActivityIndicator size="small" color="#3b82f6" />}
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => router.push("/student/schedule")}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 4, ...getWebCursor() }}
+                  >
+                    <Text style={{ fontSize: 13, color: "#3b82f6", fontWeight: "600" }}>Xem tất cả</Text>
+                    <Ionicons name="chevron-forward" size={14} color="#3b82f6" />
+                  </TouchableOpacity>
+                </View>
+
+                {todaySchedules.length > 0 ? (
+                  <View style={{
+                    backgroundColor: "#fff",
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: "#e5e7eb",
+                    overflow: "hidden",
+                    ...getWebShadow("sm"),
+                  }}>
+                    {todaySchedules.slice(0, isDesktop ? 8 : 5).map((sched, idx) => {
+                      const timeParts = sched.time ? sched.time.split("-").map((t: string) => t.trim()) : ["", ""];
+                      const startTime = timeParts[0] || "";
+                      const endTime = timeParts[1] || "";
+                      const isLast = idx === Math.min(todaySchedules.length, isDesktop ? 8 : 5) - 1;
+                      return (
+                        <TouchableOpacity
+                          key={sched.id}
+                          onPress={() => router.push("/student/schedule")}
+                          activeOpacity={0.7}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            paddingVertical: 14,
+                            paddingHorizontal: 18,
+                            borderBottomWidth: isLast ? 0 : 1,
+                            borderBottomColor: "#f3f4f6",
+                            ...getWebCursor(),
+                          }}
+                        >
+                          {/* Time pill */}
+                          <View style={{
+                            width: 68,
+                            backgroundColor: "#eff6ff",
+                            borderRadius: 10,
+                            paddingVertical: 6,
+                            alignItems: "center",
+                            marginRight: 14,
+                          }}>
+                            <Text style={{ fontSize: 13, fontWeight: "800", color: "#1e3a8a" }}>{startTime}</Text>
+                            {endTime ? <Text style={{ fontSize: 11, color: "#3b82f6", marginTop: 2 }}>{endTime}</Text> : null}
+                          </View>
+
+                          {/* Info */}
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 14, fontWeight: "700", color: "#111827", marginBottom: 4 }} numberOfLines={1}>
+                              {sched.courseName || sched.subjectName || "Không có thông tin"}
+                            </Text>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                                <Ionicons name="person-outline" size={12} color="#6b7280" />
+                                <Text style={{ fontSize: 12, color: "#4b5563" }} numberOfLines={1}>{sched.teacher || sched.teacherName || "N/A"}</Text>
+                              </View>
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                                <Ionicons name="business-outline" size={12} color="#6b7280" />
+                                <Text style={{ fontSize: 12, color: "#4b5563" }}>{sched.room || "N/A"}</Text>
+                              </View>
+                            </View>
+                          </View>
+
+                          <Ionicons name="chevron-forward" size={16} color="#d1d5db" />
+                        </TouchableOpacity>
+                      );
+                    })}
+                    {todaySchedules.length > (isDesktop ? 8 : 5) && (
+                      <TouchableOpacity
+                        onPress={() => router.push("/student/schedule")}
+                        style={{ paddingVertical: 12, alignItems: "center", backgroundColor: "#f9fafb", ...getWebCursor() }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={{ fontSize: 13, color: "#3b82f6", fontWeight: "600" }}>
+                          Xem thêm {todaySchedules.length - (isDesktop ? 8 : 5)} lịch khác →
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ) : !loading ? (
+                  <View style={{
+                    backgroundColor: "#fff",
                     borderRadius: 20,
                     padding: 32,
                     alignItems: "center",
-                    justifyContent: "center",
                     borderWidth: 1,
-                    borderColor: Colors.border,
-                    ...getWebShadow("md"),
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 64,
-                      height: 64,
-                      backgroundColor: Colors.infoLight,
-                      borderRadius: 32,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginBottom: 16,
-                    }}
-                  >
-                    <Ionicons name="sparkles" size={32} color={Colors.primary} />
+                    borderColor: "#e5e7eb",
+                    ...getWebShadow("sm"),
+                  }}>
+                    <View style={{ width: 60, height: 60, backgroundColor: "#eff6ff", borderRadius: 30, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+                      <Ionicons name="sunny-outline" size={28} color="#3b82f6" />
+                    </View>
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b", marginBottom: 6 }}>Hôm nay bạn được nghỉ!</Text>
+                    <Text style={{ fontSize: 13, color: "#64748b", textAlign: "center", lineHeight: 20 }}>
+                      Không có lịch học. Tận hưởng thời gian rảnh nhé!
+                    </Text>
                   </View>
-                  <Text
-                    style={{ fontSize: 18, fontWeight: "800", color: Colors.textHeading, marginBottom: 8 }}
-                  >
-                    Hôm nay bạn được nghỉ!
-                  </Text>
-                  <Text
-                    style={{ fontSize: 13, color: Colors.textSecondary, textAlign: "center", lineHeight: 20 }}
-                  >
-                    Không có lịch học nào được tìm thấy. Tận hưởng ngày nghỉ của bạn nhé!
-                  </Text>
+                ) : null}
+              </View>
+
+              {/* ── 4. QUICK ACTIONS ── */}
+              <View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <View style={{ width: 4, height: 18, backgroundColor: "#8b5cf6", borderRadius: 2 }} />
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b" }}>Thao tác nhanh</Text>
                 </View>
-              )}
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+                  {[
+                    { label: "Xem lịch", sub: "Thời khóa biểu", icon: "calendar", color: "#3b82f6", bg: "#eff6ff", route: "/student/schedule" },
+                    { label: "Đăng ký OTP", sub: "Nhập mã GV", icon: "keypad", color: "#8b5cf6", bg: "#f5f3ff", route: "/student/otp-attendance" },
+                    { label: "Quét QR", sub: "Mã trên lớp", icon: "qr-code", color: "#10b981", bg: "#f0fdf4", route: "/student/qr-attendance" },
+                    { label: "Lịch sử", sub: "Xem lại hồ sơ", icon: "time", color: "#f59e0b", bg: "#fffbeb", route: "/student/history" },
+                    { label: "Thông báo", sub: unreadNotifs > 0 ? `${unreadNotifs} chưa đọc` : "Không có mới", icon: "notifications", color: "#ef4444", bg: "#fef2f2", route: "/student/notifications" },
+                    { label: "Hồ sơ", sub: "Cá nhân", icon: "person-circle", color: "#0ea5e9", bg: "#f0f9ff", route: "/student/profile" },
+                  ].map((action) => (
+                    <TouchableOpacity
+                      key={action.label}
+                      onPress={() => {
+                        if (action.route === "/student/notifications") setUnreadNotifs(0);
+                        router.push(action.route as any);
+                      }}
+                      activeOpacity={0.7}
+                      style={{
+                        width: isMobile ? "47%" : isTablet ? "30%" : "14%",
+                        minWidth: 100,
+                        backgroundColor: "#fff",
+                        borderRadius: 16,
+                        padding: 14,
+                        alignItems: "center",
+                        borderWidth: 1,
+                        borderColor: "#f1f5f9",
+                        ...getWebShadow("sm"),
+                        ...getWebCursor(),
+                      }}
+                    >
+                      <View style={{
+                        width: 44, height: 44, borderRadius: 13,
+                        backgroundColor: action.bg,
+                        alignItems: "center", justifyContent: "center",
+                        marginBottom: 8,
+                      }}>
+                        <Ionicons name={action.icon as any} size={22} color={action.color} />
+                        {action.icon === "notifications" && unreadNotifs > 0 && (
+                          <View style={{
+                            position: "absolute", top: -4, right: -4,
+                            minWidth: 16, height: 16, borderRadius: 8,
+                            backgroundColor: "#ef4444",
+                            alignItems: "center", justifyContent: "center",
+                            borderWidth: 1.5, borderColor: "#fff",
+                          }}>
+                            <Text style={{ fontSize: 9, fontWeight: "800", color: "#fff" }}>
+                              {unreadNotifs > 9 ? "9+" : unreadNotifs}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: "#1e293b", textAlign: "center", marginBottom: 2 }}>
+                        {action.label}
+                      </Text>
+                      <Text style={{ fontSize: 10, color: "#64748b", textAlign: "center" }}>{action.sub}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
             </View>
 
-            {/* Quick Actions (Mobile/Tablet Only) */}
-            {!isDesktop && (
+            {/* ───── RIGHT COLUMN (desktop 36%, mobile hidden/merged above) ───── */}
+            <View style={{ flex: isDesktop ? 36 : undefined, width: isDesktop ? undefined : "100%", gap: 20 }}>
+
+              {/* ── 5. VÒNG TRÒN TỶ LỆ ── */}
               <View>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "700",
-                    color: "#1e293b",
-                    marginBottom: 12,
-                  }}
-                >
-                  Điểm danh nhanh
-                </Text>
-                <View style={{ flexDirection: "row", gap: 16 }}>
-                  <TouchableOpacity
-                    onPress={() => router.push("/student/otp-attendance")}
-                    style={{
-                      flex: 1,
-                      backgroundColor: "#fff",
-                      borderRadius: 16,
-                      padding: 16,
-                      alignItems: "center",
-                      borderWidth: 1,
-                      borderColor: "#f1f5f9",
-                      ...getWebShadow("md"),
-                      ...getWebCursor(),
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={{
-                        width: 48,
-                        height: 48,
-                        backgroundColor: "#eff6ff",
-                        borderRadius: 14,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginBottom: 12,
-                      }}
-                    >
-                      <Ionicons name="keypad" size={24} color="#3b82f6" />
-                    </View>
-                    <Text
-                      style={{
-                        fontSize: 15,
-                        fontWeight: "700",
-                        color: "#1e293b",
-                        marginBottom: 4,
-                      }}
-                    >
-                      Mã OTP
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: "#64748b",
-                        textAlign: "center",
-                      }}
-                    >
-                      Nhập mã từ GV
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => router.push("/student/qr-attendance")}
-                    style={{
-                      flex: 1,
-                      backgroundColor: "#fff",
-                      borderRadius: 16,
-                      padding: 16,
-                      alignItems: "center",
-                      borderWidth: 1,
-                      borderColor: "#f1f5f9",
-                      ...getWebShadow("md"),
-                      ...getWebCursor(),
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View
-                      style={{
-                        width: 48,
-                        height: 48,
-                        backgroundColor: "#f0fdf4",
-                        borderRadius: 14,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginBottom: 12,
-                      }}
-                    >
-                      <Ionicons name="qr-code" size={24} color="#10b981" />
-                    </View>
-                    <Text
-                      style={{
-                        fontSize: 15,
-                        fontWeight: "700",
-                        color: "#1e293b",
-                        marginBottom: 4,
-                      }}
-                    >
-                      Mã QR
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: "#64748b",
-                        textAlign: "center",
-                      }}
-                    >
-                      Quét mã trên lớp
-                    </Text>
-                  </TouchableOpacity>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <View style={{ width: 4, height: 18, backgroundColor: "#10b981", borderRadius: 2 }} />
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b" }}>Thống kê tuần này</Text>
+                  <View style={{ backgroundColor: "#f0fdf4", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, marginLeft: "auto" }}>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#10b981" }}>{attendanceStats.totalSessions} buổi</Text>
+                  </View>
                 </View>
-              </View>
-            )}
-
-            {/* Stats below quick actions */}
-            <View style={{ width: isDesktop ? (Platform.OS === "web" ? "calc(40% - 12px)" : "38%") : "100%" }}>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <Text style={{ fontSize: 16, fontWeight: "700", color: "#1e293b" }}>Thống kê tuần này</Text>
-                <View style={{ backgroundColor: "#eff6ff", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#3b82f6" }}>Tuần {attendanceStats.totalSessions} buổi</Text>
-                </View>
-              </View>
-
-              <View
-                style={{
+                <View style={{
                   backgroundColor: "#fff",
                   borderRadius: 20,
                   padding: 24,
+                  alignItems: "center",
                   borderWidth: 1,
-                  borderColor: "#E5E7EB",
-                  flex: 1,
-                  justifyContent: "center",
+                  borderColor: "#e5e7eb",
                   ...getWebShadow("sm"),
-                }}
-              >
-                <View style={{ flexDirection: "column", alignItems: "center", justifyContent: "center", gap: isDesktop ? 40 : 24, flex: 1, paddingVertical: 12 }}>
-                  {/* SVG Circular Progress - BIG */}
-                  <View style={{ position: "relative", alignItems: "center", justifyContent: "center", width: isDesktop ? 220 : 160, height: isDesktop ? 220 : 160 }}>
-                    <Svg width={isDesktop ? 220 : 160} height={isDesktop ? 220 : 160} viewBox={isDesktop ? "0 0 240 240" : "0 0 160 160"}>
-                      <Circle cx={isDesktop ? 120 : 80} cy={isDesktop ? 120 : 80} r={isDesktop ? 100 : 65} stroke="#F3F4F6" strokeWidth={isDesktop ? 12 : 8} fill="none" />
+                  gap: 20,
+                }}>
+                  {/* Circular progress */}
+                  <View style={{ position: "relative", alignItems: "center", justifyContent: "center", width: 160, height: 160 }}>
+                    <Svg width={160} height={160} viewBox="0 0 160 160">
+                      <Circle cx={80} cy={80} r={65} stroke="#F3F4F6" strokeWidth={10} fill="none" />
                       <Circle
-                        cx={isDesktop ? 120 : 80} cy={isDesktop ? 120 : 80} r={isDesktop ? 100 : 65}
-                        stroke="#2563EB"
-                        strokeWidth={isDesktop ? 12 : 8}
+                        cx={80} cy={80} r={65}
+                        stroke={attendanceStats.attendanceRate >= 80 ? "#10b981" : attendanceStats.attendanceRate >= 70 ? "#f59e0b" : "#ef4444"}
+                        strokeWidth={10}
                         fill="none"
-                        strokeDasharray={isDesktop ? 628.32 : 408.41}
-                        strokeDashoffset={(isDesktop ? 628.32 : 408.41) - (Math.max(0, Math.min(attendanceStats.attendanceRate, 100)) / 100) * (isDesktop ? 628.32 : 408.41)}
+                        strokeDasharray={408.41}
+                        strokeDashoffset={408.41 - (Math.max(0, Math.min(attendanceStats.attendanceRate, 100)) / 100) * 408.41}
                         strokeLinecap="round"
-                        transform={isDesktop ? "rotate(-90 120 120)" : "rotate(-90 80 80)"}
+                        transform="rotate(-90 80 80)"
                       />
                     </Svg>
-                    <View style={{ position: "absolute", alignItems: "center", justifyContent: "center" }}>
-                      <Text style={{ fontSize: isDesktop ? 48 : 36, fontWeight: "800", color: "#111827" }}>{attendanceStats.attendanceRate}%</Text>
-                      <Text style={{ fontSize: isDesktop ? 13 : 11, color: "#6B7280", fontWeight: "600", textTransform: "uppercase", marginTop: isDesktop ? 4 : 2, letterSpacing: 1 }}>Tỷ lệ</Text>
+                    <View style={{ position: "absolute", alignItems: "center" }}>
+                      <Text style={{ fontSize: 34, fontWeight: "800", color: "#111827" }}>{attendanceStats.attendanceRate}%</Text>
+                      <Text style={{ fontSize: 11, color: "#6b7280", fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 }}>Tỷ lệ</Text>
                     </View>
                   </View>
 
-                  {/* Stats Details - BIGGER */}
-                  <View style={{ flexDirection: "row", width: "100%", gap: isDesktop ? 20 : 12 }}>
-                    {/* Có mặt */}
-                    <View style={{ flex: 1, backgroundColor: "#FAFAFA", borderWidth: 1, borderColor: "#F3F4F6", borderRadius: 16, padding: isDesktop ? 20 : 16, alignItems: "center", flexDirection: isDesktop ? "row" : "column", gap: isDesktop ? 16 : 8 }}>
-                      <View style={{ width: isDesktop ? 44 : 40, height: isDesktop ? 44 : 40, borderRadius: 12, backgroundColor: "#E0F2FE", alignItems: "center", justifyContent: "center" }}>
-                        <Ionicons name="checkmark-outline" size={isDesktop ? 24 : 20} color="#0284C7" />
-                      </View>
-                      <View style={{ alignItems: isDesktop ? "flex-start" : "center" }}>
-                        <Text style={{ fontSize: isDesktop ? 24 : 20, fontWeight: "800", color: "#111827" }}>{attendanceStats.present}</Text>
-                        <Text style={{ fontSize: isDesktop ? 13 : 12, fontWeight: "500", color: "#4B5563" }}>Có mặt</Text>
-                      </View>
+                  {/* Stats row */}
+                  <View style={{ flexDirection: "row", width: "100%", gap: 12 }}>
+                    <View style={{ flex: 1, backgroundColor: "#f0fdf4", borderRadius: 14, padding: 14, alignItems: "center", gap: 4 }}>
+                      <Ionicons name="checkmark-circle" size={20} color="#10b981" />
+                      <Text style={{ fontSize: 22, fontWeight: "800", color: "#111827" }}>{attendanceStats.present}</Text>
+                      <Text style={{ fontSize: 11, color: "#6b7280" }}>Có mặt</Text>
                     </View>
-
-                    {/* Vắng mặt */}
-                    <View style={{ flex: 1, backgroundColor: "#FAFAFA", borderWidth: 1, borderColor: "#F3F4F6", borderRadius: 16, padding: isDesktop ? 20 : 16, alignItems: "center", flexDirection: isDesktop ? "row" : "column", gap: isDesktop ? 16 : 8 }}>
-                      <View style={{ width: isDesktop ? 44 : 40, height: isDesktop ? 44 : 40, borderRadius: 12, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" }}>
-                        <Ionicons name="close-outline" size={isDesktop ? 24 : 20} color="#EF4444" />
-                      </View>
-                      <View style={{ alignItems: isDesktop ? "flex-start" : "center" }}>
-                        <Text style={{ fontSize: isDesktop ? 24 : 20, fontWeight: "800", color: "#111827" }}>{attendanceStats.absent}</Text>
-                        <Text style={{ fontSize: isDesktop ? 13 : 12, fontWeight: "500", color: "#4B5563" }}>Vắng mặt</Text>
-                      </View>
+                    <View style={{ flex: 1, backgroundColor: "#fef2f2", borderRadius: 14, padding: 14, alignItems: "center", gap: 4 }}>
+                      <Ionicons name="close-circle" size={20} color="#ef4444" />
+                      <Text style={{ fontSize: 22, fontWeight: "800", color: "#111827" }}>{attendanceStats.absent}</Text>
+                      <Text style={{ fontSize: 11, color: "#6b7280" }}>Vắng</Text>
+                    </View>
+                    <View style={{ flex: 1, backgroundColor: "#fffbeb", borderRadius: 14, padding: 14, alignItems: "center", gap: 4 }}>
+                      <Ionicons name="calendar-outline" size={20} color="#f59e0b" />
+                      <Text style={{ fontSize: 22, fontWeight: "800", color: "#111827" }}>{attendanceStats.totalSessions}</Text>
+                      <Text style={{ fontSize: 11, color: "#6b7280" }}>Tổng</Text>
                     </View>
                   </View>
+
+                  {/* CTA */}
+                  <TouchableOpacity
+                    onPress={() => router.push("/student/history")}
+                    style={{
+                      width: "100%",
+                      backgroundColor: "#eff6ff",
+                      borderRadius: 12,
+                      paddingVertical: 12,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      ...getWebCursor(),
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="time-outline" size={16} color="#3b82f6" />
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#3b82f6" }}>Xem lịch sử điểm danh</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-            </View>
 
-            {/* History Link */}
-            <TouchableOpacity
-              onPress={() => router.push("/student/history")}
-              style={{
-                width: isDesktop ? (Platform.OS === "web" ? "calc(60% - 12px)" : "58%") : "100%",
-                backgroundColor: "#FFFFFF",
+              {/* ── 6. TIP CARD ── */}
+              <View style={{
+                backgroundColor: "#1e3a8a",
                 borderRadius: 20,
-                padding: 16,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                borderWidth: 1,
-                borderColor: "#E5E7EB",
-                ...getWebShadow("sm"),
-                ...getWebCursor(),
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <View
-                  style={{
-                    width: 40,
-                    height: 40,
-                    backgroundColor: "#f5f3ff",
-                    borderRadius: 12,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: 14,
-                  }}
-                >
-                  <Ionicons name="time" size={20} color="#8b5cf6" />
+                padding: 20,
+                gap: 12,
+                overflow: "hidden",
+              }}>
+                <LinearGradient
+                  colors={["rgba(59,130,246,0.3)", "rgba(30,58,138,0)"]}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+                />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name="bulb" size={18} color="#fbbf24" />
+                  </View>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#fff" }}>Mẹo điểm danh</Text>
                 </View>
-                <Text
-                  style={{
-                    fontSize: 15,
-                    fontWeight: "600",
-                    color: "#1e293b",
-                  }}
-                >
-                  Lịch sử điểm danh
+                <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 20 }}>
+                  Đi học đúng giờ và điểm danh ngay khi vào lớp. Tỷ lệ điểm danh ≥ 80% giúp bạn được thi cuối kỳ.
                 </Text>
+                <TouchableOpacity
+                  onPress={() => router.push("/student/schedule")}
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.15)",
+                    borderRadius: 10,
+                    paddingVertical: 10,
+                    alignItems: "center",
+                    borderWidth: 1,
+                    borderColor: "rgba(255,255,255,0.2)",
+                    ...getWebCursor(),
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#fff" }}>Xem lịch học ngay →</Text>
+                </TouchableOpacity>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
-            </TouchableOpacity>
+
+            </View>
           </View>
-
-
-
         </View>
 
         {/* Footer for Web only */}
         <WebFooter />
+
       </ScrollView>
     </View>
   );
 
   return content;
 }
+
