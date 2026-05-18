@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Alert,
   TouchableOpacity,
   Text,
 } from "react-native";
@@ -11,7 +10,8 @@ import { useRouter } from "expo-router";
 import { Colors } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import ProfileAndSettings from "@/components/ProfileAndSettings";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
+import ConfirmDialog, { useConfirmDialog } from "@/components/ConfirmDialog";
 import { authService } from "@/apis/services/auth.service";
 
 export default function DepartmentProfile() {
@@ -31,17 +31,21 @@ export default function DepartmentProfile() {
     fetchUserData();
   }, []);
 
+  const { confirm, dialogProps } = useConfirmDialog();
+
   const handleLogout = () => {
-    Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Đăng xuất",
-        style: "destructive",
-        onPress: () => {
-          router.replace("/auth/login");
-        },
+    confirm({
+      title: "Đăng xuất",
+      message: "Bạn có chắc chắn muốn đăng xuất?",
+      confirmText: "Đăng xuất",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await authService.logout();
+        } catch (e) {}
+        router.replace("/auth/login");
       },
-    ]);
+    });
   };
 
   return (
@@ -80,6 +84,7 @@ export default function DepartmentProfile() {
           </TouchableOpacity>
         </View>
       </View>
+      <ConfirmDialog {...dialogProps} />
     </ScrollView>
   );
 }

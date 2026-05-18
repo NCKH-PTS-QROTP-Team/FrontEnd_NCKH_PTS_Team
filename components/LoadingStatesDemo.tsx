@@ -10,7 +10,7 @@ import { Colors } from '../constants/colors';
 export default function LoadingStatesDemo() {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showErrorBanner, setShowErrorBanner] = useState(false);
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
 
   const handleShowOverlay = () => {
     setShowOverlay(true);
@@ -216,12 +216,6 @@ export default function LoadingStatesDemo() {
       </View>
 
       {/* Toast Component */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
     </ScrollView>
   );
 }

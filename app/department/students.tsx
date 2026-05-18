@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Alert,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
+import { useToast } from "@/components/ToastProvider";
+import ConfirmDialog, { useConfirmDialog } from "@/components/ConfirmDialog";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { studentService } from "@/apis/services/student.service";
@@ -440,6 +441,9 @@ export default function StudentsManagement() {
   });
   const [submitting, setSubmitting] = useState(false);
 
+  const { showToast } = useToast();
+  const { confirm, dialogProps } = useConfirmDialog();
+
   // ── Fetch ──
   const fetchStudents = useCallback(async (showRefresh = false) => {
     try {
@@ -527,10 +531,7 @@ export default function StudentsManagement() {
   // ── Add student ──
   const handleAddStudent = async () => {
     if (!form.studentId || !form.name || !form.email || !form.password) {
-      Alert.alert(
-        "Thiếu thông tin",
-        "Vui lòng nhập đầy đủ mã SV, tên, email và mật khẩu.",
-      );
+      showToast("Vui lòng nhập đầy đủ mã SV, tên, email và mật khẩu.", "error");
       return;
     }
     try {
@@ -539,9 +540,9 @@ export default function StudentsManagement() {
       setStudents((prev) => [created, ...prev]);
       setModalVisible(false);
       setForm({ studentId: "", name: "", email: "", password: "" });
-      Alert.alert("Thành công", "Đã thêm sinh viên mới!");
+      showToast("Đã thêm sinh viên mới!", "success");
     } catch (err: any) {
-      Alert.alert("Lỗi", err?.message || "Không thể thêm sinh viên");
+      showToast(err?.message || "Không thể thêm sinh viên", "error");
     } finally {
       setSubmitting(false);
     }
@@ -569,7 +570,7 @@ export default function StudentsManagement() {
   const handleSaveEdit = async () => {
     if (!editingStudent) return;
     if (!editForm.name?.trim() || !editForm.email?.trim()) {
-      Alert.alert("Thiếu thông tin", "Vui lòng nhập đầy đủ tên và email.");
+      showToast("Vui lòng nhập đầy đủ tên và email.", "error");
       return;
     }
     try {
@@ -582,9 +583,9 @@ export default function StudentsManagement() {
         prev.map((s) => (s.id === updated.id ? updated : s)),
       );
       setEditVisible(false);
-      Alert.alert("Thành công", "Đã cập nhật thông tin sinh viên!");
+      showToast("Đã cập nhật thông tin sinh viên!", "success");
     } catch (err: any) {
-      Alert.alert("Lỗi", err?.message || "Không thể cập nhật sinh viên");
+      showToast(err?.message || "Không thể cập nhật sinh viên", "error");
     } finally {
       setSaving(false);
     }
@@ -592,25 +593,21 @@ export default function StudentsManagement() {
 
   // ── Delete ──
   const handleDelete = (student: StudentResponse) => {
-    Alert.alert(
-      "Xác nhận xóa",
-      `Bạn có chắc muốn xóa sinh viên "${student.name}"?`,
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xóa",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await studentService.deleteStudent(student.id);
-              setStudents((prev) => prev.filter((s) => s.id !== student.id));
-            } catch (err: any) {
-              Alert.alert("Lỗi", err?.message || "Không thể xóa sinh viên");
-            }
-          },
-        },
-      ],
-    );
+    confirm({
+      title: "Xác nhận xóa",
+      message: `Bạn có chắc muốn xóa sinh viên "${student.name}"?`,
+      confirmText: "Xóa",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await studentService.deleteStudent(student.id);
+          setStudents((prev) => prev.filter((s) => s.id !== student.id));
+          showToast("Đã xóa sinh viên!", "success");
+        } catch (err: any) {
+          showToast(err?.message || "Không thể xóa sinh viên", "error");
+        }
+      },
+    });
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1057,6 +1054,7 @@ export default function StudentsManagement() {
         visible={detailVisible}
         onClose={() => setDetailVisible(false)}
       />
+      <ConfirmDialog {...dialogProps} />
     </View>
   );
 }

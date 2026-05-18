@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, ScrollView, Platform } from "react-native";
 import { Colors } from "@/constants/colors";
+import { getWebShadow } from "@/constants/webStyles";
 
 /**
  * Complete Example: Student Dashboard with Beautiful Header
@@ -38,11 +39,7 @@ export default function StudentDashboardExample() {
               borderRadius: 16,
               padding: 24,
               marginBottom: 24,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 3,
+              ...getWebShadow("md"),
             }}
           >
             <Text
@@ -199,13 +196,9 @@ function ExampleCard({
         backgroundColor: "#FFFFFF",
         borderRadius: 12,
         padding: 20,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-        elevation: 2,
         borderLeftWidth: 4,
         borderLeftColor: color,
+        ...getWebShadow("sm"),
       }}
     >
       <View

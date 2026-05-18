@@ -10,10 +10,12 @@ import {
   Animated,
 } from "react-native";
 import { Colors } from "@/constants/colors";
+import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 import { getSlotIndexFromStartTime } from "@/constants/scheduleSlots";
 import { scheduleService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import type { Schedule } from "@/apis/services/schedule.service";
+import { Ionicons } from "@expo/vector-icons";
 
 interface ScheduleItem {
   id: string;
@@ -79,8 +81,13 @@ export default function WeeklySchedule() {
       const dayIndex = s.dayOfWeek === 8 ? 0 : (s.dayOfWeek ?? 2) - 1;
       const dayName = dayNames[dayIndex] ?? "monday";
       const slotIndex = getSlotIndexFromStartTime(s.startTime ?? "");
-      const period: "morning" | "afternoon" | "evening" =
-        slotIndex <= 2 ? "morning" : slotIndex <= 5 ? "afternoon" : "evening";
+      
+      // Phân bổ ca dựa trên giờ thực tế (đảm bảo 16h30 là Chiều, và các giờ tối > 18h là Tối)
+      let period: "morning" | "afternoon" | "evening" = "morning";
+      const h = parseInt((s.startTime ?? "0").split(":")[0], 10);
+      if (h >= 18) period = "evening";
+      else if (h >= 12) period = "afternoon";
+      else period = "morning";
 
       const itemType: "theory" | "practice" | "exam" | "makeup" =
         s.scheduleType === "EXAM" ? "exam" : "theory";
@@ -96,6 +103,15 @@ export default function WeeklySchedule() {
           type: itemType,
         } as ScheduleItem);
     });
+
+    // Sắp xếp các môn trong mỗi ca theo giờ bắt đầu
+    Object.keys(scheduleMap).forEach((day) => {
+      const row = scheduleMap[day];
+      if (row.morning) row.morning.sort((a, b) => a.sessions.localeCompare(b.sessions));
+      if (row.afternoon) row.afternoon.sort((a, b) => a.sessions.localeCompare(b.sessions));
+      if (row.evening) row.evening.sort((a, b) => a.sessions.localeCompare(b.sessions));
+    });
+
     return scheduleMap;
   };
 
@@ -165,7 +181,9 @@ export default function WeeklySchedule() {
 
       // Tính khoảng ngày của tuần hiện tại (fromDate, toDate - yyyy-MM-dd)
       const startDate = new Date(currentWeek);
-      startDate.setDate(startDate.getDate() - startDate.getDay() + 1); // Monday
+      const day = startDate.getDay();
+      const diff = startDate.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+      startDate.setDate(diff);
       const endDate = new Date(startDate);
       endDate.setDate(endDate.getDate() + 6);
 
@@ -237,35 +255,39 @@ export default function WeeklySchedule() {
   const getTypeColor = (type: string) => {
     switch (type) {
       case "theory":
-        return "#10B981"; // Green - Lịch học lý thuyết
+        return Colors.success; 
       case "practice":
-        return "#3B82F6"; // Blue - Lịch học thực hành
+        return Colors.primary;
       case "exam":
-        return "#EF4444"; // Red - Lịch thi
+        return Colors.error;
       case "makeup":
-        return "#F59E0B"; // Orange - Lịch tạm ngưng
+        return Colors.warning;
       default:
-        return "#6B7280";
+        return Colors.gray500;
     }
   };
 
   const getTypeBgColor = (type: string) => {
     switch (type) {
       case "theory":
-        return "#D1FAE5";
+        return Colors.successLight;
       case "practice":
-        return "#DBEAFE";
+        return Colors.infoLight;
       case "exam":
-        return "#FEE2E2";
+        return Colors.errorLight;
       case "makeup":
-        return "#FEF3C7";
+        return Colors.warningLight;
       default:
-        return "#F3F4F6";
+        return Colors.gray100;
     }
   };
 
   const formatWeekRange = () => {
-    const startDate = startOfWeekMonday(currentWeek);
+    const startDate = new Date(currentWeek);
+    const day = startDate.getDay();
+    const diff = startDate.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+    startDate.setDate(diff);
+    
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 6); // Sunday
 
@@ -293,58 +315,69 @@ export default function WeeklySchedule() {
     period: "morning" | "afternoon" | "evening",
   ) => {
     const schedules = weeklySchedule[day]?.[period] || [];
+    const isToday = day === ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
+
     return (
       <View
         key={`${day}-${period}`}
         style={{
           flex: 1,
           minWidth: columnMinWidth,
-          minHeight: 100,
-          padding: 8,
+          minHeight: 120,
+          padding: 10,
           borderRightWidth: 1,
-          borderRightColor: "#D1D5DB",
+          borderRightColor: Colors.border,
           borderBottomWidth: 1,
-          borderBottomColor: "#D1D5DB",
-          backgroundColor: schedules.length > 0 ? "#FFFFFF" : "#FAFAFA",
+          borderBottomColor: Colors.border,
+          backgroundColor: isToday ? "rgba(59, 130, 246, 0.02)" : (schedules.length > 0 ? Colors.white : Colors.surface),
         }}
       >
-        {schedules.map((item, idx) => (
-          <View
-            key={item.id}
-            style={{
-              backgroundColor: getTypeBgColor(item.type),
-              borderLeftWidth: 4,
-              borderLeftColor: getTypeColor(item.type),
-              padding: 8,
-              borderRadius: 4,
-              marginBottom: idx < schedules.length - 1 ? 8 : 0,
-            }}
-          >
-            <Text
+        {schedules.length === 0 ? (
+          <View style={{ flex: 1, opacity: 0.3, alignItems: "center", justifyContent: "center" }}>
+             {/* Subtle indicator for empty cell */}
+          </View>
+        ) : (
+          schedules.map((item, idx) => (
+            <TouchableOpacity
+              key={item.id}
+              activeOpacity={0.8}
               style={{
-                fontSize: 12,
-                fontWeight: "700",
-                color: "#111827",
-                marginBottom: 2,
+                backgroundColor: getTypeBgColor(item.type),
+                borderLeftWidth: 4,
+                borderLeftColor: getTypeColor(item.type),
+                padding: 10,
+                borderRadius: 10,
+                marginBottom: idx < schedules.length - 1 ? 10 : 0,
+                ...getWebShadow("sm"),
+                ...getWebCursor(),
               }}
             >
-              {item.subject}
-            </Text>
-            <Text style={{ fontSize: 10, color: "#3FA9F5", marginBottom: 1 }}>
-              {item.code}
-            </Text>
-            <Text style={{ fontSize: 10, color: "#6B7280", marginBottom: 1 }}>
-              {item.sessions} • {item.room}
-            </Text>
-            {item.teacher && item.teacher.replace("GV: ", "").trim() && (
               <Text
-                style={{ fontSize: 10, color: "#059669", fontWeight: "500" }}
+                style={{
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: Colors.textHeading,
+                  marginBottom: 4,
+                }}
+                numberOfLines={2}
               >
-                {item.teacher}
+                {item.subject}
               </Text>
-            )}
-          </View>
-        ))}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4 }}>
+                 <Ionicons name="location-outline" size={12} color={Colors.textSecondary} />
+                 <Text style={{ fontSize: 11, color: Colors.textSecondary, fontWeight: "500" }}>
+                   {item.room.replace("Phòng: ", "")}
+                 </Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                 <Ionicons name="time-outline" size={12} color={Colors.textSecondary} />
+                 <Text style={{ fontSize: 11, color: Colors.textSecondary, fontWeight: "500" }}>
+                   {item.sessions}
+                 </Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
       </View>
     );
   };
@@ -404,74 +437,69 @@ export default function WeeklySchedule() {
           }}
         >
           {/* View Filter Buttons */}
-          <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              backgroundColor: Colors.gray100,
+              borderRadius: 12,
+              padding: 4,
+            }}
+          >
             <TouchableOpacity
-              onPress={() => {
-                if (selectedView !== "all") {
-                  setSelectedView("all");
-                }
-              }}
+              onPress={() => setSelectedView("all")}
               style={{
-                paddingHorizontal: isMobile ? 12 : 16,
-                paddingVertical: isMobile ? 6 : 8,
+                paddingHorizontal: 16,
+                paddingVertical: 8,
                 borderRadius: 8,
-                backgroundColor:
-                  selectedView === "all" ? Colors.primary : "#F3F4F6",
+                backgroundColor: selectedView === "all" ? Colors.white : "transparent",
+                ... (selectedView === "all" ? getWebShadow("sm") : {}),
               }}
             >
               <Text
                 style={{
-                  fontSize: isMobile ? 12 : 13,
-                  fontWeight: "600",
-                  color: selectedView === "all" ? "#FFFFFF" : "#6B7280",
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: selectedView === "all" ? Colors.primary : Colors.textSecondary,
                 }}
               >
                 Tất cả
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => {
-                if (selectedView !== "class") {
-                  setSelectedView("class");
-                }
-              }}
+              onPress={() => setSelectedView("class")}
               style={{
-                paddingHorizontal: isMobile ? 12 : 16,
-                paddingVertical: isMobile ? 6 : 8,
+                paddingHorizontal: 16,
+                paddingVertical: 8,
                 borderRadius: 8,
-                backgroundColor:
-                  selectedView === "class" ? Colors.primary : "#F3F4F6",
+                backgroundColor: selectedView === "class" ? Colors.white : "transparent",
+                ... (selectedView === "class" ? getWebShadow("sm") : {}),
               }}
             >
               <Text
                 style={{
-                  fontSize: isMobile ? 12 : 13,
-                  fontWeight: "600",
-                  color: selectedView === "class" ? "#FFFFFF" : "#6B7280",
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: selectedView === "class" ? Colors.primary : Colors.textSecondary,
                 }}
               >
                 Lịch học
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => {
-                if (selectedView !== "exam") {
-                  setSelectedView("exam");
-                }
-              }}
+              onPress={() => setSelectedView("exam")}
               style={{
-                paddingHorizontal: isMobile ? 12 : 16,
-                paddingVertical: isMobile ? 6 : 8,
+                paddingHorizontal: 16,
+                paddingVertical: 8,
                 borderRadius: 8,
-                backgroundColor:
-                  selectedView === "exam" ? Colors.primary : "#F3F4F6",
+                backgroundColor: selectedView === "exam" ? Colors.white : "transparent",
+                ... (selectedView === "exam" ? getWebShadow("sm") : {}),
               }}
             >
               <Text
                 style={{
-                  fontSize: isMobile ? 12 : 13,
-                  fontWeight: "600",
-                  color: selectedView === "exam" ? "#FFFFFF" : "#6B7280",
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: selectedView === "exam" ? Colors.primary : Colors.textSecondary,
                 }}
               >
                 Lịch thi
@@ -484,52 +512,57 @@ export default function WeeklySchedule() {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              gap: 8,
+              gap: 12,
               justifyContent: isMobile ? "center" : "flex-end",
             }}
           >
             <TouchableOpacity
               onPress={() => navigateWeek("prev")}
               style={{
-                width: isMobile ? 36 : 32,
-                height: isMobile ? 36 : 32,
-                borderRadius: 8,
-                backgroundColor: "#F3F4F6",
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: Colors.white,
                 alignItems: "center",
                 justifyContent: "center",
+                borderWidth: 1,
+                borderColor: Colors.border,
+                ...getWebShadow("sm"),
+                ...getWebCursor(),
               }}
             >
-              <Text style={{ fontSize: isMobile ? 18 : 16, color: "#374151" }}>
-                ←
-              </Text>
+              <Ionicons name="chevron-back" size={20} color={Colors.textHeading} />
             </TouchableOpacity>
 
-            <Text
-              style={{
-                fontSize: isMobile ? 12 : 13,
-                fontWeight: "600",
-                color: "#374151",
-                minWidth: isMobile ? 130 : 150,
-                textAlign: "center",
-              }}
-            >
-              {formatWeekRange()}
-            </Text>
+            <View style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: Colors.white, borderRadius: 20, borderWidth: 1, borderColor: Colors.border }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "700",
+                  color: Colors.textHeading,
+                  textAlign: "center",
+                }}
+              >
+                {formatWeekRange()}
+              </Text>
+            </View>
 
             <TouchableOpacity
               onPress={() => navigateWeek("next")}
               style={{
-                width: isMobile ? 36 : 32,
-                height: isMobile ? 36 : 32,
-                borderRadius: 8,
-                backgroundColor: "#F3F4F6",
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: Colors.white,
                 alignItems: "center",
                 justifyContent: "center",
+                borderWidth: 1,
+                borderColor: Colors.border,
+                ...getWebShadow("sm"),
+                ...getWebCursor(),
               }}
             >
-              <Text style={{ fontSize: isMobile ? 18 : 16, color: "#374151" }}>
-                →
-              </Text>
+              <Ionicons name="chevron-forward" size={20} color={Colors.textHeading} />
             </TouchableOpacity>
           </View>
         </View>
@@ -562,15 +595,14 @@ export default function WeeklySchedule() {
           horizontal
           showsHorizontalScrollIndicator={Platform.OS === "web"}
           style={{
-            backgroundColor: "#FFFFFF",
-            borderRadius: 12,
+            backgroundColor: Colors.white,
+            borderRadius: 20,
             borderWidth: 1,
-            borderColor: "#D1D5DB",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 2,
-            elevation: 1,
+            borderColor: Colors.border,
+            ...getWebShadow("md"),
+          }}
+          contentContainerStyle={{
+            minWidth: "100%",
           }}
         >
           <View style={{ minWidth: "100%" }}>

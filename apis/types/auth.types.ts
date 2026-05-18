@@ -21,10 +21,19 @@ export interface LoginRequest {
  */
 export interface LoginResponse {
   token: string;
+  refreshToken: string;
   role: UserRole;
   userId: string;
   name: string;
   email: string;
+}
+
+/**
+ * Token Refresh Response
+ */
+export interface TokenRefreshResponse {
+  accessToken: string;
+  refreshToken: string;
 }
 
 /**

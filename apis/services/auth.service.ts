@@ -1,7 +1,7 @@
 import apiClient from '../config/apiClient';
 import { ApiResponse } from '../types/api.types';
 import { LoginRequest, LoginResponse, User } from '../types/auth.types';
-import { setAuthToken, removeAuthToken, setCurrentUserProfile } from '../config/apiClient';
+import { setAuthToken, setRefreshToken, getRefreshToken, removeAuthToken, setCurrentUserProfile } from '../config/apiClient';
 
 /**
  * Authentication Service
@@ -19,6 +19,9 @@ export const authService = {
     if (response.data.success && response.data.data.token) {
       // Lưu token vào secure storage
       await setAuthToken(response.data.data.token);
+      if (response.data.data.refreshToken) {
+        await setRefreshToken(response.data.data.refreshToken);
+      }
       // Lưu luôn profile để header dùng lại
       const data = response.data.data;
       await setCurrentUserProfile({
@@ -36,7 +39,15 @@ export const authService = {
    * Đăng xuất
    */
   logout: async (): Promise<void> => {
-    await removeAuthToken();
+    try {
+      const refreshToken = await getRefreshToken();
+      if (refreshToken) {
+        // Gọi backend xóa token trên Redis
+        await apiClient.post('/auth/logout', { refreshToken }).catch(() => {});
+      }
+    } finally {
+      await removeAuthToken();
+    }
   },
 
   /**

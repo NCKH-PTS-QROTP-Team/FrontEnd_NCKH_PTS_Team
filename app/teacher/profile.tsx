@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   useWindowDimensions,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -19,7 +18,8 @@ import {
   type TeacherSummary,
 } from "@/apis/services/report.service";
 import ProfileAndSettings from "@/components/ProfileAndSettings";
-import { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
+import ConfirmDialog, { useConfirmDialog } from "@/components/ConfirmDialog";
 
 export default function TeacherProfileScreen() {
   const router = useRouter();
@@ -27,18 +27,23 @@ export default function TeacherProfileScreen() {
   const isMobile = width < 768;
   const { showToast } = useToast();
 
+  const { confirm, dialogProps } = useConfirmDialog();
+
   const handleLogout = () => {
-    Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Đăng xuất",
-        style: "destructive",
-        onPress: () => {
-          // Handle logout logic
-          router.replace("/auth/login");
-        },
+    confirm({
+      title: "Đăng xuất",
+      message: "Bạn có chắc chắn muốn đăng xuất?",
+      confirmText: "Đăng xuất",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          await authService.logout();
+        } catch (e) {
+          // Ignore
+        }
+        router.replace("/auth/login");
       },
-    ]);
+    });
   };
 
   const [userInfo, setUserInfo] = useState<any>(null);
@@ -154,6 +159,7 @@ export default function TeacherProfileScreen() {
           Phiên bản 1.0.0
         </Text>
       </ScrollView>
+      <ConfirmDialog {...dialogProps} />
     </SafeAreaView>
   );
 }

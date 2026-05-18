@@ -119,46 +119,28 @@ export default function NotificationDropdown() {
       <TouchableOpacity
         onPress={() => setIsOpen(!isOpen)}
         style={{
-          width: 42,
-          height: 42,
-          borderRadius: 21,
+          width: 40,
+          height: 40,
+          borderRadius: 20,
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
-          borderWidth: 1,
-          borderColor: "#1f3d8e",
-          overflow: "hidden",
-          boxShadow: isOpen
-            ? "0 6px 16px rgba(31, 61, 142, 0.38)"
-            : "0 4px 12px rgba(31, 61, 142, 0.28)",
+          backgroundColor: isOpen ? "#f1f5f9" : "transparent",
           ...(Platform.OS === "web" &&
             ({
               cursor: "pointer",
               transition: "all 0.2s ease",
             } as any)),
         }}
+        {...(Platform.OS === "web" && {
+          onMouseEnter: (e: any) => { e.currentTarget.style.backgroundColor = "#f1f5f9"; },
+          onMouseLeave: (e: any) => { e.currentTarget.style.backgroundColor = isOpen ? "#f1f5f9" : "transparent"; }
+        } as any)}
       >
-        <LinearGradient
-          colors={isOpen ? ["#162d67", "#1f3d8e"] : ["#1f3d8e", "#2f57bf"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          }}
-        />
         <Ionicons
-          name="notifications"
-          size={20}
-          color="#FFFFFF"
-          style={
-            Platform.OS === "web"
-              ? ({ textShadow: "0 1px 4px rgba(0,0,0,0.28)" } as any)
-              : undefined
-          }
+          name="notifications-outline"
+          size={22}
+          color="#1e3a8a"
         />
 
         {/* Badge */}
@@ -166,25 +148,24 @@ export default function NotificationDropdown() {
           <View
             style={{
               position: "absolute",
-              top: 6,
+              top: 4,
               right: 6,
-              backgroundColor: "#EF4444",
-              borderRadius: 10,
-              minWidth: 18,
-              height: 18,
+              backgroundColor: "#ef4444",
+              borderRadius: 8,
+              minWidth: 16,
+              height: 16,
               alignItems: "center",
               justifyContent: "center",
-              paddingHorizontal: 4,
-              borderWidth: 2,
+              paddingHorizontal: 3,
+              borderWidth: 1.5,
               borderColor: "#FFFFFF",
             }}
           >
             <Text
               style={{
                 color: "#FFFFFF",
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: "bold",
-                lineHeight: 14,
               }}
             >
               {unreadCount > 9 ? "9+" : unreadCount}

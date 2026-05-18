@@ -21,7 +21,7 @@ import { HomeIcon, UsersIcon, SettingsIcon } from './Icons';
 export default function AnimationsDemo() {
   const [modalCenter, setModalCenter] = useState(false);
   const [modalBottom, setModalBottom] = useState(false);
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
 
   return (
     <PageTransition>
@@ -536,7 +536,6 @@ export default function AnimationsDemo() {
       </Modal>
 
       {/* Toast */}
-      <Toast visible={toast.visible} message={toast.message} type={toast.type} onHide={hideToast} />
     </PageTransition>
   );
 }

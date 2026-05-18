@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Switch, Alert } from "react-native";
+import { View, Text, ScrollView, Switch } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Colors } from "../../../constants/colors";
 import { mockUsers } from "../../../constants/mockData";
@@ -8,12 +8,16 @@ import Card from "../../../components/Card";
 import Badge from "../../../components/Badge";
 import PrimaryButton from "../../../components/PrimaryButton";
 import Input from "../../../components/Input";
+import ConfirmDialog, { useConfirmDialog } from "../../../components/ConfirmDialog";
+import { useToast } from "../../../components/ToastProvider";
 
 export default function UserDetail() {
   const { id } = useLocalSearchParams();
   const user = mockUsers.find((u) => u.id === id);
   const [isActive, setIsActive] = useState(user?.isActive || false);
   const [isEditing, setIsEditing] = useState(false);
+  const { confirm, dialogProps } = useConfirmDialog();
+  const { showToast } = useToast();
 
   const breadcrumbs = [
     { label: "Dashboard", route: "/admin/dashboard" },
@@ -41,35 +45,25 @@ export default function UserDetail() {
   };
 
   const handleDelete = () => {
-    Alert.alert(
-      "Xác nhận xóa",
-      `Bạn có chắc muốn xóa người dùng ${user.name}?`,
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xóa",
-          style: "destructive",
-          onPress: () => {
-            alert("Đã xóa người dùng");
-            router.back();
-          },
-        },
-      ],
-    );
+    confirm({
+      title: "Xác nhận xóa",
+      message: `Bạn có chắc muốn xóa người dùng ${user.name}?`,
+      confirmText: "Xóa",
+      variant: "danger",
+      onConfirm: () => {
+        showToast("Đã xóa người dùng", "success");
+        router.back();
+      },
+    });
   };
 
   const handleResetPassword = () => {
-    Alert.alert(
-      "Xác nhận reset mật khẩu",
-      "Mật khẩu mới sẽ được gửi qua email",
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Reset",
-          onPress: () => alert("Đã gửi mật khẩu mới qua email"),
-        },
-      ],
-    );
+    confirm({
+      title: "Xác nhận reset mật khẩu",
+      message: "Mật khẩu mới sẽ được gửi qua email",
+      confirmText: "Reset",
+      onConfirm: () => showToast("Đã gửi mật khẩu mới qua email", "success"),
+    });
   };
 
   return (
@@ -227,6 +221,7 @@ export default function UserDetail() {
           </Card>
         </View>
       </ScrollView>
+      <ConfirmDialog {...dialogProps} />
     </View>
   );
 }

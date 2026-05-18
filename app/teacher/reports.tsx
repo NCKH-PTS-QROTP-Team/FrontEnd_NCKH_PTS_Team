@@ -20,7 +20,7 @@ import {
   type ClassAttendanceReport,
 } from "@/apis/services/report.service";
 import { getAuthToken } from "@/apis/config/apiClient";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { LinearGradient } from "expo-linear-gradient";
@@ -171,7 +171,7 @@ export default function ReportsScreen() {
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
 
   const contentMaxWidth = isDesktop ? 960 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
@@ -1099,14 +1099,7 @@ export default function ReportsScreen() {
         </Animated.ScrollView>
       )}
 
-      {toast && (
-        <Toast
-          visible={toast.visible}
-          message={toast.message}
-          type={toast.type}
-          onHide={hideToast}
-        />
-      )}
+
     </View>
   );
 }

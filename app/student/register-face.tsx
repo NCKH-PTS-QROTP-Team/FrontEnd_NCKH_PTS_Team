@@ -17,8 +17,9 @@ import { faceService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import { Colors } from "@/constants/colors";
 import { PrimaryButton } from "@/components/PrimaryButton";
-import Toast, { useToast } from "@/components/Toast";
+import { useToast } from "@/components/ToastProvider";
 import { useSocket } from "@/apis/socket/SocketProvider";
+import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 import {
   UserIcon,
   ArrowLeftIcon,
@@ -96,7 +97,7 @@ export default function RegisterFaceScreen() {
   const [capturing, setCapturing] = useState(false);
   const [cameraActive, setCameraActive] = useState(true);
   const [faceDetected, setFaceDetected] = useState<FaceDetection | null>(null);
-  const [detecting, setDetecting] = useState(false);
+  const detectingRef = useRef(false);
   const [isReadyToCapture, setIsReadyToCapture] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [previewLayout, setPreviewLayout] = useState<{ width: number; height: number }>({
@@ -110,7 +111,7 @@ export default function RegisterFaceScreen() {
   const faceBoxRef = useRef<FaceDetection | null>(null);
   // Lưu image dimensions để scale coordinates chính xác
   const lastImageDimensions = useRef<{ width: number; height: number } | null>(null);
-  const { toast, showToast, hideToast } = useToast();
+  const { showToast } = useToast();
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const { socket, isConnected, connect, disconnect, emit, on, off } = useSocket();
 
@@ -128,6 +129,13 @@ export default function RegisterFaceScreen() {
   const enableAutoCapture = Platform.OS === "web";
 
   const getGuideRect = (previewW: number, previewH: number) => {
+    if (Platform.OS === 'web') {
+      const h = previewH * 0.80; // Tăng khung nhận diện lên 80% chiều cao camera
+      const w = h;
+      const y = previewH * 0.10;
+      const x = (previewW - w) / 2;
+      return { x, y, w, h };
+    }
     // Match UI guide frame: top 25%, left/right 10%, aspectRatio 0.75
     const x = previewW * 0.1;
     const w = previewW * 0.8;
@@ -380,16 +388,16 @@ export default function RegisterFaceScreen() {
 
   // Detect face realtime qua socket (fallback về API nếu socket chưa ready)
   useEffect(() => {
-    if (!cameraActive || capturing || detecting || !cameraRef.current) {
+    if (!cameraActive || capturing || detectingRef.current || !cameraRef.current) {
       return;
     }
 
     // Capture frame và detect
     detectIntervalRef.current = setInterval(async () => {
-      if (!cameraRef.current || detecting) return;
+      if (!cameraRef.current || detectingRef.current) return;
 
       try {
-        setDetecting(true);
+        detectingRef.current = true;
 
         // Capture frame nhỏ để detect (quality thấp để nhanh)
         // Tăng quality để cải thiện nhận diện mặt
@@ -401,7 +409,7 @@ export default function RegisterFaceScreen() {
         });
 
         if (!photo.base64) {
-          setDetecting(false);
+          detectingRef.current = false;
           return;
         }
 
@@ -513,7 +521,7 @@ export default function RegisterFaceScreen() {
           }
           // Silently handle other errors
       } finally {
-        setDetecting(false);
+        detectingRef.current = false;
       }
     }, useSocketForDetection && isConnected ? 400 : 500); // Socket: 400ms (tối ưu) vs API: 500ms
 
@@ -522,7 +530,7 @@ export default function RegisterFaceScreen() {
         clearInterval(detectIntervalRef.current);
       }
     };
-  }, [cameraActive, capturing, detecting, isConnected, emit, width, height, previewLayout]);
+  }, [cameraActive, capturing, isConnected, emit, width, height, previewLayout]);
 
   const handleCapture = async (opts?: { isAuto?: boolean }) => {
     if (!cameraRef.current || !studentId || capturing) {
@@ -562,9 +570,6 @@ export default function RegisterFaceScreen() {
         return;
       }
       
-      // Tắt camera sau khi capture thành công
-      setCameraActive(false);
-
       const base64Image = photo.base64;
 
       // Đăng ký góc mặt đầu tiên hoặc thêm góc mặt mới
@@ -639,7 +644,7 @@ export default function RegisterFaceScreen() {
       setTimeout(() => {
         if (currentStep < FACE_ANGLES.length - 1) {
           setCurrentStep(currentStep + 1);
-          setCameraActive(true); // Bật lại camera cho bước tiếp theo
+          setCameraActive(true); // Giữ camera active cho bước tiếp theo
         } else {
           // Hoàn thành
           setCameraActive(false); // Tắt camera khi hoàn thành
@@ -856,7 +861,7 @@ export default function RegisterFaceScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
+    <View style={{ flex: 1, backgroundColor: Colors.surface }}>
       <StatusBar style="light" />
 
       {/* Camera View */}
@@ -864,19 +869,24 @@ export default function RegisterFaceScreen() {
         <View
           style={{
             flex: 1,
+            flexDirection: Platform.OS === 'web' ? 'row' : 'column',
             alignItems: "center",
             justifyContent: Platform.OS === "web" ? "center" : "flex-start",
+            padding: Platform.OS === 'web' ? 24 : 0,
+            gap: Platform.OS === 'web' ? 24 : 0,
           }}
         >
           <View
             style={
               Platform.OS === "web"
                 ? {
-                    width: Math.min(maxContentWidth, width),
-                    aspectRatio: 3 / 4,
-                    maxHeight: height,
-                    borderRadius: 24,
+                    flex: 1,
+                    maxWidth: 800,
+                    aspectRatio: 16 / 9,
+                    borderRadius: 16,
                     overflow: "hidden",
+                    backgroundColor: "#111827",
+                    ...getWebShadow("xl"),
                   }
                 : {
                     flex: 1,
@@ -890,7 +900,7 @@ export default function RegisterFaceScreen() {
               }
             }}
           >
-            <CameraView ref={cameraRef} style={{ flex: 1 }} facing="front" />
+            <CameraView ref={cameraRef} style={{ flex: 1 }} facing="front" animateShutter={false} />
           
             {/* Overlay - Tách ra ngoài CameraView để tránh warning */}
             <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
@@ -1092,7 +1102,17 @@ export default function RegisterFaceScreen() {
 
             {/* Guide Frame - Banking style */}
             <View
-              style={{
+              style={Platform.OS === 'web' ? {
+                position: "absolute",
+                top: "10%",
+                bottom: "10%",
+                alignSelf: 'center',
+                aspectRatio: 1,
+                borderWidth: 2,
+                borderColor: faceDetected ? Colors.primary : "rgba(255,255,255,0.5)",
+                borderRadius: 16,
+                borderStyle: "dashed",
+              } : {
                 position: "absolute",
                 top: "25%",
                 left: "10%",
@@ -1105,23 +1125,24 @@ export default function RegisterFaceScreen() {
               }}
             />
 
-            {/* Bottom Overlay */}
-            <Animated.View
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                paddingHorizontal: paddingHorizontal,
-                paddingBottom: 40,
-                paddingTop: 24,
-                backgroundColor: "rgba(0,0,0,0.85)",
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
-                opacity: fadeAnim,
-              }}
-            >
-              {/* Icon và Instruction */}
+            {/* Bottom Overlay - Only for Mobile */}
+            {Platform.OS !== 'web' && (
+              <Animated.View
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  paddingHorizontal: paddingHorizontal,
+                  paddingBottom: 40,
+                  paddingTop: 24,
+                  backgroundColor: "rgba(0,0,0,0.85)",
+                  borderTopLeftRadius: 24,
+                  borderTopRightRadius: 24,
+                  opacity: fadeAnim,
+                }}
+              >
+                {/* Icon và Instruction */}
               <View style={{ alignItems: "center", marginBottom: 24 }}>
                 <View style={{ marginBottom: 12 }}>
                   {faceDetected ? (
@@ -1201,13 +1222,83 @@ export default function RegisterFaceScreen() {
               </Text>
             </TouchableOpacity>
             </Animated.View>
+            )}
             </View>
           </View>
+          
+          {/* Web Controls Panel */}
+          {Platform.OS === 'web' && (
+            <View style={{
+              width: 320,
+              backgroundColor: 'white',
+              borderRadius: 16,
+              padding: 24,
+              borderWidth: 1,
+              borderColor: "rgba(0,0,0,0.05)",
+              ...getWebShadow("lg"),
+            }}>
+              {/* Icon và Instruction */}
+              <View style={{ alignItems: "center", marginBottom: 24 }}>
+                <View style={{ marginBottom: 12 }}>
+                  {faceDetected ? (
+                    <CheckCircleIcon size={64} color={Colors.primary} />
+                  ) : (
+                    <currentAngle.IconComponent size={64} color={Colors.primary} />
+                  )}
+                </View>
+                <Text
+                  style={{
+                    color: Colors.textHeading,
+                    fontSize: 16,
+                    fontWeight: "600",
+                    textAlign: "center",
+                    marginBottom: 8,
+                  }}
+                >
+                  {countdown !== null
+                    ? `Giữ yên... chụp sau ${countdown}`
+                    : isReadyToCapture
+                    ? "Giữ yên... đang chuẩn bị chụp"
+                    : faceDetected
+                    ? "Khuôn mặt đã được nhận diện"
+                    : currentAngle.instruction}
+                </Text>
+                <Text style={{ color: Colors.textSecondary, fontSize: 13, textAlign: "center" }}>
+                  {countdown !== null
+                    ? "Đừng di chuyển để ảnh rõ nét"
+                    : isReadyToCapture
+                    ? "Hệ thống sẽ tự chụp nếu bạn giữ ổn định"
+                    : faceDetected
+                    ? "Giữ mặt trong khung nét đứt để tự chụp"
+                    : "Đảm bảo ánh sáng đủ và khuôn mặt rõ ràng"}
+                </Text>
+              </View>
+
+              <PrimaryButton
+                title={
+                  capturing
+                    ? "Đang xử lý..."
+                    : countdown !== null
+                    ? `Chụp sau ${countdown}`
+                    : currentStep === FACE_ANGLES.length - 1
+                    ? "Hoàn tất"
+                    : "Chụp ảnh"
+                }
+                onPress={handleCapture}
+                loading={capturing}
+                disabled={capturing || countdown !== null}
+              />
+
+              <TouchableOpacity onPress={handleCancel} style={{ marginTop: 16, padding: 12, alignItems: "center", ...getWebCursor() }}>
+                <Text style={{ color: Colors.textSecondary, fontSize: 15, fontWeight: "500" }}>Hủy</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
 
-      {/* Loading overlay khi không có camera */}
-      {!cameraActive && capturing && (
+      {/* Loading overlay giữ nền camera, không che đen toàn màn */}
+      {capturing && (
         <View
           style={{
             position: "absolute",
@@ -1215,25 +1306,19 @@ export default function RegisterFaceScreen() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "#000",
+            backgroundColor: "rgba(15, 23, 42, 0.35)",
             justifyContent: "center",
             alignItems: "center",
           }}
         >
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={{ color: Colors.white, marginTop: 16 }}>
+          <Text style={{ color: Colors.white, marginTop: 16, fontWeight: "600" }}>
             Đang xử lý...
           </Text>
         </View>
       )}
 
       {/* Toast */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
-    </SafeAreaView>
+    </View>
   );
 }
