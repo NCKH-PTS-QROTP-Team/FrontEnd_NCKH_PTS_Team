@@ -19,6 +19,7 @@ import Table from "@/components/Table";
 import { DropdownPicker } from "@/components/DropdownPicker";
 import { CalendarIcon, CloseIcon } from "@/components/Icons";
 import { Ionicons } from "@expo/vector-icons";
+import MobileGradientHeader from "@/components/MobileGradientHeader";
 import {
   courseService,
   reportService,
@@ -499,18 +500,36 @@ export default function ClassListScreen() {
         ),
       },
       {
-        key: "action",
-        label: "",
+        key: "attendanceRate",
+        label: "Tỉ lệ ĐD",
         flex: 0.8,
         align: "center" as const,
+        render: (item: TeacherClassCard) => {
+          const rate = item.attendanceRate || 0;
+          const color = rate >= 80 ? "#10b981" : rate >= 60 ? "#f59e0b" : "#ef4444";
+          const bg = rate >= 80 ? "#ecfdf5" : rate >= 60 ? "#fffbeb" : "#fef2f2";
+          return (
+            <View style={{ backgroundColor: bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
+              <Text style={{ fontSize: 12, fontWeight: "700", color }}>{rate}%</Text>
+            </View>
+          );
+        },
+      },
+      {
+        key: "action",
+        label: "",
+        flex: 0.7,
+        align: "center" as const,
         render: () => (
-          <Text style={{ fontSize: 12, fontWeight: "700", color: "#2563eb" }}>
-            Xem chi tiết
-          </Text>
+          <Text style={{ fontSize: 12, fontWeight: "700", color: "#2563eb" }}>Chi tiết</Text>
         ),
       },
     ];
   }, [isMobile]);
+
+  // Stats derived from filtered data
+  const activeClasses = classes.filter((c) => c.attendanceRate > 0).length;
+  const highRateClasses = classes.filter((c) => c.attendanceRate >= 80).length;
 
   return (
     <SafeAreaView
@@ -538,270 +557,136 @@ export default function ClassListScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View
-          style={{
-            maxWidth: contentMaxWidth,
-            width: "100%",
-            alignSelf: "center",
-          }}
-        >
-          {isMobile ? (
+        <View style={{ maxWidth: contentMaxWidth, width: "100%", alignSelf: "center" }}>
+
+          {/* Mobile header */}
+          {isMobile && (
             <MobileGradientHeader
               title="Danh sách lớp học"
               subtitle={`${summary.totalClasses} lớp • ${summary.totalStudents} sinh viên`}
               icon="school"
               iconSize={24}
               actions={[
-                {
-                  icon: "notifications",
-                  onPress: () => router.push("/teacher/notifications"),
-                  accessibilityLabel: "Mở thông báo",
-                },
-                {
-                  icon: "person",
-                  onPress: () => router.push("/teacher/profile"),
-                  accessibilityLabel: "Mở hồ sơ",
-                },
+                { icon: "notifications", onPress: () => router.push("/teacher/notifications"), accessibilityLabel: "Thông báo" },
+                { icon: "person", onPress: () => router.push("/teacher/profile"), accessibilityLabel: "Hồ sơ" },
               ]}
-              style={{
-                marginHorizontal: 0,
-                marginTop: 0,
-                marginBottom: 14,
-                borderColor: "#BFDBFE",
-              }}
+              style={{ marginHorizontal: 0, marginTop: 0, marginBottom: 14 }}
             />
-          ) : null}
+          )}
 
-          <View
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: "#E5ECF6",
-              padding: 14,
-              marginBottom: 14,
-            }}
-          >
-            <View
-              style={{
-                borderWidth: 1,
-                borderColor: "#D7E3F7",
-                borderRadius: 12,
-                backgroundColor: "#F8FAFF",
-                flexDirection: "row",
-                alignItems: "center",
-                paddingHorizontal: 12,
-                marginBottom: 12,
-                minHeight: 44,
-              }}
-            >
-              <Ionicons name="search" size={18} color="#1E40AF" />
-              <TextInput
-                placeholder="Tìm theo tên lớp, mã lớp, môn học, học kỳ..."
-                value={searchKeyword}
-                onChangeText={setSearchKeyword}
-                placeholderTextColor="#94A3B8"
-                style={{
-                  flex: 1,
-                  fontSize: 14,
-                  color: "#0F172A",
-                  marginLeft: 8,
-                  paddingVertical: 10,
-                }}
-              />
-              {searchKeyword.trim().length > 0 && (
-                <TouchableOpacity
-                  onPress={() => setSearchKeyword("")}
-                  style={{ paddingHorizontal: 4 }}
-                >
-                  <Ionicons name="close-circle" size={18} color="#94A3B8" />
+          {/* ── Stats Cards ── */}
+          {!isMobile && (
+            <View style={{ flexDirection: "row", gap: 14, marginBottom: 18 }}>
+              {[
+                { icon: "school-outline", label: "Tổng lớp học", value: summary.totalClasses, color: "#3b82f6", bg: "#eff6ff" },
+                { icon: "people-outline", label: "Tổng sinh viên", value: summary.totalStudents, color: "#8b5cf6", bg: "#f5f3ff" },
+                { icon: "checkmark-circle-outline", label: "Lớp có điểm danh", value: activeClasses, color: "#10b981", bg: "#ecfdf5" },
+                { icon: "trending-up-outline", label: "Tỉ lệ TB", value: `${summary.averageRate}%`, color: summary.averageRate >= 80 ? "#10b981" : summary.averageRate >= 60 ? "#f59e0b" : "#ef4444", bg: summary.averageRate >= 80 ? "#ecfdf5" : summary.averageRate >= 60 ? "#fffbeb" : "#fef2f2" },
+              ].map((stat, i) => (
+                <View key={i} style={{ flex: 1, backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", padding: 16, flexDirection: "row", alignItems: "center", gap: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}>
+                  <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: stat.bg, alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name={stat.icon as any} size={22} color={stat.color} />
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: 11, color: "#64748b", fontWeight: "600", marginBottom: 2 }}>{stat.label}</Text>
+                    <Text style={{ fontSize: 24, fontWeight: "800", color: "#1e293b" }}>{loading ? "-" : stat.value}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* ── Search & Filter Bar ── */}
+          <View style={{ backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", marginBottom: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}>
+            {/* Title row */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Text style={{ fontSize: 16, fontWeight: "800", color: "#1e293b" }}>Danh sách lớp học</Text>
+                <View style={{ backgroundColor: "#eff6ff", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: "#3b82f6" }}>{filteredClasses.length}</Text>
+                </View>
+              </View>
+              {hasActiveFilters && (
+                <TouchableOpacity onPress={resetFilters} style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#fef2f2", borderWidth: 1, borderColor: "#fecaca" }}>
+                  <Ionicons name="close" size={14} color="#ef4444" />
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: "#ef4444" }}>Xóa bộ lọc</Text>
                 </TouchableOpacity>
               )}
             </View>
 
-            <View
-              style={{
-                flexDirection: isMobile ? "column" : "row",
-                gap: 10,
-              }}
-            >
-              <DropdownPicker
-                label="Môn học"
-                options={subjectOptions}
-                selectedValue={selectedSubject}
-                onValueChange={setSelectedSubject}
-                placeholder="Tất cả môn học"
-                themeColor="#1E40AF"
-              />
-              <DropdownPicker
-                label="Học kỳ"
-                options={semesterOptions}
-                selectedValue={selectedSemester}
-                onValueChange={setSelectedSemester}
-                placeholder="Tất cả học kỳ"
-                themeColor="#1E40AF"
-              />
-            </View>
+            {/* Controls row */}
+            <View style={{ padding: 12, gap: 10 }}>
+              {/* Search */}
+              <View style={{ borderWidth: 1, borderColor: "#D7E3F7", borderRadius: 10, backgroundColor: "#F8FAFF", flexDirection: "row", alignItems: "center", paddingHorizontal: 12, minHeight: 42 }}>
+                <Ionicons name="search" size={16} color="#1E40AF" />
+                <TextInput
+                  placeholder="Tìm theo tên lớp, mã lớp, môn học..."
+                  value={searchKeyword}
+                  onChangeText={setSearchKeyword}
+                  placeholderTextColor="#94A3B8"
+                  style={{ flex: 1, fontSize: 13, color: "#0F172A", marginLeft: 8, paddingVertical: 8 }}
+                />
+                {searchKeyword.trim().length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchKeyword("")}>
+                    <Ionicons name="close-circle" size={16} color="#94A3B8" />
+                  </TouchableOpacity>
+                )}
+              </View>
 
-            <View
-              style={{
-                marginTop: 12,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: 8,
-              }}
-            >
-              <Text
-                style={{ fontSize: 12, color: "#475569", fontWeight: "600" }}
-              >
-                Hiển thị{" "}
-                {filteredClasses.length === 0
-                  ? 0
-                  : (currentPage - 1) * pageSize + 1}
-                -{Math.min(currentPage * pageSize, filteredClasses.length)}/
-                {filteredClasses.length} lớp
-              </Text>
-              {hasActiveFilters ? (
-                <TouchableOpacity onPress={resetFilters}>
-                  <Text
-                    style={{
-                      color: "#1D4ED8",
-                      fontSize: 12,
-                      fontWeight: "700",
-                    }}
-                  >
-                    Xóa bộ lọc
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
+              {/* Filters */}
+              <View style={{ flexDirection: isMobile ? "column" : "row", gap: 10 }}>
+                <DropdownPicker label="Môn học" options={subjectOptions} selectedValue={selectedSubject} onValueChange={setSelectedSubject} placeholder="Tất cả môn học" themeColor="#1E40AF" />
+                <DropdownPicker label="Học kỳ" options={semesterOptions} selectedValue={selectedSemester} onValueChange={setSelectedSemester} placeholder="Tất cả học kỳ" themeColor="#1E40AF" />
+              </View>
             </View>
           </View>
 
+          {/* ── Table ── */}
           {loading ? (
-            <View
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: "#E5ECF6",
-                paddingVertical: 40,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+            <View style={{ backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", paddingVertical: 48, alignItems: "center" }}>
               <ActivityIndicator size="large" color="#3b82f6" />
-              <Text style={{ color: Colors.textSecondary, marginTop: 12 }}>
-                Đang tải dữ liệu...
-              </Text>
+              <Text style={{ color: Colors.textSecondary, marginTop: 12 }}>Đang tải dữ liệu...</Text>
             </View>
           ) : (
-            <View>
+            <View style={{ backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}>
               <Table
                 columns={tableColumns}
                 data={paginatedClasses}
-                onRowPress={(item) =>
-                  handleClassPress(item as TeacherClassCard)
-                }
+                onRowPress={(item) => handleClassPress(item as TeacherClassCard)}
                 stickyHeader={false}
                 headerBackgroundColor="#1E3A8A"
                 headerTextColor="#FFFFFF"
                 headerBorderColor="#1D4ED8"
                 emptyState={{
-                  title: hasActiveFilters
-                    ? "Không có kết quả phù hợp"
-                    : "Chưa có lớp học",
-                  description: hasActiveFilters
-                    ? "Hãy thử đổi từ khóa tìm kiếm hoặc điều chỉnh bộ lọc."
-                    : "Hiện chưa có lớp học nào được gán cho giảng viên.",
+                  title: hasActiveFilters ? "Không có kết quả phù hợp" : "Chưa có lớp học",
+                  description: hasActiveFilters ? "Hãy thử đổi từ khóa hoặc điều chỉnh bộ lọc." : "Hiện chưa có lớp học nào được gán.",
                   icon: <CalendarIcon size={48} color={Colors.gray300} />,
                 }}
               />
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: "#64748b",
-                  marginTop: 10,
-                  marginLeft: 2,
-                }}
-              >
-                Nhấn vào một dòng để xem chi tiết lớp và danh sách sinh viên.
-              </Text>
 
+              {/* Pagination footer */}
               {filteredClasses.length > 0 && (
-                <View
-                  style={{
-                    marginTop: 12,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    backgroundColor: "#FFFFFF",
-                    borderWidth: 1,
-                    borderColor: "#E5ECF6",
-                    borderRadius: 12,
-                    paddingVertical: 10,
-                    paddingHorizontal: 12,
-                    gap: 10,
-                  }}
-                >
-                  <TouchableOpacity
-                    disabled={currentPage <= 1}
-                    onPress={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 8,
-                      backgroundColor: currentPage <= 1 ? "#E2E8F0" : "#DBEAFE",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "700",
-                        color: currentPage <= 1 ? "#94A3B8" : "#1D4ED8",
-                      }}
-                    >
-                      Trước
-                    </Text>
-                  </TouchableOpacity>
-
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: "#334155",
-                      fontWeight: "700",
-                    }}
-                  >
-                    Trang {currentPage}/{totalPages}
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: "#f1f5f9", paddingVertical: 12, paddingHorizontal: 16 }}>
+                  <Text style={{ fontSize: 13, color: "#64748b" }}>
+                    {filteredClasses.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredClasses.length)} / {filteredClasses.length} lớp
                   </Text>
-
-                  <TouchableOpacity
-                    disabled={currentPage >= totalPages}
-                    onPress={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 8,
-                      backgroundColor:
-                        currentPage >= totalPages ? "#E2E8F0" : "#DBEAFE",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "700",
-                        color:
-                          currentPage >= totalPages ? "#94A3B8" : "#1D4ED8",
-                      }}
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <TouchableOpacity
+                      disabled={currentPage <= 1}
+                      onPress={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      style={{ padding: 6, opacity: currentPage <= 1 ? 0.35 : 1 }}
                     >
-                      Sau
-                    </Text>
-                  </TouchableOpacity>
+                      <Ionicons name="chevron-back" size={18} color="#1E40AF" />
+                    </TouchableOpacity>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#334155", minWidth: 70, textAlign: "center" }}>Trang {currentPage}/{totalPages}</Text>
+                    <TouchableOpacity
+                      disabled={currentPage >= totalPages}
+                      onPress={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      style={{ padding: 6, opacity: currentPage >= totalPages ? 0.35 : 1 }}
+                    >
+                      <Ionicons name="chevron-forward" size={18} color="#1E40AF" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
             </View>

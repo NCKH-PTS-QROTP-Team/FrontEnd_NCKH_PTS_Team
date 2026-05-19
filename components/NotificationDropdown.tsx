@@ -47,7 +47,11 @@ const mockNotifications: Notification[] = [
   },
 ];
 
-export default function NotificationDropdown() {
+interface NotificationDropdownProps {
+  role?: string;
+}
+
+export default function NotificationDropdown({ role = "student" }: NotificationDropdownProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState(mockNotifications);
@@ -110,7 +114,7 @@ export default function NotificationDropdown() {
 
   const handleViewAll = () => {
     setIsOpen(false);
-    router.push("/student/notifications");
+    router.push(`/${role}/notifications`);
   };
 
   return (

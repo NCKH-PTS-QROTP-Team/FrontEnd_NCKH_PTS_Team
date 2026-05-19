@@ -12,6 +12,7 @@ import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 
 // ─── Notification Types & Demo Data ──────────────────────────────────────────
 export type NotifType = "attendance" | "warning" | "system" | "info";
@@ -134,14 +135,21 @@ export default function NotificationsScreen() {
   const isDesktop = width >= 1024;
   const paddingHorizontal = isDesktop ? 24 : isMobile ? 16 : 20;
 
-  const [notifications, setNotifications] =
-    useState<Notification[]>(DEMO_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<Notification[]>(DEMO_NOTIFICATIONS);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filter]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
-  const displayed =
-    filter === "unread" ? notifications.filter((n) => !n.read) : notifications;
+  const displayed = filter === "unread" ? notifications.filter((n) => !n.read) : notifications;
+
+  const PAGE_SIZE = 10;
+  const totalPages = Math.ceil(displayed.length / PAGE_SIZE);
+  const paginatedNotifications = displayed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const markAllRead = () =>
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -157,91 +165,144 @@ export default function NotificationsScreen() {
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
-      // Current screen uses demo data, so refresh resets list to latest demo source.
       setNotifications(DEMO_NOTIFICATIONS);
     } finally {
       setRefreshing(false);
     }
   };
 
+  const renderListContent = () => {
+    if (displayed.length === 0) {
+      return (
+        <View style={{ alignItems: "center", paddingVertical: 60 }}>
+          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: "#f1f5f9", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+            <Ionicons name="notifications-off-outline" size={34} color="#94a3b8" />
+          </View>
+          <Text style={{ fontSize: 16, fontWeight: "700", color: "#475569", marginBottom: 6 }}>
+            Không có thông báo
+          </Text>
+          <Text style={{ fontSize: 13, color: "#94a3b8", textAlign: "center" }}>
+            {filter === "unread" ? "Bạn đã đọc tất cả thông báo rồi!" : "Chưa có thông báo nào."}
+          </Text>
+        </View>
+      );
+    }
+    return paginatedNotifications.map((notif) => {
+      const cfg = NOTIF_CONFIG[notif.type];
+      return (
+        <TouchableOpacity
+          key={notif.id}
+          onPress={() => markRead(notif.id)}
+          activeOpacity={0.75}
+          style={{
+            backgroundColor: notif.read ? "#fff" : "#eff6ff",
+            borderRadius: 16,
+            borderWidth: 1.5,
+            borderColor: notif.read ? "#f1f5f9" : "#bfdbfe",
+            padding: 16,
+            marginBottom: 12,
+            flexDirection: "row",
+            gap: 14,
+            ...getWebShadow(notif.read ? "sm" : "md"),
+            ...getWebCursor(),
+          }}
+        >
+          {/* Icon */}
+          <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: cfg.bg, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Ionicons name={cfg.icon as any} size={24} color={cfg.color} />
+          </View>
+
+          {/* Content */}
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1e293b", flex: 1 }} numberOfLines={1}>{notif.title}</Text>
+                {!notif.read && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: "#3b82f6", marginRight: 8 }} />}
+              </View>
+              <TouchableOpacity onPress={() => removeNotif(notif.id)} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close" size={16} color="#94a3b8" />
+              </TouchableOpacity>
+            </View>
+            <Text style={{ fontSize: 13, color: "#64748b", lineHeight: 19, marginBottom: 8 }}>{notif.body}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={{ backgroundColor: cfg.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
+                <Text style={{ fontSize: 11, fontWeight: "700", color: cfg.color }}>{cfg.label}</Text>
+              </View>
+              <Text style={{ fontSize: 11, color: "#94a3b8" }}>{formatRelativeTime(notif.time)}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      );
+    });
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: "#f8fafc" }}>
       <StatusBar style="light" />
 
-      {/* ── Header ── */}
-      <View
-        style={{
-          paddingTop: isMobile ? 48 : 64,
-          paddingBottom: 24,
-          paddingHorizontal,
-          borderBottomLeftRadius: 32,
-          borderBottomRightRadius: 32,
-          zIndex: 10,
-          shadowColor: "#3B82F6",
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.3,
-          shadowRadius: 16,
-          elevation: 6,
-          overflow: "hidden",
-        }}
-      >
-        <LinearGradient
-          colors={["#1E3A8A", "#3B82F6"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
-        />
-        <View style={{ maxWidth: 1200, width: "100%", alignSelf: "center" }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                backgroundColor: "rgba(255,255,255,0.15)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Ionicons name="arrow-back" size={22} color="#fff" />
-            </TouchableOpacity>
+      {/* ── Mobile/Tablet Header ── */}
+      {!isDesktop && (
+        <View
+          style={{
+            backgroundColor: "#3b82f6",
+            paddingTop: isMobile ? 48 : 64,
+            paddingBottom: 24,
+            paddingHorizontal,
+            zIndex: 10,
+            shadowColor: "#3b82f6",
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.3,
+            shadowRadius: 16,
+            elevation: 6,
+          }}
+        >
+          <View style={{ maxWidth: 1200, width: "100%", alignSelf: "center" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => router.back()}
+                style={{
+                  width: 40, height: 40, borderRadius: 12,
+                  backgroundColor: "rgba(255,255,255,0.15)",
+                  alignItems: "center", justifyContent: "center",
+                  ...getWebCursor(),
+                }}
+              >
+                <Ionicons name="arrow-back" size={22} color="#fff" />
+              </TouchableOpacity>
 
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 22, fontWeight: "800", color: "#fff" }}>
-                Thông báo
-              </Text>
-              <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.85)" }}>
-                {unreadCount > 0
-                  ? `${unreadCount} thông báo chưa đọc`
-                  : "Tất cả đã đọc"}
-              </Text>
-            </View>
-
-            {unreadCount > 0 && (
-              <View>
-                <TouchableOpacity
-                  onPress={markAllRead}
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.2)",
-                    borderRadius: 12,
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    borderWidth: 1.5,
-                    borderColor: "rgba(255,255,255,0.35)",
-                  }}
-                >
-                  <Text
-                    style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}
-                  >
-                    Đọc tất cả
-                  </Text>
-                </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 22, fontWeight: "800", color: "#fff" }}>
+                  Thông báo
+                </Text>
+                <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.85)" }}>
+                  {unreadCount > 0 ? `${unreadCount} thông báo chưa đọc` : "Tất cả đã đọc"}
+                </Text>
               </View>
-            )}
+
+              {unreadCount > 0 && (
+                <View>
+                  <TouchableOpacity
+                    onPress={markAllRead}
+                    style={{
+                      backgroundColor: "rgba(255,255,255,0.2)",
+                      borderRadius: 12,
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderWidth: 1.5,
+                      borderColor: "rgba(255,255,255,0.35)",
+                      ...getWebCursor(),
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>
+                      Đọc tất cả
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           </View>
         </View>
-      </View>
+      )}
 
       {/* ── Content ── */}
       <ScrollView
@@ -263,213 +324,140 @@ export default function NotificationsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={{ maxWidth: 800, width: "100%", alignSelf: "center" }}>
-          {/* Filter chips */}
-          <View style={{ flexDirection: "row", gap: 10, marginBottom: 20 }}>
-            {(["all", "unread"] as const).map((f) => (
-              <TouchableOpacity
-                key={f}
-                onPress={() => setFilter(f)}
-                style={{
-                  paddingHorizontal: 18,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                  backgroundColor: filter === f ? "#6366f1" : "#fff",
-                  borderWidth: 1.5,
-                  borderColor: filter === f ? "#6366f1" : "#e2e8f0",
-                  shadowColor: filter === f ? "#6366f1" : "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: filter === f ? 0.2 : 0.04,
-                  shadowRadius: 6,
-                  elevation: filter === f ? 3 : 1,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "700",
-                    color: filter === f ? "#fff" : "#64748b",
-                  }}
-                >
-                  {f === "all"
-                    ? `Tất cả (${notifications.length})`
-                    : `Chưa đọc (${unreadCount})`}
+          {/* ── Desktop Header ── */}
+          {isDesktop && (
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+              <View>
+                <Text style={{ fontSize: 28, fontWeight: "800", color: "#1e293b" }}>
+                  Thông báo
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Notification list */}
-          {displayed.length === 0 ? (
-            <View style={{ alignItems: "center", paddingVertical: 60 }}>
-              <View
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: 36,
-                  backgroundColor: "#f1f5f9",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 16,
-                }}
-              >
-                <Ionicons
-                  name="notifications-off-outline"
-                  size={34}
-                  color="#94a3b8"
-                />
+                <Text style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>
+                  {unreadCount > 0 ? `Bạn có ${unreadCount} thông báo chưa đọc` : "Bạn đã đọc tất cả thông báo"}
+                </Text>
               </View>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "700",
-                  color: "#475569",
-                  marginBottom: 6,
-                }}
-              >
-                Không có thông báo
-              </Text>
-              <Text
-                style={{ fontSize: 13, color: "#94a3b8", textAlign: "center" }}
-              >
-                {filter === "unread"
-                  ? "Bạn đã đọc tất cả thông báo rồi!"
-                  : "Chưa có thông báo nào."}
-              </Text>
-            </View>
-          ) : (
-            displayed.map((notif) => {
-              const cfg = NOTIF_CONFIG[notif.type];
-              return (
+
+              {unreadCount > 0 && (
                 <TouchableOpacity
-                  key={notif.id}
-                  onPress={() => markRead(notif.id)}
-                  activeOpacity={0.75}
+                  onPress={markAllRead}
                   style={{
-                    backgroundColor: notif.read ? "#fff" : "#faf5ff",
-                    borderRadius: 16,
-                    borderWidth: 1.5,
-                    borderColor: notif.read ? "#f1f5f9" : "#ddd6fe",
-                    padding: 16,
-                    marginBottom: 12,
+                    backgroundColor: "#eff6ff",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderWidth: 1,
+                    borderColor: "#bfdbfe",
                     flexDirection: "row",
-                    gap: 14,
-                    shadowColor: notif.read ? "#000" : "#6366f1",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: notif.read ? 0.04 : 0.08,
-                    shadowRadius: 8,
-                    elevation: notif.read ? 1 : 3,
+                    alignItems: "center",
+                    gap: 6,
+                    ...getWebCursor(),
                   }}
                 >
-                  {/* Icon */}
-                  <View
+                  <Ionicons name="checkmark-done" size={18} color="#3b82f6" />
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#3b82f6" }}>
+                    Đánh dấu đã đọc
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* ── Container ── */}
+          {isDesktop ? (
+            <View style={{ backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", ...getWebShadow("md") }}>
+              {/* Header inside container with tabs */}
+              <View style={{ flexDirection: "row", justifyContent: "flex-end", paddingHorizontal: 24, paddingTop: 16 }}>
+                {(["unread", "all"] as const).map((f) => (
+                  <TouchableOpacity
+                    key={f}
+                    onPress={() => setFilter(f)}
                     style={{
-                      width: 46,
-                      height: 46,
-                      borderRadius: 14,
-                      backgroundColor: cfg.bg,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderBottomWidth: 3,
+                      borderBottomColor: filter === f ? "#004080" : "transparent",
+                      ...getWebCursor(),
                     }}
                   >
-                    <Ionicons
-                      name={cfg.icon as any}
-                      size={24}
-                      color={cfg.color}
-                    />
-                  </View>
+                    <Text style={{ fontSize: 14, fontWeight: "700", color: filter === f ? "#004080" : "#64748b" }}>
+                      {f === "unread" ? "Chưa xem" : "Tất cả"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={{ height: 1, backgroundColor: "#f1f5f9" }} />
 
-                  {/* Content */}
-                  <View style={{ flex: 1 }}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        marginBottom: 4,
-                      }}
-                    >
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 8,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            fontWeight: "800",
-                            color: "#1e293b",
-                          }}
-                          numberOfLines={1}
-                        >
-                          {notif.title}
-                        </Text>
-                        {!notif.read && (
-                          <View
-                            style={{
-                              width: 7,
-                              height: 7,
-                              borderRadius: 4,
-                              backgroundColor: "#6366f1",
-                            }}
-                          />
-                        )}
-                      </View>
-                      <TouchableOpacity
-                        onPress={() => removeNotif(notif.id)}
-                        style={{ padding: 4 }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Ionicons name="close" size={16} color="#94a3b8" />
+              {/* List */}
+              <View style={{ minHeight: 400, padding: 24 }}>
+                {renderListContent()}
+              </View>
+
+              {/* Pagination */}
+              <View>
+                <View style={{ height: 1, backgroundColor: "#f1f5f9" }} />
+                <View style={{ padding: 16, flexDirection: "row", justifyContent: "flex-end", alignItems: "center" }}>
+                  <Text style={{ fontSize: 13, color: "#64748b", marginRight: 16 }}>
+                    Từ {displayed.length > 0 ? (page - 1) * PAGE_SIZE + 1 : 0} - {Math.min(page * PAGE_SIZE, displayed.length)} trên {displayed.length} dòng
+                  </Text>
+                  {totalPages > 1 && (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <TouchableOpacity onPress={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: 6, opacity: page === 1 ? 0.3 : 1, ...getWebCursor() }}>
+                        <Ionicons name="chevron-back" size={18} color="#475569" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ padding: 6, opacity: page === totalPages ? 0.3 : 1, ...getWebCursor() }}>
+                        <Ionicons name="chevron-forward" size={18} color="#475569" />
                       </TouchableOpacity>
                     </View>
-
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        color: "#64748b",
-                        lineHeight: 19,
-                        marginBottom: 8,
-                      }}
-                    >
-                      {notif.body}
+                  )}
+                </View>
+              </View>
+            </View>
+          ) : (
+            <View>
+              {/* Filter chips */}
+              <View style={{ flexDirection: "row", gap: 10, marginBottom: 20 }}>
+                {(["all", "unread"] as const).map((f) => (
+                  <TouchableOpacity
+                    key={f}
+                    onPress={() => setFilter(f)}
+                    style={{
+                      paddingHorizontal: 18,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      backgroundColor: filter === f ? "#3b82f6" : "#fff",
+                      borderWidth: 1.5,
+                      borderColor: filter === f ? "#3b82f6" : "#e2e8f0",
+                      ...getWebShadow(filter === f ? "md" : "sm"),
+                      ...getWebCursor(),
+                    }}
+                  >
+                    <Text style={{
+                      fontSize: 13, fontWeight: "700",
+                      color: filter === f ? "#fff" : "#64748b",
+                    }}>
+                      {f === "all" ? `Tất cả (${notifications.length})` : `Chưa đọc (${unreadCount})`}
                     </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <View
-                        style={{
-                          backgroundColor: cfg.bg,
-                          paddingHorizontal: 8,
-                          paddingVertical: 3,
-                          borderRadius: 8,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            fontWeight: "700",
-                            color: cfg.color,
-                          }}
-                        >
-                          {cfg.label}
-                        </Text>
-                      </View>
-                      <Text style={{ fontSize: 11, color: "#94a3b8" }}>
-                        {formatRelativeTime(notif.time)}
-                      </Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })
+              {/* List */}
+              {renderListContent()}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16, backgroundColor: "#fff", padding: 16, borderRadius: 16, borderWidth: 1, borderColor: "#e5e7eb", ...getWebShadow("sm") }}>
+                  <TouchableOpacity onPress={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: page === 1 ? "#f8fafc" : "#eff6ff", ...getWebCursor() }}>
+                    <Text style={{ color: page === 1 ? "#94a3b8" : "#3b82f6", fontWeight: "700", fontSize: 13 }}>Trang trước</Text>
+                  </TouchableOpacity>
+                  <Text style={{ color: "#475569", fontWeight: "700", fontSize: 14 }}>
+                    {page} / {totalPages}
+                  </Text>
+                  <TouchableOpacity onPress={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, backgroundColor: page === totalPages ? "#f8fafc" : "#eff6ff", ...getWebCursor() }}>
+                    <Text style={{ color: page === totalPages ? "#94a3b8" : "#3b82f6", fontWeight: "700", fontSize: 13 }}>Trang sau</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           )}
         </View>
       </ScrollView>
