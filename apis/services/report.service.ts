@@ -69,6 +69,38 @@ export interface TeacherSummary {
 }
 
 /**
+ * Per-course attendance breakdown for a single student.
+ * attendanceRate = (presentCount + lateCount) / totalSessions * 100
+ */
+export interface StudentCourseAttendance {
+  courseId: string;
+  courseName: string;
+  subjectId: string | null;
+  subjectName: string | null;
+  totalSessions: number;
+  presentCount: number;
+  lateCount: number;
+  absentCount: number;
+  /** % = (present + late) / totalSessions * 100 */
+  attendanceRate: number;
+}
+
+/**
+ * Full attendance summary for one student (overall + per-course breakdown).
+ */
+export interface StudentAttendanceSummary {
+  studentId: string;
+  studentName: string;
+  /** Overall rate across all courses */
+  overallAttendanceRate: number;
+  totalSessions: number;
+  totalPresent: number;
+  totalLate: number;
+  totalAbsent: number;
+  courseBreakdown: StudentCourseAttendance[];
+}
+
+/**
  * Report Service
  */
 export const reportService = {
@@ -99,9 +131,25 @@ export const reportService = {
   /**
    * Get student attendance reports
    */
-  getStudentReports: async (courseId?: string): Promise<StudentAttendanceReport[]> => {
-    const params = courseId ? { courseId } : {};
+  getStudentReports: async (courseId?: string, semesterId?: string): Promise<StudentAttendanceReport[]> => {
+    const params: Record<string, string> = {};
+    if (courseId) params.courseId = courseId;
+    if (semesterId) params.semesterId = semesterId;
     const response = await apiClient.get<ApiResponse<StudentAttendanceReport[]>>('/reports/students', { params });
+    return response.data.data;
+  },
+
+  /**
+   * Lấy tỷ lệ điểm danh chi tiết của một sinh viên (theo từng môn học và tổng thể).
+   * Tỷ lệ mỗi môn = (present + late) / totalSessions * 100
+   *
+   * @param studentId mã sinh viên hoặc userId
+   */
+  getStudentAttendanceSummary: async (studentId: string): Promise<StudentAttendanceSummary> => {
+    const response = await apiClient.get<ApiResponse<StudentAttendanceSummary>>(
+      '/reports/student-attendance-summary',
+      { params: { studentId } },
+    );
     return response.data.data;
   },
 
@@ -144,4 +192,3 @@ export const reportService = {
     return `${base}/reports/export/excel${qs ? `?${qs}` : ''}`;
   },
 };
-

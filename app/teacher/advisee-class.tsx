@@ -26,7 +26,13 @@ import {
   reportService,
   type ClassAttendanceReport,
   type StudentAttendanceReport,
+  type StudentAttendanceSummary,
 } from "@/apis/services/report.service";
+import {
+  semesterService,
+  type Semester,
+} from "@/apis/services/semester.service";
+import { DropdownPicker } from "@/components/DropdownPicker";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import { useToast } from "@/components/ToastProvider";
 
@@ -206,9 +212,13 @@ export default function AdviseeClass() {
   const [studentModalVisible, setStudentModalVisible] = useState(false);
   const [studentRecords, setStudentRecords] = useState<any[]>([]);
   const [studentRecordsLoading, setStudentRecordsLoading] = useState(false);
+  const [studentAttendanceSummary, setStudentAttendanceSummary] =
+    useState<StudentAttendanceSummary | null>(null);
   const [studentsPage, setStudentsPage] = useState(1);
   const [atRiskPage, setAtRiskPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [selectedSemesterId, setSelectedSemesterId] = useState<string | null>(null);
 
   const { showToast } = useToast();
 
@@ -233,6 +243,7 @@ export default function AdviseeClass() {
 
   const loadStudentsForClass = async (
     classId: string,
+    semesterId: string | null,
     classesInput?: Class[],
   ) => {
     const classList = classesInput || teacherClasses;
@@ -246,7 +257,7 @@ export default function AdviseeClass() {
     const [classStudents, studentReports, classReports] = await Promise.all([
       classService.getStudentsByClass(selectedClass.id),
       reportService
-        .getStudentReports(selectedClass.id)
+        .getStudentReports(selectedClass.id, semesterId || undefined)
         .catch(() => [] as StudentAttendanceReport[]),
       reportService
         .getClassReports()
@@ -303,7 +314,7 @@ export default function AdviseeClass() {
     setSubjectCards(cards);
   };
 
-  const loadAdvisorClassData = async () => {
+  const loadAdvisorClassData = async (targetSemesterId?: string | null) => {
     try {
       setLoading(true);
       const teacherId = await getTeacherIdFromToken();
@@ -313,6 +324,24 @@ export default function AdviseeClass() {
           "error",
         );
         return;
+      }
+
+      let currentSemesters = semesters;
+      if (semesters.length === 0) {
+        const fetched = await semesterService.getAllSemesters().catch(() => [] as Semester[]);
+        const sorted = [...fetched].sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime());
+        setSemesters(sorted);
+        currentSemesters = sorted;
+      }
+
+      let activeSemesterId: string | null = null;
+      if (targetSemesterId !== undefined) {
+        activeSemesterId = targetSemesterId;
+      } else if (selectedSemesterId !== null) {
+        activeSemesterId = selectedSemesterId;
+      } else if (currentSemesters.length > 0) {
+        activeSemesterId = currentSemesters[0].id;
+        setSelectedSemesterId(activeSemesterId);
       }
 
       const classes = await classService.getClassesByTeacher(teacherId);
@@ -329,7 +358,7 @@ export default function AdviseeClass() {
         selectedClassId && classes.some((c) => c.id === selectedClassId)
           ? selectedClassId
           : classes[0].id;
-      await loadStudentsForClass(preferredClassId, classes);
+      await loadStudentsForClass(preferredClassId, activeSemesterId, classes);
     } catch (error: any) {
       const msg =
         error?.response?.data?.message ||
@@ -344,11 +373,38 @@ export default function AdviseeClass() {
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
-      await loadAdvisorClassData();
+      await loadAdvisorClassData(selectedSemesterId);
     } finally {
       setRefreshing(false);
     }
   };
+
+  const handleSemesterChange = async (semesterId: string | null) => {
+    setSelectedSemesterId(semesterId);
+    if (selectedClassId) {
+      try {
+        setLoading(true);
+        await loadStudentsForClass(selectedClassId, semesterId);
+      } catch (error: any) {
+        showToast(
+          error?.response?.data?.message || error?.message || "Lỗi khi tải dữ liệu học kỳ.",
+          "error"
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const semesterOptions = useMemo(() => {
+    return [
+      { label: "Tất cả học kỳ", value: "all" },
+      ...(semesters || []).map((semester) => ({
+        label: semester.name,
+        value: semester.id,
+      })),
+    ];
+  }, [semesters]);
 
   const atRiskStudents = useMemo(
     () =>
@@ -362,7 +418,7 @@ export default function AdviseeClass() {
     if (!classId || classId === selectedClassId) return;
     try {
       setLoading(true);
-      await loadStudentsForClass(classId);
+      await loadStudentsForClass(classId, selectedSemesterId);
     } catch (error: any) {
       const msg =
         error?.response?.data?.message ||
@@ -492,15 +548,19 @@ export default function AdviseeClass() {
     setSelectedStudent(student);
     setStudentModalVisible(true);
     setStudentRecords([]);
+    setStudentAttendanceSummary(null);
     setStudentRecordsLoading(true);
     try {
       const { attendanceService } = await import("@/apis");
-      const records = await attendanceService.getRecords({
-        studentId: student.studentId,
-      });
+      const [records, summary] = await Promise.all([
+        attendanceService.getRecords({ studentId: student.studentId }).catch(() => []),
+        reportService.getStudentAttendanceSummary(student.studentId).catch(() => null),
+      ]);
       setStudentRecords(records || []);
+      setStudentAttendanceSummary(summary);
     } catch {
       setStudentRecords([]);
+      setStudentAttendanceSummary(null);
     } finally {
       setStudentRecordsLoading(false);
     }
@@ -511,6 +571,7 @@ export default function AdviseeClass() {
     setTimeout(() => {
       setSelectedStudent(null);
       setStudentRecords([]);
+      setStudentAttendanceSummary(null);
     }, 250);
   };
 
@@ -886,6 +947,17 @@ export default function AdviseeClass() {
                   </View>
 
                   <View style={{ padding: 14 }}>
+                    <View style={{ marginBottom: 14 }}>
+                      <DropdownPicker
+                        label="Học kỳ"
+                        options={semesterOptions}
+                        selectedValue={selectedSemesterId}
+                        onValueChange={handleSemesterChange}
+                        placeholder="Chọn học kỳ"
+                        themeColor={PRIMARY_BLUE}
+                      />
+                    </View>
+
                     {activeTab === "students" ? (
                       <>
                         <View
@@ -1139,6 +1211,128 @@ export default function AdviseeClass() {
               style={{ flex: 1 }}
               contentContainerStyle={{ padding: 20 }}
             >
+              {/* ── Overall rate + per-subject breakdown ── */}
+              {!studentRecordsLoading && studentAttendanceSummary && (
+                <View style={{ marginBottom: 20 }}>
+                  {/* Overall badge */}
+                  <View
+                    style={{
+                      backgroundColor: (() => {
+                        const r = Math.round(studentAttendanceSummary.overallAttendanceRate);
+                        return r >= 80 ? "#ecfdf5" : r >= 60 ? "#fffbeb" : "#fef2f2";
+                      })(),
+                      borderRadius: 12,
+                      padding: 14,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 12,
+                      borderWidth: 1,
+                      borderColor: (() => {
+                        const r = Math.round(studentAttendanceSummary.overallAttendanceRate);
+                        return r >= 80 ? "#a7f3d0" : r >= 60 ? "#fde68a" : "#fecaca";
+                      })(),
+                    }}
+                  >
+                    <View>
+                      <Text style={{ fontSize: 11, color: "#64748B", fontWeight: "600", marginBottom: 2 }}>
+                        TỶ LỆ ĐIỂM DANH TỔNG THỂ
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 28,
+                          fontWeight: "900",
+                          color: (() => {
+                            const r = Math.round(studentAttendanceSummary.overallAttendanceRate);
+                            return r >= 80 ? "#059669" : r >= 60 ? "#d97706" : "#dc2626";
+                          })(),
+                        }}
+                      >
+                        {Math.round(studentAttendanceSummary.overallAttendanceRate)}%
+                      </Text>
+                      <Text style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+                        {studentAttendanceSummary.totalPresent + studentAttendanceSummary.totalLate}/
+                        {studentAttendanceSummary.totalSessions} buổi
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name={
+                        studentAttendanceSummary.overallAttendanceRate >= 80
+                          ? "checkmark-circle"
+                          : studentAttendanceSummary.overallAttendanceRate >= 60
+                          ? "alert-circle"
+                          : "close-circle"
+                      }
+                      size={40}
+                      color={(() => {
+                        const r = Math.round(studentAttendanceSummary.overallAttendanceRate);
+                        return r >= 80 ? "#10b981" : r >= 60 ? "#f59e0b" : "#ef4444";
+                      })()}
+                    />
+                  </View>
+
+                  {/* Per-course breakdown */}
+                  {studentAttendanceSummary.courseBreakdown.length > 0 && (
+                    <View style={{ marginBottom: 16 }}>
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: "#64748B", marginBottom: 8 }}>
+                        THEO TỪNG MÔN HỌC
+                      </Text>
+                      {studentAttendanceSummary.courseBreakdown.map((course) => {
+                        const rate = Math.round(course.attendanceRate);
+                        const rateColor = rate >= 80 ? "#059669" : rate >= 60 ? "#d97706" : "#dc2626";
+                        const rateBg = rate >= 80 ? "#ecfdf5" : rate >= 60 ? "#fffbeb" : "#fef2f2";
+                        const barWidth = `${Math.min(100, rate)}%`;
+                        return (
+                          <View
+                            key={course.courseId}
+                            style={{
+                              backgroundColor: "#f8fafc",
+                              borderRadius: 10,
+                              padding: 12,
+                              marginBottom: 8,
+                              borderWidth: 1,
+                              borderColor: "#e5e7eb",
+                            }}
+                          >
+                            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+                              <View style={{ flex: 1, marginRight: 8 }}>
+                                <Text
+                                  style={{ fontSize: 13, fontWeight: "700", color: "#1E293B" }}
+                                  numberOfLines={1}
+                                >
+                                  {course.subjectName || course.courseName}
+                                </Text>
+                                <Text style={{ fontSize: 11, color: "#64748B", marginTop: 1 }}>
+                                  {course.presentCount + course.lateCount}/{course.totalSessions} buổi •
+                                  ✓ {course.presentCount} ⏰ {course.lateCount} ✗ {course.absentCount}
+                                </Text>
+                              </View>
+                              <View
+                                style={{
+                                  backgroundColor: rateBg,
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 4,
+                                  borderRadius: 6,
+                                  alignSelf: "flex-start",
+                                }}
+                              >
+                                <Text style={{ fontSize: 11, fontWeight: "800", color: rateColor }}>
+                                  {rate}%
+                                </Text>
+                              </View>
+                            </View>
+                            {/* Progress bar */}
+                            <View style={{ height: 6, backgroundColor: "#E2E8F0", borderRadius: 3, overflow: "hidden" }}>
+                              <View style={{ height: "100%", width: barWidth as any, backgroundColor: rateColor, borderRadius: 3 }} />
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+              )}
+
               <View style={{ marginBottom: 12 }}>
                 <Text
                   style={{
@@ -1219,8 +1413,17 @@ export default function AdviseeClass() {
                           <Text
                             style={{
                               fontSize: 14,
-                              fontWeight: "600",
+                              fontWeight: "700",
                               color: "#1E293B",
+                              marginBottom: 3,
+                            }}
+                          >
+                            {r.subjectName || r.courseName || "Môn học"}
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              color: "#475569",
                               marginBottom: 2,
                             }}
                           >
@@ -1231,7 +1434,7 @@ export default function AdviseeClass() {
                               year: "numeric",
                             })}
                           </Text>
-                          <Text style={{ fontSize: 12, color: "#94A3B8" }}>
+                          <Text style={{ fontSize: 11, color: "#94A3B8" }}>
                             {date.toLocaleTimeString("vi-VN", {
                               hour: "2-digit",
                               minute: "2-digit",

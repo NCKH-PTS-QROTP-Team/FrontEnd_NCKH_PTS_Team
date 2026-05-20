@@ -33,6 +33,7 @@ import type { Semester as SemesterItem } from "@/apis/services/semester.service"
 import type {
   ClassAttendanceReport,
   StudentAttendanceReport,
+  StudentAttendanceSummary,
 } from "@/apis/services/report.service";
 import type { Schedule } from "@/apis/services/schedule.service";
 import type { AttendanceRecordResponse } from "@/apis/types/attendance.types";
@@ -90,6 +91,8 @@ export default function ClassListScreen() {
     AttendanceRecordResponse[]
   >([]);
   const [studentRecordsLoading, setStudentRecordsLoading] = useState(false);
+  const [studentAttendanceSummary, setStudentAttendanceSummary] =
+    useState<StudentAttendanceSummary | null>(null);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedSemester, setSelectedSemester] = useState<string | null>(null);
@@ -288,6 +291,7 @@ export default function ClassListScreen() {
     setTimeout(() => {
       setSelectedStudent(null);
       setStudentRecords([]);
+      setStudentAttendanceSummary(null);
     }, 300);
   };
 
@@ -300,13 +304,19 @@ export default function ClassListScreen() {
     setSelectedStudent(student);
     setStudentHistoryVisible(true);
     setStudentRecordsLoading(true);
+    setStudentAttendanceSummary(null);
     try {
       const { attendanceService } = await import("@/apis");
 
-      const records = await attendanceService.getRecords({
-        courseId: selectedClass.id,
-        studentId: student.studentId,
-      });
+      const [records, summary] = await Promise.all([
+        attendanceService.getRecords({
+          courseId: selectedClass.id,
+          studentId: student.studentId,
+        }),
+        reportService
+          .getStudentAttendanceSummary(student.studentId)
+          .catch(() => null),
+      ]);
 
       const sorted = [...(records || [])].sort((a, b) => {
         const ta = new Date(a.attendedAt || a.createdAt || 0).getTime();
@@ -315,6 +325,7 @@ export default function ClassListScreen() {
       });
 
       setStudentRecords(sorted);
+      setStudentAttendanceSummary(summary);
     } catch (error) {
       console.error("Error loading student history:", error);
       showToast("Lỗi khi tải lịch sử điểm danh", "error");
@@ -1138,6 +1149,140 @@ export default function ClassListScreen() {
               style={{ flexShrink: 1 }}
               contentContainerStyle={{ padding: 20 }}
             >
+              {/* ── Overall rate + per-subject breakdown ── */}
+              {!studentRecordsLoading && studentAttendanceSummary && (
+                <View style={{ marginBottom: 20 }}>
+                  {/* Overall badge */}
+                  <View
+                    style={{
+                      backgroundColor: (() => {
+                        const r = Math.round(studentAttendanceSummary.overallAttendanceRate);
+                        return r >= 80 ? "#ecfdf5" : r >= 60 ? "#fffbeb" : "#fef2f2";
+                      })(),
+                      borderRadius: 12,
+                      padding: 14,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 12,
+                      borderWidth: 1,
+                      borderColor: (() => {
+                        const r = Math.round(studentAttendanceSummary.overallAttendanceRate);
+                        return r >= 80 ? "#a7f3d0" : r >= 60 ? "#fde68a" : "#fecaca";
+                      })(),
+                    }}
+                  >
+                    <View>
+                      <Text style={{ fontSize: 11, color: "#64748b", fontWeight: "600", marginBottom: 2 }}>
+                        TỶ LỆ ĐIỂM DANH TỔNG THỂ
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 28,
+                          fontWeight: "900",
+                          color: (() => {
+                            const r = Math.round(studentAttendanceSummary.overallAttendanceRate);
+                            return r >= 80 ? "#059669" : r >= 60 ? "#d97706" : "#dc2626";
+                          })(),
+                        }}
+                      >
+                        {Math.round(studentAttendanceSummary.overallAttendanceRate)}%
+                      </Text>
+                      <Text style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
+                        {studentAttendanceSummary.totalPresent + studentAttendanceSummary.totalLate}/
+                        {studentAttendanceSummary.totalSessions} buổi
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name={
+                        studentAttendanceSummary.overallAttendanceRate >= 80
+                          ? "checkmark-circle"
+                          : studentAttendanceSummary.overallAttendanceRate >= 60
+                          ? "alert-circle"
+                          : "close-circle"
+                      }
+                      size={40}
+                      color={(() => {
+                        const r = Math.round(studentAttendanceSummary.overallAttendanceRate);
+                        return r >= 80 ? "#10b981" : r >= 60 ? "#f59e0b" : "#ef4444";
+                      })()}
+                    />
+                  </View>
+
+                  {/* Per-course breakdown */}
+                  {studentAttendanceSummary.courseBreakdown.length > 0 && (
+                    <View>
+                      <Text style={{ fontSize: 12, fontWeight: "700", color: "#64748b", marginBottom: 8 }}>
+                        THEO TỪNG MÔN HỌC
+                      </Text>
+                      {studentAttendanceSummary.courseBreakdown.map((course) => {
+                        const rate = Math.round(course.attendanceRate);
+                        const rateColor = rate >= 80 ? "#059669" : rate >= 60 ? "#d97706" : "#dc2626";
+                        const rateBg = rate >= 80 ? "#ecfdf5" : rate >= 60 ? "#fffbeb" : "#fef2f2";
+                        const barWidth = `${Math.min(100, rate)}%`;
+                        return (
+                          <View
+                            key={course.courseId}
+                            style={{
+                              backgroundColor: "#f8fafc",
+                              borderRadius: 10,
+                              padding: 12,
+                              marginBottom: 8,
+                              borderWidth: 1,
+                              borderColor: "#e5e7eb",
+                            }}
+                          >
+                            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+                              <View style={{ flex: 1, marginRight: 8 }}>
+                                <Text
+                                  style={{ fontSize: 13, fontWeight: "700", color: "#1e293b" }}
+                                  numberOfLines={1}
+                                >
+                                  {course.subjectName || course.courseName}
+                                </Text>
+                                <Text style={{ fontSize: 11, color: "#64748b", marginTop: 1 }}>
+                                  {course.presentCount + course.lateCount}/{course.totalSessions} buổi •
+                                  ✓ {course.presentCount} ⏰ {course.lateCount} ✗ {course.absentCount}
+                                </Text>
+                              </View>
+                              <View
+                                style={{
+                                  backgroundColor: rateBg,
+                                  paddingHorizontal: 10,
+                                  paddingVertical: 4,
+                                  borderRadius: 8,
+                                  alignSelf: "flex-start",
+                                }}
+                              >
+                                <Text style={{ fontSize: 13, fontWeight: "800", color: rateColor }}>
+                                  {rate}%
+                                </Text>
+                              </View>
+                            </View>
+                            {/* Progress bar */}
+                            <View style={{ height: 5, backgroundColor: "#e5e7eb", borderRadius: 3, overflow: "hidden" }}>
+                              <View
+                                style={{
+                                  height: 5,
+                                  width: barWidth as any,
+                                  backgroundColor: rateColor,
+                                  borderRadius: 3,
+                                }}
+                              />
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+
+                  <View style={{ height: 1, backgroundColor: "#f1f5f9", marginBottom: 16, marginTop: 4 }} />
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: "#64748b", marginBottom: 8 }}>
+                    LỊCH SỬ ĐIỂM DANH (MÔN NÀY)
+                  </Text>
+                </View>
+              )}
+
               {studentRecordsLoading ? (
                 <View style={{ alignItems: "center", paddingVertical: 40 }}>
                   <Text style={{ color: "#64748b" }}>Đang tải lịch sử...</Text>
@@ -1208,15 +1353,24 @@ export default function ClassListScreen() {
                         <View style={{ flex: 1 }}>
                           <Text
                             style={{
-                              fontSize: 15,
-                              fontWeight: "600",
-                              color: "#1e293b",
+                              fontSize: 14,
+                              fontWeight: "700",
+                              color: "#1E293B",
+                              marginBottom: 3,
+                            }}
+                          >
+                            {r.subjectName || r.courseName || "Môn học"}
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              color: "#475569",
                               marginBottom: 2,
                             }}
                           >
                             {date.toLocaleDateString("vi-VN")}
                           </Text>
-                          <Text style={{ fontSize: 12, color: "#64748b" }}>
+                          <Text style={{ fontSize: 11, color: "#64748b" }}>
                             {date.toLocaleTimeString("vi-VN", {
                               hour: "2-digit",
                               minute: "2-digit",
