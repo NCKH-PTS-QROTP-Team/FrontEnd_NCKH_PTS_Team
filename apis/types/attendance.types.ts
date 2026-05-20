@@ -60,8 +60,10 @@ export interface AttendanceSessionRequest {
   subjectId: string;
   teacherId: string;
   method: AttendanceMethod;
-  // Thời gian bắt đầu theo lịch học (HH:mm), optional
   scheduledStartTime?: string;
+  duration?: number;
+  attendedAt?: string;
+  expiredAt?: string;
 }
 
 /**
