@@ -155,7 +155,7 @@ export default function AppLayout({
           {!isMobile && (
             <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 24, gap: 12 }}>
               {/* Standalone Items */}
-              {menuItems.filter(item => ["Trang chủ", "Lịch học", "Dashboard", "Danh sách lớp"].includes(item.label)).map((item, index) => {
+              {menuItems.filter(item => ["Trang chủ", "Lịch học", "Lịch dạy", "Dashboard", "Danh sách lớp"].includes(item.label)).map((item, index) => {
                 const isActive = pathname === item.route;
                 return (
                   <TouchableOpacity
