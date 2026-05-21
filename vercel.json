@@ -1,6 +1,6 @@
 {
-  "installCommand": "npm install",
-  "buildCommand": "npm run build:web",
+  "installCommand": "echo 'Skipping install'",
+  "buildCommand": "echo 'Skipping build'",
   "outputDirectory": "dist",
   "rewrites": [
     {
