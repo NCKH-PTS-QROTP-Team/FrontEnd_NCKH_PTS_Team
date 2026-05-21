@@ -20,27 +20,29 @@ export default function RootLayout() {
     async function prepare() {
       try {
         if (Platform.OS === 'web') {
-          // Load fonts directly from CDN using expo-font to bypass Vercel's node_modules blocking
+          // CDN + đúng font-family của @expo/vector-icons (Vercel không serve /assets/node_modules/...)
+          const cdn =
+            'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts';
           await Font.loadAsync({
-            AntDesign: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/AntDesign.ttf',
-            Entypo: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/Entypo.ttf',
-            EvilIcons: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/EvilIcons.ttf',
-            Feather: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/Feather.ttf',
-            FontAwesome: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/FontAwesome.ttf',
-            FontAwesome5_Brands: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/FontAwesome5_Brands.ttf',
-            FontAwesome5_Regular: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/FontAwesome5_Regular.ttf',
-            FontAwesome5_Solid: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/FontAwesome5_Solid.ttf',
-            FontAwesome6_Brands: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/FontAwesome6_Brands.ttf',
-            FontAwesome6_Regular: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/FontAwesome6_Regular.ttf',
-            FontAwesome6_Solid: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/FontAwesome6_Solid.ttf',
-            Fontisto: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/Fontisto.ttf',
-            Foundation: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/Foundation.ttf',
-            Ionicons: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/Ionicons.ttf',
-            MaterialCommunityIcons: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/MaterialCommunityIcons.ttf',
-            MaterialIcons: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/MaterialIcons.ttf',
-            Octicons: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/Octicons.ttf',
-            SimpleLineIcons: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/SimpleLineIcons.ttf',
-            Zocial: 'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/Zocial.ttf',
+            anticon: `${cdn}/AntDesign.ttf`,
+            entypo: `${cdn}/Entypo.ttf`,
+            evilicons: `${cdn}/EvilIcons.ttf`,
+            feather: `${cdn}/Feather.ttf`,
+            FontAwesome: `${cdn}/FontAwesome.ttf`,
+            'FontAwesome5Free-Brand': `${cdn}/FontAwesome5_Brands.ttf`,
+            'FontAwesome5Free-Regular': `${cdn}/FontAwesome5_Regular.ttf`,
+            'FontAwesome5Free-Solid': `${cdn}/FontAwesome5_Solid.ttf`,
+            'FontAwesome6Free-Brands': `${cdn}/FontAwesome6_Brands.ttf`,
+            'FontAwesome6Free-Regular': `${cdn}/FontAwesome6_Regular.ttf`,
+            'FontAwesome6Free-Solid': `${cdn}/FontAwesome6_Solid.ttf`,
+            Fontisto: `${cdn}/Fontisto.ttf`,
+            foundation: `${cdn}/Foundation.ttf`,
+            ionicons: `${cdn}/Ionicons.ttf`,
+            'material-community': `${cdn}/MaterialCommunityIcons.ttf`,
+            material: `${cdn}/MaterialIcons.ttf`,
+            octicons: `${cdn}/Octicons.ttf`,
+            'simple-line-icons': `${cdn}/SimpleLineIcons.ttf`,
+            zocial: `${cdn}/Zocial.ttf`,
           });
         }
       } catch (e) {
