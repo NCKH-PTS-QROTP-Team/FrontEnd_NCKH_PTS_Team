@@ -308,10 +308,14 @@ export default function GenerateOTPScreen() {
         return;
       }
 
+      // Chỉ kiểm tra các phiên đang active (active:true) và của chính giảng viên này
+      // — tránh false positive do session cũ đã COMPLETED hoặc của giáo viên khác
       const existing = await attendanceService.getSessions({
         classId: selectedSchedule.classId,
+        teacherId,
+        active: true,
       });
-      if (existing.find((s) => s.status === "ACTIVE")) {
+      if (existing.length > 0) {
         showToast("Học phần này đang có phiên điểm danh hoạt động.", "error");
         setLoading(false);
         return;
@@ -326,8 +330,10 @@ export default function GenerateOTPScreen() {
       );
 
       const newSession = await attendanceService.createSession({
-        courseId: selectedSchedule.classId,
+        // Backend cần courseId (Course.id từ schedule.courseId), không phải classId
+        courseId: selectedSchedule.courseId || selectedSchedule.classId,
         subjectId: selectedSchedule.subjectId,
+        lecturerId: teacherId,   // backend dùng lecturerId để validate
         teacherId,
         method: AttendanceMethod.OTP,
         duration: intervalVal,

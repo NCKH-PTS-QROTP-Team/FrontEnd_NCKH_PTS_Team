@@ -58,6 +58,7 @@ export interface AttendanceSessionRequest {
   courseId?: string;
   classId?: string;
   subjectId: string;
+  lecturerId?: string;  // backend primary teacher field
   teacherId: string;
   method: AttendanceMethod;
   scheduledStartTime?: string;
