@@ -39,9 +39,10 @@ interface DaySchedule {
 
 interface WeeklyScheduleProps {
   targetDate?: Date;
+  teacherId?: string;
 }
 
-export default function WeeklySchedule({ targetDate }: WeeklyScheduleProps = {}) {
+export default function WeeklySchedule({ targetDate, teacherId }: WeeklyScheduleProps = {}) {
   const [selectedView, setSelectedView] = useState<"all" | "class" | "exam">("all");
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [loading, setLoading] = useState(true);
@@ -234,32 +235,28 @@ export default function WeeklySchedule({ targetDate }: WeeklyScheduleProps = {})
       const params: {
         classId?: string;
         classIds?: string[];
+        teacherId?: string;
         scheduleType?: "CLASS" | "EXAM";
         fromDate?: string;
         toDate?: string;
       } = { fromDate, toDate };
 
-      // /users/me trả về enrolledClassIds (1 SV nhiều môn) hoặc classId
-      try {
-        const { authService } = await import("@/apis");
-        const currentUser = await authService.getCurrentUser();
-        if (currentUser?.enrolledClassIds?.length) {
-          params.classIds = currentUser.enrolledClassIds;
-          console.log(
-            "👨‍🎓 Student enrolledClassIds:",
-            currentUser.enrolledClassIds.length,
-            "classes",
-          );
-        } else if (currentUser?.classId) {
-          params.classId = currentUser.classId;
-          console.log("👨‍🎓 Current student classId:", currentUser.classId);
-        } else {
-          console.log(
-            "⚠️ Không có classId/enrolledClassIds, sẽ load toàn bộ lịch",
-          );
+      // Teacher mode: dùng teacherId trực tiếp
+      if (teacherId) {
+        params.teacherId = teacherId;
+      } else {
+        // /users/me trả về enrolledClassIds (1 SV nhiều môn) hoặc classId
+        try {
+          const { authService } = await import("@/apis");
+          const currentUser = await authService.getCurrentUser();
+          if (currentUser?.enrolledClassIds?.length) {
+            params.classIds = currentUser.enrolledClassIds;
+          } else if (currentUser?.classId) {
+            params.classId = currentUser.classId;
+          }
+        } catch (err) {
+          console.warn("⚠️ Không lấy được user, sẽ load toàn bộ lịch:", err);
         }
-      } catch (err) {
-        console.warn("⚠️ Không lấy được user, sẽ load toàn bộ lịch:", err);
       }
 
       if (selectedView === "class") {
@@ -476,7 +473,7 @@ export default function WeeklySchedule({ targetDate }: WeeklyScheduleProps = {})
             marginBottom: 12,
           }}
         >
-          Lịch học, lịch thi theo tuần
+          {teacherId ? "Lịch dạy theo tuần" : "Lịch học, lịch thi theo tuần"}
         </Text>
 
         <View
