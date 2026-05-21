@@ -16,10 +16,23 @@ const getApiBaseUrl = () => {
 
     if (typeof window !== 'undefined') {
       const host = window.location.hostname;
-      const normalizedHost = host === '0.0.0.0' ? 'localhost' : host;
-      return `http://${normalizedHost}:8080/api`;
+      // Kiểm tra nếu là localhost hoặc môi trường phát triển local/LAN
+      const isLocalhost = host === 'localhost' || 
+                          host === '127.0.0.1' || 
+                          host === '0.0.0.0' || 
+                          host.startsWith('192.168.') || 
+                          host.startsWith('10.') || 
+                          host.startsWith('172.');
+      
+      if (isLocalhost) {
+        const normalizedHost = host === '0.0.0.0' ? 'localhost' : host;
+        return `http://${normalizedHost}:8080/api`;
+      } else {
+        // Môi trường production (ví dụ Vercel) khi không có biến môi trường
+        return 'https://shark-app-bcpqf.ondigitalocean.app/api';
+      }
     }
-    return 'http://localhost:8080/api';
+    return 'https://shark-app-bcpqf.ondigitalocean.app/api';
   }
 
   // Native (iOS/Android): Ưu tiên tuyệt đối dùng file .env
