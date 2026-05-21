@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/((?!assets|_expo).*)",
+      "source": "/((?!assets|_expo|fonts).*)",
       "destination": "/index.html"
     }
   ]

@@ -19,31 +19,15 @@ export default function RootLayout() {
   useEffect(() => {
     async function prepare() {
       try {
-        if (Platform.OS === 'web') {
-          // CDN + đúng font-family của @expo/vector-icons (Vercel không serve /assets/node_modules/...)
-          const cdn =
-            'https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts';
-          await Font.loadAsync({
-            anticon: `${cdn}/AntDesign.ttf`,
-            entypo: `${cdn}/Entypo.ttf`,
-            evilicons: `${cdn}/EvilIcons.ttf`,
-            feather: `${cdn}/Feather.ttf`,
-            FontAwesome: `${cdn}/FontAwesome.ttf`,
-            'FontAwesome5Free-Brand': `${cdn}/FontAwesome5_Brands.ttf`,
-            'FontAwesome5Free-Regular': `${cdn}/FontAwesome5_Regular.ttf`,
-            'FontAwesome5Free-Solid': `${cdn}/FontAwesome5_Solid.ttf`,
-            'FontAwesome6Free-Brands': `${cdn}/FontAwesome6_Brands.ttf`,
-            'FontAwesome6Free-Regular': `${cdn}/FontAwesome6_Regular.ttf`,
-            'FontAwesome6Free-Solid': `${cdn}/FontAwesome6_Solid.ttf`,
-            Fontisto: `${cdn}/Fontisto.ttf`,
-            foundation: `${cdn}/Foundation.ttf`,
-            ionicons: `${cdn}/Ionicons.ttf`,
-            'material-community': `${cdn}/MaterialCommunityIcons.ttf`,
-            material: `${cdn}/MaterialIcons.ttf`,
-            octicons: `${cdn}/Octicons.ttf`,
-            'simple-line-icons': `${cdn}/SimpleLineIcons.ttf`,
-            zocial: `${cdn}/Zocial.ttf`,
-          });
+        if (Platform.OS === "web") {
+          // Backup: +html.tsx đã inject @font-face "ionicons" trước khi React chạy
+          const ioniconsUrl =
+            "https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/Ionicons.ttf";
+          if (!Font.isLoaded("ionicons")) {
+            await Font.loadAsync({
+              ionicons: { uri: ioniconsUrl },
+            });
+          }
         }
       } catch (e) {
         console.warn(e);
