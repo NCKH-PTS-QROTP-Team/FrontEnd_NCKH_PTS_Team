@@ -17,6 +17,7 @@ import { scheduleService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import type { Schedule } from "@/apis/services/schedule.service";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 interface ScheduleItem {
   id: string;
@@ -43,13 +44,14 @@ interface WeeklyScheduleProps {
 }
 
 export default function WeeklySchedule({ targetDate, teacherId }: WeeklyScheduleProps = {}) {
+  const router = useRouter();
   const [selectedView, setSelectedView] = useState<"all" | "class" | "exam">("all");
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [isChangingWeek, setIsChangingWeek] = useState(false);
   const [allSchedules, setAllSchedules] = useState<Schedule[]>([]);
   const [weeklySchedule, setWeeklySchedule] = useState<DaySchedule>({});
-  const [modalItem, setModalItem] = useState<ScheduleItem | null>(null);
+  const [modalItem, setModalItem] = useState<(ScheduleItem & { day: string }) | null>(null);
   const fadeAnim = React.useRef(new Animated.Value(1)).current;
   const { width: windowWidth } = useWindowDimensions();
 
@@ -373,7 +375,7 @@ export default function WeeklySchedule({ targetDate, teacherId }: WeeklySchedule
             <TouchableOpacity
               key={item.id}
               activeOpacity={0.8}
-              onPress={() => setModalItem(item)}
+              onPress={() => setModalItem({ ...item, day })}
               style={{
                 backgroundColor: Colors.white,
                 borderLeftWidth: 4,
@@ -948,6 +950,113 @@ export default function WeeklySchedule({ targetDate, teacherId }: WeeklySchedule
                     </View>
                   ))}
                 </View>
+                {(() => {
+                  if (!teacherId || !modalItem) return null;
+                  
+                  const getMonday = (d: Date): Date => {
+                    const copy = new Date(d);
+                    const day = copy.getDay();
+                    const diff = copy.getDate() - day + (day === 0 ? -6 : 1);
+                    copy.setDate(diff);
+                    copy.setHours(0, 0, 0, 0);
+                    return copy;
+                  };
+
+                  const dayOffsets: Record<string, number> = {
+                    monday: 0,
+                    tuesday: 1,
+                    wednesday: 2,
+                    thursday: 3,
+                    friday: 4,
+                    saturday: 5,
+                    sunday: 6
+                  };
+
+                  const checkIsItemToday = (dayName: string) => {
+                    const monday = getMonday(currentWeek);
+                    const itemDate = new Date(monday);
+                    itemDate.setDate(monday.getDate() + dayOffsets[dayName]);
+                    
+                    const today = new Date();
+                    return itemDate.getFullYear() === today.getFullYear() &&
+                           itemDate.getMonth() === today.getMonth() &&
+                           itemDate.getDate() === today.getDate();
+                  };
+
+                  const isCurrentTimeInRange = (timeStr?: string) => {
+                    if (!timeStr) return false;
+                    const cleaned = timeStr.replace(/\s+/g, "");
+                    const match = cleaned.match(/^(\d{2}:\d{2})[-–](\d{2}:\d{2})$/);
+                    if (!match) return false;
+                    const [_, start, end] = match;
+                    
+                    const now = new Date();
+                    const currentMins = now.getHours() * 60 + now.getMinutes();
+                    
+                    const [startH, startM] = start.split(":").map(Number);
+                    const [endH, endM] = end.split(":").map(Number);
+                    
+                    const startMins = startH * 60 + startM;
+                    const endMins = endH * 60 + endM;
+                    
+                    return currentMins >= startMins && currentMins <= endMins;
+                  };
+
+                  const isItemToday = checkIsItemToday(modalItem.day);
+                  const isTimeInRange = isCurrentTimeInRange(modalItem.sessions);
+                  
+                  if (!isItemToday || !isTimeInRange) return null;
+
+                  return (
+                    <View style={{ marginTop: 20, borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 16 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "700", color: Colors.textSecondary, marginBottom: 10 }}>
+                        ⚡ Ca dạy đang diễn ra, chuyển nhanh đến:
+                      </Text>
+                      <View style={{ flexDirection: "row", gap: 10 }}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setModalItem(null);
+                            router.push("/teacher/generate-qr");
+                          }}
+                          style={{
+                            flex: 1,
+                            backgroundColor: Colors.primary,
+                            paddingVertical: 10,
+                            borderRadius: 10,
+                            alignItems: "center",
+                            flexDirection: "row",
+                            justifyContent: "center",
+                            gap: 6,
+                            ...getWebCursor(),
+                          }}
+                        >
+                          <Ionicons name="qr-code-outline" size={16} color="#fff" />
+                          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>Điểm danh QR</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setModalItem(null);
+                            router.push("/teacher/generate-otp");
+                          }}
+                          style={{
+                            flex: 1,
+                            backgroundColor: "#10B981",
+                            paddingVertical: 10,
+                            borderRadius: 10,
+                            alignItems: "center",
+                            flexDirection: "row",
+                            justifyContent: "center",
+                            gap: 6,
+                            ...getWebCursor(),
+                          }}
+                        >
+                          <Ionicons name="keypad-outline" size={16} color="#fff" />
+                          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>Điểm danh OTP</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })()}
 
                 {/* Close button */}
                 <TouchableOpacity

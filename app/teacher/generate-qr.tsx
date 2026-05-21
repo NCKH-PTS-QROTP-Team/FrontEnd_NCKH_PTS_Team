@@ -49,6 +49,11 @@ interface ScheduleAvailability {
   dotColor: string;
 }
 
+const toLocalISOString = (date: Date) => {
+  const pad = (num: number) => String(num).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
+
 export default function GenerateQRScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
@@ -204,9 +209,14 @@ export default function GenerateQRScreen() {
         teacherId,
         active: true,
       });
-      const qrSession = sessions.find(
-        (s) => s.method === AttendanceMethod.QR && s.status === "ACTIVE",
-      );
+      const qrSession = sessions.find((s) => {
+        if (s.method !== AttendanceMethod.QR || s.status !== "ACTIVE") return false;
+        if (s.expiredAt) {
+          const expTime = new Date(s.expiredAt).getTime();
+          if (expTime <= Date.now()) return false;
+        }
+        return true;
+      });
 
       if (qrSession) {
         const sess: SessionInfo = {
@@ -327,11 +337,20 @@ export default function GenerateQRScreen() {
       // Chỉ kiểm tra phiên đang active của chính giảng viên này
       // — tránh false positive do session cũ COMPLETED hoặc của giáo viên khác
       const existing = await attendanceService.getSessions({
-        classId: selectedSchedule.classId,
+        courseId: selectedSchedule.courseId || selectedSchedule.classId,
         teacherId,
         active: true,
       });
-      if (existing.length > 0) {
+      const realActive = existing.filter((s) => {
+        const isCurrentTeacher = s.teacherId === teacherId || s.lecturerId === teacherId;
+        if (!isCurrentTeacher) return false;
+        if (s.expiredAt) {
+          const expTime = new Date(s.expiredAt).getTime();
+          if (expTime <= Date.now()) return false;
+        }
+        return s.status === "ACTIVE";
+      });
+      if (realActive.length > 0) {
         showToast("Học phần này đang có phiên điểm danh hoạt động.", "error");
         setLoadingQR(false);
         return;
@@ -386,7 +405,7 @@ export default function GenerateQRScreen() {
       showToast("Khởi tạo cổng điểm danh QR thành công!", "success");
     } catch (error: any) {
       showToast(
-        error?.response?.data?.message || "Không thể tạo phiên QR.",
+        error?.message || "Không thể tạo phiên QR.",
         "error",
       );
     } finally {
@@ -480,11 +499,18 @@ export default function GenerateQRScreen() {
               style={{
                 flexDirection: isDesktop ? "row" : "column",
                 gap: 20,
-                alignItems: "flex-start",
+                alignItems: isDesktop ? "flex-start" : "stretch",
+                width: "100%",
               }}
             >
               {/* LEFT COLUMN */}
-              <View style={{ flex: isDesktop ? 1.2 : undefined, gap: 16 }}>
+              <View
+                style={{
+                  flex: isDesktop ? 1.2 : undefined,
+                  width: isDesktop ? undefined : "100%",
+                  gap: 16,
+                }}
+              >
                 {/* Schedule List Card */}
                 <View
                   style={{
@@ -1044,7 +1070,13 @@ export default function GenerateQRScreen() {
               </View>
 
               {/* RIGHT COLUMN — QR Display */}
-              <View style={{ flex: isDesktop ? 1 : undefined, gap: 16 }}>
+              <View
+                style={{
+                  flex: isDesktop ? 1 : undefined,
+                  width: isDesktop ? undefined : "100%",
+                  gap: 16,
+                }}
+              >
                 {/* QR Viewer Card */}
                 <View
                   style={{

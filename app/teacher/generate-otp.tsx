@@ -42,6 +42,11 @@ interface ScheduleAvailability {
   dotColor: string;
 }
 
+const toLocalISOString = (date: Date) => {
+  const pad = (num: number) => String(num).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
+
 export default function GenerateOTPScreen() {
   const [otp, setOtp] = useState("");
   // countdown only for display; only starts when isActive is true
@@ -192,9 +197,14 @@ export default function GenerateOTPScreen() {
         teacherId,
         active: true,
       });
-      const otpSession = sessions.find(
-        (s) => s.method === AttendanceMethod.OTP && s.status === "ACTIVE",
-      );
+      const otpSession = sessions.find((s) => {
+        if (s.method !== AttendanceMethod.OTP || s.status !== "ACTIVE") return false;
+        if (s.expiredAt) {
+          const expTime = new Date(s.expiredAt).getTime();
+          if (expTime <= Date.now()) return false;
+        }
+        return true;
+      });
 
       if (otpSession) {
         setSessionInfo({
@@ -311,11 +321,20 @@ export default function GenerateOTPScreen() {
       // Chỉ kiểm tra các phiên đang active (active:true) và của chính giảng viên này
       // — tránh false positive do session cũ đã COMPLETED hoặc của giáo viên khác
       const existing = await attendanceService.getSessions({
-        classId: selectedSchedule.classId,
+        courseId: selectedSchedule.courseId || selectedSchedule.classId,
         teacherId,
         active: true,
       });
-      if (existing.length > 0) {
+      const realActive = existing.filter((s) => {
+        const isCurrentTeacher = s.teacherId === teacherId || s.lecturerId === teacherId;
+        if (!isCurrentTeacher) return false;
+        if (s.expiredAt) {
+          const expTime = new Date(s.expiredAt).getTime();
+          if (expTime <= Date.now()) return false;
+        }
+        return s.status === "ACTIVE";
+      });
+      if (realActive.length > 0) {
         showToast("Học phần này đang có phiên điểm danh hoạt động.", "error");
         setLoading(false);
         return;
@@ -363,7 +382,7 @@ export default function GenerateOTPScreen() {
       showToast("Khởi tạo phiên điểm danh thành công!", "success");
     } catch (error: any) {
       showToast(
-        error?.response?.data?.message || "Không thể tạo phiên điểm danh.",
+        error?.message || "Không thể tạo phiên điểm danh.",
         "error",
       );
     } finally {
@@ -460,11 +479,18 @@ export default function GenerateOTPScreen() {
               style={{
                 flexDirection: isDesktop ? "row" : "column",
                 gap: 20,
-                alignItems: "flex-start",
+                alignItems: isDesktop ? "flex-start" : "stretch",
+                width: "100%",
               }}
             >
               {/* LEFT COLUMN */}
-              <View style={{ flex: isDesktop ? 1.2 : undefined, gap: 16 }}>
+              <View
+                style={{
+                  flex: isDesktop ? 1.2 : undefined,
+                  width: isDesktop ? undefined : "100%",
+                  gap: 16,
+                }}
+              >
                 {/* Schedule List */}
                 <View
                   style={{
@@ -1027,6 +1053,7 @@ export default function GenerateOTPScreen() {
                 style={{
                   flex: isDesktop ? 1 : undefined,
                   minHeight: isDesktop ? 520 : undefined,
+                  width: isDesktop ? undefined : "100%",
                 }}
               >
                 <View
