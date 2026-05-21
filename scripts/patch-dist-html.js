@@ -6,7 +6,7 @@ const fs = require("fs");
 const path = require("path");
 
 const CDN =
-  "https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/Ionicons.ttf";
+  "/assets/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.b4eb097d35f44ed943676fd56f6bdc51.ttf";
 const MARKER = "ionicons-font-face";
 const SNIPPET = `
     <link rel="preload" href="${CDN}" as="font" type="font/ttf" crossorigin="anonymous" />
