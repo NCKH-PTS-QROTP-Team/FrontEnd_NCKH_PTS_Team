@@ -1,6 +1,7 @@
 # Expo
 .expo/
-web-build/
+
+
 
 # Node
 node_modules/
