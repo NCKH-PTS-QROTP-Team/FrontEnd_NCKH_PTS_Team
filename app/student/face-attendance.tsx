@@ -66,7 +66,7 @@ export default function FaceAttendanceScreen() {
       setScanning(true);
 
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 1.0, // Maximum quality để tăng similarity trên mobile
+        quality: 0.35, // Reduced from 1.0 to avoid 502 Bad Gateway / localtunnel drops
         base64: true, // Quan trọng: lấy base64
         skipProcessing: false, // Đảm bảo xử lý đầy đủ
         exif: false, // Tắt EXIF để giảm kích thước

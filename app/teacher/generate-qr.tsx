@@ -15,7 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { QRViewer } from "@/components/QRViewer";
-import { qrService, attendanceService, scheduleService, apiClient, reportService } from "@/apis";
+import { qrService, attendanceService, scheduleService, apiClient, reportService, getAuthToken } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import { useToast } from "@/components/ToastProvider";
 import { AttendanceMethod } from "@/apis/types/attendance.types";
@@ -106,14 +106,13 @@ export default function GenerateQRScreen() {
   // Start button disabled when: no schedule, no active schedule slot, or already running
   const startDisabled = !hasSchedules || !hasActiveSchedule || isActive;
 
-  useEffect(() => {
-    const now = new Date();
-    setCustomHour(String(now.getHours()).padStart(2, "0"));
-    setCustomMinute(String(now.getMinutes()).padStart(2, "0"));
-  }, []);
+
 
   useEffect(() => {
     loadData();
+    const now = new Date();
+    setCustomHour(String(now.getHours()).padStart(2, "0"));
+    setCustomMinute(String(now.getMinutes()).padStart(2, "0"));
   }, []);
 
   const loadData = async () => {
@@ -417,7 +416,7 @@ export default function GenerateQRScreen() {
 
       const sess: SessionInfo = {
         id: newSession.id,
-        courseId: selectedSchedule.classId,
+        courseId: newSession.courseId || selectedSchedule.classId,
         courseName: selectedSchedule.className,
         subjectId: selectedSchedule.subjectId,
         subjectName: selectedSchedule.subjectName,
@@ -476,7 +475,7 @@ export default function GenerateQRScreen() {
         }
       }
 
-      const activeEnrollments = enrollments.filter((e: any) => e.status === 'ACTIVE' || !e.status);
+      const activeEnrollments = enrollments.filter((e: any) => e.status === 'ENROLLED' || e.status === 'ACTIVE' || !e.status);
 
       // 2. Fetch attendance records
       const records = await attendanceService.getRecords({ sessionId });
@@ -513,20 +512,29 @@ export default function GenerateQRScreen() {
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!modalSessionInfo?.id) return;
-    const url = reportService.getExportExcelUrl(
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      modalSessionInfo.id
-    );
-    Linking.openURL(url).catch((err) => {
-      console.error("Lỗi mở link tải Excel:", err);
-      showToast("Không thể tải file báo cáo Excel.", "error");
-    });
+    try {
+      const token = await getAuthToken();
+      let url = reportService.getExportExcelUrl(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        modalSessionInfo.id
+      );
+      if (token) {
+        url += (url.includes("?") ? "&" : "?") + "token=" + encodeURIComponent(token);
+      }
+      Linking.openURL(url).catch((err) => {
+        console.error("Lỗi mở link tải Excel:", err);
+        showToast("Không thể tải file báo cáo Excel.", "error");
+      });
+    } catch (err) {
+      console.error("Lỗi lấy token xác thực:", err);
+      showToast("Không thể xác thực để tải file.", "error");
+    }
   };
 
   const handleStopQR = async () => {
@@ -540,10 +548,12 @@ export default function GenerateQRScreen() {
       if (timerRef.current) clearInterval(timerRef.current);
       setCountdown(Number(qrInterval) || 10);
 
+      const finalCourseId = completedSession.courseId || courseId;
+
       // Store session info for modal before clearing active screen state
       setModalSessionInfo({
         id: completedSession.id,
-        courseId: courseId,
+        courseId: finalCourseId,
         subjectName: completedSession.subjectName || selectedSession.subjectName,
         className: completedSession.className || selectedSession.className,
         method: 'QR',
@@ -559,7 +569,7 @@ export default function GenerateQRScreen() {
 
       // Fetch roster & show modal
       setShowSummaryModal(true);
-      await loadModalData(sessionId, courseId);
+      await loadModalData(sessionId, finalCourseId);
       showToast("Đã kết thúc phiên điểm danh.", "success");
     } catch (_) {
       showToast("Không thể kết thúc phiên điểm danh.", "error");
