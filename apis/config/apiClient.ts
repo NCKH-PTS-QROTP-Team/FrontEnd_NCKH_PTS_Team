@@ -7,8 +7,8 @@ import Constants from 'expo-constants';
 // - Bắt buộc sử dụng cấu hình từ file .env (EXPO_PUBLIC_API_URL) để đồng nhất.
 // - Web: fallback về hostname hiện tại nếu không có .env.
 const getApiBaseUrl = () => {
-  const envApiUrl = typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_API_URL?.trim() : undefined;
-  const envWebApiUrl = typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_API_URL_WEB?.trim() : undefined;
+  const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
+  const envWebApiUrl = process.env.EXPO_PUBLIC_API_URL_WEB;
 
   if (Platform.OS === 'web') {
     if (envWebApiUrl) return envWebApiUrl;

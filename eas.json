@@ -19,13 +19,23 @@
       "android": {
         "buildType": "apk"
       },
-      "channel": "preview"
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://shark-app-bcpqf.ondigitalocean.app/api",
+        "EXPO_PUBLIC_API_URL_WEB": "https://shark-app-bcpqf.ondigitalocean.app/api",
+        "EXPO_PUBLIC_GROQ_API_KEY": "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"
+      }
     },
     "production": {
       "android": {
         "buildType": "apk"
       },
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://shark-app-bcpqf.ondigitalocean.app/api",
+        "EXPO_PUBLIC_API_URL_WEB": "https://shark-app-bcpqf.ondigitalocean.app/api",
+        "EXPO_PUBLIC_GROQ_API_KEY": "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"
+      }
     }
   },
   "submit": {

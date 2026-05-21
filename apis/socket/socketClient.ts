@@ -11,9 +11,8 @@ class SocketClient {
   private isConnected: boolean = false;
 
   constructor() {
-    // Base URL cho socket - Socket.IO chạy trên port 9092 (configurable trong backend)
     // Ưu tiên: Environment variable
-    if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_SOCKET_URL) {
+    if (process.env.EXPO_PUBLIC_SOCKET_URL) {
       this.baseURL = process.env.EXPO_PUBLIC_SOCKET_URL;
     } else if (Platform.OS === 'web') {
       if (typeof window !== 'undefined' && window.location) {
