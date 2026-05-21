@@ -115,8 +115,12 @@ export const reportService = {
   /**
    * Get teacher-specific summary (classes, sessions, attendance of logged-in teacher)
    */
-  getTeacherSummary: async (): Promise<TeacherSummary> => {
-    const response = await apiClient.get<ApiResponse<TeacherSummary>>('/reports/teacher-summary');
+  getTeacherSummary: async (subjectId?: string, startDate?: string, endDate?: string): Promise<TeacherSummary> => {
+    const params: Record<string, string> = {};
+    if (subjectId) params.subjectId = subjectId;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await apiClient.get<ApiResponse<TeacherSummary>>('/reports/teacher-summary', { params });
     return response.data.data;
   },
 
@@ -131,10 +135,19 @@ export const reportService = {
   /**
    * Get student attendance reports
    */
-  getStudentReports: async (courseId?: string, semesterId?: string): Promise<StudentAttendanceReport[]> => {
+  getStudentReports: async (
+    courseId?: string,
+    semesterId?: string,
+    subjectId?: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<StudentAttendanceReport[]> => {
     const params: Record<string, string> = {};
     if (courseId) params.courseId = courseId;
     if (semesterId) params.semesterId = semesterId;
+    if (subjectId) params.subjectId = subjectId;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
     const response = await apiClient.get<ApiResponse<StudentAttendanceReport[]>>('/reports/students', { params });
     return response.data.data;
   },
@@ -166,13 +179,23 @@ export const reportService = {
   /**
    * Tải file Excel báo cáo điểm danh.
    * Trả về Blob để FE tạo link tải (web) hoặc lưu file (native).
-   * @param courseId optional - nếu có thì sheet sinh viên chỉ gồm học phần đó
-   * @param subjectId optional - nếu có thì chỉ xuất báo cáo của môn này
    */
-  exportExcel: async (courseId?: string, subjectId?: string): Promise<Blob> => {
-    const params: Record<string, string> = {};
+  exportExcel: async (
+    courseId?: string,
+    subjectId?: string,
+    startDate?: string,
+    endDate?: string,
+    onlyRisk?: boolean,
+    sessionId?: string
+  ): Promise<Blob> => {
+    const params: Record<string, any> = {};
     if (courseId) params.courseId = courseId;
     if (subjectId) params.subjectId = subjectId;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (onlyRisk !== undefined) params.onlyRisk = onlyRisk;
+    if (sessionId) params.sessionId = sessionId;
+    
     const response = await apiClient.get('/reports/export/excel', {
       params: Object.keys(params).length ? params : undefined,
       responseType: 'blob',
@@ -183,11 +206,22 @@ export const reportService = {
   /**
    * URL đầy đủ để tải file Excel (dùng cho native - fetch + save + share).
    */
-  getExportExcelUrl: (courseId?: string, subjectId?: string): string => {
+  getExportExcelUrl: (
+    courseId?: string,
+    subjectId?: string,
+    startDate?: string,
+    endDate?: string,
+    onlyRisk?: boolean,
+    sessionId?: string
+  ): string => {
     const base = getExportBaseUrl();
     const search = new URLSearchParams();
     if (courseId) search.set('courseId', courseId);
     if (subjectId) search.set('subjectId', subjectId);
+    if (startDate) search.set('startDate', startDate);
+    if (endDate) search.set('endDate', endDate);
+    if (onlyRisk !== undefined) search.set('onlyRisk', String(onlyRisk));
+    if (sessionId) search.set('sessionId', sessionId);
     const qs = search.toString();
     return `${base}/reports/export/excel${qs ? `?${qs}` : ''}`;
   },

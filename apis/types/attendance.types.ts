@@ -93,5 +93,7 @@ export interface AttendanceSessionResponse {
   total?: number;
   description?: string;
   createdAt: string;
+  expiredAt?: string;
+  lecturerId?: string;
 }
 

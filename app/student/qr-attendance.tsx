@@ -8,7 +8,9 @@ import {
   useWindowDimensions,
   ActivityIndicator,
   Animated,
+  StyleSheet,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -20,7 +22,7 @@ import { AttendanceMethod, AttendanceSessionResponse } from "@/apis/types/attend
 import { useToast } from "@/components/ToastProvider";
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from "expo-camera";
 import { useSocket } from "@/apis/socket/SocketProvider";
-import { CheckCircleIcon, CloseIcon, UserIcon } from "@/components/Icons";
+import { CheckCircleIcon, CloseIcon, UserIcon, ChevronLeftIcon, SchoolIcon, ClipboardIcon, InfoIcon, WarningIcon, LockIconFilled, QrCodeIcon, QrCodeIconFilled } from "@/components/Icons";
 import { getFriendlyError } from "@/utils/errorMessages";
 import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 
@@ -33,6 +35,15 @@ interface SessionInfo {
   subjectName: string;
 }
 
+interface FaceDetection {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  eyes?: Array<{ x: number; y: number; width: number; height: number }>;
+  smiles?: Array<{ x: number; y: number; width: number; height: number }>;
+}
+
 type Step = "checking" | "face-verification" | "qr-scanning" | "completed";
 
 const fromHex = (hex: string): string => {
@@ -41,7 +52,6 @@ const fromHex = (hex: string): string => {
     for (let i = 0; i < hex.length; i += 2) {
       str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
     }
-    // Decode percent encoding for UTF-8
     return decodeURIComponent(escape(str));
   } catch (e) {
     let str = "";
@@ -82,11 +92,10 @@ export default function QRAttendanceScreen() {
   const [availableSessions, setAvailableSessions] = useState<AttendanceSessionResponse[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [recordStatus, setRecordStatus] = useState<string | null>(null);
   const [faceVerified, setFaceVerified] = useState(false);
   const [faceVerifying, setFaceVerifying] = useState(false);
-  const [faceResult, setFaceResult] = useState<"idle" | "success" | "error">(
-    "idle",
-  );
+  const [faceResult, setFaceResult] = useState<"idle" | "success" | "error">("idle");
   const [faceRetryCooldown, setFaceRetryCooldown] = useState(0);
   const [faceVerifiedEncoding, setFaceVerifiedEncoding] = useState<number[] | null>(null);
   const [faceDetected, setFaceDetected] = useState<FaceDetection | null>(null);
@@ -105,15 +114,18 @@ export default function QRAttendanceScreen() {
   const isTablet = width >= 768 && width < 1024;
   const isWeb = Platform.OS === "web";
 
-  const contentMaxWidth = isDesktop ? 500 : "100%";
+  const contentMaxWidth = isDesktop ? 520 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
-  // Kích thước khung quét (viền chụp mặt) – scale theo platform
-  // Web: to hơn vì camera xa; App (mobile): vừa với màn nhỏ
   const scanBoxSize = isWeb
     ? Math.min(width * 0.7, 420)
     : Math.min(width * 0.8, 320);
 
-  // Đếm lùi cooldown sau khi xác thực thất bại để tránh spam
+  const FACE_BOX_SMOOTHING_ALPHA = 0.65;
+  const faceBoxRef = useRef<FaceDetection | null>(null);
+  const detectingRef = useRef(false);
+  const useSocketForDetection = false;
+
+  // Cooldown countdown
   useEffect(() => {
     if (faceRetryCooldown <= 0) return;
     const timer = setInterval(() => {
@@ -122,295 +134,18 @@ export default function QRAttendanceScreen() {
     return () => clearInterval(timer);
   }, [faceRetryCooldown]);
 
-  // Animation nhẹ nhàng cho khung scan (thay thế detect realtime)
-  // Chỉ dùng animation cho transform (native driver) để tránh conflict
-  // Opacity và shadow dùng giá trị tĩnh để tránh lỗi
+  // Pulse animation for scan frame
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Socket realtime detection cho face, eyes, smiles
-  // Tạm tắt vì server socket chưa chạy (có thể bật lại sau)
-  const useSocketForDetection = false; // Tắt socket detection để tránh error spam
-  const FACE_BOX_SMOOTHING_ALPHA = 0.65;
-  const faceBoxRef = useRef<FaceDetection | null>(null);
-  const detectingRef = useRef(false);
-
-  // Connect socket khi camera mở và ở bước face-verification
-  useEffect(() => {
-    if (useSocketForDetection && showCamera && step === "face-verification" && !isConnected) {
-      connect();
-    }
-  }, [showCamera, step, isConnected, useSocketForDetection]);
-
-  // Listen socket events cho face detection results
-  useEffect(() => {
-    if (!isConnected || !useSocketForDetection || step !== "face-verification") return;
-
-    const handleFaceDetection = (data: any) => {
-      if (!data) return;
-      
-      if (data.faces && data.faces.length > 0) {
-        const face = data.faces[0];
-        
-        const previewW = previewLayout.width || width;
-        const previewH = previewLayout.height || height;
-        const imgWidth = data.imageWidth || lastImageDimensions.current?.width || previewW;
-        const imgHeight = data.imageHeight || lastImageDimensions.current?.height || previewH;
-        
-        if (!imgWidth || !imgHeight || imgWidth <= 0 || imgHeight <= 0) {
-          return;
-        }
-        
-        const imageAspectRatio = imgWidth / imgHeight;
-        const screenAspectRatio = previewW / previewH;
-        
-        let scaleX, scaleY, offsetX, offsetY;
-        
-        if (Platform.OS === 'web') {
-          if (imageAspectRatio > screenAspectRatio) {
-            scaleX = previewW / imgWidth;
-            scaleY = scaleX;
-            offsetX = 0;
-            offsetY = (previewH - imgHeight * scaleY) / 2;
-          } else {
-            scaleY = previewH / imgHeight;
-            scaleX = scaleY;
-            offsetX = (previewW - imgWidth * scaleX) / 2;
-            offsetY = 0;
-          }
-        } else {
-          scaleX = previewW / imgWidth;
-          scaleY = previewH / imgHeight;
-          offsetX = 0;
-          offsetY = 0;
-        }
-        
-        if (!isFinite(scaleX) || !isFinite(scaleY) || scaleX <= 0 || scaleY <= 0) {
-          return;
-        }
-        
-        let scaledX = face.x * scaleX + offsetX;
-        let scaledY = face.y * scaleY + offsetY;
-        let scaledWidth = face.width * scaleX;
-        let scaledHeight = face.height * scaleY;
-        
-        const paddingFactor = Platform.OS === 'web' ? 0.2 : 0.1;
-        const paddingX = scaledWidth * paddingFactor;
-        const paddingY = scaledHeight * paddingFactor;
-        scaledX -= paddingX;
-        scaledY -= paddingY;
-        scaledWidth += paddingX * 2;
-        scaledHeight += paddingY * 2;
-        
-        if (!isFinite(scaledX) || !isFinite(scaledY) || !isFinite(scaledWidth) || !isFinite(scaledHeight)) {
-          return;
-        }
-        
-        const headerOffsetY = 0;
-        const finalX = Math.max(0, Math.min(scaledX, previewW - 20));
-        const finalY = Math.max(0, Math.min(scaledY + headerOffsetY, previewH - 20));
-        const finalWidth = Math.max(40, Math.min(scaledWidth, previewW - finalX));
-        const finalHeight = Math.max(40, Math.min(scaledHeight, previewH - finalY));
-        
-        // Scale eyes và smiles
-        const scaledEyes = face.eyes?.map((eye: { x: number; y: number; width: number; height: number }) => ({
-          x: Math.max(0, Math.min(eye.x * scaleX + offsetX, previewW - 20)),
-          y: Math.max(0, Math.min(eye.y * scaleY + offsetY + headerOffsetY, previewH - 20)),
-          width: Math.max(10, Math.min(eye.width * scaleX, previewW)),
-          height: Math.max(10, Math.min(eye.height * scaleY, previewH)),
-        })) || [];
-        
-        const scaledSmiles = face.smiles?.map((smile: { x: number; y: number; width: number; height: number }) => ({
-          x: Math.max(0, Math.min(smile.x * scaleX + offsetX, previewW - 20)),
-          y: Math.max(0, Math.min(smile.y * scaleY + offsetY + headerOffsetY, previewH - 20)),
-          width: Math.max(10, Math.min(smile.width * scaleX, previewW)),
-          height: Math.max(10, Math.min(smile.height * scaleY, previewH)),
-        })) || [];
-        
-        // Smoothing
-        const prev = faceBoxRef.current;
-        const smoothed: FaceDetection = prev
-          ? {
-              x: prev.x * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalX * FACE_BOX_SMOOTHING_ALPHA,
-              y: prev.y * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalY * FACE_BOX_SMOOTHING_ALPHA,
-              width: prev.width * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalWidth * FACE_BOX_SMOOTHING_ALPHA,
-              height: prev.height * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalHeight * FACE_BOX_SMOOTHING_ALPHA,
-              eyes: scaledEyes,
-              smiles: scaledSmiles,
-            }
-          : {
-              x: finalX,
-              y: finalY,
-              width: finalWidth,
-              height: finalHeight,
-              eyes: scaledEyes,
-              smiles: scaledSmiles,
-            };
-        
-        faceBoxRef.current = smoothed;
-        setFaceDetected(smoothed);
-      } else {
-        setFaceDetected(null);
-        faceBoxRef.current = null;
-      }
-    };
-
-    on('face:detected', handleFaceDetection);
-
-    return () => {
-      off('face:detected', handleFaceDetection);
-    };
-  }, [isConnected, useSocketForDetection, step, previewLayout, width, height]);
-
-  // Detect face realtime qua socket (fallback về API nếu socket chưa ready)
-  useEffect(() => {
-    if (!showCamera || step !== "face-verification" || faceVerifying || detectingRef.current || !cameraRef.current) {
-      return;
-    }
-
-    const sendFrame = async () => {
-      if (!cameraRef.current || faceVerifying || detectingRef.current) return;
-      
-      try {
-        detectingRef.current = true;
-        const isMobile = Platform.OS !== 'web';
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: isMobile ? 0.3 : 0.15,
-          base64: true,
-          skipProcessing: isMobile ? false : true,
-          shutterSound: false,
-          exif: false,
-        });
-
-        if (photo.base64) {
-          lastImageDimensions.current = {
-            width: photo.width || width,
-            height: photo.height || height,
-          };
-          
-          if (useSocketForDetection && isConnected) {
-            emit('face:detect', {
-              base64Image: `data:image/jpeg;base64,${photo.base64}`,
-            });
-          } else {
-            // FALLBACK API
-            const result = await faceService.detectRealtime(photo.base64);
-            if (result.faces && result.faces.length > 0) {
-              const face = result.faces[0];
-              const previewW = previewLayout.width || width;
-              const previewH = previewLayout.height || height;
-              const imgWidth = result.imageWidth || photo.width || previewW;
-              const imgHeight = result.imageHeight || photo.height || previewH;
-              
-              if (imgWidth > 0 && imgHeight > 0) {
-                const imageAspectRatio = imgWidth / imgHeight;
-                const screenAspectRatio = previewW / previewH;
-                
-                let scaleX, scaleY, offsetX, offsetY;
-                
-                // COVER mode (uniform scale) cho cả Web và Mobile
-                if (imageAspectRatio > screenAspectRatio) {
-                  scaleY = previewH / imgHeight;
-                  scaleX = scaleY;
-                  offsetX = (previewW - imgWidth * scaleX) / 2;
-                  offsetY = 0;
-                } else {
-                  scaleX = previewW / imgWidth;
-                  scaleY = scaleX;
-                  offsetX = 0;
-                  offsetY = (previewH - imgHeight * scaleY) / 2;
-                }
-                
-                if (isFinite(scaleX) && isFinite(scaleY) && scaleX > 0 && scaleY > 0) {
-                  let scaledX = face.x * scaleX + offsetX;
-                  let scaledY = face.y * scaleY + offsetY;
-                  let scaledWidth = face.width * scaleX;
-                  let scaledHeight = face.height * scaleY;
-                  
-                  // Mobile front camera: preview bị mirror nhưng ảnh chụp thì không
-                  if (Platform.OS !== 'web' && step === "face-verification") {
-                    scaledX = previewW - scaledX - scaledWidth;
-                  }
-                  
-                  const paddingFactor = Platform.OS === 'web' ? 0.2 : 0.1;
-                  const paddingX = scaledWidth * paddingFactor;
-                  const paddingY = scaledHeight * paddingFactor;
-                  scaledX -= paddingX;
-                  scaledY -= paddingY;
-                  scaledWidth += paddingX * 2;
-                  scaledHeight += paddingY * 2;
-                  
-                  const finalX = Math.max(0, Math.min(scaledX, previewW - 20));
-                  const finalY = Math.max(0, Math.min(scaledY, previewH - 20));
-                  const finalWidth = Math.max(40, Math.min(scaledWidth, previewW - finalX));
-                  const finalHeight = Math.max(40, Math.min(scaledHeight, previewH - finalY));
-                  
-                  const prev = faceBoxRef.current;
-                  const smoothed: FaceDetection = prev
-                    ? {
-                        x: prev.x * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalX * FACE_BOX_SMOOTHING_ALPHA,
-                        y: prev.y * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalY * FACE_BOX_SMOOTHING_ALPHA,
-                        width: prev.width * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalWidth * FACE_BOX_SMOOTHING_ALPHA,
-                        height: prev.height * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalHeight * FACE_BOX_SMOOTHING_ALPHA,
-                        eyes: [],
-                        smiles: [],
-                      }
-                    : {
-                        x: finalX,
-                        y: finalY,
-                        width: finalWidth,
-                        height: finalHeight,
-                        eyes: [],
-                        smiles: [],
-                      };
-                  
-                  faceBoxRef.current = smoothed;
-                  setFaceDetected(smoothed);
-                }
-              }
-            } else {
-              setFaceDetected(null);
-              faceBoxRef.current = null;
-            }
-          }
-        }
-      } catch (error) {
-        // Silent fail cho realtime detection
-      } finally {
-        detectingRef.current = false;
-      }
-    };
-
-    const interval = setInterval(sendFrame, Platform.OS === 'web' ? (useSocketForDetection && isConnected ? 150 : 500) : 2000);
-    detectIntervalRef.current = interval;
-
-    return () => {
-      if (detectIntervalRef.current) {
-        clearInterval(detectIntervalRef.current);
-        detectIntervalRef.current = null;
-      }
-    };
-  }, [showCamera, step, isConnected, useSocketForDetection, faceVerifying, width, height, previewLayout, emit]);
-
-  // Tạo animation pulse nhẹ nhàng cho khung scan khi đang ở bước face-verification
   useEffect(() => {
     if (showCamera && step === "face-verification" && !faceVerifying && !faceVerified) {
-      // Pulse animation (nhấp nháy nhẹ) - chỉ dùng native driver cho transform
       const pulseAnimation = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.05,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
+          Animated.timing(pulseAnim, { toValue: 1.05, duration: 1500, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
         ])
       );
       pulseAnimation.start();
-
       return () => {
         pulseAnimation.stop();
         pulseAnim.setValue(1);
@@ -420,113 +155,96 @@ export default function QRAttendanceScreen() {
     }
   }, [showCamera, step, faceVerifying, faceVerified]);
 
-  // Connect socket khi mở camera face verification
+  // Socket for face detection
   useEffect(() => {
-    if (showCamera && step === "face-verification" && !isConnected) {
-      connect();
-    }
-    return () => {
-      if (isConnected && !showCamera) {
-        disconnect();
-      }
-    };
+    if (showCamera && step === "face-verification" && !isConnected) connect();
+    return () => { if (isConnected && !showCamera) disconnect(); };
   }, [showCamera, step, isConnected]);
 
-  // Socket realtime face detection (chỉ khi face-verification)
+  // Realtime face detection
   useEffect(() => {
-    if (!isConnected || !showCamera || step !== "face-verification" || faceVerifying || faceVerified) {
-      return;
-    }
+    if (!showCamera || step !== "face-verification" || faceVerifying || detectingRef.current || !cameraRef.current) return;
 
     const sendFrame = async () => {
-      if (!cameraRef.current || faceVerifying || faceVerified) return;
-      
+      if (!cameraRef.current || faceVerifying || detectingRef.current) return;
       try {
+        detectingRef.current = true;
+        const isMobile = Platform.OS !== "web";
         const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.3, // Low quality cho realtime detection
+          quality: isMobile ? 0.3 : 0.15,
           base64: true,
-          skipProcessing: true,
+          skipProcessing: isMobile ? false : true,
+          shutterSound: false,
+          exif: false,
         });
 
-        if (photo?.base64) {
-          emit("face:detect", { base64Image: photo.base64 });
+        if (photo.base64) {
+          lastImageDimensions.current = { width: photo.width || width, height: photo.height || height };
+          const result = await faceService.detectRealtime(photo.base64);
+          if (result.faces && result.faces.length > 0) {
+            const face = result.faces[0];
+            const previewW = previewLayout.width || width;
+            const previewH = previewLayout.height || height;
+            const imgWidth = result.imageWidth || photo.width || previewW;
+            const imgHeight = result.imageHeight || photo.height || previewH;
+            if (imgWidth > 0 && imgHeight > 0) {
+              const imageAspectRatio = imgWidth / imgHeight;
+              const screenAspectRatio = previewW / previewH;
+              let scaleX, scaleY, offsetX, offsetY;
+              if (imageAspectRatio > screenAspectRatio) {
+                scaleY = previewH / imgHeight; scaleX = scaleY;
+                offsetX = (previewW - imgWidth * scaleX) / 2; offsetY = 0;
+              } else {
+                scaleX = previewW / imgWidth; scaleY = scaleX;
+                offsetX = 0; offsetY = (previewH - imgHeight * scaleY) / 2;
+              }
+              if (isFinite(scaleX) && isFinite(scaleY) && scaleX > 0 && scaleY > 0) {
+                let scaledX = face.x * scaleX + offsetX;
+                let scaledY = face.y * scaleY + offsetY;
+                let scaledWidth = face.width * scaleX;
+                let scaledHeight = face.height * scaleY;
+                if (Platform.OS !== "web" && step === "face-verification") scaledX = previewW - scaledX - scaledWidth;
+                const paddingFactor = Platform.OS === "web" ? 0.2 : 0.1;
+                const paddingX = scaledWidth * paddingFactor; const paddingY = scaledHeight * paddingFactor;
+                scaledX -= paddingX; scaledY -= paddingY; scaledWidth += paddingX * 2; scaledHeight += paddingY * 2;
+                const finalX = Math.max(0, Math.min(scaledX, previewW - 20));
+                const finalY = Math.max(0, Math.min(scaledY, previewH - 20));
+                const finalWidth = Math.max(40, Math.min(scaledWidth, previewW - finalX));
+                const finalHeight = Math.max(40, Math.min(scaledHeight, previewH - finalY));
+                const prev = faceBoxRef.current;
+                const smoothed: FaceDetection = prev
+                  ? {
+                      x: prev.x * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalX * FACE_BOX_SMOOTHING_ALPHA,
+                      y: prev.y * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalY * FACE_BOX_SMOOTHING_ALPHA,
+                      width: prev.width * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalWidth * FACE_BOX_SMOOTHING_ALPHA,
+                      height: prev.height * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalHeight * FACE_BOX_SMOOTHING_ALPHA,
+                      eyes: [], smiles: [],
+                    }
+                  : { x: finalX, y: finalY, width: finalWidth, height: finalHeight, eyes: [], smiles: [] };
+                faceBoxRef.current = smoothed;
+                setFaceDetected(smoothed);
+              }
+            }
+          } else {
+            setFaceDetected(null);
+            faceBoxRef.current = null;
+          }
         }
       } catch (error) {
-        // Silent fail cho realtime detection
+        // Silent fail
+      } finally {
+        detectingRef.current = false;
       }
     };
 
-    const interval = setInterval(sendFrame, 200); // Mỗi 200ms
+    const interval = setInterval(sendFrame, Platform.OS === "web" ? 500 : 2000);
     detectIntervalRef.current = interval;
-
     return () => {
-      if (detectIntervalRef.current) {
-        clearInterval(detectIntervalRef.current);
-        detectIntervalRef.current = null;
-      }
+      if (detectIntervalRef.current) { clearInterval(detectIntervalRef.current); detectIntervalRef.current = null; }
     };
-  }, [isConnected, showCamera, step, faceVerifying, faceVerified, emit]);
+  }, [showCamera, step, isConnected, faceVerifying, width, height, previewLayout, emit]);
 
-  // Listen socket events cho face detection results
-  useEffect(() => {
-    if (!isConnected || step !== "face-verification") return;
-
-    const handleFaceDetection = (data: any) => {
-      if (!data || faceVerifying || faceVerified) return;
-      
-      if (data.faces && data.faces.length > 0) {
-        const face = data.faces[0];
-        const previewW = previewLayout.width || width;
-        const previewH = previewLayout.height || height;
-        const imgWidth = data.imageWidth || previewW;
-        const imgHeight = data.imageHeight || previewH;
-        
-        if (!imgWidth || !imgHeight || imgWidth <= 0 || imgHeight <= 0) return;
-        
-        const scaleX = previewW / imgWidth;
-        const scaleY = previewH / imgHeight;
-        
-        if (!isFinite(scaleX) || !isFinite(scaleY) || scaleX <= 0 || scaleY <= 0) return;
-        
-        const scaledX = face.x * scaleX;
-        const scaledY = face.y * scaleY;
-        const scaledW = face.width * scaleX;
-        const scaledH = face.height * scaleY;
-        
-        const scaledEyes = face.eyes?.map((eye: any) => ({
-          x: eye.x * scaleX,
-          y: eye.y * scaleY,
-          width: eye.width * scaleX,
-          height: eye.height * scaleY,
-        })) || [];
-        
-        const scaledSmiles = face.smiles?.map((smile: { x: number; y: number; width: number; height: number }) => ({
-          x: smile.x * scaleX,
-          y: smile.y * scaleY,
-          width: smile.width * scaleX,
-          height: smile.height * scaleY,
-        })) || [];
-        
-        setFaceDetected({
-          x: Math.max(0, Math.min(scaledX, previewW - 20)),
-          y: Math.max(0, Math.min(scaledY, previewH - 20)),
-          width: Math.max(40, Math.min(scaledW, previewW)),
-          height: Math.max(40, Math.min(scaledH, previewH)),
-          eyes: scaledEyes,
-          smiles: scaledSmiles,
-        });
-      } else {
-        setFaceDetected(null);
-      }
-    };
-
-    on("face:detected", handleFaceDetection);
-    return () => {
-      off("face:detected", handleFaceDetection);
-    };
-  }, [isConnected, step, faceVerifying, faceVerified, previewLayout, width, height, on, off]);
-
-  // Check face registration and load session on mount
+  // Check face registration & load session on mount
   useEffect(() => {
     checkFaceRegistrationAndLoadSession();
   }, []);
@@ -535,62 +253,40 @@ export default function QRAttendanceScreen() {
     try {
       setLoading(true);
       const studentId = await getStudentIdFromToken();
-      if (!studentId) {
-        showToast("Không tìm thấy thông tin sinh viên", "error");
-        return;
-      }
+      if (!studentId) { showToast("Không tìm thấy thông tin sinh viên", "error"); return; }
 
-      // Check if student has registered face
       try {
         await faceService.getByStudentId(studentId);
-        // Face đã đăng ký, tiếp tục load session
       } catch (error: any) {
-        // Face chưa đăng ký, redirect tới trang đăng ký
         showToast("Bạn chưa đăng ký face ID. Vui lòng đăng ký trước khi điểm danh", "error");
-    setTimeout(() => {
-          router.replace("/student/register-face");
-        }, 2000);
+        setTimeout(() => { router.replace("/student/register-face"); }, 2000);
         return;
       }
 
-      // Lấy lịch học thực tế của chính sinh viên này
       const schedules = await scheduleService.getStudentSchedules(studentId);
-      const enrolledCourseIds = new Set(
-        schedules.map((s) => s.courseId).filter(Boolean)
-      );
+      const enrolledCourseIds = new Set(schedules.map((s) => s.courseId).filter(Boolean));
 
-      // Load active sessions
-      const allSessions = await attendanceService.getSessions({
-        active: true,
-      });
-
+      const allSessions = await attendanceService.getSessions({ active: true });
       const today = new Date();
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-      // Lọc các session thuộc các lớp học phần sinh viên đang học và được tạo hôm nay
       const sessions = allSessions.filter((s) => {
         const isEnrolled = enrolledCourseIds.has(s.courseId);
         const sessionDate = (s.createdAt || s.startTime || "").split("T")[0];
         return isEnrolled && sessionDate === todayStr;
       });
 
-      // Lưu lại danh sách session để cho sinh viên chọn môn cần điểm danh
       setAvailableSessions(sessions);
 
-      // Lọc các session QR đang ACTIVE
       const qrSessions = sessions.filter(
         (s) => s.method === AttendanceMethod.QR && s.status === "ACTIVE"
       );
 
       if (qrSessions.length === 0) {
-        // Không có phiên QR nào đang hoạt động cho lớp này
-        // Đưa UI thoát khỏi trạng thái "checking" để hiện message thân thiện
         setStep("face-verification");
-        showToast("Không có phiên điểm danh QR nào đang hoạt động", "error");
         return;
       }
 
-      // Mặc định chọn buổi mới nhất theo createdAt (sinh viên vẫn có thể đổi lựa chọn)
       qrSessions.sort((a, b) => {
         const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -599,89 +295,53 @@ export default function QRAttendanceScreen() {
 
       const defaultSession = qrSessions[0];
 
-      // Check xem student đã điểm danh session này chưa
       try {
-        const myRecords = await attendanceService.getRecords({ 
-          sessionId: defaultSession.id,
-          studentId 
-        });
-        const hasAttended = myRecords && myRecords.some(
-          (r) => r.studentId === studentId || r.studentCode === studentId
-        );
-        if (hasAttended) {
-          // Đã điểm danh rồi
+        const myRecords = await attendanceService.getRecords({ sessionId: defaultSession.id, studentId });
+        const myRecord = myRecords && myRecords.find((r) => r.studentId === studentId || r.studentCode === studentId);
+        if (myRecord) {
           setSessionInfo({
             id: defaultSession.id,
-            classId: defaultSession.classId,
-            classCode: defaultSession.classCode || defaultSession.className,
-            className: defaultSession.className,
+            classId: defaultSession.classId || "",
+            classCode: defaultSession.classCode || defaultSession.className || "",
+            className: defaultSession.className || "",
             subjectId: defaultSession.subjectId,
-            subjectName: defaultSession.subjectName,
+            subjectName: defaultSession.subjectName || "",
           });
           setCurrentSessionId(defaultSession.id);
+          setRecordStatus(myRecord.status);
           setStep("completed");
-          showToast(
-            `Bạn đã điểm danh ${defaultSession.subjectName || "môn này"} rồi!`,
-            "success"
-          );
+          showToast(`Bạn đã điểm danh ${defaultSession.subjectName || "môn này"} rồi!`, "success");
           return;
         }
-      } catch (e) {
-        // Nếu check fail, vẫn cho tiếp tục (backend sẽ chặn lại)
-      }
+      } catch (e) {}
 
       setSessionInfo({
         id: defaultSession.id,
-        classId: defaultSession.classId,
-        classCode: defaultSession.classCode || defaultSession.className,
-        className: defaultSession.className,
+        classId: defaultSession.classId || "",
+        classCode: defaultSession.classCode || defaultSession.className || "",
+        className: defaultSession.className || "",
         subjectId: defaultSession.subjectId,
-        subjectName: defaultSession.subjectName,
+        subjectName: defaultSession.subjectName || "",
       });
       setCurrentSessionId(defaultSession.id);
       setStep("face-verification");
     } catch (error: any) {
       console.error("Error checking face registration:", error);
       showToast("Không thể tải thông tin phiên điểm danh", "error");
-      // Đảm bảo loading được reset ngay cả khi có lỗi
-      setStep("face-verification"); // Vẫn cho phép user thử xác thực face
+      setStep("face-verification");
     } finally {
       setLoading(false);
     }
   };
 
   const handleStartFaceVerification = async () => {
-    console.log('🚀 handleStartFaceVerification called');
-    console.log('📊 State check - loading:', loading, 'faceVerifying:', faceVerifying, 'permission:', permission, 'isWeb:', isWeb);
-    
-    if (loading || faceVerifying) {
-      console.warn('⚠️ Button is disabled, ignoring press');
-      return;
-    }
-
-    // Trên web, permission có thể hoạt động khác, chỉ check trên mobile
+    if (loading || faceVerifying) return;
     if (!isWeb) {
-      // Mobile (Expo): Kiểm tra và request permission nếu chưa có hoặc chưa được grant
       if (!permission || !permission.granted) {
-        console.log('📷 [Mobile] Requesting camera permission...');
         const result = await requestPermission();
-        console.log('📷 [Mobile] Permission result:', result);
-        
-        if (!result.granted) {
-          showToast("Cần quyền truy cập camera để xác thực face", "error");
-          return;
-        }
-        
-        // Permission đã được grant, tiếp tục
-        console.log('✅ [Mobile] Camera permission granted');
+        if (!result.granted) { showToast("Cần quyền truy cập camera để xác thực face", "error"); return; }
       }
-    } else {
-      // Web: Permission thường được xử lý tự động bởi browser
-      console.log('🌐 [Web] Skipping permission check, browser will handle it');
     }
-
-    console.log('✅ Opening camera...');
-    // Mở camera, chờ người dùng nhấn nút "Chụp ảnh để xác thực"
     setShowCamera(true);
     setFaceVerifying(false);
     setFaceResult("idle");
@@ -689,1149 +349,635 @@ export default function QRAttendanceScreen() {
 
   const handleFaceCapture = async () => {
     if (!cameraRef.current || faceVerifying || !currentSessionId) return;
-
     try {
       setFaceVerifying(true);
       const photo = await cameraRef.current.takePictureAsync({
-        quality: Platform.OS === 'web' ? 0.9 : 0.7,
+        quality: Platform.OS === "web" ? 0.9 : 0.7,
         base64: true,
         skipProcessing: false,
         shutterSound: false,
         exif: false,
       });
-
-      if (!photo?.base64) {
-        throw new Error("Không thể chụp ảnh");
-      }
-
-      // Log để debug: kiểm tra kích thước ảnh
-      if (__DEV__) {
-        console.log('📸 Photo info:', {
-          width: photo.width,
-          height: photo.height,
-          base64Length: photo.base64?.length,
-          uri: photo.uri,
-        });
-      }
-
-      // Verify face
+      if (!photo?.base64) throw new Error("Không thể chụp ảnh");
       const studentId = await getStudentIdFromToken();
-      if (!studentId) {
-        throw new Error("Không tìm thấy thông tin sinh viên");
-      }
-      
-      const verifyResult = await faceService.verifyFromCamera({
-        studentId,
-        base64Image: `data:image/jpeg;base64,${photo.base64}`,
-      });
-
+      if (!studentId) throw new Error("Không tìm thấy thông tin sinh viên");
+      const verifyResult = await faceService.verifyFromCamera({ studentId, base64Image: `data:image/jpeg;base64,${photo.base64}` });
       if (!verifyResult.isMatch) {
-        showToast(
-          (verifyResult.message || "Face không khớp. Vui lòng thử lại") +
-            " Bạn có thể thử lại sau 5 giây.",
-          "error",
-        );
-        setFaceVerifying(false);
-        setFaceResult("error");
-        setFaceRetryCooldown(5);
-        // Giữ overlay "thất bại" một chút cho user thấy rõ
-        setTimeout(() => {
-          setShowCamera(false);
-          setFaceResult("idle");
-        }, 1200);
+        showToast((verifyResult.message || "Face không khớp. Vui lòng thử lại") + " Bạn có thể thử lại sau 5 giây.", "error");
+        setFaceVerifying(false); setFaceResult("error"); setFaceRetryCooldown(5);
+        setTimeout(() => { setShowCamera(false); setFaceResult("idle"); }, 1200);
         return;
       }
-
-      // Extract encoding từ ảnh đã verify (không bắt buộc - nếu fail vẫn proceed)
       let faceEncoding: number[] | null = null;
       try {
-        const encodingResult = await faceService.extractEncodingFromCamera(
-          `data:image/jpeg;base64,${photo.base64}`
-        );
+        const encodingResult = await faceService.extractEncodingFromCamera(`data:image/jpeg;base64,${photo.base64}`);
         faceEncoding = encodingResult.faceEncoding || null;
-      } catch (encError) {
-        // Encoding extraction failed (localtunnel timeout, etc.)
-        // Proceed anyway - backend có thể lấy encoding từ DB
-        console.warn("Extract encoding failed, proceeding without:", encError);
-      }
-
-      // Face khớp, lưu encoding (có thể null nếu extract fail)
-      setFaceVerified(true);
-      setFaceVerifiedEncoding(faceEncoding);
-      setFaceVerifying(false);
-      setFaceResult("success");
-      showToast(
-        verifyResult.message ||
-          "Xác thực face thành công! Bây giờ bạn có thể quét QR code",
-        "success",
-      );
-      // Giữ overlay "thành công" rồi mới chuyển sang bước quét QR
-      setTimeout(() => {
-        setShowCamera(false);
-        setFaceResult("idle");
-        setStep("qr-scanning");
-      }, 1200);
+      } catch (encError) { console.warn("Extract encoding failed:", encError); }
+      setFaceVerified(true); setFaceVerifiedEncoding(faceEncoding); setFaceVerifying(false); setFaceResult("success");
+      showToast(verifyResult.message || "Xác thực face thành công! Bây giờ bạn có thể quét QR code", "success");
+      setTimeout(() => { setShowCamera(false); setFaceResult("idle"); setStep("qr-scanning"); }, 1200);
     } catch (error: any) {
-      // Không log ERROR cho lỗi user input (face không tìm thấy, face quá xa, etc.)
-      // Chỉ log để debug nếu cần
-      if (__DEV__) {
-        console.log("Face verification error:", error);
-      }
-      
-      // Lấy message thân thiện từ error (tự động map error message thành message dễ hiểu)
+      if (__DEV__) console.log("Face verification error:", error);
       const errorMessage = getFriendlyError(error);
-      
-      // Hiển thị toast với message thân thiện (đồng bộ web và app)
       showToast(errorMessage, "error");
-      setFaceVerifying(false);
-      setFaceResult("error");
-       // Lỗi kỹ thuật cũng áp cooldown để tránh spam server
-      setFaceRetryCooldown(5);
-      setTimeout(() => {
-        setShowCamera(false);
-        setFaceResult("idle");
-      }, 1200);
+      setFaceVerifying(false); setFaceResult("error"); setFaceRetryCooldown(5);
+      setTimeout(() => { setShowCamera(false); setFaceResult("idle"); }, 1200);
     }
   };
 
   const handleStartQRScan = async () => {
-    if (!faceVerified) {
-      showToast("Vui lòng xác thực face trước", "error");
-      return;
-    }
-
-    // Trên web, permission có thể hoạt động khác, chỉ check trên mobile
+    if (!faceVerified) { showToast("Vui lòng xác thực face trước", "error"); return; }
     if (!isWeb) {
-      // Mobile (Expo): Kiểm tra và request permission nếu chưa có hoặc chưa được grant
       if (!permission || !permission.granted) {
         const result = await requestPermission();
-        if (!result.granted) {
-          showToast("Cần quyền truy cập camera để quét QR code", "error");
-          return;
-        }
+        if (!result.granted) { showToast("Cần quyền truy cập camera để quét QR code", "error"); return; }
       }
     }
-
-    setShowCamera(true);
-    setScanning(true);
-    setScanned(false);
+    setShowCamera(true); setScanning(true); setScanned(false);
   };
 
   const handleBarCodeScanned = async ({ data }: BarcodeScanningResult) => {
     if (scanned || !faceVerified) return;
-
-    // 1. Giải mã và phân tích thông tin từ token QR của Giảng viên
     const tokenInfo = parseQRToken(data);
-    if (!tokenInfo || !tokenInfo.SUB) {
-      showToast("Mã QR không hợp lệ hoặc không đúng định dạng", "error");
-      return;
-    }
-
+    if (!tokenInfo || !tokenInfo.SUB) { showToast("Mã QR không hợp lệ hoặc không đúng định dạng", "error"); return; }
     const scannedSubjectId = tokenInfo.SUB;
     const scannedSubjectName = tokenInfo.CRS || "Môn học";
-
-    // 2. Tìm môn học tương ứng trong danh sách lớp học phần sinh viên đang học thực tế
-    const matchingSession = availableSessions.find(
-      (s) => s.subjectId === scannedSubjectId || s.courseName === tokenInfo.CRS
-    );
-
-    // 3. Nếu sinh viên không có môn này trong danh sách, chặn quét ngay lập tức!
-    if (!matchingSession) {
-      showToast(`Bạn không có trong danh sách lớp môn "${scannedSubjectName}"!`, "error");
-      return;
-    }
-
-    // 4. Tự động cập nhật môn học được quét thành môn hiện tại
+    const matchingSession = availableSessions.find((s) => s.subjectId === scannedSubjectId || s.courseName === tokenInfo.CRS);
+    if (!matchingSession) { showToast(`Bạn không có trong danh sách lớp môn "${scannedSubjectName}"!`, "error"); return; }
     setSessionInfo({
       id: matchingSession.id,
-      classId: matchingSession.classId,
-      classCode: matchingSession.classCode || matchingSession.className,
-      className: matchingSession.className,
+      classId: matchingSession.classId || "",
+      classCode: matchingSession.classCode || matchingSession.className || "",
+      className: matchingSession.className || "",
       subjectId: matchingSession.subjectId,
-      subjectName: matchingSession.subjectName,
+      subjectName: matchingSession.subjectName || "",
     });
     setCurrentSessionId(matchingSession.id);
-
-    setScanned(true);
-    setScanning(false);
-
+    setScanned(true); setScanning(false);
     try {
       const studentId = await getStudentIdFromToken();
-      if (!studentId) {
-        throw new Error("Missing studentId");
-      }
-
-      // Check lại xem đã điểm danh môn này chưa (lọc client-side để tránh lỗi backend trả về toàn bộ lớp)
+      if (!studentId) throw new Error("Missing studentId");
       try {
-        const myRecords = await attendanceService.getRecords({ 
-          sessionId: matchingSession.id,
-          studentId 
-        });
-        const hasAttended = myRecords && myRecords.some(
-          (r) => r.studentId === studentId || r.studentCode === studentId
-        );
-        if (hasAttended) {
+        const myRecords = await attendanceService.getRecords({ sessionId: matchingSession.id, studentId });
+        const myRecord = myRecords && myRecords.find((r) => r.studentId === studentId || r.studentCode === studentId);
+        if (myRecord) {
           showToast(`Bạn đã điểm danh môn "${matchingSession.subjectName}" rồi!`, "success");
+          setRecordStatus(myRecord.status);
+          setShowCamera(false);
           setStep("completed");
-          setTimeout(() => {
-            router.back();
-          }, 1500);
           return;
         }
       } catch (e) {}
-
-      // Gửi bản ghi điểm danh lên với sessionId chính xác của môn học được quét
-      const record = await attendanceService.createRecord({
-        sessionId: matchingSession.id,
-        studentId,
-        method: AttendanceMethod.QR,
-        qrToken: data,
-        ...(faceVerifiedEncoding ? { faceEncoding: faceVerifiedEncoding } : {}),
-      });
-
+      await attendanceService.createRecord({ sessionId: matchingSession.id, studentId, method: AttendanceMethod.QR, qrToken: data, ...(faceVerifiedEncoding ? { faceEncoding: faceVerifiedEncoding } : {}) });
       showToast("Điểm danh thành công!", "success");
+      setRecordStatus("PRESENT");
+      setShowCamera(false);
       setStep("completed");
-      setTimeout(() => {
-        router.back();
-      }, 1500);
     } catch (error: any) {
       console.error("Error processing QR scan:", error);
-      showToast(
-        error.response?.data?.message || "Không thể xử lý QR code",
-        "error"
-      );
-      setScanned(false);
-      setShowCamera(false);
+      showToast(getFriendlyError(error), "error");
+      setScanned(false); setShowCamera(false);
     }
   };
 
   const handleCancel = () => {
-    if (step === "face-verification") {
-      setShowCamera(false);
-      setFaceVerifying(false);
-      setFaceResult("idle");
-    } else if (step === "qr-scanning") {
-      setShowCamera(false);
-      setScanning(false);
-      setScanned(false);
-    }
+    if (step === "face-verification") { setShowCamera(false); setFaceVerifying(false); setFaceResult("idle"); }
+    else if (step === "qr-scanning") { setShowCamera(false); setScanning(false); setScanned(false); }
   };
 
+  // ─── Loading State ────────────────────────────────────────────────────────
   if (step === "checking" || loading) {
     return (
-      <SafeAreaView
-        style={{ flex: 1, backgroundColor: "#F9FAFB" }}
-        edges={["top"]}
-      >
-        <StatusBar style="dark" />
-        <View
-          style={{
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-          }}
-        >
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text
-            style={{
-              marginTop: 16,
-              fontSize: 14,
-              color: "#6B7280",
-              textAlign: "center",
-            }}
-          >
-            Đang kiểm tra và tải thông tin...
-          </Text>
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+        <StatusBar style="light" />
+        <View style={styles.loadingGradientBg}>
+          <View style={styles.loadingContent}>
+            <View style={styles.loadingIconWrap}>
+              <ActivityIndicator size="large" color="#FFFFFF" />
+            </View>
+            <Text style={styles.loadingTitle}>Đang kiểm tra...</Text>
+            <Text style={styles.loadingSubtitle}>Tìm kiếm phiên điểm danh QR</Text>
+          </View>
         </View>
       </SafeAreaView>
     );
   }
 
-  if (!sessionInfo) {
-  return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#F9FAFB" }}
-      edges={["top"]}
-    >
-      <StatusBar style="dark" />
-      <View
-        style={{
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-        }}
-      >
-        <Text
-          style={{
-              fontSize: 16,
-              color: "#6B7280",
-            textAlign: "center",
-          }}
-        >
-            Không có phiên điểm danh QR nào đang hoạt động
-        </Text>
-      </View>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#F9FAFB" }}
-      edges={["top"]}
-    >
-      <StatusBar style="dark" />
-
-      {showCamera ? (
-        <View style={Platform.OS === 'web' ? {
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: 'rgba(0,0,0,0.6)',
-          padding: 24,
-        } : { flex: 1 }}>
-          <View 
-            onLayout={(e) => {
-              const { width, height } = e.nativeEvent.layout;
-              setPreviewLayout({ width, height });
-            }}
-            style={Platform.OS === 'web' ? {
-            width: '100%',
-            maxWidth: 480,
-            aspectRatio: 3 / 4,
-            borderRadius: 24,
-            overflow: 'hidden',
-            backgroundColor: '#000',
-            ...getWebShadow('2xl'),
-          } : { flex: 1 }}>
-          <CameraView
-            ref={cameraRef}
-            style={{ flex: 1 }}
-            facing={step === "face-verification" ? "front" : "back"}
-            barcodeScannerSettings={
-              step === "qr-scanning"
-                ? {
-                    barcodeTypes: ["qr"],
-                  }
-                : undefined
-            }
-            onBarcodeScanned={
-              step === "qr-scanning" && !scanned
-                ? handleBarCodeScanned
-                : undefined
-            }
-          />
-          {/* Overlay UI - dùng absolute positioning thay vì children */}
+  // ─── Camera Overlay ───────────────────────────────────────────────────────
+  if (showCamera) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+        <StatusBar style="light" />
+        <View style={isWeb ? styles.cameraWebWrap : { flex: 1 }}>
           <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "transparent",
-              justifyContent: "space-between",
-              padding: 20,
+            onLayout={(e) => {
+              const { width: w, height: h } = e.nativeEvent.layout;
+              setPreviewLayout({ width: w, height: h });
             }}
+            style={isWeb ? styles.cameraWebInner : { flex: 1 }}
           >
+            <CameraView
+              ref={cameraRef}
+              style={{ flex: 1 }}
+              facing={step === "face-verification" ? "front" : "back"}
+              barcodeScannerSettings={step === "qr-scanning" ? { barcodeTypes: ["qr"] } : undefined}
+              onBarcodeScanned={step === "qr-scanning" && !scanned ? handleBarCodeScanned : undefined}
+            />
+
+            {/* Overlay */}
+            <View style={styles.cameraOverlay}>
               {/* Header */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  backgroundColor: "rgba(0,0,0,0.5)",
-                  borderRadius: 12,
-                  padding: 16,
-                }}
-              >
-                <Text
-                  style={{
-                    color: "#FFFFFF",
-                    fontSize: 16,
-                    fontWeight: "600",
-                  }}
-                >
-                  {step === "face-verification"
-                    ? "Xác thực Face ID"
-                    : "Quét QR Code"}
-                </Text>
-                <TouchableOpacity onPress={handleCancel} style={{ ...getWebCursor() }}>
-                  <CloseIcon size={24} color="#FFFFFF" />
+              <View style={styles.cameraHeader}>
+                <View>
+                  <Text style={styles.cameraHeaderTitle}>
+                    {step === "face-verification" ? "Xác thực Face ID" : "Quét QR Code"}
+                  </Text>
+                  {sessionInfo && (
+                    <Text style={styles.cameraHeaderSub}>{sessionInfo.subjectName}</Text>
+                  )}
+                </View>
+                <TouchableOpacity onPress={handleCancel} style={styles.cameraCancelBtn} {...getWebCursor()}>
+                  <CloseIcon size={22} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
 
-              {/* Scanning Area Indicator với animation nhẹ nhàng */}
+              {/* Scan Frame */}
               <Animated.View
-                style={{
-                  alignSelf: "center",
-                  width: scanBoxSize,
-                  height: scanBoxSize,
-                  borderWidth: 3,
-                  borderColor:
-                    step === "face-verification"
-                      ? faceVerifying
-                        ? "#3FA9F5"
-                        : "#FFFFFF"
-                      : scanning
-                      ? "#3FA9F5"
-                      : "#FFFFFF",
-                  borderStyle: "dashed",
-                  borderRadius: 12,
-                  backgroundColor: "transparent",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transform: [{ scale: step === "face-verification" && !faceVerifying && !faceVerified ? pulseAnim : 1 }],
-                  // Dùng giá trị tĩnh cho opacity và shadow để tránh conflict với native driver
-                  opacity: 1,
-                  shadowColor: step === "face-verification" && !faceVerifying && !faceVerified ? "#FFFFFF" : "transparent",
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: step === "face-verification" && !faceVerifying && !faceVerified ? 0.3 : 0,
-                  shadowRadius: 20,
-                  elevation: step === "face-verification" && !faceVerifying && !faceVerified ? 10 : 0,
-                }}
-              >
-              </Animated.View>
+                style={[
+                  styles.scanFrame,
+                  { width: scanBoxSize, height: scanBoxSize },
+                  step === "face-verification" && !faceVerifying && !faceVerified
+                    ? { transform: [{ scale: pulseAnim }] }
+                    : {},
+                  {
+                    borderColor:
+                      step === "face-verification"
+                        ? faceVerifying ? "#60a5fa" : "#FFFFFF"
+                        : scanning ? "#60a5fa" : "#FFFFFF",
+                  },
+                ]}
+              />
 
-              {/* Face Detection Box - chỉ hiển thị khi ở bước face-verification */}
+              {/* Face Detection Box */}
               {step === "face-verification" && faceDetected && (
                 <>
-                  {/* Face box */}
-                  <View
-                    style={{
-                      position: "absolute",
-                      left: faceDetected.x,
-                      top: faceDetected.y,
-                      width: faceDetected.width,
-                      height: faceDetected.height,
-                      borderWidth: Platform.OS === "web" ? 2.5 : 3,
-                      borderColor: Colors.primary,
-                      borderRadius: 12,
-                      backgroundColor: Platform.OS === "web" ? "rgba(59, 130, 246, 0.05)" : "transparent",
-                      shadowColor: Colors.primary,
-                      shadowOffset: { width: 0, height: 0 },
-                      shadowOpacity: Platform.OS === "web" ? 0.3 : 0.5,
-                      shadowRadius: Platform.OS === "web" ? 8 : 12,
-                      elevation: Platform.OS === "android" ? 8 : 0,
-                    }}
-                  >
-                    {/* Corner indicators */}
-                    <View
-                      style={{
-                        position: "absolute",
-                        top: -2,
-                        left: -2,
-                        width: Platform.OS === "web" ? 16 : 20,
-                        height: Platform.OS === "web" ? 16 : 20,
-                        borderTopWidth: Platform.OS === "web" ? 3 : 4,
-                        borderLeftWidth: Platform.OS === "web" ? 3 : 4,
-                        borderColor: Colors.primary,
-                        borderTopLeftRadius: 8,
-                      }}
-                    />
-                    <View
-                      style={{
-                        position: "absolute",
-                        top: -2,
-                        right: -2,
-                        width: Platform.OS === "web" ? 16 : 20,
-                        height: Platform.OS === "web" ? 16 : 20,
-                        borderTopWidth: Platform.OS === "web" ? 3 : 4,
-                        borderRightWidth: Platform.OS === "web" ? 3 : 4,
-                        borderColor: Colors.primary,
-                        borderTopRightRadius: 8,
-                      }}
-                    />
-                    <View
-                      style={{
-                        position: "absolute",
-                        bottom: -2,
-                        left: -2,
-                        width: Platform.OS === "web" ? 16 : 20,
-                        height: Platform.OS === "web" ? 16 : 20,
-                        borderBottomWidth: Platform.OS === "web" ? 3 : 4,
-                        borderLeftWidth: Platform.OS === "web" ? 3 : 4,
-                        borderColor: Colors.primary,
-                        borderBottomLeftRadius: 8,
-                      }}
-                    />
-                    <View
-                      style={{
-                        position: "absolute",
-                        bottom: -2,
-                        right: -2,
-                        width: Platform.OS === "web" ? 16 : 20,
-                        height: Platform.OS === "web" ? 16 : 20,
-                        borderBottomWidth: Platform.OS === "web" ? 3 : 4,
-                        borderRightWidth: Platform.OS === "web" ? 3 : 4,
-                        borderColor: Colors.primary,
-                        borderBottomRightRadius: 8,
-                      }}
-                    />
+                  <View style={[styles.faceBox, { left: faceDetected.x, top: faceDetected.y, width: faceDetected.width, height: faceDetected.height }]}>
+                    <View style={[styles.faceCorner, styles.faceCornerTL]} />
+                    <View style={[styles.faceCorner, styles.faceCornerTR]} />
+                    <View style={[styles.faceCorner, styles.faceCornerBL]} />
+                    <View style={[styles.faceCorner, styles.faceCornerBR]} />
                   </View>
-
-                  {/* Eye Detection Boxes */}
                   {faceDetected.eyes?.map((eye, index) => (
-                    <View
-                      key={`eye-${index}`}
-                      style={{
-                        position: "absolute",
-                        left: eye.x,
-                        top: eye.y,
-                        width: eye.width,
-                        height: eye.height,
-                        borderWidth: Platform.OS === "web" ? 1.5 : 2,
-                        borderColor: "#00B4D8",
-                        borderRadius: Math.min(eye.width, eye.height) * 0.3,
-                        backgroundColor: Platform.OS === "web" ? "rgba(0, 180, 216, 0.08)" : "transparent",
-                        shadowColor: "#00B4D8",
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: Platform.OS === "web" ? 0.2 : 0.4,
-                        shadowRadius: Platform.OS === "web" ? 4 : 6,
-                        elevation: Platform.OS === "android" ? 4 : 0,
-                      }}
-                    />
-                  ))}
-
-                  {/* Smile Detection Boxes */}
-                  {faceDetected.smiles?.map((smile, index) => (
-                    <View
-                      key={`smile-${index}`}
-                      style={{
-                        position: "absolute",
-                        left: smile.x,
-                        top: smile.y,
-                        width: smile.width,
-                        height: smile.height,
-                        borderWidth: Platform.OS === "web" ? 1.5 : 2,
-                        borderColor: "#FFD60A",
-                        borderRadius: Math.min(smile.width, smile.height) * 0.3,
-                        backgroundColor: Platform.OS === "web" ? "rgba(255, 214, 10, 0.08)" : "transparent",
-                        shadowColor: "#FFD60A",
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: Platform.OS === "web" ? 0.2 : 0.4,
-                        shadowRadius: Platform.OS === "web" ? 4 : 6,
-                        elevation: Platform.OS === "android" ? 4 : 0,
-                      }}
-                    />
+                    <View key={`eye-${index}`} style={[styles.eyeBox, { left: eye.x, top: eye.y, width: eye.width, height: eye.height, borderRadius: Math.min(eye.width, eye.height) * 0.3 }]} />
                   ))}
                 </>
               )}
 
-              {/* Bottom Actions & Instructions */}
-              <View style={{ gap: 16, width: "100%", maxWidth: 400, alignSelf: "center" }}>
-                {/* Face verifying spinner */}
+              {/* Bottom Actions */}
+              <View style={styles.cameraBottom}>
                 {step === "face-verification" && faceVerifying && (
-                  <View
-                    style={{
-                      backgroundColor: "rgba(0,0,0,0.7)",
-                      borderRadius: 8,
-                      padding: 16,
-                    }}
-                  >
-                    <ActivityIndicator size="large" color="#FFFFFF" />
-                    <Text
-                      style={{
-                        color: "#FFFFFF",
-                        marginTop: 8,
-                        fontSize: 14,
-                        textAlign: "center",
-                      }}
-                    >
-                      Đang xác thực...
-                    </Text>
+                  <View style={styles.cameraStatusCard}>
+                    <ActivityIndicator size="small" color="#60a5fa" />
+                    <Text style={styles.cameraStatusText}>Đang xác thực khuôn mặt...</Text>
                   </View>
                 )}
-
-                {/* Face verify result overlay */}
-                {step === "face-verification" &&
-                  !faceVerifying &&
-                  faceResult === "success" && (
-                    <View
-                      style={{
-                        backgroundColor: "rgba(16, 185, 129, 0.9)",
-                        borderRadius: 8,
-                        padding: 16,
-                        alignItems: "center",
-                      }}
-                    >
-                      <CheckCircleIcon size={40} color="#FFFFFF" />
-                      <Text
-                        style={{
-                          color: "#FFFFFF",
-                          marginTop: 4,
-                          fontSize: 14,
-                          fontWeight: "600",
-                          textAlign: "center",
-                        }}
-                      >
-                        Xác thực thành công
-                      </Text>
-                    </View>
-                  )}
-
-                {step === "face-verification" &&
-                  !faceVerifying &&
-                  faceResult === "error" && (
-                    <View
-                      style={{
-                        backgroundColor: "rgba(239, 68, 68, 0.9)",
-                        borderRadius: 8,
-                        padding: 16,
-                        alignItems: "center",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 24,
-                          textAlign: "center",
-                          marginBottom: 4,
-                        }}
-                      >
-                        ✖
-                      </Text>
-                      <Text
-                        style={{
-                          color: "#FFFFFF",
-                          marginTop: 4,
-                          fontSize: 14,
-                          fontWeight: "600",
-                          textAlign: "center",
-                        }}
-                      >
-                        Xác thực thất bại
-                      </Text>
-                    </View>
-                  )}
-
-                {/* Default: button chụp ảnh */}
-                {step === "face-verification" &&
-                  !faceVerifying &&
-                  faceResult === "idle" && (
+                {step === "face-verification" && !faceVerifying && faceResult === "success" && (
+                  <View style={[styles.cameraStatusCard, styles.cameraStatusSuccess]}>
+                    <CheckCircleIcon size={22} color="#10b981" />
+                    <Text style={[styles.cameraStatusText, { color: "#10b981" }]}>Xác thực thành công!</Text>
+                  </View>
+                )}
+                {step === "face-verification" && !faceVerifying && faceResult === "error" && (
+                  <View style={[styles.cameraStatusCard, styles.cameraStatusError]}>
+                    <Text style={{ fontSize: 18 }}>✖</Text>
+                    <Text style={[styles.cameraStatusText, { color: "#f87171" }]}>Xác thực thất bại</Text>
+                  </View>
+                )}
+                {step === "face-verification" && !faceVerifying && faceResult === "idle" && (
                   <TouchableOpacity
                     onPress={faceRetryCooldown > 0 ? undefined : handleFaceCapture}
-                    style={{
-                      backgroundColor:
-                        faceRetryCooldown > 0
-                          ? "rgba(156, 163, 175, 0.9)" // xám khi cooldown
-                          : "rgba(59, 130, 246, 0.9)",
-                      borderRadius: 8,
-                      padding: 16,
-                      ...getWebCursor(),
-                    }}
+                    style={[styles.cameraCaptureBtn, faceRetryCooldown > 0 && styles.cameraCaptureBtnDisabled]}
+                    {...getWebCursor()}
                   >
-                    <Text
-                      style={{
-                        color: "#FFFFFF",
-                        fontSize: 14,
-                        fontWeight: "600",
-                        textAlign: "center",
-                      }}
-                    >
-                      {faceRetryCooldown > 0
-                        ? `Vui lòng chờ ${faceRetryCooldown}s`
-                        : "Chụp ảnh để xác thực"}
+                    <Text style={styles.cameraCaptureBtnText}>
+                      {faceRetryCooldown > 0 ? `Chờ ${faceRetryCooldown}s...` : "📸 Chụp ảnh xác thực"}
                     </Text>
                   </TouchableOpacity>
                 )}
                 {step === "qr-scanning" && scanned && (
-                  <View
-                    style={{
-                      backgroundColor: "rgba(16, 185, 129, 0.9)",
-                      borderRadius: 8,
-                      padding: 16,
-                      alignItems: "center",
-                    }}
-                  >
-                    <CheckCircleIcon size={40} color="#FFFFFF" />
-                    <Text
-                      style={{
-                        color: "#FFFFFF",
-                        marginTop: 8,
-                        fontSize: 14,
-                        fontWeight: "600",
-                        textAlign: "center",
-                      }}
-                    >
-                      Quét thành công!
-                    </Text>
+                  <View style={[styles.cameraStatusCard, styles.cameraStatusSuccess]}>
+                    <CheckCircleIcon size={22} color="#10b981" />
+                    <Text style={[styles.cameraStatusText, { color: "#10b981" }]}>Quét thành công!</Text>
                   </View>
                 )}
-
-                {/* Instructions */}
-                <View
-                  style={{
-                    backgroundColor: "rgba(0,0,0,0.5)",
-                    borderRadius: 12,
-                    padding: 16,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: "#FFFFFF",
-                      fontSize: 14,
-                      textAlign: "center",
-                    }}
-                  >
+                <View style={styles.cameraHint}>
+                  <Text style={styles.cameraHintText}>
                     {step === "face-verification"
-                      ? "📸 Đưa khuôn mặt vào khung, đảm bảo ánh sáng đủ và nhấn nút để chụp ảnh xác thực"
-                      : scanning
-                      ? "Hướng camera vào QR code"
-                      : scanned
-                      ? "Đang xử lý..."
-                      : "Nhấn để bắt đầu quét"}
+                      ? "Đưa khuôn mặt vào khung, đảm bảo ánh sáng đủ"
+                      : "Hướng camera vào QR code của giảng viên"}
                   </Text>
                 </View>
               </View>
-          </View>
-          </View>
-        </View>
-      ) : (
-      <ScrollView
-        contentContainerStyle={{ paddingHorizontal, paddingVertical: 24 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View
-          style={{
-            maxWidth: contentMaxWidth,
-            width: "100%",
-            alignSelf: "center",
-          }}
-        >
-          {/* Course Info */}
-          <View
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: 16,
-              padding: 20,
-              marginBottom: 24,
-              borderWidth: 1,
-              borderColor: "#E5E7EB",
-              ...getWebShadow("md"),
-            }}
-          >
-            <View
-              style={{
-                backgroundColor: "#D1FAE5",
-                borderRadius: 12,
-                padding: 16,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 14,
-                  lineHeight: 20,
-                  color: "#065F46",
-                  marginBottom: 8,
-                }}
-              >
-                Môn học
-              </Text>
-
-              {availableSessions.length > 1 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={{ marginBottom: 12 }}
-                >
-                  <View style={{ flexDirection: "row", gap: 8 }}>
-                    {availableSessions
-                      .filter((s) => s.method === AttendanceMethod.QR && s.status === "ACTIVE")
-                      .map((s) => {
-                        const isSelected = sessionInfo?.id === s.id;
-                        return (
-                          <TouchableOpacity
-                            key={s.id}
-                           onPress={async () => {
-                              try {
-                                const studentId = await getStudentIdFromToken();
-                                if (studentId) {
-                                  const myRecords = await attendanceService.getRecords({ 
-                                    sessionId: s.id,
-                                    studentId 
-                                  });
-                                  const hasAttended = myRecords && myRecords.some(
-                                    (r) => r.studentId === studentId || r.studentCode === studentId
-                                  );
-                                  if (hasAttended) {
-                                    setSessionInfo({
-                                      id: s.id,
-                                      classId: s.classId,
-                                      classCode: s.classCode || s.className,
-                                      className: s.className,
-                                      subjectId: s.subjectId,
-                                      subjectName: s.subjectName,
-                                    });
-                                    setCurrentSessionId(s.id);
-                                    setStep("completed");
-                                    showToast(
-                                      `Bạn đã điểm danh ${s.subjectName || "môn này"} rồi!`,
-                                      "success"
-                                    );
-                                    return;
-                                  }
-                                }
-                              } catch (e) {}
-
-                              setSessionInfo({
-                                id: s.id,
-                                classId: s.classId,
-                                classCode: s.classCode || s.className,
-                                className: s.className,
-                                subjectId: s.subjectId,
-                                subjectName: s.subjectName,
-                              });
-                              setCurrentSessionId(s.id);
-                              setFaceVerified(false);
-                              setFaceVerifiedEncoding(null);
-                              setStep("face-verification");
-                            }}
-                            style={{
-                              paddingHorizontal: 12,
-                              paddingVertical: 6,
-                              borderRadius: 999,
-                              borderWidth: 1,
-                              borderColor: isSelected ? "#10B981" : "#A7F3D0",
-                              backgroundColor: isSelected ? "#10B981" : "#ECFDF5",
-                              ...getWebCursor(),
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontSize: 13,
-                                color: isSelected ? "#FFFFFF" : "#047857",
-                                fontWeight: "500",
-                              }}
-                            >
-                              {s.subjectName}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                  </View>
-                </ScrollView>
-              )}
-
-              <Text
-                style={{
-                  fontSize: 18,
-                  lineHeight: 28,
-                  fontWeight: "bold",
-                  color: "#111827",
-                  marginBottom: 4,
-                }}
-              >
-                {sessionInfo.subjectName}
-              </Text>
-              <Text style={{ fontSize: 14, lineHeight: 20, color: "#4B5563" }}>
-                {sessionInfo.className}
-              </Text>
             </View>
           </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-            {step === "face-verification" && (
-              <>
-                {/* Face Verification Card */}
-          <View
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: 16,
-              padding: 24,
-              marginBottom: 24,
-              borderWidth: 1,
-              borderColor: "#E5E7EB",
-              ...getWebShadow("md"),
-            }}
-          >
-                  <View
-                    style={{
-                      backgroundColor: "#FEF3C7",
-                      borderRadius: 12,
-                      padding: 16,
-                      marginBottom: 20,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        fontWeight: "600",
-                        color: "#92400E",
-                        marginBottom: 8,
-                      }}
-                    >
-                      Bước 1: Xác thực Face ID
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        lineHeight: 20,
-                        color: "#78350F",
-                      }}
-                    >
-                      Vui lòng xác thực face ID trước khi quét QR code để điểm danh
-                    </Text>
-                  </View>
+  // ─── Main Screen ──────────────────────────────────────────────────────────
+  return (
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <StatusBar style="light" />
 
-            <View
-              style={{
-                backgroundColor: "#F9FAFB",
-                borderRadius: 16,
-                aspectRatio: 1,
-                maxWidth: isDesktop ? 400 : "100%",
-                alignSelf: "center",
-                width: "100%",
-                borderWidth: 3,
-                      borderColor: "#E5E7EB",
-                borderStyle: "dashed",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 24,
-                padding: isDesktop ? 24 : 16,
-              }}
-            >
-                <View style={{ alignItems: "center" }}>
-                  <View
-                    style={{
-                      width: 80,
-                      height: 80,
-                      backgroundColor: "#F3F4F6",
-                      borderRadius: 16,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginBottom: 16,
-                    }}
-                  >
-                    <UserIcon size={36} color="#6B7280" />
-                  </View>
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      lineHeight: 24,
-                      fontWeight: "600",
-                      color: "#111827",
-                      marginBottom: 8,
-                      textAlign: "center",
-                    }}
-                  >
-                        Xác thực Face ID
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      lineHeight: 20,
-                      color: "#6B7280",
-                      textAlign: "center",
-                    }}
-                  >
-                    Nhấn nút bên dưới để bắt đầu
-                  </Text>
-                </View>
-                  </View>
+      {/* Gradient Header */}
+      <View style={styles.headerGradient}>
+        <TouchableOpacity
+          onPress={() => router.replace("/student/attendance-actions")}
+          style={styles.backBtn}
+          {...getWebCursor()}
+        >
+          <ChevronLeftIcon size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <View style={styles.headerIconWrap}>
+            <QrCodeIconFilled size={28} color="#FFFFFF" />
+          </View>
+          <Text style={styles.headerTitle}>Điểm danh QR</Text>
+          <Text style={styles.headerSubtitle}>Quét mã QR để điểm danh nhanh chóng</Text>
+        </View>
+        {/* Wave decoration */}
+        <View style={styles.headerWave} />
+      </View>
 
-                  <PrimaryButton
-                    title="Bắt đầu xác thực Face ID"
-                    onPress={() => {
-                      console.log('🔘 Button pressed! loading:', loading, 'faceVerifying:', faceVerifying);
-                      handleStartFaceVerification();
-                    }}
-                    disabled={loading || faceVerifying}
-                    loading={faceVerifying}
-                  />
-                </View>
-              </>
-            )}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ maxWidth: contentMaxWidth, width: "100%", alignSelf: "center" }}>
 
-            {step === "qr-scanning" && (
-              <>
-                {/* QR Scanner Card */}
-                <View
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    borderRadius: 16,
-                    padding: 24,
-                    marginBottom: 24,
-                    borderWidth: 1,
-                    borderColor: "#E5E7EB",
-                    ...getWebShadow("md"),
-                  }}
-                >
-                  <View
-                    style={{
-                      backgroundColor: "#ECFDF5",
-                      borderRadius: 12,
-                      padding: 16,
-                      marginBottom: 20,
-                      flexDirection: "row",
-                      alignItems: "center",
-                    }}
-                  >
-                    <View style={{ marginRight: 8 }}>
-                      <CheckCircleIcon size={20} color="#047857" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontWeight: "600",
-                          color: "#047857",
-                          marginBottom: 4,
-                        }}
-                      >
-                        Face ID đã được xác thực
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color: "#065F46",
-                        }}
-                      >
-                        Bây giờ bạn có thể quét QR code
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View
-                    style={{
-                      backgroundColor: "#F9FAFB",
-                      borderRadius: 16,
-                      aspectRatio: 1,
-                      maxWidth: isDesktop ? 400 : "100%",
-                      alignSelf: "center",
-                      width: "100%",
-                      borderWidth: 3,
-                      borderColor: "#E5E7EB",
-                      borderStyle: "dashed",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginBottom: 24,
-                      padding: isDesktop ? 24 : 16,
-                    }}
-                  >
-                <View style={{ alignItems: "center" }}>
-                  <View
-                    style={{
-                      width: 80,
-                      height: 80,
-                          backgroundColor: "#F3F4F6",
-                      borderRadius: 16,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginBottom: 16,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 36,
-                        lineHeight: 44,
-                        fontWeight: "bold",
-                            color: "#6B7280",
-                      }}
-                    >
-                          QR
-                    </Text>
-                  </View>
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      lineHeight: 24,
-                      fontWeight: "600",
-                          color: "#111827",
-                      marginBottom: 8,
-                          textAlign: "center",
-                    }}
-                  >
-                        Sẵn sàng quét QR
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      lineHeight: 20,
-                      color: "#6B7280",
-                      textAlign: "center",
-                    }}
-                  >
-                        Nhấn nút bên dưới để bắt đầu
-                  </Text>
-                </View>
-                  </View>
-
-                  <PrimaryButton
-                    title="Bắt đầu quét QR Code"
-                    onPress={handleStartQRScan}
-                    disabled={loading || scanning || !faceVerified}
-                    loading={scanning}
-                  />
-                </View>
-              </>
-            )}
-
-            {step === "completed" && (
-              <View
-                style={{
-                  backgroundColor: "#ECFDF5",
-                  borderRadius: 16,
-                  padding: 24,
-                  alignItems: "center",
-                }}
+          {/* ── No Session State ── */}
+          {!sessionInfo && step !== "completed" && (
+            <View style={styles.emptyCard}>
+              <View style={styles.emptyIconWrap}>
+                <InfoIcon size={40} color="#3b82f6" />
+              </View>
+              <Text style={styles.emptyTitle}>Không có phiên điểm danh</Text>
+              <Text style={styles.emptySubtitle}>
+                Hiện tại không có phiên điểm danh QR nào đang hoạt động cho các môn học của bạn.
+              </Text>
+              <TouchableOpacity
+                onPress={checkFaceRegistrationAndLoadSession}
+                style={styles.retryBtn}
+                {...getWebCursor()}
               >
-                <View style={{ marginBottom: 16 }}>
-                  <CheckCircleIcon size={60} color="#047857" />
-                </View>
-                  <Text
-                    style={{
-                    fontSize: 20,
-                      fontWeight: "600",
-                    color: "#047857",
-                      marginBottom: 8,
-                    }}
-                  >
-                  Điểm danh thành công!
-                  </Text>
-                  <Text
-                  style={{
-                    fontSize: 14,
-                    color: "#065F46",
-                    textAlign: "center",
-                  }}
-                >
-                  Bạn đã điểm danh thành công cho môn học này
+                <Text style={styles.retryBtnText}>↻ Thử lại</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* ── Completed State ── */}
+          {step === "completed" && (
+            <View style={styles.completedCard}>
+              <View style={styles.completedIconWrap}>
+                <CheckCircleIcon size={56} color="#10b981" />
+              </View>
+              <Text style={styles.completedTitle}>Điểm danh thành công!</Text>
+              {sessionInfo && (
+                <Text style={styles.completedSubject}>{sessionInfo.subjectName}</Text>
+              )}
+              
+              {recordStatus && (
+                <View style={[
+                  styles.statusBadge,
+                  recordStatus === "PRESENT" ? styles.statusPresent : styles.statusLate
+                ]}>
+                  <Text style={[
+                    styles.statusText,
+                    recordStatus === "PRESENT" ? styles.statusTextPresent : styles.statusTextLate
+                  ]}>
+                    Trạng thái: {recordStatus === "PRESENT" ? "Có mặt" : recordStatus === "LATE" ? "Đi muộn" : recordStatus}
                   </Text>
                 </View>
               )}
+              
+              <Text style={styles.completedDesc}>Bạn đã được ghi nhận điểm danh cho buổi học này.</Text>
+              
+              <TouchableOpacity
+                onPress={() => router.replace("/student/attendance-actions")}
+                style={styles.completedBackBtn}
+                {...getWebCursor()}
+              >
+                <Text style={styles.completedBackBtnText}>Quay lại trang chính</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-          {/* Help Text */}
-          <View
-            style={{
-              backgroundColor: "#E0F2FE",
-              borderRadius: 12,
-              padding: 16,
-              borderWidth: 1,
-              borderColor: "#BFDBFE",
-                marginTop: 24,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                lineHeight: 20,
-                fontWeight: "600",
-                color: "#1E40AF",
-                marginBottom: 8,
-              }}
-            >
-              Hướng dẫn:
-            </Text>
-            <Text style={{ fontSize: 14, lineHeight: 20, color: "#1E3A8A" }}>
-                {step === "face-verification"
-                  ? "1. Nhấn 'Bắt đầu xác thực Face ID' và chụp ảnh để xác thực\n2. Sau khi xác thực thành công, bạn sẽ được chuyển tới bước quét QR code"
-                  : "Nhấn 'Bắt đầu quét QR Code' và hướng camera vào QR code mà giảng viên hiển thị để hoàn tất điểm danh."}
-            </Text>
-          </View>
+          {/* ── Active Session Flow ── */}
+          {sessionInfo && step !== "completed" && (
+            <>
+              {/* Session Selector (nếu có nhiều session) */}
+              {availableSessions.filter((s) => s.method === AttendanceMethod.QR && s.status === "ACTIVE").length > 1 && (
+                <View style={styles.selectorCard}>
+                  <Text style={styles.selectorLabel}>Chọn môn học</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.selectorRow}>
+                      {availableSessions
+                        .filter((s) => s.method === AttendanceMethod.QR && s.status === "ACTIVE")
+                        .map((s) => {
+                          const isSelected = sessionInfo?.id === s.id;
+                          return (
+                            <TouchableOpacity
+                              key={s.id}
+                              onPress={async () => {
+                                try {
+                                  const studentId = await getStudentIdFromToken();
+                                  if (studentId) {
+                                    const myRecords = await attendanceService.getRecords({ sessionId: s.id, studentId });
+                                    const myRecord = myRecords && myRecords.find((r) => r.studentId === studentId || r.studentCode === studentId);
+                                    if (myRecord) {
+                                      setSessionInfo({
+                                        id: s.id,
+                                        classId: s.classId || "",
+                                        classCode: s.classCode || s.className || "",
+                                        className: s.className || "",
+                                        subjectId: s.subjectId,
+                                        subjectName: s.subjectName || "",
+                                      });
+                                      setCurrentSessionId(s.id);
+                                      setRecordStatus(myRecord.status);
+                                      setStep("completed");
+                                      showToast(`Bạn đã điểm danh ${s.subjectName || "môn này"} rồi!`, "success");
+                                      return;
+                                    }
+                                  }
+                                } catch (e) {}
+                                setSessionInfo({
+                                  id: s.id,
+                                  classId: s.classId || "",
+                                  classCode: s.classCode || s.className || "",
+                                  className: s.className || "",
+                                  subjectId: s.subjectId,
+                                  subjectName: s.subjectName || "",
+                                });
+                                setCurrentSessionId(s.id);
+                                setFaceVerified(false); setFaceVerifiedEncoding(null);
+                                setStep("face-verification");
+                              }}
+                              style={[styles.selectorChip, isSelected && styles.selectorChipActive]}
+                              {...getWebCursor()}
+                            >
+                              <Text style={[styles.selectorChipText, isSelected && styles.selectorChipTextActive]}>
+                                {s.subjectName}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                    </View>
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* Session Info Card */}
+              <View style={styles.sessionCard}>
+                <View style={styles.sessionCardHeader}>
+                  <View style={styles.sessionBadge}>
+                    <View style={styles.sessionBadgeDot} />
+                    <Text style={styles.sessionBadgeText}>Đang hoạt động</Text>
+                  </View>
+                  <Text style={styles.sessionMethod}>QR</Text>
+                </View>
+                <Text style={styles.sessionSubject}>{sessionInfo.subjectName}</Text>
+                <View style={styles.sessionMeta}>
+                  <View style={styles.sessionMetaItem}>
+                    <SchoolIcon size={15} color="#4b5563" />
+                    <Text style={styles.sessionMetaText}>{sessionInfo.className}</Text>
+                  </View>
+                  {sessionInfo.classCode && (
+                    <View style={styles.sessionMetaItem}>
+                      <ClipboardIcon size={15} color="#4b5563" />
+                      <Text style={styles.sessionMetaText}>{sessionInfo.classCode}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* Reminder Banner */}
+              <View style={styles.reminderBanner}>
+                <WarningIcon size={20} color="#b45309" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.reminderTitle}>Buổi học đang diễn ra</Text>
+                  <Text style={styles.reminderDesc}>
+                    Hoàn tất xác thực Face ID và quét QR để ghi nhận điểm danh của bạn.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Step 1: Face Verification */}
+              <View style={[styles.stepCard, faceVerified && styles.stepCardDone]}>
+                <View style={styles.stepHeader}>
+                  <View style={[styles.stepBadge, faceVerified && styles.stepBadgeDone]}>
+                    <Text style={styles.stepBadgeText}>{faceVerified ? "✓" : "1"}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.stepTitle, faceVerified && styles.stepTitleDone]}>
+                      {faceVerified ? "Face ID đã xác thực" : "Xác thực Face ID"}
+                    </Text>
+                    <Text style={styles.stepDesc}>
+                      {faceVerified
+                        ? "Nhận dạng khuôn mặt thành công"
+                        : "Bước bắt buộc trước khi quét QR"}
+                    </Text>
+                  </View>
+                  {faceVerified && <CheckCircleIcon size={22} color="#10b981" />}
+                </View>
+                {!faceVerified && (
+                  <TouchableOpacity
+                    onPress={handleStartFaceVerification}
+                    disabled={loading || faceVerifying}
+                    style={[styles.actionBtn, (loading || faceVerifying) && styles.actionBtnDisabled]}
+                    {...getWebCursor()}
+                  >
+                    {faceVerifying ? (
+                      <>
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                        <Text style={styles.actionBtnText}>  Đang xác thực...</Text>
+                      </>
+                    ) : (
+                      <>
+                        <UserIcon size={18} color="#FFFFFF" />
+                        <Text style={styles.actionBtnText}>  Bắt đầu xác thực Face ID</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
+                {faceRetryCooldown > 0 && !faceVerified && (
+                  <Text style={styles.cooldownText}>Thử lại sau {faceRetryCooldown}s</Text>
+                )}
+              </View>
+
+              {/* Step 2: QR Scan */}
+              <View style={[styles.stepCard, !faceVerified && styles.stepCardLocked, faceVerified && styles.stepCardActive]}>
+                <View style={styles.stepHeader}>
+                  <View style={[styles.stepBadge, !faceVerified && styles.stepBadgeLocked, faceVerified && styles.stepBadgeActive]}>
+                    <Text style={[styles.stepBadgeText, !faceVerified && { color: "#9ca3af" }]}>2</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.stepTitle, !faceVerified && styles.stepTitleLocked]}>Quét mã QR</Text>
+                    <Text style={styles.stepDesc}>
+                      {faceVerified
+                        ? "Hướng camera vào QR code của giảng viên"
+                        : "Hoàn tất bước 1 để mở khóa"}
+                    </Text>
+                  </View>
+                  {!faceVerified && (
+                    <LockIconFilled size={18} color="#9ca3af" />
+                  )}
+                </View>
+                {faceVerified && (
+                  <TouchableOpacity
+                    onPress={handleStartQRScan}
+                    disabled={loading || scanning}
+                    style={[styles.actionBtn, styles.actionBtnQR, (loading || scanning) && styles.actionBtnDisabled]}
+                    {...getWebCursor()}
+                  >
+                    {scanning ? (
+                      <>
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                        <Text style={styles.actionBtnText}>  Đang quét...</Text>
+                      </>
+                    ) : (
+                      <>
+                        <QrCodeIcon size={18} color="#FFFFFF" />
+                        <Text style={styles.actionBtnText}>  Mở camera quét QR</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
+            </>
+          )}
+
+          <View style={{ height: 32 }} />
         </View>
       </ScrollView>
-      )}
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: "#1e40af" },
+  // Loading
+  loadingGradientBg: { flex: 1, backgroundColor: "#1e40af", alignItems: "center", justifyContent: "center" },
+  loadingContent: { alignItems: "center", gap: 12 },
+  loadingIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  loadingTitle: { fontSize: 18, fontWeight: "700", color: "#FFFFFF" },
+  loadingSubtitle: { fontSize: 14, color: "rgba(255,255,255,0.7)" },
+  // Header
+  headerGradient: { backgroundColor: "#1e40af", paddingTop: 8, paddingBottom: 32, paddingHorizontal: 20, position: "relative" },
+  headerContent: { alignItems: "center", gap: 6 },
+  headerIconWrap: { width: 56, height: 56, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  headerIcon: { fontSize: 28 },
+  headerTitle: { fontSize: 24, fontWeight: "800", color: "#FFFFFF", letterSpacing: 0.3 },
+  headerSubtitle: { fontSize: 13, color: "rgba(255,255,255,0.75)", textAlign: "center" },
+  headerWave: { position: "absolute", bottom: 0, left: 0, right: 0, height: 20, backgroundColor: "#f0f4ff", borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  // Scroll
+  scrollView: { flex: 1, backgroundColor: "#f0f4ff" },
+  scrollContent: { paddingTop: 8, paddingBottom: 40 },
+  // Empty
+  emptyCard: { backgroundColor: "#FFFFFF", borderRadius: 20, padding: 32, alignItems: "center", marginTop: 12, shadowColor: "#1e40af", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 4 },
+  emptyIconWrap: { width: 80, height: 80, borderRadius: 40, backgroundColor: "#eff6ff", alignItems: "center", justifyContent: "center", marginBottom: 16 },
+  emptyIcon: { fontSize: 36 },
+  emptyTitle: { fontSize: 18, fontWeight: "700", color: "#1e3a8a", marginBottom: 8, textAlign: "center" },
+  emptySubtitle: { fontSize: 14, color: "#6b7280", textAlign: "center", lineHeight: 20, marginBottom: 20 },
+  retryBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12, backgroundColor: "#3b82f6" },
+  retryBtnText: { color: "#FFFFFF", fontWeight: "600", fontSize: 14 },
+  // Completed
+  completedCard: { backgroundColor: "#ecfdf5", borderRadius: 20, padding: 32, alignItems: "center", marginTop: 12, borderWidth: 1, borderColor: "#a7f3d0" },
+  completedIconWrap: { marginBottom: 16 },
+  completedTitle: { fontSize: 22, fontWeight: "800", color: "#065f46", marginBottom: 6 },
+  completedSubject: { fontSize: 16, fontWeight: "600", color: "#047857", marginBottom: 8 },
+  completedDesc: { fontSize: 14, color: "#6b7280", textAlign: "center", lineHeight: 20 },
+  // Selector
+  selectorCard: { backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, marginTop: 12, shadowColor: "#1e40af", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+  selectorLabel: { fontSize: 12, fontWeight: "600", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  selectorRow: { flexDirection: "row", gap: 8 },
+  selectorChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, borderWidth: 1.5, borderColor: "#bfdbfe", backgroundColor: "#eff6ff" },
+  selectorChipActive: { borderColor: "#3b82f6", backgroundColor: "#3b82f6" },
+  selectorChipText: { fontSize: 13, color: "#1d4ed8", fontWeight: "500" },
+  selectorChipTextActive: { color: "#FFFFFF" },
+  // Session Card
+  sessionCard: { backgroundColor: "#FFFFFF", borderRadius: 20, padding: 20, marginTop: 12, shadowColor: "#1e40af", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 16, elevation: 4, borderLeftWidth: 4, borderLeftColor: "#3b82f6" },
+  sessionCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
+  sessionBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#ecfdf5", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
+  sessionBadgeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#10b981" },
+  sessionBadgeText: { fontSize: 12, color: "#059669", fontWeight: "600" },
+  sessionMethod: { fontSize: 11, fontWeight: "700", color: "#3b82f6", backgroundColor: "#eff6ff", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8 },
+  sessionSubject: { fontSize: 20, fontWeight: "800", color: "#111827", marginBottom: 12, lineHeight: 26 },
+  sessionMeta: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  sessionMetaItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+  sessionMetaIcon: { fontSize: 14 },
+  sessionMetaText: { fontSize: 13, color: "#4b5563", fontWeight: "500" },
+  // Reminder Banner
+  reminderBanner: { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: "#fffbeb", borderRadius: 14, padding: 16, marginTop: 12, borderWidth: 1, borderColor: "#fbbf24" },
+  reminderIcon: { fontSize: 22, marginTop: 1 },
+  reminderTitle: { fontSize: 14, fontWeight: "700", color: "#92400e", marginBottom: 3 },
+  reminderDesc: { fontSize: 13, color: "#78350f", lineHeight: 18 },
+  // Step Cards
+  stepCard: { backgroundColor: "#FFFFFF", borderRadius: 20, padding: 20, marginTop: 12, shadowColor: "#1e40af", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
+  stepCardDone: { backgroundColor: "#f0fdf4", borderWidth: 1, borderColor: "#bbf7d0" },
+  stepCardActive: { borderWidth: 1, borderColor: "#bfdbfe" },
+  stepCardLocked: { opacity: 0.65 },
+  stepHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
+  stepBadge: { width: 34, height: 34, borderRadius: 17, backgroundColor: "#3b82f6", alignItems: "center", justifyContent: "center" },
+  stepBadgeDone: { backgroundColor: "#10b981" },
+  stepBadgeActive: { backgroundColor: "#3b82f6" },
+  stepBadgeLocked: { backgroundColor: "#e5e7eb" },
+  stepBadgeText: { fontSize: 14, fontWeight: "700", color: "#FFFFFF" },
+  stepTitle: { fontSize: 15, fontWeight: "700", color: "#111827", marginBottom: 2 },
+  stepTitleDone: { color: "#065f46" },
+  stepTitleLocked: { color: "#9ca3af" },
+  stepDesc: { fontSize: 12, color: "#6b7280" },
+  lockIcon: { fontSize: 18 },
+  actionBtn: { flexDirection: "row", backgroundColor: "#3b82f6", borderRadius: 14, paddingVertical: 14, paddingHorizontal: 20, alignItems: "center", justifyContent: "center", marginTop: 2 },
+  actionBtnQR: { backgroundColor: "#0d9488" },
+  actionBtnDisabled: { backgroundColor: "#9ca3af" },
+  actionBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15 },
+  cooldownText: { fontSize: 12, color: "#ef4444", textAlign: "center", marginTop: 8 },
+  // Camera
+  cameraWebWrap: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.75)", padding: 24 },
+  cameraWebInner: { width: "100%", maxWidth: 480, aspectRatio: 3 / 4, borderRadius: 24, overflow: "hidden", backgroundColor: "#000" },
+  cameraOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "transparent", justifyContent: "space-between", padding: 20 },
+  cameraHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 14, padding: 14, backdropFilter: "blur(10px)" as any },
+  cameraHeaderTitle: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  cameraHeaderSub: { color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 2 },
+  cameraCancelBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
+  scanFrame: { alignSelf: "center", borderWidth: 2.5, borderColor: "#FFFFFF", borderStyle: "dashed", borderRadius: 16, backgroundColor: "transparent" },
+  faceBox: { position: "absolute", borderWidth: 2.5, borderColor: "#3b82f6", borderRadius: 12, backgroundColor: "rgba(59,130,246,0.05)" },
+  faceCorner: { position: "absolute", width: 18, height: 18, borderColor: "#3b82f6" },
+  faceCornerTL: { top: -2, left: -2, borderTopWidth: 3.5, borderLeftWidth: 3.5, borderTopLeftRadius: 8 },
+  faceCornerTR: { top: -2, right: -2, borderTopWidth: 3.5, borderRightWidth: 3.5, borderTopRightRadius: 8 },
+  faceCornerBL: { bottom: -2, left: -2, borderBottomWidth: 3.5, borderLeftWidth: 3.5, borderBottomLeftRadius: 8 },
+  faceCornerBR: { bottom: -2, right: -2, borderBottomWidth: 3.5, borderRightWidth: 3.5, borderBottomRightRadius: 8 },
+  eyeBox: { position: "absolute", borderWidth: 1.5, borderColor: "#00B4D8", backgroundColor: "rgba(0,180,216,0.08)" },
+  cameraBottom: { gap: 12, width: "100%", maxWidth: 400, alignSelf: "center" },
+  cameraStatusCard: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(15,15,15,0.75)", borderRadius: 12, padding: 14, backdropFilter: "blur(8px)" as any },
+  cameraStatusSuccess: { backgroundColor: "rgba(16,185,129,0.12)", borderWidth: 1, borderColor: "rgba(16,185,129,0.3)" },
+  cameraStatusError: { backgroundColor: "rgba(239,68,68,0.12)", borderWidth: 1, borderColor: "rgba(239,68,68,0.3)" },
+  cameraStatusText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
+  cameraCaptureBtn: { backgroundColor: "rgba(59,130,246,0.92)", borderRadius: 14, paddingVertical: 15, paddingHorizontal: 20, alignItems: "center", backdropFilter: "blur(8px)" as any },
+  cameraCaptureBtnDisabled: { backgroundColor: "rgba(107,114,128,0.8)" },
+  cameraCaptureBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  cameraHint: { backgroundColor: "rgba(0,0,0,0.5)", borderRadius: 12, padding: 12, backdropFilter: "blur(6px)" as any },
+  cameraHintText: { color: "rgba(255,255,255,0.85)", fontSize: 13, textAlign: "center", lineHeight: 18 },
+  backBtn: { position: "absolute", left: 16, top: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", zIndex: 10 },
+  statusBadge: { marginVertical: 14, paddingVertical: 6, paddingHorizontal: 16, borderRadius: 12, alignSelf: "center" },
+  statusPresent: { backgroundColor: "#d1fae5", borderWidth: 1, borderColor: "#a7f3d0" },
+  statusLate: { backgroundColor: "#fef3c7", borderWidth: 1, borderColor: "#fde68a" },
+  statusText: { fontSize: 14, fontWeight: "700" },
+  statusTextPresent: { color: "#065f46" },
+  statusTextLate: { color: "#92400e" },
+  completedBackBtn: { marginTop: 18, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 14, backgroundColor: "#10b981", shadowColor: "#10b981", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 2 },
+  completedBackBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 14 },
+} as any);
