@@ -1,1 +1,3 @@
 __d(function(g,r,i,a,m,_e,d){"use strict";Object.defineProperty(_e,'__esModule',{value:!0}),Object.defineProperty(_e,"statsService",{enumerable:!0,get:function(){return s}});var e,t=r(d[0]),n=(e=t)&&e.__esModule?e:{default:e};const s={getDepartmentStats:async()=>(await n.default.get('/stats/department')).data.data}},1060,[725]);
+//# sourceMappingURL=/_expo/static/js/web/statsService-ad5e803f354b510ae70833dc8c349eb6.js.map
+//# debugId=c8075888-7926-4d9b-8735-c14d3462c2ec

@@ -4,9 +4,10 @@
     "slug": "otp-attendance-system",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/app-logo2.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/logo.png",
+      "image": "./assets/app-logo2.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -19,10 +20,13 @@
     "android": {
       "package": "com.nckh.otpattendance",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/app-logo.png",
         "backgroundColor": "#ffffff"
       },
       "usesCleartextTraffic": true,
       "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ]
@@ -44,8 +48,15 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "7abc605e-cdbb-473d-a010-1f9bd3ba60ab"
+        "projectId": "a5fe2706-a6a3-46aa-b1a9-3295ff479ce1"
       }
+    },
+    "owner": "draflame",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/a5fe2706-a6a3-46aa-b1a9-3295ff479ce1"
     }
   }
 }

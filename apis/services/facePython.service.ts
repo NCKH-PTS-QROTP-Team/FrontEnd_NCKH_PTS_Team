@@ -4,7 +4,7 @@
  */
 
 const getPythonBaseUrl = (): string => {
-  if (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_FACE_PYTHON_URL) {
+  if (process.env.EXPO_PUBLIC_FACE_PYTHON_URL) {
     return process.env.EXPO_PUBLIC_FACE_PYTHON_URL.replace(/\/$/, "");
   }
   return "http://localhost:8110";
