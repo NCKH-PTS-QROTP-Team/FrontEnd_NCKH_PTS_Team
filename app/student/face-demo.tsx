@@ -200,7 +200,7 @@ export default function FaceDemoScreen() {
             Tính năng này dành cho bản web. Trên điện thoại dùng "Điểm danh Face" để quét mặt.
           </Text>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => router.canGoBack() ? router.back() : router.replace("/student/home")}
             style={{ backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10, ...getWebCursor() }}
           >
             <Text style={{ color: Colors.white, fontWeight: "600" }}>Quay lại</Text>
@@ -333,7 +333,7 @@ export default function FaceDemoScreen() {
               style={{ marginBottom: 12, alignSelf: "stretch" }}
             />
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={() => router.canGoBack() ? router.back() : router.replace("/student/home")}
               style={{ padding: 8, alignItems: "center" }}
             >
               <Text style={{ color: Colors.white, fontSize: 15, fontWeight: "500" }}>Quay lại</Text>

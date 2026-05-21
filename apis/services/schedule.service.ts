@@ -52,6 +52,16 @@ export const scheduleService = {
   },
 
   /**
+   * Get schedules specifically for a student (enrolled courses only)
+   */
+  getStudentSchedules: async (studentId: string): Promise<Schedule[]> => {
+    const response = await apiClient.get<ApiResponse<Schedule[]>>('/self/schedules', {
+      params: { studentId }
+    });
+    return response.data.data;
+  },
+
+  /**
    * Get all schedules or filter by class/teacher.
    * Student: dùng enrolledClassIds để lấy lịch nhiều môn (nhiều lớp).
    */

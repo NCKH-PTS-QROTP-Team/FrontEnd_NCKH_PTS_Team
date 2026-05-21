@@ -299,10 +299,39 @@ export default function GenerateQRScreen() {
       });
       setCurrentQR(qr);
       setCountdown(Number(qrInterval) || 10);
+
+      // Refresh stats mỗi lần QR rotate
+      refreshSessionStats(sessionId);
     } catch (error) {
       console.error("Lỗi khi tạo mã QR mới:", error);
     }
   };
+
+  // Refresh session stats (present/late/absent) từ backend
+  const refreshSessionStats = async (sessionId: string) => {
+    try {
+      const session = await attendanceService.getSessionById(sessionId);
+      setSelectedSession((prev) =>
+        prev ? { ...prev, present: session.present ?? 0, late: session.late ?? 0, absent: session.absent ?? 0, total: session.total ?? prev.total } : prev
+      );
+    } catch (error) {
+      // Silent fail — stats refresh không critical
+    }
+  };
+
+  // Auto-refresh stats mỗi 3 giây để cập nhật số lượng SV điểm danh thời gian thực mượt mà
+  useEffect(() => {
+    if (!selectedSession?.id) return;
+    
+    // Refresh ngay lập tức khi chọn phiên hoặc mount
+    refreshSessionStats(selectedSession.id);
+
+    const statsInterval = setInterval(() => {
+      refreshSessionStats(selectedSession.id);
+    }, 3000);
+
+    return () => clearInterval(statsInterval);
+  }, [selectedSession?.id]);
 
   const handleStartQR = async () => {
     if (!selectedSchedule) {

@@ -19,6 +19,7 @@ import { MonthCalendar, todayISO, isoToDate } from "@/components/MonthCalendar";
 import { useRouter } from "expo-router";
 import { scheduleService, authService } from "@/apis";
 import { removeAuthToken } from "@/apis/config/apiClient";
+import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import type { Schedule as ApiSchedule } from "@/apis/services/schedule.service";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -103,41 +104,46 @@ export default function ScheduleScreen() {
 
         const dateOnly = toIsoDate(selectedDate);
 
-        // Lấy thông tin user hiện tại để biết classId
-        const currentUser = await authService.getCurrentUser();
-
-        // ── 1. LUÔN fetch list với fromDate=toDate=selectedDate ─────────────
-        // Backend tự xử lý đúng ngày cho cả RECURRING_WEEKLY (dayOfWeek) và
-        // ONE_TIME (date). Không filter client-side → tránh lỗi convention và
-        // duplicate do có cả RECURRING + ONE_TIME cho cùng buổi.
-        const baseParams: {
-          scheduleType?: "CLASS" | "EXAM";
-          fromDate?: string;
-          toDate?: string;
-          classId?: string;
-          classIds?: string[];
-        } = {};
-
-        // 1 SV nhiều môn: ưu tiên enrolledClassIds, không có thì classId
-        if (currentUser?.enrolledClassIds?.length) {
-          baseParams.classIds = currentUser.enrolledClassIds;
-        } else if (currentUser?.classId) {
-          baseParams.classId = currentUser.classId;
+        const studentId = await getStudentIdFromToken();
+        if (!studentId) {
+          throw new Error("Missing studentId");
         }
 
-        if (selectedView === "class") {
-          baseParams.scheduleType = "CLASS";
-        } else if (selectedView === "exam") {
-          baseParams.scheduleType = "EXAM";
-        }
+        const studentSchedules = await scheduleService.getStudentSchedules(studentId);
 
-        const listSchedules = await scheduleService.getSchedules({
-          ...baseParams,
-          fromDate: dateOnly,
-          toDate: dateOnly,
-        });
+        // Helper filter function
+        const filterSchedulesByDateRange = (schedules: ApiSchedule[], fromStr: string, toStr: string) => {
+          return schedules.filter((s) => {
+            // Apply scheduleType filter
+            if (selectedView === "class" && s.scheduleType !== "CLASS") return false;
+            if (selectedView === "exam" && s.scheduleType !== "EXAM") return false;
 
-        // Dedup by id (phòng backend trả trùng)
+            if (s.pattern === "ONE_TIME") {
+              return !!(s.date && s.date >= fromStr && s.date <= toStr);
+            }
+            
+            if (s.dayOfWeek) {
+              const start = new Date(fromStr);
+              const end = new Date(toStr);
+              // Iterate dates in the range to find any matching day of week
+              for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const dow = d.getDay() === 0 ? 8 : d.getDay() + 1;
+                if (dow === s.dayOfWeek) {
+                  const dISO = toIsoDate(d);
+                  if (s.startDate && dISO < s.startDate) continue;
+                  if (s.endDate && dISO > s.endDate) continue;
+                  if (s.excludedDates && s.excludedDates.includes(dISO)) continue;
+                  return true;
+                }
+              }
+            }
+            return false;
+          });
+        };
+
+        const listSchedules = filterSchedulesByDateRange(studentSchedules, dateOnly, dateOnly);
+
+        // Dedup by id
         const seenIds = new Set<string>();
         const uniqueList = listSchedules.filter((s) => {
           if (seenIds.has(s.id)) return false;
@@ -167,7 +173,7 @@ export default function ScheduleScreen() {
           dayOfWeekStr: s.dayOfWeek ? backendDayMap[s.dayOfWeek] : undefined,
         }));
 
-        // Slot-level dedup: tránh hiển thị trùng buổi khi DB có cả recurring + one-time cùng khung giờ.
+        // Slot-level dedup
         const seenSlots = new Set<string>();
         const dedupedMapped = mapped.filter((item) => {
           const slotKey = `${item.courseName}|${item.teacher}|${item.time}|${item.room}|${dateOnly}`;
@@ -179,7 +185,6 @@ export default function ScheduleScreen() {
         setDaySchedules(dedupedMapped);
 
         // ── 2. Fetch month range cho MonthCalendar dots ──────────────────────
-        // Luôn fetch ở desktop (sidebar MonthCalendar cần dots), hoặc khi timeFilter=month
         if (isDesktop || timeFilter === "month") {
           const monthStart = new Date(
             selectedDate.getFullYear(),
@@ -191,14 +196,13 @@ export default function ScheduleScreen() {
             selectedDate.getMonth() + 1,
             0,
           );
-          const monthSchedules = await scheduleService.getSchedules({
-            ...baseParams,
-            fromDate: toIsoDate(monthStart),
-            toDate: toIsoDate(monthEnd),
-          });
+          const monthSchedules = filterSchedulesByDateRange(
+            studentSchedules,
+            toIsoDate(monthStart),
+            toIsoDate(monthEnd)
+          );
           setRawSchedules(monthSchedules);
         } else {
-          // week/day trên mobile: dùng uniqueList đã fetch
           setRawSchedules(uniqueList);
         }
 
