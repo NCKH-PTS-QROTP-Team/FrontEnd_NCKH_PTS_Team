@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "build:web": "expo export -p web && node scripts/patch-dist-html.js",
-    "build:web:fast": "NODE_ENV=production expo export -p web --clear && node scripts/patch-dist-html.js",
+    "start": "npx expo start",
+    "android": "npx expo start --android",
+    "ios": "npx expo start --ios",
+    "web": "npx expo start --web",
+    "build:web": "npx expo export -p web && node scripts/patch-dist-html.js",
+    "build:web:fast": "NODE_ENV=production npx expo export -p web --clear && node scripts/patch-dist-html.js",
     "serve:dist": "node scripts/serve-dist.js"
   },
   "dependencies": {
