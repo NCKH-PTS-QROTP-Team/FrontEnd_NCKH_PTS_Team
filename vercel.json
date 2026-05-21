@@ -4,7 +4,7 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!assets|_expo|fonts).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
