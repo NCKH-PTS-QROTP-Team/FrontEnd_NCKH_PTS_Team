@@ -125,7 +125,7 @@ export default function RegisterFaceScreen() {
   
   // Enable socket khi backend đã có socket server (port 8081)
   const useSocketForDetection = false; // Tạm tắt để dùng API fallback
-  // Auto-capture: chỉ bật trên web, mobile sẽ chụp thủ công để tránh chớp màn hình
+  // Auto-capture: chỉ bật trên web (mobile detection qua localtunnel không đủ ổn định)
   const enableAutoCapture = Platform.OS === "web";
 
   const getGuideRect = (previewW: number, previewH: number) => {
@@ -399,11 +399,12 @@ export default function RegisterFaceScreen() {
       try {
         detectingRef.current = true;
 
-        // Capture frame nhỏ để detect (quality thấp để nhanh)
-        // Tăng quality để cải thiện nhận diện mặt
+        // Capture frame để detect
+        const isMobile = Platform.OS !== 'web';
         const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.5, // Quality thấp cho realtime detection (nhanh)
-          skipProcessing: true, // Skip processing để detect nhanh hơn
+          quality: isMobile ? 0.2 : 0.15, // Mobile: 0.2 (đủ detect, nhẹ qua localtunnel)
+          skipProcessing: isMobile ? false : true,
+          shutterSound: false,
           exif: false,
           base64: true,
         });
@@ -444,31 +445,25 @@ export default function RegisterFaceScreen() {
             
             // Validate dimensions
             if (imgWidth > 0 && imgHeight > 0) {
-              // Web: COVER mode (uniform scale), Mobile: STRETCH mode
+              // COVER mode (uniform scale) cho cả Web và Mobile
               const imageAspectRatio = imgWidth / imgHeight;
               const screenAspectRatio = previewW / previewH;
               
               let scaleX, scaleY, offsetX, offsetY;
               
-              if (Platform.OS === 'web') {
-                // Web: Giữ aspect ratio
-                if (imageAspectRatio > screenAspectRatio) {
-                  scaleX = previewW / imgWidth;
-                  scaleY = scaleX;
-                  offsetX = 0;
-                  offsetY = (previewH - imgHeight * scaleY) / 2;
-                } else {
-                  scaleY = previewH / imgHeight;
-                  scaleX = scaleY;
-                  offsetX = (previewW - imgWidth * scaleX) / 2;
-                  offsetY = 0;
-                }
-              } else {
-                // Mobile: Stretch
-                scaleX = previewW / imgWidth;
+              // Giữ aspect ratio, cắt phần thừa
+              if (imageAspectRatio > screenAspectRatio) {
+                // Ảnh rộng hơn màn hình -> scale theo chiều cao để lấp đầy màn hình, phần thừa 2 bên bị cắt
                 scaleY = previewH / imgHeight;
-                offsetX = 0;
+                scaleX = scaleY;
+                offsetX = (previewW - imgWidth * scaleX) / 2;
                 offsetY = 0;
+              } else {
+                // Ảnh cao hơn màn hình -> scale theo chiều rộng để lấp đầy màn hình, phần thừa trên dưới bị cắt
+                scaleX = previewW / imgWidth;
+                scaleY = scaleX;
+                offsetX = 0;
+                offsetY = (previewH - imgHeight * scaleY) / 2;
               }
               
               if (isFinite(scaleX) && isFinite(scaleY) && scaleX > 0 && scaleY > 0) {
@@ -477,8 +472,14 @@ export default function RegisterFaceScreen() {
                 let scaledWidth = face.width * scaleX;
                 let scaledHeight = face.height * scaleY;
                 
-                // Mở rộng bbox để bao phủ toàn bộ mặt hơn (35%)
-                const paddingFactor = 0.35;
+                // Mobile front camera: preview bị mirror nhưng ảnh chụp thì không
+                // => cần flip X để khớp với preview hiển thị
+                if (Platform.OS !== 'web') {
+                  scaledX = previewW - scaledX - scaledWidth;
+                }
+                
+                // Mở rộng bbox - mobile nhỏ hơn vì API detect đã chính xác hơn
+                const paddingFactor = Platform.OS === 'web' ? 0.2 : 0.1;
                 const paddingX = scaledWidth * paddingFactor;
                 const paddingY = scaledHeight * paddingFactor;
                 scaledX -= paddingX;
@@ -523,7 +524,7 @@ export default function RegisterFaceScreen() {
       } finally {
         detectingRef.current = false;
       }
-    }, useSocketForDetection && isConnected ? 400 : 500); // Socket: 400ms (tối ưu) vs API: 500ms
+    }, Platform.OS === 'web' ? (useSocketForDetection && isConnected ? 400 : 500) : 2000); // Web: 400-500ms, Mobile: 2000ms (giảm tải localtunnel)
 
     return () => {
       if (detectIntervalRef.current) {
@@ -545,21 +546,16 @@ export default function RegisterFaceScreen() {
     try {
       setCapturing(true);
       
-      // Đợi một chút để camera ổn định trước khi capture
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
       if (!cameraRef.current) {
         showToast("Camera chưa sẵn sàng", "error");
         setCameraActive(true);
         return;
       }
 
-      // Capture photo chất lượng cao
-      // Tăng quality lên tối đa (1.0) để cải thiện nhận diện mặt trên mobile
-      // Mobile thường có độ phân giải thấp hơn web, cần quality cao hơn
+      // Capture photo - quality vừa đủ để nhận diện tốt nhưng không quá nặng
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 1.0, // Maximum quality để tăng similarity trên mobile
-        skipProcessing: false, // Đảm bảo image được process đầy đủ
+        quality: Platform.OS === 'web' ? 0.9 : 0.7, // Mobile: 0.7 đủ tốt, giảm payload qua mạng
+        skipProcessing: false, // False cho ảnh cuối cùng để đảm bảo orientation đúng
         exif: false,
         base64: true,
       });
@@ -587,41 +583,42 @@ export default function RegisterFaceScreen() {
       }
 
       // Lấy thông tin mắt/miệng từ extract encoding để hiển thị trên UI
-      try {
-        const encodingResult = await faceService.extractEncodingFromCamera(
-          `data:image/jpeg;base64,${photo.base64}`
-        );
-        if (encodingResult.eyes && encodingResult.smiles && encodingResult.faceX !== undefined) {
-          // Scale coordinates từ image dimensions về preview dimensions
-          const previewW = previewLayout.width || width;
-          const previewH = previewLayout.height || height;
-          const imgWidth = photo.width || previewW;
-          const imgHeight = photo.height || previewH;
-          const scaleX = previewW / imgWidth;
-          const scaleY = previewH / imgHeight;
-          
-          setFaceDetected({
-            x: encodingResult.faceX * scaleX,
-            y: encodingResult.faceY! * scaleY,
-            width: (encodingResult.faceWidth || 0) * scaleX,
-            height: (encodingResult.faceHeight || 0) * scaleY,
-            eyes: encodingResult.eyes.map(eye => ({
-              x: eye.x * scaleX,
-              y: eye.y * scaleY,
-              width: eye.width * scaleX,
-              height: eye.height * scaleY,
-            })),
-            smiles: encodingResult.smiles.map(smile => ({
-              x: smile.x * scaleX,
-              y: smile.y * scaleY,
-              width: smile.width * scaleX,
-              height: smile.height * scaleY,
-            })),
-          });
+      // Chỉ chạy trên Web (mobile bỏ qua để tăng tốc, tiết kiệm 1 API call ~1-2s)
+      if (Platform.OS === 'web') {
+        try {
+          const encodingResult = await faceService.extractEncodingFromCamera(
+            `data:image/jpeg;base64,${photo.base64}`
+          );
+          if (encodingResult.eyes && encodingResult.smiles && encodingResult.faceX !== undefined) {
+            const previewW = previewLayout.width || width;
+            const previewH = previewLayout.height || height;
+            const imgWidth = photo.width || previewW;
+            const imgHeight = photo.height || previewH;
+            const scaleX = previewW / imgWidth;
+            const scaleY = previewH / imgHeight;
+            
+            setFaceDetected({
+              x: encodingResult.faceX * scaleX,
+              y: encodingResult.faceY! * scaleY,
+              width: (encodingResult.faceWidth || 0) * scaleX,
+              height: (encodingResult.faceHeight || 0) * scaleY,
+              eyes: encodingResult.eyes.map(eye => ({
+                x: eye.x * scaleX,
+                y: eye.y * scaleY,
+                width: eye.width * scaleX,
+                height: eye.height * scaleY,
+              })),
+              smiles: encodingResult.smiles.map(smile => ({
+                x: smile.x * scaleX,
+                y: smile.y * scaleY,
+                width: smile.width * scaleX,
+                height: smile.height * scaleY,
+              })),
+            });
+          }
+        } catch (error) {
+          console.warn("Could not get eyes/smiles info:", error);
         }
-      } catch (error) {
-        // Nếu không lấy được thông tin mắt/miệng, không sao, vẫn tiếp tục
-        console.warn("Could not get eyes/smiles info:", error);
       }
 
       // Animation fade
@@ -640,20 +637,28 @@ export default function RegisterFaceScreen() {
 
       showToast(`Đã đăng ký góc mặt ${currentStep + 1}/5 thành công!`, "success");
 
-      // Chuyển sang bước tiếp theo
+      // Chuyển sang bước tiếp theo (nhanh trên mobile)
       setTimeout(() => {
         if (currentStep < FACE_ANGLES.length - 1) {
           setCurrentStep(currentStep + 1);
           setCameraActive(true); // Giữ camera active cho bước tiếp theo
         } else {
           // Hoàn thành
-          setCameraActive(false); // Tắt camera khi hoàn thành
           showToast("Đăng ký khuôn mặt hoàn tất! 🎉", "success");
+          
+          // Chuyển hướng ngay lập tức hoặc set trạng thái đã đăng ký để tránh trắng màn hình
+          setAlreadyRegistered(true);
+          setCameraActive(false);
+          
           setTimeout(() => {
-            router.back();
-          }, 2000);
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace("/student/home");
+            }
+          }, 1000);
         }
-      }, 1000);
+      }, 300);
     } catch (error: any) {
       console.error("Face registration error:", error);
       showToast(
@@ -713,6 +718,7 @@ export default function RegisterFaceScreen() {
     setCountdown(null);
     faceBoxRef.current = null;
     setFaceDetected(null);
+    detectingRef.current = false; // Reset để detection interval restart cho step mới
 
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
@@ -731,7 +737,11 @@ export default function RegisterFaceScreen() {
     }
     // Stop emitting frames
     off('face:detected');
-    router.back();
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/student/home');
+    }
   };
 
   // Cleanup khi unmount
@@ -813,7 +823,7 @@ export default function RegisterFaceScreen() {
               Khuôn mặt của bạn đã được đăng ký trước đó. Nếu bạn cần đăng ký lại,
               vui lòng liên hệ quản trị viên.
             </Text>
-            <PrimaryButton title="Quay lại" onPress={() => router.back()} />
+            <PrimaryButton title="Quay lại" onPress={() => router.canGoBack() ? router.back() : router.replace("/student/home")} />
           </View>
         </View>
       </SafeAreaView>
@@ -867,13 +877,21 @@ export default function RegisterFaceScreen() {
       {/* Camera View */}
       {cameraActive && (
         <View
-          style={{
+          style={Platform.OS === 'web' ? {
             flex: 1,
-            flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+            flexDirection: 'row',
             alignItems: "center",
-            justifyContent: Platform.OS === "web" ? "center" : "flex-start",
-            padding: Platform.OS === 'web' ? 24 : 0,
-            gap: Platform.OS === 'web' ? 24 : 0,
+            justifyContent: "center",
+            padding: 24,
+            gap: 24,
+          } : {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+            backgroundColor: "#000",
           }}
         >
           <View
@@ -1114,18 +1132,18 @@ export default function RegisterFaceScreen() {
                 borderStyle: "dashed",
               } : {
                 position: "absolute",
-                top: "25%",
-                left: "10%",
-                right: "10%",
+                top: "12%",
+                left: "12%",
+                right: "12%",
                 aspectRatio: 0.75,
                 borderWidth: 2,
-                borderColor: faceDetected ? Colors.primary : "rgba(255,255,255,0.5)",
+                borderColor: "rgba(255,255,255,0.5)",
                 borderRadius: 20,
                 borderStyle: "dashed",
               }}
             />
 
-            {/* Bottom Overlay - Only for Mobile */}
+            {/* Bottom Overlay - Only for Mobile (compact) */}
             {Platform.OS !== 'web' && (
               <Animated.View
                 style={{
@@ -1134,86 +1152,66 @@ export default function RegisterFaceScreen() {
                   left: 0,
                   right: 0,
                   paddingHorizontal: paddingHorizontal,
-                  paddingBottom: 40,
-                  paddingTop: 24,
-                  backgroundColor: "rgba(0,0,0,0.85)",
-                  borderTopLeftRadius: 24,
-                  borderTopRightRadius: 24,
+                  paddingBottom: 24,
+                  paddingTop: 12,
+                  backgroundColor: "rgba(0,0,0,0.75)",
+                  borderTopLeftRadius: 20,
+                  borderTopRightRadius: 20,
                   opacity: fadeAnim,
                 }}
               >
-                {/* Icon và Instruction */}
-              <View style={{ alignItems: "center", marginBottom: 24 }}>
-                <View style={{ marginBottom: 12 }}>
-                  {faceDetected ? (
-                    <CheckCircleIcon size={64} color={Colors.primary} />
-                  ) : (
-                    <currentAngle.IconComponent size={64} color={Colors.white} />
-                  )}
+                {/* Instruction row - compact */}
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12, gap: 10 }}>
+                  <View>
+                    {faceDetected ? (
+                      <CheckCircleIcon size={28} color={Colors.primary} />
+                    ) : (
+                      <currentAngle.IconComponent size={28} color={Colors.white} />
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: "600",
+                      }}
+                    >
+                      {currentAngle.instruction}
+                    </Text>
+                    <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, marginTop: 2 }}>
+                      Đảm bảo ánh sáng đủ và khuôn mặt rõ ràng
+                    </Text>
+                  </View>
                 </View>
-                <Text
-                  style={{
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: "600",
-                    textAlign: "center",
-                    marginBottom: 8,
-                  }}
-                >
-                  {countdown !== null
-                    ? `Giữ yên... chụp sau ${countdown}`
-                    : isReadyToCapture
-                    ? "Giữ yên... đang chuẩn bị chụp"
-                    : faceDetected
-                    ? "Khuôn mặt đã được nhận diện"
-                    : currentAngle.instruction}
-                </Text>
-                <Text
-                  style={{
-                    color: "rgba(255,255,255,0.7)",
-                    fontSize: 13,
-                    textAlign: "center",
-                  }}
-                >
-                  {countdown !== null
-                    ? "Đừng di chuyển để ảnh rõ nét"
-                    : isReadyToCapture
-                    ? "Hệ thống sẽ tự chụp nếu bạn giữ ổn định"
-                    : faceDetected
-                    ? "Giữ mặt trong khung nét đứt để tự chụp"
-                    : "Đảm bảo ánh sáng đủ và khuôn mặt rõ ràng"}
-                </Text>
-              </View>
 
               {/* Capture Button */}
               <PrimaryButton
                 title={
                   capturing
                     ? "Đang xử lý..."
-                    : countdown !== null
-                    ? `Chụp sau ${countdown}`
                     : currentStep === FACE_ANGLES.length - 1
                     ? "Hoàn tất"
                     : "Chụp ảnh"
                 }
                 onPress={handleCapture}
                 loading={capturing}
-                disabled={capturing || countdown !== null}
+                disabled={capturing}
               />
 
               {/* Back Button */}
               <TouchableOpacity
                 onPress={handleCancel}
                 style={{
-                  marginTop: 16,
-                  padding: 12,
+                  marginTop: 8,
+                  padding: 8,
                   alignItems: "center",
                 }}
               >
                 <Text
                   style={{
                     color: Colors.white,
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: "500",
                     opacity: 0.8,
                   }}

@@ -143,21 +143,32 @@ export default function StudentLayout() {
     ];
 
     const currentRoute = pathname || "/student/home";
+    
+    // Ẩn bottom nav + chatbox trên các màn hình camera toàn màn hình
+    const hideOverlays = [
+      "/student/register-face",
+      "/student/qr-attendance", 
+      "/student/otp-attendance",
+      "/student/face-attendance",
+      "/student/face-demo",
+    ].includes(pathname);
 
     return (
       <RoleGuard allowedRoles={[UserRole.STUDENT]}>
         <View style={{ flex: 1 }}>
           {stackContent}
-          <BottomNavigation
-            items={bottomNavItems}
-            activeKey={currentRoute}
-            onItemPress={(route) => router.push(route as any)}
-            centerButton={{
-              icon: <QrCodeIcon size={32} color={Colors.white} />,
-              onPress: () => router.push("/student/attendance-actions"),
-            }}
-          />
-          <ChatBox />
+          {!hideOverlays && (
+            <BottomNavigation
+              items={bottomNavItems}
+              activeKey={currentRoute}
+              onItemPress={(route) => router.push(route as any)}
+              centerButton={{
+                icon: <QrCodeIcon size={32} color={Colors.white} />,
+                onPress: () => router.push("/student/attendance-actions"),
+              }}
+            />
+          )}
+          {!hideOverlays && <ChatBox />}
         </View>
       </RoleGuard>
     );

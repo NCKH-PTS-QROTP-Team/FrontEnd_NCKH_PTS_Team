@@ -144,19 +144,12 @@ export default function HistoryScreen() {
       sems.sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime()); // Latest first
       setSemesters(sems);
       if (sems.length > 0) {
-        setSelectedSemester(sems[0].id);
+        // Giữ mặc định là "all" (Tất cả học kỳ) để hiển thị toàn bộ lịch sử điểm danh của sinh viên, tránh bị trống do ngày học kỳ lệch
+        setSelectedSemester("all");
       }
 
-      // 2. Fetch enrolled subjects
-      const currentUser = await authService.getCurrentUser();
-      const baseParams: any = {};
-      if (currentUser?.enrolledClassIds?.length) {
-        baseParams.classIds = currentUser.enrolledClassIds;
-      } else if (currentUser?.classId) {
-        baseParams.classId = currentUser.classId;
-      }
-      
-      const schedules = await scheduleService.getSchedules(baseParams);
+      // 2. Fetch enrolled subjects using studentSchedules endpoint
+      const schedules = await scheduleService.getStudentSchedules(studentId);
       const uniqueEnrolledSubjects = new Set<string>();
       schedules.forEach(s => {
         if (s.subjectName) uniqueEnrolledSubjects.add(s.subjectName);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,12 +12,57 @@ import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/colors";
 import { HashIcon, QrCodeIcon, UserIcon } from "@/components/Icons";
 import { getWebShadow, getWebCursor } from "@/constants/webStyles";
+import { attendanceService } from "@/apis";
+import { getStudentIdFromToken } from "@/apis/utils/jwt";
+import { useFocusEffect } from "expo-router";
 
 export default function StudentAttendanceActionsScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const [activeTab, setActiveTab] = useState<"qr" | "otp" | "face">("qr");
+  const [todayAttended, setTodayAttended] = useState(0);
+  const [todayRemaining, setTodayRemaining] = useState(0);
+
+  // Fetch real stats khi màn hình được focus (quay lại sau điểm danh)
+  useFocusEffect(
+    useCallback(() => {
+      fetchTodayStats();
+    }, [])
+  );
+
+  const fetchTodayStats = async () => {
+    try {
+      const studentId = await getStudentIdFromToken();
+      if (!studentId) return;
+
+      // Lấy records của student
+      const records = await attendanceService.getRecords({ studentId });
+
+      // Lấy sessions đang active
+      const sessions = await attendanceService.getSessions({ active: true });
+
+      // Đếm records hôm nay
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayRecords = records.filter((r) => {
+        const recordDate = new Date(r.attendedAt);
+        recordDate.setHours(0, 0, 0, 0);
+        return recordDate.getTime() === today.getTime();
+      });
+
+      setTodayAttended(todayRecords.length);
+      // Sessions active mà student chưa điểm danh
+      const attendedSessionIds = new Set(todayRecords.map((r) => r.sessionId));
+      const remaining = sessions.filter(
+        (s) => !attendedSessionIds.has(s.id)
+      ).length;
+      setTodayRemaining(remaining);
+    } catch (error) {
+      // Silent fail — stats không critical
+      console.warn("Failed to fetch today stats:", error);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.surface }}>
@@ -376,7 +421,7 @@ export default function StudentAttendanceActionsScreen() {
           </Text>
         </View>
 
-        {/* Quick Stats */}
+        {/* Quick Stats — real data */}
         <View
           style={{
             backgroundColor: Colors.white,
@@ -416,7 +461,7 @@ export default function StudentAttendanceActionsScreen() {
                   color: "#10B981",
                 }}
               >
-                3
+                {todayAttended}
               </Text>
             </View>
             <View style={{ flex: 1 }}>
@@ -436,7 +481,7 @@ export default function StudentAttendanceActionsScreen() {
                   color: Colors.primary,
                 }}
               >
-                2
+                {todayRemaining}
               </Text>
             </View>
           </View>

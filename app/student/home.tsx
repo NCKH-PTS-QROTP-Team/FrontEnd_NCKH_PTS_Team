@@ -90,26 +90,30 @@ export default function StudentHomeScreen() {
       const today = new Date();
       const dateOnly = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-      // Load schedules theo lớp của sinh viên
+      // Load schedules theo lớp học phần thực tế sinh viên đăng ký
       let allSchedules: Schedule[] = [];
       try {
         console.log("📅 Loading schedules for today:", dateOnly);
-        if (currentUser?.enrolledClassIds?.length) {
-          allSchedules = await scheduleService.getSchedules({
-            classIds: currentUser.enrolledClassIds,
-            fromDate: dateOnly,
-            toDate: dateOnly,
-          });
-        } else if (currentUser?.classId) {
-          allSchedules = await scheduleService.getSchedules({
-            classId: currentUser.classId,
-            fromDate: dateOnly,
-            toDate: dateOnly,
-          });
-        } else {
-          allSchedules = await scheduleService.getSchedules({
-            fromDate: dateOnly,
-            toDate: dateOnly,
+        if (studentId) {
+          const studentSchedules = await scheduleService.getStudentSchedules(studentId);
+          
+          const todayDow = (() => {
+            const day = today.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+            if (day === 0) return 8; // Sunday -> 8
+            return day + 1; // Mon -> 2, ..., Sat -> 7
+          })();
+
+          allSchedules = studentSchedules.filter((s) => {
+            if (s.pattern === "ONE_TIME") {
+              return s.date === dateOnly;
+            }
+            if (s.dayOfWeek === todayDow) {
+              if (s.startDate && dateOnly < s.startDate) return false;
+              if (s.endDate && dateOnly > s.endDate) return false;
+              if (s.excludedDates && s.excludedDates.includes(dateOnly)) return false;
+              return true;
+            }
+            return false;
           });
         }
 

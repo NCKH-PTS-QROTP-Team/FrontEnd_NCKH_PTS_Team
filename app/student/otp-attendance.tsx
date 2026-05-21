@@ -15,7 +15,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { Colors } from "@/constants/colors";
-import { otpService, attendanceService, faceService, authService } from "@/apis";
+import { otpService, attendanceService, faceService, authService, scheduleService } from "@/apis";
 import { getStudentIdFromToken } from "@/apis/utils/jwt";
 import { AttendanceMethod, AttendanceSessionResponse } from "@/apis/types/attendance.types";
 import { useToast } from "@/components/ToastProvider";
@@ -69,6 +69,9 @@ export default function OTPAttendanceScreen() {
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const cameraRef = useRef<CameraView>(null);
   const faceBoxRef = useRef<FaceDetection | null>(null);
+  const detectingRef = useRef(false);
+  const useSocketForDetection = false;
+  const FACE_BOX_SMOOTHING_ALPHA = 0.65;
   const lastImageDimensions = useRef<{ width: number; height: number } | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const { showToast } = useToast();
@@ -158,23 +161,17 @@ export default function OTPAttendanceScreen() {
         
         let scaleX, scaleY, offsetX, offsetY;
         
-        if (Platform.OS === 'web') {
-          if (imageAspectRatio > screenAspectRatio) {
-            scaleX = previewW / imgWidth;
-            scaleY = scaleX;
-            offsetX = 0;
-            offsetY = (previewH - imgHeight * scaleY) / 2;
-          } else {
-            scaleY = previewH / imgHeight;
-            scaleX = scaleY;
-            offsetX = (previewW - imgWidth * scaleX) / 2;
-            offsetY = 0;
-          }
+        // COVER mode (uniform scale) cho cả Web và Mobile
+        if (imageAspectRatio > screenAspectRatio) {
+          scaleY = previewH / imgHeight;
+          scaleX = scaleY;
+          offsetX = (previewW - imgWidth * scaleX) / 2;
+          offsetY = 0;
         } else {
           scaleX = previewW / imgWidth;
-          scaleY = previewH / imgHeight;
+          scaleY = scaleX;
           offsetX = 0;
-          offsetY = 0;
+          offsetY = (previewH - imgHeight * scaleY) / 2;
         }
         
         if (!isFinite(scaleX) || !isFinite(scaleY) || scaleX <= 0 || scaleY <= 0) {
@@ -186,7 +183,12 @@ export default function OTPAttendanceScreen() {
         let scaledWidth = face.width * scaleX;
         let scaledHeight = face.height * scaleY;
         
-        const paddingFactor = 0.35;
+        // Mobile front camera: preview bị mirror nhưng ảnh chụp thì không
+        if (Platform.OS !== 'web') {
+          scaledX = previewW - scaledX - scaledWidth;
+        }
+        
+        const paddingFactor = Platform.OS === 'web' ? 0.2 : 0.1;
         const paddingX = scaledWidth * paddingFactor;
         const paddingY = scaledHeight * paddingFactor;
         scaledX -= paddingX;
@@ -254,20 +256,23 @@ export default function OTPAttendanceScreen() {
     };
   }, [isConnected, showCamera, capturingFace, faceVerified, previewLayout, width, height]);
 
-  // Send frames to socket for detection
+  // Detect face realtime qua socket (fallback về API nếu socket chưa ready)
   useEffect(() => {
-    if (!showCamera || !isConnected || capturingFace || faceVerified) {
+    if (!showCamera || capturingFace || faceVerified || detectingRef.current || !cameraRef.current) {
       return;
     }
 
     const sendFrame = async () => {
-      if (!cameraRef.current) return;
+      if (!cameraRef.current || capturingFace || faceVerified || detectingRef.current) return;
       
       try {
+        detectingRef.current = true;
+        const isMobile = Platform.OS !== 'web';
         const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.3, // Low quality cho realtime
+          quality: isMobile ? 0.3 : 0.15,
           base64: true,
-          skipProcessing: true,
+          skipProcessing: isMobile ? false : true,
+          shutterSound: false,
           exif: false,
         });
 
@@ -277,16 +282,100 @@ export default function OTPAttendanceScreen() {
             height: photo.height || height,
           };
           
-          emit('face:detect', {
-            base64Image: `data:image/jpeg;base64,${photo.base64}`,
-          });
+          if (useSocketForDetection && isConnected) {
+            emit('face:detect', {
+              base64Image: `data:image/jpeg;base64,${photo.base64}`,
+            });
+          } else {
+            // FALLBACK API
+            const result = await faceService.detectRealtime(photo.base64);
+            if (result.faces && result.faces.length > 0) {
+              const face = result.faces[0];
+              const previewW = previewLayout.width || width;
+              const previewH = previewLayout.height || height;
+              const imgWidth = result.imageWidth || photo.width || previewW;
+              const imgHeight = result.imageHeight || photo.height || previewH;
+              
+              if (imgWidth > 0 && imgHeight > 0) {
+                const imageAspectRatio = imgWidth / imgHeight;
+                const screenAspectRatio = previewW / previewH;
+                
+                let scaleX, scaleY, offsetX, offsetY;
+                
+                // COVER mode (uniform scale) cho cả Web và Mobile
+                if (imageAspectRatio > screenAspectRatio) {
+                  scaleY = previewH / imgHeight;
+                  scaleX = scaleY;
+                  offsetX = (previewW - imgWidth * scaleX) / 2;
+                  offsetY = 0;
+                } else {
+                  scaleX = previewW / imgWidth;
+                  scaleY = scaleX;
+                  offsetX = 0;
+                  offsetY = (previewH - imgHeight * scaleY) / 2;
+                }
+                
+                if (isFinite(scaleX) && isFinite(scaleY) && scaleX > 0 && scaleY > 0) {
+                  let scaledX = face.x * scaleX + offsetX;
+                  let scaledY = face.y * scaleY + offsetY;
+                  let scaledWidth = face.width * scaleX;
+                  let scaledHeight = face.height * scaleY;
+                  
+                  // Mobile front camera: preview bị mirror nhưng ảnh chụp thì không
+                  if (Platform.OS !== 'web') {
+                    scaledX = previewW - scaledX - scaledWidth;
+                  }
+                  
+                  const paddingFactor = Platform.OS === 'web' ? 0.2 : 0.1;
+                  const paddingX = scaledWidth * paddingFactor;
+                  const paddingY = scaledHeight * paddingFactor;
+                  scaledX -= paddingX;
+                  scaledY -= paddingY;
+                  scaledWidth += paddingX * 2;
+                  scaledHeight += paddingY * 2;
+                  
+                  const finalX = Math.max(0, Math.min(scaledX, previewW - 20));
+                  const finalY = Math.max(0, Math.min(scaledY, previewH - 20));
+                  const finalWidth = Math.max(40, Math.min(scaledWidth, previewW - finalX));
+                  const finalHeight = Math.max(40, Math.min(scaledHeight, previewH - finalY));
+                  
+                  const prev = faceBoxRef.current;
+                  const smoothed: FaceDetection = prev
+                    ? {
+                        x: prev.x * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalX * FACE_BOX_SMOOTHING_ALPHA,
+                        y: prev.y * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalY * FACE_BOX_SMOOTHING_ALPHA,
+                        width: prev.width * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalWidth * FACE_BOX_SMOOTHING_ALPHA,
+                        height: prev.height * (1 - FACE_BOX_SMOOTHING_ALPHA) + finalHeight * FACE_BOX_SMOOTHING_ALPHA,
+                        eyes: [],
+                        smiles: [],
+                      }
+                    : {
+                        x: finalX,
+                        y: finalY,
+                        width: finalWidth,
+                        height: finalHeight,
+                        eyes: [],
+                        smiles: [],
+                      };
+                  
+                  faceBoxRef.current = smoothed;
+                  setFaceDetected(smoothed);
+                }
+              }
+            } else {
+              setFaceDetected(null);
+              faceBoxRef.current = null;
+            }
+          }
         }
       } catch (error) {
         // Silent fail cho realtime detection
+      } finally {
+        detectingRef.current = false;
       }
     };
 
-    const interval = setInterval(sendFrame, 150); // ~6-7 FPS
+    const interval = setInterval(sendFrame, Platform.OS === 'web' ? (useSocketForDetection && isConnected ? 150 : 500) : 2000);
     detectIntervalRef.current = interval;
 
     return () => {
@@ -295,7 +384,7 @@ export default function OTPAttendanceScreen() {
         detectIntervalRef.current = null;
       }
     };
-  }, [showCamera, isConnected, capturingFace, faceVerified, width, height, emit]);
+  }, [showCamera, isConnected, useSocketForDetection, capturingFace, faceVerified, width, height, previewLayout, emit]);
 
   // Load active session on mount
   useEffect(() => {
@@ -340,17 +429,25 @@ export default function OTPAttendanceScreen() {
         return;
       }
 
-      // Lấy thông tin user hiện tại để biết lớp của sinh viên
-      const currentUser = await authService.getCurrentUser();
-      if (!currentUser?.classId) {
-        showToast("Không tìm thấy thông tin lớp học của bạn", "error");
-        return;
-      }
+      // Lấy lịch học thực tế của chính sinh viên này
+      const schedules = await scheduleService.getStudentSchedules(studentId);
+      const enrolledCourseIds = new Set(
+        schedules.map((s) => s.courseId).filter(Boolean)
+      );
 
-      // Lấy active sessions của đúng lớp học
-      const sessions = await attendanceService.getSessions({
-        classId: currentUser.classId,
+      // Load active sessions
+      const allSessions = await attendanceService.getSessions({
         active: true,
+      });
+
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+      // Lọc các session thuộc các lớp học phần sinh viên đang học và được tạo hôm nay
+      const sessions = allSessions.filter((s) => {
+        const isEnrolled = enrolledCourseIds.has(s.courseId);
+        const sessionDate = (s.createdAt || s.startTime || "").split("T")[0];
+        return isEnrolled && sessionDate === todayStr;
       });
 
       // Lưu danh sách session để sinh viên có thể chọn môn cần điểm danh
@@ -374,6 +471,30 @@ export default function OTPAttendanceScreen() {
       });
 
       const defaultSession = otpSessions[0];
+
+      // Check xem student đã điểm danh session này chưa
+      try {
+        const myRecords = await attendanceService.getRecords({ 
+          sessionId: defaultSession.id,
+          studentId 
+        });
+        const hasAttended = myRecords && myRecords.some(
+          (r) => r.studentId === studentId || r.studentCode === studentId
+        );
+        if (hasAttended) {
+          // Đã điểm danh rồi
+          showToast(
+            `Bạn đã điểm danh ${defaultSession.subjectName || "môn này"} rồi!`,
+            "success"
+          );
+          setTimeout(() => {
+            router.back();
+          }, 1500);
+          return;
+        }
+      } catch (e) {
+        // Nếu check fail, vẫn cho tiếp tục
+      }
 
       setSessionInfo({
         id: defaultSession.id,
@@ -474,7 +595,7 @@ export default function OTPAttendanceScreen() {
     }
 
     // Bắt buộc phải xác thực face trước
-    if (!faceVerified || !verifiedFaceEncoding) {
+    if (!faceVerified) {
       showToast(
         "Vui lòng xác thực Face ID trước khi điểm danh bằng OTP.",
         "error",
@@ -496,14 +617,12 @@ export default function OTPAttendanceScreen() {
     setFaceResult("idle");
     try {
       // Capture photo từ camera
-      // Tăng quality lên tối đa (1.0) để cải thiện nhận diện mặt trên mobile
-      // Mobile thường có độ phân giải thấp hơn web, cần quality cao hơn
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 1.0, // Maximum quality để tăng similarity trên mobile
+        quality: Platform.OS === 'web' ? 0.9 : 0.7,
         base64: true,
-        skipProcessing: false, // Đảm bảo xử lý đầy đủ
-        exif: false, // Tắt EXIF để giảm kích thước nhưng không ảnh hưởng chất lượng
-        // Không set width/height để giữ nguyên resolution của camera
+        skipProcessing: false,
+        shutterSound: false,
+        exif: false,
       });
 
       if (!photo.base64) {
@@ -540,26 +659,24 @@ export default function OTPAttendanceScreen() {
         return;
       }
 
-      // Bước 2: Extract encoding từ ảnh đã verify (giống QR code)
-      const encodingResult = await faceService.extractEncodingFromCamera(
-        base64Image,
-      );
-
-      if (
-        !encodingResult.faceEncoding ||
-        encodingResult.faceEncoding.length === 0
-      ) {
-        showToast("Không phát hiện khuôn mặt. Vui lòng thử lại.", "error");
-        setCapturingFace(false);
-        setFaceResult("error");
-        setFaceRetryCooldown(5);
-        return;
+      // Bước 2: Extract encoding từ ảnh đã verify (không bắt buộc)
+      let faceEncoding: number[] | null = null;
+      try {
+        const encodingResult = await faceService.extractEncodingFromCamera(
+          base64Image,
+        );
+        if (encodingResult.faceEncoding && encodingResult.faceEncoding.length > 0) {
+          faceEncoding = encodingResult.faceEncoding;
+        }
+      } catch (encError) {
+        // Encoding extraction failed - proceed anyway
+        console.warn("Extract encoding failed, proceeding without:", encError);
       }
 
-      // Face khớp, lưu encoding (giống QR code)
+      // Face khớp, lưu encoding (có thể null nếu extract fail)
       setFaceResult("success");
       setFaceVerified(true);
-      setVerifiedFaceEncoding(encodingResult.faceEncoding);
+      setVerifiedFaceEncoding(faceEncoding);
 
       showToast(
         "Xác thực Face ID thành công. Bây giờ hãy nhập OTP để hoàn tất điểm danh.",
@@ -586,7 +703,7 @@ export default function OTPAttendanceScreen() {
   };
 
   const submitAttendance = async () => {
-    if (!faceVerified || !verifiedFaceEncoding) {
+    if (!faceVerified) {
       showToast("Vui lòng xác thực Face ID trước khi điểm danh bằng OTP.", "error");
       return;
     }
@@ -608,7 +725,7 @@ export default function OTPAttendanceScreen() {
         studentId: studentId,
         method: AttendanceMethod.OTP,
         otpCode: otpCode,
-        faceEncoding: verifiedFaceEncoding,
+        ...(verifiedFaceEncoding ? { faceEncoding: verifiedFaceEncoding } : {}),
       });
 
       showToast("Điểm danh thành công!", "success");
@@ -745,6 +862,29 @@ Hết thời gian điểm danh
                           <TouchableOpacity
                             key={s.id}
                             onPress={async () => {
+                              try {
+                                const studentId = await getStudentIdFromToken();
+                                if (studentId) {
+                                  const myRecords = await attendanceService.getRecords({ 
+                                    sessionId: s.id,
+                                    studentId 
+                                  });
+                                  const hasAttended = myRecords && myRecords.some(
+                                    (r) => r.studentId === studentId || r.studentCode === studentId
+                                  );
+                                  if (hasAttended) {
+                                    showToast(
+                                      `Bạn đã điểm danh ${s.subjectName || "môn này"} rồi!`,
+                                      "success"
+                                    );
+                                    setTimeout(() => {
+                                      router.back();
+                                    }, 1500);
+                                    return;
+                                  }
+                                }
+                              } catch (e) {}
+
                               setSessionInfo({
                                 id: s.id,
                                 classId: s.classId,
@@ -988,13 +1128,19 @@ style={[
             zIndex: 1000,
           }}
         >
-          <View style={Platform.OS === 'web' ? {
+          <View 
+            onLayout={(e) => {
+              const { width, height } = e.nativeEvent.layout;
+              setPreviewLayout({ width, height });
+            }}
+            style={Platform.OS === 'web' ? {
             width: '100%',
-            maxWidth: 800,
-            aspectRatio: 16 / 9,
-            borderRadius: 16,
+            maxWidth: 480,
+            aspectRatio: 3 / 4,
+            borderRadius: 24,
             overflow: 'hidden',
-            ...getWebShadow('xl'),
+            backgroundColor: '#000',
+            ...getWebShadow('2xl'),
           } : { flex: 1 }}>
           <CameraView ref={cameraRef} style={{ flex: 1 }} facing="front" />
           {/* Overlay UI - dùng absolute positioning thay vì children */}
@@ -1066,122 +1212,6 @@ style={[
                   elevation: !capturingFace && !faceVerified ? 10 : 0,
                 }}
               >
-                {/* Đang xác thực */}
-                {capturingFace && faceResult === "idle" && (
-                  <View
-                    style={{
-                      backgroundColor: "rgba(0,0,0,0.7)",
-                      borderRadius: 8,
-                      padding: 16,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: "#FFFFFF",
-                        fontSize: 14,
-                        marginBottom: 8,
-                        textAlign: "center",
-                      }}
-                    >
-                      Đang xác thực...
-                    </Text>
-                  </View>
-                )}
-
-                {/* Thành công */}
-                {!capturingFace && faceResult === "success" && (
-                  <View
-                    style={{
-                      backgroundColor: "rgba(16, 185, 129, 0.9)",
-                      borderRadius: 8,
-                      padding: 16,
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 40,
-                        textAlign: "center",
-                        marginBottom: 4,
-                      }}
-                    >
-                      ✅
-                    </Text>
-                    <Text
-                      style={{
-                        color: "#FFFFFF",
-                        marginTop: 4,
-                        fontSize: 14,
-                        fontWeight: "600",
-                        textAlign: "center",
-                      }}
-                    >
-                      Xác thực thành công
-                    </Text>
-                  </View>
-                )}
-
-                {/* Thất bại */}
-                {!capturingFace && faceResult === "error" && (
-                  <View
-                    style={{
-                      backgroundColor: "rgba(239, 68, 68, 0.9)",
-                      borderRadius: 8,
-                      padding: 16,
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 40,
-                        textAlign: "center",
-                        marginBottom: 4,
-                      }}
-                    >
-                      ✖
-                    </Text>
-                    <Text
-                      style={{
-                        color: "#FFFFFF",
-                        marginTop: 4,
-                        fontSize: 14,
-                        fontWeight: "600",
-                        textAlign: "center",
-                      }}
-                    >
-                      Xác thực thất bại. Vui lòng đưa mặt lại gần và rõ hơn.
-                    </Text>
-                  </View>
-                )}
-
-                {/* Nút chụp ảnh mặc định */}
-                {!capturingFace && faceResult === "idle" && (
-                  <TouchableOpacity
-                    onPress={handleCaptureFace}
-                    disabled={faceRetryCooldown > 0}
-                    style={{
-                      backgroundColor:
-                        faceRetryCooldown > 0
-                          ? "rgba(156, 163, 175, 0.9)"
-                          : "rgba(59, 130, 246, 0.9)",
-                      borderRadius: 8,
-                      padding: 16,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: "#FFFFFF",
-                        fontSize: 14,
-                        fontWeight: "600",
-                        textAlign: "center",
-                      }}
-                    >
-                      {faceRetryCooldown > 0
-                        ? `Vui lòng chờ ${faceRetryCooldown}s`
-                        : "Chụp ảnh để xác thực"}
-                    </Text>
-                  </TouchableOpacity>
-                )}
               </Animated.View>
 
               {/* Face Detection Box với mắt/miệng */}
@@ -1309,24 +1339,146 @@ style={[
                 </>
               )}
 
-              {/* Instructions */}
-              <View
-                style={{
-                  backgroundColor: "rgba(0,0,0,0.5)",
-                  borderRadius: 12,
-                  padding: 16,
-                }}
-              >
-                <Text
+              {/* Bottom Actions & Instructions */}
+              <View style={{ gap: 16, width: "100%", maxWidth: 400, alignSelf: "center" }}>
+                {/* Đang xác thực */}
+                {capturingFace && faceResult === "idle" && (
+                  <View
+                    style={{
+                      backgroundColor: "rgba(0,0,0,0.7)",
+                      borderRadius: 8,
+                      padding: 16,
+                    }}
+                  >
+                    <ActivityIndicator size="large" color="#FFFFFF" />
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        fontSize: 14,
+                        marginTop: 8,
+                        textAlign: "center",
+                      }}
+                    >
+                      Đang xác thực...
+                    </Text>
+                  </View>
+                )}
+
+                {/* Thành công */}
+                {!capturingFace && faceResult === "success" && (
+                  <View
+                    style={{
+                      backgroundColor: "rgba(16, 185, 129, 0.9)",
+                      borderRadius: 8,
+                      padding: 16,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 24,
+                        textAlign: "center",
+                        marginBottom: 4,
+                      }}
+                    >
+                      ✅
+                    </Text>
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        marginTop: 4,
+                        fontSize: 14,
+                        fontWeight: "600",
+                        textAlign: "center",
+                      }}
+                    >
+                      Xác thực thành công
+                    </Text>
+                  </View>
+                )}
+
+                {/* Thất bại */}
+                {!capturingFace && faceResult === "error" && (
+                  <View
+                    style={{
+                      backgroundColor: "rgba(239, 68, 68, 0.9)",
+                      borderRadius: 8,
+                      padding: 16,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 24,
+                        textAlign: "center",
+                        marginBottom: 4,
+                      }}
+                    >
+                      ✖
+                    </Text>
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        marginTop: 4,
+                        fontSize: 14,
+                        fontWeight: "600",
+                        textAlign: "center",
+                      }}
+                    >
+                      Xác thực thất bại. Vui lòng đưa mặt lại gần và rõ hơn.
+                    </Text>
+                  </View>
+                )}
+
+                {/* Nút chụp ảnh mặc định */}
+                {!capturingFace && faceResult === "idle" && (
+                  <TouchableOpacity
+                    onPress={handleCaptureFace}
+                    disabled={faceRetryCooldown > 0}
+                    style={{
+                      backgroundColor:
+                        faceRetryCooldown > 0
+                          ? "rgba(156, 163, 175, 0.9)"
+                          : "rgba(59, 130, 246, 0.9)",
+                      borderRadius: 8,
+                      padding: 16,
+                      ...getWebCursor(),
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        fontSize: 14,
+                        fontWeight: "600",
+                        textAlign: "center",
+                      }}
+                    >
+                      {faceRetryCooldown > 0
+                        ? `Vui lòng chờ ${faceRetryCooldown}s`
+                        : "Chụp ảnh để xác thực"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Instructions */}
+                <View
                   style={{
-                    color: "#FFFFFF",
-                    fontSize: 14,
-                    lineHeight: 20,
-                    textAlign: "center",
+                    backgroundColor: "rgba(0,0,0,0.5)",
+                    borderRadius: 12,
+                    padding: 16,
                   }}
                 >
-                  📸 Đưa khuôn mặt vào khung, đảm bảo ánh sáng đủ và nhấn nút để chụp ảnh xác thực Face ID. Đảm bảo khuôn mặt rõ, không che mắt và nằm trong khung.
-                </Text>
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: 14,
+                      lineHeight: 20,
+                      textAlign: "center",
+                    }}
+                  >
+                    📸 Đưa khuôn mặt vào khung, đảm bảo ánh sáng đủ và nhấn nút để chụp ảnh xác thực Face ID. Đảm bảo khuôn mặt rõ, không che mắt và nằm trong khung.
+                  </Text>
+                </View>
               </View>
           </View>
           </View>
