@@ -58,10 +58,13 @@ export interface AttendanceSessionRequest {
   courseId?: string;
   classId?: string;
   subjectId: string;
+  lecturerId?: string;  // backend primary teacher field
   teacherId: string;
   method: AttendanceMethod;
-  // Thời gian bắt đầu theo lịch học (HH:mm), optional
   scheduledStartTime?: string;
+  duration?: number;
+  attendedAt?: string;
+  expiredAt?: string;
 }
 
 /**

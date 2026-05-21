@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 import WeeklyCalendar from "@/components/WeeklyCalendar";
+import WeeklySchedule from "@/components/WeeklySchedule";
 import { MonthCalendar, isoToDate } from "@/components/MonthCalendar";
 import { useRouter } from "expo-router";
 import { scheduleService } from "@/apis";
@@ -33,6 +34,25 @@ function toIsoDate(d: Date) {
 const DAY_LABELS: Record<number, string> = { 2: "Thứ Hai", 3: "Thứ Ba", 4: "Thứ Tư", 5: "Thứ Năm", 6: "Thứ Sáu", 7: "Thứ Bảy", 8: "Chủ Nhật" };
 const WEEKDAYS = ["Chủ nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
 
+const isCurrentTimeInRange = (timeStr?: string) => {
+  if (!timeStr) return false;
+  const cleaned = timeStr.replace(/\s+/g, "");
+  const match = cleaned.match(/^(\d{2}:\d{2})[-–](\d{2}:\d{2})$/);
+  if (!match) return false;
+  const [_, start, end] = match;
+  
+  const today = new Date();
+  const currentMins = today.getHours() * 60 + today.getMinutes();
+  
+  const [startH, startM] = start.split(":").map(Number);
+  const [endH, endM] = end.split(":").map(Number);
+  
+  const startMins = startH * 60 + startM;
+  const endMins = endH * 60 + endM;
+  
+  return currentMins >= startMins && currentMins <= endMins;
+};
+
 export default function TeacherScheduleScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -41,6 +61,7 @@ export default function TeacherScheduleScreen() {
   const paddingHorizontal = isDesktop ? 24 : isMobile ? 16 : 20;
   const BLUE = "#3b82f6";
 
+  const [teacherId, setTeacherId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedView, setSelectedView] = useState<"all" | "class" | "exam">("all");
   const [timeFilter, setTimeFilter] = useState<"day" | "week" | "month">("day");
@@ -51,6 +72,11 @@ export default function TeacherScheduleScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<DayScheduleItem | null>(null);
   const PAGE_SIZE = 15;
+
+  // Load teacherId once on mount
+  useEffect(() => {
+    getTeacherIdFromToken().then((id) => setTeacherId(id));
+  }, []);
 
   const today = new Date();
   const isToday = selectedDate.toDateString() === today.toDateString();
@@ -222,27 +248,18 @@ export default function TeacherScheduleScreen() {
             </ScrollView>
           </View>
 
-          {/* RIGHT: Schedule list */}
+          {/* RIGHT: Weekly timetable grid (same as student) */}
           <View style={{ flex: 1, overflow: "hidden" }}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, paddingBottom: 40 }}>
-              {/* Desktop header */}
-              <View style={{ marginBottom: 20, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <View>
-                  <Text style={{ fontSize: 22, fontWeight: "800", color: Colors.textHeading }}>{dateStr}</Text>
-                  <Text style={{ fontSize: 13, color: Colors.textSecondary, marginTop: 2 }}>{daySchedules.length} buổi dạy</Text>
+              {/* Chỉ render khi có teacherId — tránh race condition fetch student data */}
+              {teacherId ? (
+                <WeeklySchedule targetDate={selectedDate} teacherId={teacherId} />
+              ) : (
+                <View style={{ alignItems: "center", paddingVertical: 60 }}>
+                  <ActivityIndicator size="large" color={Colors.primary} />
+                  <Text style={{ color: Colors.textSecondary, marginTop: 12 }}>Đang tải...</Text>
                 </View>
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                  {(["all","class","exam"] as const).map(v => (
-                    <TouchableOpacity key={v} onPress={() => setSelectedView(v)}
-                      style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: selectedView===v ? "#eff6ff" : "#fff", borderWidth: 1, borderColor: selectedView===v ? Colors.primary : Colors.border, ...getWebCursor() }}>
-                      <Text style={{ fontSize: 13, fontWeight: "700", color: selectedView===v ? Colors.primary : Colors.textSecondary }}>
-                        {v==="all"?"Tất cả":v==="class"?"Lịch học":"Lịch thi"}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-              {renderList()}
+              )}
             </ScrollView>
           </View>
         </View>
@@ -368,6 +385,61 @@ export default function TeacherScheduleScreen() {
                     </View>
                   ))}
                 </View>
+                {(() => {
+                  const isScheduleToday = selectedSchedule && (selectedSchedule.date ? selectedSchedule.date === toIsoDate(new Date()) : isToday);
+                  const isScheduleCurrentTime = selectedSchedule ? isCurrentTimeInRange(selectedSchedule.time) : false;
+                  const showQuickNav = isScheduleToday && isScheduleCurrentTime;
+                  if (!showQuickNav) return null;
+                  return (
+                    <View style={{ marginTop: 20, borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 16 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "700", color: Colors.textSecondary, marginBottom: 10 }}>
+                        ⚡ Ca dạy đang diễn ra, chuyển nhanh đến:
+                      </Text>
+                      <View style={{ flexDirection: "row", gap: 10 }}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setModalVisible(false);
+                            router.push("/teacher/generate-qr");
+                          }}
+                          style={{
+                            flex: 1,
+                            backgroundColor: Colors.primary,
+                            paddingVertical: 10,
+                            borderRadius: 10,
+                            alignItems: "center",
+                            flexDirection: "row",
+                            justifyContent: "center",
+                            gap: 6,
+                            ...getWebCursor(),
+                          }}
+                        >
+                          <Ionicons name="qr-code-outline" size={16} color="#fff" />
+                          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>Điểm danh QR</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setModalVisible(false);
+                            router.push("/teacher/generate-otp");
+                          }}
+                          style={{
+                            flex: 1,
+                            backgroundColor: "#10B981",
+                            paddingVertical: 10,
+                            borderRadius: 10,
+                            alignItems: "center",
+                            flexDirection: "row",
+                            justifyContent: "center",
+                            gap: 6,
+                            ...getWebCursor(),
+                          }}
+                        >
+                          <Ionicons name="keypad-outline" size={16} color="#fff" />
+                          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 13 }}>Điểm danh OTP</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })()}
               </>
             )}
           </TouchableOpacity>

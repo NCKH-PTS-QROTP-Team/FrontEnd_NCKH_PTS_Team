@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -11,168 +11,166 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { useRouter } from "expo-router";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { QRViewer } from "@/components/QRViewer";
 import { qrService, attendanceService, scheduleService } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import { useToast } from "@/components/ToastProvider";
-import { QRStatus } from "@/apis/types/qr.types";
-import {
-  AttendanceMethod,
-  type AttendanceSessionResponse,
-} from "@/apis/types/attendance.types";
-import { Colors } from "@/constants/colors";
+import { AttendanceMethod } from "@/apis/types/attendance.types";
 import type { Schedule } from "@/apis/services/schedule.service";
-import { CalendarIcon, LocationIcon } from "@/components/Icons";
-import MobileGradientHeader from "@/components/MobileGradientHeader";
+import {
+  CalendarIconFilled,
+  LocationIconFilled,
+  LockIconFilled,
+  QrCodeIconFilled,
+} from "@/components/Icons";
+import { BottomNavigationSpacer } from "@/components/BottomNavigation";
+
+interface SessionInfo {
+  id: string;
+  courseId: string;
+  courseName: string;
+  subjectId: string;
+  subjectName: string;
+  classCode?: string;
+  className?: string;
+  duration?: number;
+  present?: number;
+  late?: number;
+  absent?: number;
+  total?: number;
+}
+
+interface ScheduleAvailability {
+  canCreate: boolean;
+  statusText: string;
+  statusColor: string;
+  statusBg: string;
+  dotColor: string;
+}
+
+const toLocalISOString = (date: Date) => {
+  const pad = (num: number) => String(num).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
 
 export default function GenerateQRScreen() {
-  const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
-  const isMobile = width < 768;
-  const { showToast, toast, hideToast } = useToast();
+  const { showToast } = useToast();
 
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [sessions, setSessions] = useState<AttendanceSessionResponse[]>([]);
-  const [selectedSession, setSelectedSession] =
-    useState<AttendanceSessionResponse | null>(null);
+
+  // Custom Settings
+  const [durationMinutes, setDurationMinutes] = useState<string>("15");
+  const [qrInterval, setQrInterval] = useState<string>("10");
+  const [customHour, setCustomHour] = useState<string>("");
+  const [customMinute, setCustomMinute] = useState<string>("");
+
+  // Session & QR state
+  const [selectedSession, setSelectedSession] = useState<SessionInfo | null>(
+    null,
+  );
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(
+    null,
+  );
   const [currentQR, setCurrentQR] = useState<any>(null);
-  const [qrHistory, setQrHistory] = useState<any[]>([]);
-  const [expirySeconds, setExpirySeconds] = useState<string>("10");
   const [loadingQR, setLoadingQR] = useState(false);
   const [todaySchedules, setTodaySchedules] = useState<Schedule[]>([]);
-  const [timeLeft, setTimeLeft] = useState<string | null>(null);
+  // countdown only runs when isActive is true
+  const [countdown, setCountdown] = useState<number>(10);
+  const [isActive, setIsActive] = useState(false);
 
   const contentMaxWidth = isDesktop ? 1280 : "100%";
-  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 12;
+  const paddingHorizontal = isDesktop ? 32 : isTablet ? 24 : 16;
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const getMinutesFromHHmm = (time?: string) => {
-    if (!time || !time.includes(":")) return null;
-    const [h, m] = time.split(":");
-    const hour = Number(h);
-    const minute = Number(m);
-    if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
-    return hour * 60 + minute;
-  };
-
-  const getScheduleAvailability = (schedule: Schedule) => {
-    const now = new Date();
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    const startMinutes = getMinutesFromHHmm(schedule.startTime);
-    const endMinutes = getMinutesFromHHmm(schedule.endTime);
-
-    if (startMinutes === null || endMinutes === null) {
-      return {
-        canCreate: false,
-        statusText: "Không đủ dữ liệu thời gian",
-        statusColor: "#92400E",
-        statusBg: "#FEF3C7",
-      };
-    }
-
-    if (nowMinutes < startMinutes) {
-      return {
-        canCreate: false,
-        statusText: "Chưa đến giờ học - chưa thể tạo phiên",
-        statusColor: "#92400E",
-        statusBg: "#FEF3C7",
-      };
-    }
-
-    if (nowMinutes > endMinutes) {
-      return {
-        canCreate: false,
-        statusText: "Đã qua giờ học - không thể tạo phiên",
-        statusColor: "#7F1D1D",
-        statusBg: "#FEE2E2",
-      };
-    }
-
-    return {
-      canCreate: true,
-      statusText: "Đang trong giờ học - có thể tạo phiên",
-      statusColor: "#166534",
-      statusBg: "#DCFCE7",
-    };
-  };
-
-  const isSelectedSessionValid = (() => {
-    if (!selectedSession) return false;
-
-    return todaySchedules.some((schedule) => {
-      const availability = getScheduleAvailability(schedule);
-      if (!availability.canCreate) return false;
-
-      const sameClass =
-        !!selectedSession.classId &&
-        selectedSession.classId === schedule.classId;
-      const sameSubject = selectedSession.subjectId === schedule.subjectId;
-      return sameClass || sameSubject;
-    });
-  })();
+  const hasSchedules = todaySchedules.length > 0;
+  const hasActiveSchedule =
+    selectedSchedule !== null &&
+    getScheduleAvailability(selectedSchedule).canCreate;
+  // Inputs are locked when: session is running OR no schedules at all
+  const inputsLocked = isActive || !hasSchedules;
+  // Start button disabled when: no schedule, no active schedule slot, or already running
+  const startDisabled = !hasSchedules || !hasActiveSchedule || isActive;
 
   useEffect(() => {
-    loadSessions();
-    loadTodaySchedules();
+    const now = new Date();
+    setCustomHour(String(now.getHours()).padStart(2, "0"));
+    setCustomMinute(String(now.getMinutes()).padStart(2, "0"));
   }, []);
 
   useEffect(() => {
-    if (selectedSession) {
-      loadCurrentQR();
-      loadQRHistory();
-    }
-  }, [selectedSession]);
+    loadData();
+  }, []);
 
-  // Đếm ngược thời gian còn lại của QR hiện tại theo thời gian thực
-  useEffect(() => {
-    if (!currentQR || !currentQR.expiresAt) {
-      setTimeLeft(null);
-      return;
-    }
-
-    const updateTime = () => {
-      const now = new Date();
-      const expiry = new Date(currentQR.expiresAt);
-      const diff = expiry.getTime() - now.getTime();
-
-      if (diff <= 0 || currentQR.status !== QRStatus.ACTIVE) {
-        setTimeLeft("Đã hết hạn");
-        return;
-      }
-
-      const minutes = Math.floor(diff / 60000);
-      const seconds = Math.floor((diff % 60000) / 1000);
-      setTimeLeft(`${minutes}:${seconds.toString().padStart(2, "0")}`);
-    };
-
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-
-    return () => clearInterval(interval);
-  }, [currentQR]);
-
-  const loadSessions = async () => {
+  const loadData = async () => {
     try {
-      setLoading(true);
-      const teacherId = await getTeacherIdFromToken();
-      const allSessions = await attendanceService.getSessions({
-        teacherId: teacherId ?? undefined,
-        active: true,
-      });
-      // Filter sessions by teacher & phương thức QR (nếu cần)
-      const mySessions = allSessions.filter((s) => s.status === "ACTIVE");
-      setSessions(mySessions);
-    } catch (error: any) {
-      console.error("Error loading sessions:", error);
-      showToast("Không thể tải danh sách phiên điểm danh", "error");
+      setInitialLoading(true);
+      await Promise.all([loadTodaySchedules(), loadActiveSession()]);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
+
+  function getScheduleAvailability(schedule: Schedule): ScheduleAvailability {
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+
+    if (!schedule.startTime || !schedule.endTime) {
+      return {
+        canCreate: false,
+        statusText: "Thiếu dữ liệu thời gian",
+        statusColor: "#78716C",
+        statusBg: "#F5F5F4",
+        dotColor: "#78716C",
+      };
+    }
+
+    const [startH, startM] = schedule.startTime.split(":").map(Number);
+    const [endH, endM] = schedule.endTime.split(":").map(Number);
+    if (isNaN(startH) || isNaN(startM) || isNaN(endH) || isNaN(endM)) {
+      return {
+        canCreate: false,
+        statusText: "Thiếu dữ liệu thời gian",
+        statusColor: "#78716C",
+        statusBg: "#F5F5F4",
+        dotColor: "#78716C",
+      };
+    }
+
+    const startMins = startH * 60 + startM;
+    const endMins = endH * 60 + endM;
+
+    if (nowMins < startMins) {
+      return {
+        canCreate: false,
+        statusText: `Bắt đầu lúc ${schedule.startTime}`,
+        statusColor: "#B45309",
+        statusBg: "#FEF3C7",
+        dotColor: "#F59E0B",
+      };
+    }
+    if (nowMins > endMins) {
+      return {
+        canCreate: false,
+        statusText: "Đã kết thúc",
+        statusColor: "#991B1B",
+        statusBg: "#FEE2E2",
+        dotColor: "#EF4444",
+      };
+    }
+    return {
+      canCreate: true,
+      statusText: "Đang diễn ra",
+      statusColor: "#14532D",
+      statusBg: "#DCFCE7",
+      dotColor: "#16A34A",
+    };
+  }
 
   const loadTodaySchedules = async () => {
     try {
@@ -180,227 +178,289 @@ export default function GenerateQRScreen() {
       if (!teacherId) return;
 
       const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, "0");
-      const dd = String(today.getDate()).padStart(2, "0");
-      const dateStr = `${yyyy}-${mm}-${dd}`;
+      const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
       const schedules = await scheduleService.getSchedules({
         teacherId,
         fromDate: dateStr,
         toDate: dateStr,
+        scheduleType: "CLASS",
       });
-      setTodaySchedules(schedules);
+
+      const sorted = [...schedules].sort((a, b) =>
+        a.startTime.localeCompare(b.startTime),
+      );
+      setTodaySchedules(sorted);
+
+      // Auto-select if no schedule selected yet
+      const active = sorted.find((s) => getScheduleAvailability(s).canCreate);
+      if (active) setSelectedSchedule(active);
     } catch (error) {
-      console.warn("Không tải được lịch dạy hôm nay (QR):", error);
+      console.warn("Không tải được lịch dạy hôm nay:", error);
     }
   };
 
-  const loadCurrentQR = async () => {
-    if (!selectedSession) return;
+  const loadActiveSession = async () => {
     try {
-      setLoadingQR(true);
-      const qr = await qrService.getCurrentQR(selectedSession.id);
-      setCurrentQR(qr);
-    } catch (error: any) {
-      // Không có QR code ACTIVE
-      setCurrentQR(null);
-    } finally {
-      setLoadingQR(false);
+      const teacherId = await getTeacherIdFromToken();
+      if (!teacherId) return;
+
+      const sessions = await attendanceService.getSessions({
+        teacherId,
+        active: true,
+      });
+      const qrSession = sessions.find((s) => {
+        if (s.method !== AttendanceMethod.QR || s.status !== "ACTIVE") return false;
+        if (s.expiredAt) {
+          const expTime = new Date(s.expiredAt).getTime();
+          if (expTime <= Date.now()) return false;
+        }
+        return true;
+      });
+
+      if (qrSession) {
+        const sess: SessionInfo = {
+          id: qrSession.id,
+          courseId: qrSession.courseId || qrSession.classId || "",
+          courseName: qrSession.courseName || qrSession.className || "",
+          subjectId: qrSession.subjectId,
+          subjectName: qrSession.subjectName,
+          classCode: qrSession.classCode || "",
+          className: qrSession.className || "",
+          duration: (qrSession as any).duration,
+          present: qrSession.present,
+          late: qrSession.late,
+          absent: qrSession.absent,
+          total: qrSession.total,
+        };
+        setSelectedSession(sess);
+
+        const interval = (qrSession as any).duration;
+        if (interval) setQrInterval(String(interval));
+
+        // Only activate if we can successfully get/generate the QR
+        try {
+          const qr = await qrService.getCurrentQR(qrSession.id);
+          if (qr) {
+            setCurrentQR(qr);
+            const diff = new Date(qr.expiresAt).getTime() - Date.now();
+            setCountdown(Math.max(1, Math.floor(diff / 1000)));
+            setIsActive(true); // ← start timer only here
+          }
+        } catch (_) {
+          // Try generating a fresh QR
+          try {
+            const teacherIdLocal = await getTeacherIdFromToken();
+            const qr = await qrService.generateQR({
+              sessionId: qrSession.id,
+              teacherId: teacherIdLocal ?? undefined,
+              expirySeconds: interval || 10,
+            });
+            setCurrentQR(qr);
+            setCountdown(interval || 10);
+            setIsActive(true);
+          } catch (__) {
+            // Cannot get QR — don't start countdown
+          }
+        }
+      }
+      // If no qrSession, isActive remains false → no countdown
+    } catch (error) {
+      console.error("Lỗi khi tải phiên điểm danh:", error);
     }
   };
 
-  const loadQRHistory = async () => {
-    if (!selectedSession) return;
+  // Auto-countdown loop — only when isActive && selectedSession exist
+  useEffect(() => {
+    if (!isActive || !selectedSession) return; // Guard
+
+    timerRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          handleGenerateNewQR(selectedSession.id);
+          return Number(qrInterval) || 10;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isActive, selectedSession?.id, qrInterval]);
+
+  const handleGenerateNewQR = async (sessionId: string) => {
     try {
-      const history = await qrService.getQRCodesBySession(selectedSession.id);
-      setQrHistory(history);
-    } catch (error: any) {
-      console.error("Error loading QR history:", error);
-    }
-  };
-
-  const handleGenerateQR = async () => {
-    if (!selectedSession) {
-      showToast("Vui lòng chọn phiên điểm danh", "error");
-      return;
-    }
-
-    const seconds = parseInt(expirySeconds);
-    if (isNaN(seconds) || seconds < 10 || seconds > 300) {
-      showToast("Thời hạn phải từ 10 giây đến 5 phút", "error");
-      return;
-    }
-
-    try {
-      setLoadingQR(true);
       const teacherId = await getTeacherIdFromToken();
       const qr = await qrService.generateQR({
-        sessionId: selectedSession.id,
+        sessionId,
         teacherId: teacherId ?? undefined,
-        expirySeconds: seconds,
+        expirySeconds: Number(qrInterval) || 10,
       });
       setCurrentQR(qr);
-      await loadQRHistory();
-      showToast("Tạo QR code thành công", "success");
-    } catch (error: any) {
-      console.error("Error generating QR:", error);
-      showToast(
-        error.response?.data?.message || "Không thể tạo QR code",
-        "error",
-      );
-    } finally {
-      setLoadingQR(false);
+      setCountdown(Number(qrInterval) || 10);
+    } catch (error) {
+      console.error("Lỗi khi tạo mã QR mới:", error);
     }
   };
 
-  const handleCreateSessionFromSchedule = async (schedule: Schedule) => {
-    const availability = getScheduleAvailability(schedule);
-    if (!availability.canCreate) {
-      showToast(availability.statusText, "warning");
+  const handleStartQR = async () => {
+    if (!selectedSchedule) {
+      showToast("Vui lòng chọn lịch dạy để tạo phiên điểm danh.", "error");
+      return;
+    }
+    const avail = getScheduleAvailability(selectedSchedule);
+    if (!avail.canCreate) {
+      showToast(`Không thể tạo phiên: ${avail.statusText}`, "error");
       return;
     }
 
+    const intervalVal = parseInt(qrInterval);
+    if (isNaN(intervalVal) || intervalVal < 5) {
+      showToast("Chu kỳ QR tối thiểu là 5 giây.", "error");
+      return;
+    }
+    const durationVal = parseInt(durationMinutes);
+    if (isNaN(durationVal) || durationVal <= 0) {
+      showToast("Thời gian điểm danh không hợp lệ.", "error");
+      return;
+    }
+
+    setLoadingQR(true);
     try {
       const teacherId = await getTeacherIdFromToken();
       if (!teacherId) {
-        showToast("Không tìm thấy thông tin giảng viên", "error");
+        showToast("Không tìm thấy thông tin giảng viên.", "error");
         return;
       }
 
+      // Chỉ kiểm tra phiên đang active của chính giảng viên này
+      // — tránh false positive do session cũ COMPLETED hoặc của giáo viên khác
       const existing = await attendanceService.getSessions({
-        classId: schedule.classId,
+        courseId: selectedSchedule.courseId || selectedSchedule.classId,
+        teacherId,
+        active: true,
       });
-
-      const qrSession = existing.find(
-        (s) => s.method === "QR" && s.status === "ACTIVE",
-      );
-      const anyActive = existing.find((s) => s.status === "ACTIVE");
-
-      let session = qrSession;
-
-      if (!qrSession) {
-        // Nếu đã có phiên điểm danh ACTIVE (OTP hoặc loại khác) thì không tạo thêm
-        if (anyActive) {
-          showToast(
-            "Lớp này đang có phiên điểm danh đang hoạt động. Vui lòng kết thúc phiên đó trước khi tạo QR mới.",
-            "error",
-          );
-          return;
+      const realActive = existing.filter((s) => {
+        const isCurrentTeacher = s.teacherId === teacherId || s.lecturerId === teacherId;
+        if (!isCurrentTeacher) return false;
+        if (s.expiredAt) {
+          const expTime = new Date(s.expiredAt).getTime();
+          if (expTime <= Date.now()) return false;
         }
-
-        session = await attendanceService.createSession({
-          classId: schedule.classId,
-          subjectId: schedule.subjectId,
-          teacherId,
-          method: AttendanceMethod.QR,
-          // Không gửi scheduledStartTime để tránh lỗi parse thời gian
-        });
+        return s.status === "ACTIVE";
+      });
+      if (realActive.length > 0) {
+        showToast("Học phần này đang có phiên điểm danh hoạt động.", "error");
+        setLoadingQR(false);
+        return;
       }
 
-      if (!session) return;
-
-      setSelectedSession(session);
-      setCurrentQR(null);
-      setQrHistory([]);
-      showToast(
-        "Đã chọn môn từ lịch dạy. Bạn có thể tạo QR Code cho phiên này.",
-        "success",
+      const attendedAtDate = new Date();
+      const h = parseInt(customHour),
+        m = parseInt(customMinute);
+      if (!isNaN(h) && !isNaN(m)) attendedAtDate.setHours(h, m, 0, 0);
+      const expiredAtDate = new Date(
+        attendedAtDate.getTime() + durationVal * 60 * 1000,
       );
+
+      const newSession = await attendanceService.createSession({
+        // Backend cần courseId (Course.id từ schedule.courseId), không phải classId
+        courseId: selectedSchedule.courseId || selectedSchedule.classId,
+        subjectId: selectedSchedule.subjectId,
+        lecturerId: teacherId,   // backend dùng lecturerId để validate
+        teacherId,
+        method: AttendanceMethod.QR,
+        duration: intervalVal,
+        attendedAt: attendedAtDate.toISOString(),
+        expiredAt: expiredAtDate.toISOString(),
+        scheduledStartTime: selectedSchedule.startTime,
+      });
+
+      const sess: SessionInfo = {
+        id: newSession.id,
+        courseId: selectedSchedule.classId,
+        courseName: selectedSchedule.className,
+        subjectId: selectedSchedule.subjectId,
+        subjectName: selectedSchedule.subjectName,
+        classCode: selectedSchedule.classCode,
+        className: selectedSchedule.className,
+        duration: intervalVal,
+        present: newSession.present || 0,
+        late: newSession.late || 0,
+        absent: newSession.absent || 0,
+        total: newSession.total || 0,
+      };
+
+      setSelectedSession(sess);
+
+      const qr = await qrService.generateQR({
+        sessionId: newSession.id,
+        teacherId: teacherId ?? undefined,
+        expirySeconds: intervalVal,
+      });
+      setCurrentQR(qr);
+      setCountdown(intervalVal);
+      setIsActive(true); // ← start timer only after successful creation
+      showToast("Khởi tạo cổng điểm danh QR thành công!", "success");
     } catch (error: any) {
-      console.error("Error creating QR session from schedule:", error);
       showToast(
-        error.message || "Không thể tạo phiên điểm danh từ lịch dạy.",
+        error?.message || "Không thể tạo phiên QR.",
         "error",
       );
+    } finally {
+      setLoadingQR(false);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const handleStopQR = async () => {
+    if (!selectedSession) return;
+    setLoading(true);
+    try {
+      await attendanceService.completeSession(selectedSession.id);
+      setIsActive(false); // ← stop countdown immediately
+      if (timerRef.current) clearInterval(timerRef.current);
+      setSelectedSession(null);
+      setCurrentQR(null);
+      setCountdown(Number(qrInterval) || 10);
+      showToast("Đã kết thúc phiên điểm danh.", "success");
+    } catch (_) {
+      showToast("Không thể kết thúc phiên điểm danh.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const getTimeRemaining = (expiresAt: string) => {
-    const now = new Date();
-    const expiry = new Date(expiresAt);
-    const diff = expiry.getTime() - now.getTime();
-    if (diff <= 0) return "Đã hết hạn";
-    const minutes = Math.floor(diff / 60000);
-    const seconds = Math.floor((diff % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
   };
+
+  const progressPercent = isActive
+    ? Math.max(0, Math.min(100, (countdown / (Number(qrInterval) || 10)) * 100))
+    : 0;
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#F1F5F9" }}
+      style={{ flex: 1, backgroundColor: "#F8FAFC" }}
       edges={["top"]}
     >
-      <StatusBar style={isMobile ? "light" : "dark"} />
-
-      {isMobile ? (
-        <MobileGradientHeader
-          title="Tạo mã QR"
-          subtitle={`${sessions.length} phiên đang hoạt động`}
-          icon="qr-code"
-          actions={[
-            {
-              icon: "arrow-back",
-              onPress: () => {
-                if ((router as any).canGoBack?.()) {
-                  router.back();
-                  return;
-                }
-                router.push("/teacher/dashboard");
-              },
-              accessibilityLabel: "Quay lại trang trước",
-            },
-            {
-              icon: "notifications",
-              onPress: () => router.push("/teacher/notifications"),
-              accessibilityLabel: "Mở thông báo",
-            },
-            {
-              icon: "person",
-              onPress: () => router.push("/teacher/profile"),
-              accessibilityLabel: "Mở hồ sơ",
-            },
-          ]}
-          style={{ marginHorizontal: 0, marginTop: 0, marginBottom: 12 }}
-        />
-      ) : null}
+      <StatusBar style="dark" />
 
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal,
-          paddingTop: isMobile ? 0 : 14,
-          paddingBottom: isMobile ? 110 : 28,
+          paddingVertical: isDesktop ? 32 : 20,
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          isMobile ? (
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={async () => {
-                setRefreshing(true);
-                await loadSessions();
-                await loadTodaySchedules();
-                if (selectedSession) {
-                  await loadCurrentQR();
-                  await loadQRHistory();
-                }
-                setRefreshing(false);
-              }}
-              colors={["#1E3A8A"]}
-              tintColor="#1E3A8A"
-            />
-          ) : undefined
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={["#3B82F6"]}
+            tintColor="#3B82F6"
+          />
         }
       >
         <View
@@ -410,590 +470,416 @@ export default function GenerateQRScreen() {
             alignSelf: "center",
           }}
         >
-          {/* Lịch dạy hôm nay */}
-          <View
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: 16,
-              padding: 16,
-              marginBottom: 14,
-              borderWidth: 1,
-              borderColor: "#E5ECF6",
-            }}
-          >
+          {/* Header */}
+          <View style={{ marginBottom: 24 }}>
             <Text
               style={{
-                fontSize: 16,
+                fontSize: 26,
                 fontWeight: "800",
                 color: "#0F172A",
-                marginBottom: 4,
+                letterSpacing: 0.2,
               }}
             >
-              Lịch dạy hôm nay
+              Điểm Danh QR Code Động
             </Text>
-            <Text style={{ fontSize: 12, color: "#64748B", marginBottom: 12 }}>
-              Chỉ có thể tạo phiên điểm danh khi đang trong khung giờ của lịch
-              học.
+            <Text style={{ fontSize: 14, color: "#64748B", marginTop: 4 }}>
+              Mã QR biến đổi liên tục theo chu kỳ để đảm bảo bảo mật tối đa.
             </Text>
-
-            {todaySchedules.length === 0 ? (
-              <View
-                style={{
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: "#DBEAFE",
-                  backgroundColor: "#F8FAFF",
-                  padding: 12,
-                }}
-              >
-                <Text style={{ fontSize: 13, color: "#475569" }}>
-                  Hôm nay không có lịch dạy để khởi tạo phiên điểm danh.
-                </Text>
-              </View>
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={{ flexDirection: "row", gap: 12 }}>
-                  {todaySchedules.map((item) => {
-                    const availability = getScheduleAvailability(item);
-                    const isSelected =
-                      selectedSession?.classId === item.classId ||
-                      selectedSession?.subjectId === item.subjectId;
-                    return (
-                      <TouchableOpacity
-                        key={item.id}
-                        disabled={!availability.canCreate}
-                        onPress={() => handleCreateSessionFromSchedule(item)}
-                        style={{
-                          padding: 12,
-                          borderRadius: 12,
-                          borderWidth: 1,
-                          borderColor: isSelected
-                            ? "#1E3A8A"
-                            : availability.canCreate
-                              ? "#DCE7FB"
-                              : "#E5E7EB",
-                          backgroundColor: availability.canCreate
-                            ? isSelected
-                              ? "#DBEAFE"
-                              : "#F8FAFF"
-                            : "#F8FAFC",
-                          minWidth: 240,
-                          opacity: availability.canCreate ? 1 : 0.92,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            fontWeight: "600",
-                            color: Colors.textHeading,
-                            marginBottom: 4,
-                          }}
-                        >
-                          {item.subjectName}
-                        </Text>
-                        <Text
-                          style={{ fontSize: 12, color: Colors.textSecondary }}
-                        >
-                          {item.className}
-                        </Text>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            marginTop: 8,
-                          }}
-                        >
-                          <CalendarIcon
-                            size={14}
-                            color={Colors.textSecondary}
-                          />
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              color: Colors.textSecondary,
-                              marginLeft: 6,
-                            }}
-                          >
-                            {item.startTime} - {item.endTime}
-                          </Text>
-                        </View>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            marginTop: 4,
-                          }}
-                        >
-                          <LocationIcon
-                            size={14}
-                            color={Colors.textSecondary}
-                          />
-                          <Text
-                            style={{
-                              fontSize: 12,
-                              color: Colors.textSecondary,
-                              marginLeft: 6,
-                            }}
-                          >
-                            Phòng {item.room}
-                          </Text>
-                        </View>
-
-                        <View
-                          style={{
-                            marginTop: 10,
-                            alignSelf: "flex-start",
-                            backgroundColor: availability.statusBg,
-                            borderRadius: 8,
-                            paddingHorizontal: 10,
-                            paddingVertical: 5,
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 11,
-                              color: availability.statusColor,
-                              fontWeight: "700",
-                            }}
-                          >
-                            {availability.statusText}
-                          </Text>
-                        </View>
-
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            color: availability.canCreate
-                              ? Colors.primary
-                              : "#94A3B8",
-                            fontWeight: "600",
-                            marginTop: 8,
-                          }}
-                        >
-                          {availability.canCreate
-                            ? isSelected
-                              ? "Đã chọn phiên điểm danh"
-                              : "Chọn để tạo phiên QR"
-                            : "Không thể tạo điểm danh"}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </ScrollView>
-            )}
           </View>
 
-          {selectedSession && (
-            <>
-              {!isSelectedSessionValid ? (
+          {initialLoading ? (
+            <View style={{ alignItems: "center", paddingVertical: 60 }}>
+              <ActivityIndicator size="large" color="#3B82F6" />
+              <Text style={{ color: "#64748B", marginTop: 12 }}>
+                Đang tải lịch dạy...
+              </Text>
+            </View>
+          ) : (
+            <View
+              style={{
+                flexDirection: isDesktop ? "row" : "column",
+                gap: 20,
+                alignItems: isDesktop ? "flex-start" : "stretch",
+                width: "100%",
+              }}
+            >
+              {/* LEFT COLUMN */}
+              <View
+                style={{
+                  flex: isDesktop ? 1.2 : undefined,
+                  width: isDesktop ? undefined : "100%",
+                  gap: 16,
+                }}
+              >
+                {/* Schedule List Card */}
                 <View
                   style={{
-                    backgroundColor: "#FFF7ED",
-                    borderColor: "#FDBA74",
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 16,
+                    padding: 20,
                     borderWidth: 1,
-                    borderRadius: 12,
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    marginBottom: 12,
+                    borderColor: "#E2E8F0",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.04,
+                    shadowRadius: 8,
+                    elevation: 2,
                   }}
                 >
                   <Text
                     style={{
-                      color: "#9A3412",
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: "700",
+                      color: "#64748B",
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
+                      marginBottom: 14,
                     }}
                   >
-                    Phiên hiện tại chưa hợp lệ để thao tác. Vui lòng chọn lịch
-                    dạy đang trong giờ để bật các nút tạo/kết thúc điểm danh.
+                    Lịch dạy hôm nay — {new Date().toLocaleDateString("vi-VN")}
                   </Text>
-                </View>
-              ) : null}
 
-              {/* Course Info */}
-              <View
-                style={{
-                  flexDirection: isDesktop ? "row" : "column",
-                  gap: isDesktop ? 24 : 0,
-                  marginBottom: 14,
-                }}
-              >
+                  {/* No schedule banner */}
+                  {!hasSchedules && (
+                    <View
+                      style={{
+                        backgroundColor: "#FFF7ED",
+                        borderRadius: 10,
+                        padding: 16,
+                        flexDirection: "row",
+                        alignItems: "flex-start",
+                        gap: 12,
+                        borderWidth: 1,
+                        borderColor: "#FED7AA",
+                      }}
+                    >
+                      <CalendarIconFilled size={24} color="#C2410C" />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: "700",
+                            color: "#C2410C",
+                            marginBottom: 4,
+                          }}
+                        >
+                          Không có lịch dạy hôm nay
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: "#9A3412",
+                            lineHeight: 20,
+                          }}
+                        >
+                          Bạn không có ca dạy nào vào ngày{" "}
+                          {new Date().toLocaleDateString("vi-VN")}. Tính năng
+                          điểm danh bị khoá cho đến khi có lịch hợp lệ.
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Active session card shown when session is running (even with no schedule) */}
+                  {isActive && selectedSession && !hasSchedules && (
+                    <View
+                      style={{
+                        backgroundColor: "#EFF6FF",
+                        borderRadius: 10,
+                        padding: 14,
+                        flexDirection: "row",
+                        alignItems: "flex-start",
+                        gap: 12,
+                        borderWidth: 1,
+                        borderColor: "#BFDBFE",
+                        marginTop: 10,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: 5,
+                          backgroundColor: "#22C55E",
+                          marginTop: 4,
+                        }}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontWeight: "700",
+                            color: "#1D4ED8",
+                            marginBottom: 2,
+                          }}
+                        >
+                          Phiên QR đang hoạt động
+                        </Text>
+                        <Text style={{ fontSize: 12, color: "#3730A3" }}>
+                          {selectedSession.subjectName} —{" "}
+                          {selectedSession.className}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: "#6366F1",
+                            marginTop: 3,
+                          }}
+                        >
+                          Nhấn "Kết thúc" để đóng phiên này.
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Schedule Cards */}
+                  {todaySchedules.length > 0 && (
+                    <View style={{ gap: 10 }}>
+                      {todaySchedules.map((item) => {
+                        const avail = getScheduleAvailability(item);
+                        const isSelected = selectedSchedule?.id === item.id;
+
+                        return (
+                          <TouchableOpacity
+                            key={item.id}
+                            onPress={() =>
+                              !isActive && setSelectedSchedule(item)
+                            }
+                            activeOpacity={isActive ? 1 : 0.7}
+                            style={{
+                              borderRadius: 12,
+                              borderWidth: 2,
+                              borderColor: isSelected ? "#3B82F6" : "#E2E8F0",
+                              backgroundColor: isSelected
+                                ? "#EFF6FF"
+                                : "#FFFFFF",
+                              padding: 14,
+                              opacity:
+                                isActive &&
+                                selectedSession?.courseId !== item.classId
+                                  ? 0.5
+                                  : 1,
+                            }}
+                          >
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                alignItems: "flex-start",
+                                marginBottom: 8,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 15,
+                                  fontWeight: "700",
+                                  color: "#0F172A",
+                                  flex: 1,
+                                }}
+                                numberOfLines={2}
+                              >
+                                {item.subjectName}
+                              </Text>
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  backgroundColor: avail.statusBg,
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 3,
+                                  borderRadius: 20,
+                                  marginLeft: 8,
+                                }}
+                              >
+                                <View
+                                  style={{
+                                    width: 6,
+                                    height: 6,
+                                    borderRadius: 3,
+                                    backgroundColor: avail.dotColor,
+                                    marginRight: 5,
+                                  }}
+                                />
+                                <Text
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: "700",
+                                    color: avail.statusColor,
+                                  }}
+                                >
+                                  {avail.statusText}
+                                </Text>
+                              </View>
+                            </View>
+
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                color: "#64748B",
+                                marginBottom: 10,
+                              }}
+                            >
+                              {item.className} ({item.classCode})
+                            </Text>
+
+                            <View style={{ flexDirection: "row", gap: 16 }}>
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  gap: 5,
+                                }}
+                              >
+                                <CalendarIconFilled size={14} color="#3B82F6" />
+                                <Text
+                                  style={{ fontSize: 12, color: "#475569" }}
+                                >
+                                  {item.startTime} – {item.endTime}
+                                </Text>
+                              </View>
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  gap: 5,
+                                }}
+                              >
+                                <LocationIconFilled size={14} color="#3B82F6" />
+                                <Text
+                                  style={{ fontSize: 12, color: "#475569" }}
+                                >
+                                  Phòng {item.room}
+                                </Text>
+                              </View>
+                            </View>
+
+                            {isSelected && (
+                              <View
+                                style={{
+                                  marginTop: 8,
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  gap: 6,
+                                }}
+                              >
+                                <View
+                                  style={{
+                                    width: 7,
+                                    height: 7,
+                                    borderRadius: 4,
+                                    backgroundColor: "#3B82F6",
+                                  }}
+                                />
+                                <Text
+                                  style={{
+                                    fontSize: 12,
+                                    color: "#3B82F6",
+                                    fontWeight: "600",
+                                  }}
+                                >
+                                  Đã chọn để tạo phiên QR
+                                </Text>
+                              </View>
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+
+                {/* Config Card — always shown, locked when no schedule */}
                 <View
                   style={{
-                    flex: isDesktop ? 1 : undefined,
-                    marginBottom: isMobile ? 20 : 0,
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 16,
+                    padding: 20,
+                    borderWidth: 1,
+                    borderColor: "#E2E8F0",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.04,
+                    shadowRadius: 8,
+                    elevation: 2,
                   }}
                 >
                   <View
                     style={{
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: 16,
-                      borderWidth: 1,
-                      borderColor: "#E5ECF6",
-                      padding: 16,
-                      height: isDesktop ? "100%" : "auto",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: "500",
-                        color: "#6B7280",
-                        marginBottom: 8,
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Môn học
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 22,
-                        fontWeight: "800",
-                        color: "#0F172A",
-                        marginBottom: 14,
-                      }}
-                    >
-                      {selectedSession.subjectName}
-                    </Text>
-                    <View style={{ gap: 8 }}>
-                      <View
-                        style={{ flexDirection: "row", alignItems: "center" }}
-                      >
-                        <View
-                          style={{
-                            width: 4,
-                            height: 4,
-                            borderRadius: 2,
-                            backgroundColor: "#10B981",
-                            marginRight: 8,
-                          }}
-                        />
-                        <Text style={{ fontSize: 14, color: "#4B5563" }}>
-                          {selectedSession.className}
-                        </Text>
-                      </View>
-                      <View
-                        style={{ flexDirection: "row", alignItems: "center" }}
-                      >
-                        <View
-                          style={{
-                            width: 4,
-                            height: 4,
-                            borderRadius: 2,
-                            backgroundColor: "#10B981",
-                            marginRight: 8,
-                          }}
-                        />
-                        <Text style={{ fontSize: 14, color: "#4B5563" }}>
-                          Bắt đầu: {formatDate(selectedSession.startTime)}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Expiry Time Input */}
-                    <View style={{ marginTop: 24 }}>
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: "500",
-                          color: "#6B7280",
-                          marginBottom: 8,
-                        }}
-                      >
-                        Thời hạn QR code (giây)
-                      </Text>
-                      <TextInput
-                        value={expirySeconds}
-                        onChangeText={setExpirySeconds}
-                        keyboardType="numeric"
-                        style={{
-                          borderWidth: 1,
-                          borderColor: "#D7E3F7",
-                          borderRadius: 10,
-                          paddingHorizontal: 12,
-                          paddingVertical: 10,
-                          fontSize: 14,
-                          backgroundColor: "#F8FAFF",
-                        }}
-                        placeholder="10"
-                      />
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color: "#6B7280",
-                          marginTop: 4,
-                        }}
-                      >
-                        Từ 10 giây đến 5 phút (mặc định: 10 giây)
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* QR Code Display */}
-                <View style={{ flex: isDesktop ? 1 : undefined }}>
-                  {loadingQR ? (
-                    <View
-                      style={{
-                        backgroundColor: "#FFFFFF",
-                        borderRadius: 16,
-                        borderWidth: 1,
-                        borderColor: "#E5ECF6",
-                        padding: 40,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        minHeight: 400,
-                      }}
-                    >
-                      <ActivityIndicator size="large" color={Colors.primary} />
-                    </View>
-                  ) : currentQR ? (
-                    <View
-                      style={{
-                        backgroundColor: "#FFFFFF",
-                        borderRadius: 16,
-                        borderWidth: 1,
-                        borderColor: "#E5ECF6",
-                        padding: isDesktop ? 40 : 32,
-                        height: isDesktop ? "100%" : "auto",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: "500",
-                          color: "#6B7280",
-                          marginBottom: 24,
-                          textTransform: "uppercase",
-                          letterSpacing: 0.5,
-                        }}
-                      >
-                        QR Code điểm danh
-                      </Text>
-
-                      <QRViewer
-                        value={currentQR.token}
-                        size={isDesktop ? 340 : 280}
-                      />
-
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          color: "#6B7280",
-                          textAlign: "center",
-                          marginTop: 16,
-                          marginBottom: 16,
-                        }}
-                      >
-                        Sinh viên quét mã này để điểm danh. Mã có hiệu lực theo
-                        thời hạn bạn đã cài đặt (10 giây - 5 phút).
-                      </Text>
-
-                      <View
-                        style={{
-                          backgroundColor:
-                            currentQR.status === QRStatus.ACTIVE
-                              ? "#ECFDF5"
-                              : "#FEE2E2",
-                          borderRadius: 6,
-                          paddingHorizontal: 16,
-                          paddingVertical: 8,
-                          marginBottom: 8,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color:
-                              currentQR.status === QRStatus.ACTIVE
-                                ? "#047857"
-                                : "#991B1B",
-                            fontSize: 13,
-                            fontWeight: "600",
-                          }}
-                        >
-                          {currentQR.status === QRStatus.ACTIVE && timeLeft
-                            ? `Còn hạn: ${timeLeft}`
-                            : "Đã hết hạn"}
-                        </Text>
-                      </View>
-
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color: "#6B7280",
-                          textAlign: "center",
-                        }}
-                      >
-                        Hết hạn: {formatDate(currentQR.expiresAt)}
-                      </Text>
-                    </View>
-                  ) : (
-                    <View
-                      style={{
-                        backgroundColor: "#FFFFFF",
-                        borderRadius: 16,
-                        borderWidth: 1,
-                        borderColor: "#E5ECF6",
-                        padding: isDesktop ? 40 : 32,
-                        height: isDesktop ? "100%" : "auto",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 80,
-                          height: 80,
-                          backgroundColor: "#F3F4F6",
-                          borderRadius: 40,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          marginBottom: 20,
-                        }}
-                      >
-                        <Text style={{ fontSize: 40, color: "#9CA3AF" }}>
-                          □
-                        </Text>
-                      </View>
-                      <Text
-                        style={{
-                          fontSize: 20,
-                          fontWeight: "600",
-                          color: "#111827",
-                          marginBottom: 8,
-                        }}
-                      >
-                        Chưa có QR Code
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          color: "#6B7280",
-                          textAlign: "center",
-                        }}
-                      >
-                        Nhấn nút bên dưới để tạo mã mới
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-
-              {/* Actions: tạo QR + kết thúc phiên */}
-              <View
-                style={{
-                  maxWidth: isDesktop ? 480 : "100%",
-                  alignSelf: "center",
-                  width: "100%",
-                  marginBottom: 14,
-                  flexDirection: isDesktop ? "row" : "column",
-                  gap: 12,
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <PrimaryButton
-                    title={currentQR ? "Tạo mã mới" : "Tạo QR Code"}
-                    onPress={handleGenerateQR}
-                    loading={loadingQR}
-                    disabled={!isSelectedSessionValid}
-                  />
-                </View>
-
-                {selectedSession && (
-                  <TouchableOpacity
-                    style={{
-                      paddingVertical: 12,
-                      paddingHorizontal: 16,
-                      borderRadius: 10,
-                      borderWidth: 1,
-                      borderColor: "#E2E8F0",
+                      flexDirection: "row",
+                      justifyContent: "space-between",
                       alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor: isSelectedSessionValid
-                        ? Colors.white
-                        : "#F8FAFC",
-                      opacity: isSelectedSessionValid ? 1 : 0.6,
-                    }}
-                    disabled={!isSelectedSessionValid}
-                    onPress={async () => {
-                      try {
-                        await attendanceService.completeSession(
-                          selectedSession.id,
-                        );
-                        setSelectedSession(null);
-                        setCurrentQR(null);
-                        setQrHistory([]);
-                        await loadSessions();
-                        showToast("Đã kết thúc phiên điểm danh.", "success");
-                      } catch (error: any) {
-                        console.error("Error completing session:", error);
-                        showToast(
-                          error?.response?.data?.message ||
-                          "Không thể kết thúc phiên điểm danh.",
-                          "error",
-                        );
-                      }
+                      marginBottom: 18,
                     }}
                   >
                     <Text
                       style={{
                         fontSize: 14,
-                        fontWeight: "600",
-                        color: Colors.text,
+                        fontWeight: "700",
+                        color: "#0F172A",
                       }}
                     >
-                      Kết thúc phiên
+                      Cài đặt phiên điểm danh
                     </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* QR History */}
-              {qrHistory.length > 0 && (
-                <View
-                  style={{
-                    backgroundColor: "#FFFFFF",
-                    borderRadius: 16,
-                    borderWidth: 1,
-                    borderColor: "#E5ECF6",
-                    padding: 16,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontWeight: "600",
-                      color: "#111827",
-                      marginBottom: 16,
-                    }}
-                  >
-                    Lịch sử QR codes
-                  </Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={{ marginTop: 12 }}
-                  >
-                    <View style={{ flexDirection: "row", gap: 12 }}>
-                      {qrHistory.map((qr) => (
-                        <View
-                          key={qr.id}
+                    {!hasSchedules && (
+                      <View
+                        style={{
+                          backgroundColor: "#FEF3C7",
+                          paddingHorizontal: 8,
+                          paddingVertical: 3,
+                          borderRadius: 8,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
+                        <LockIconFilled size={12} color="#92400E" />
+                        <Text
                           style={{
-                            padding: 16,
-                            borderRadius: 8,
+                            fontSize: 11,
+                            fontWeight: "600",
+                            color: "#92400E",
+                          }}
+                        >
+                          Bị khoá
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Duration Quick Picks */}
+                  <View style={{ marginBottom: 18 }}>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: "#64748B",
+                        marginBottom: 8,
+                        fontWeight: "500",
+                      }}
+                    >
+                      Thời gian mở cổng điểm danh
+                    </Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        gap: 8,
+                        opacity: inputsLocked ? 0.45 : 1,
+                      }}
+                    >
+                      {["5", "10", "15", "30", "45"].map((val) => (
+                        <TouchableOpacity
+                          key={val}
+                          disabled={inputsLocked}
+                          onPress={() => setDurationMinutes(val)}
+                          style={{
+                            flex: 1,
                             backgroundColor:
-                              qr.status === QRStatus.ACTIVE
-                                ? "#ECFDF5"
-                                : "#F3F4F6",
+                              durationMinutes === val ? "#3B82F6" : "#F1F5F9",
                             borderWidth: 1,
                             borderColor:
-                              qr.status === QRStatus.ACTIVE
-                                ? "#10B981"
-                                : "#E5E7EB",
-                            minWidth: 200,
+                              durationMinutes === val ? "#3B82F6" : "#E2E8F0",
+                            borderRadius: 8,
+                            paddingVertical: 9,
+                            alignItems: "center",
                           }}
                         >
                           <Text
@@ -1001,50 +887,506 @@ export default function GenerateQRScreen() {
                               fontSize: 12,
                               fontWeight: "600",
                               color:
-                                qr.status === QRStatus.ACTIVE
-                                  ? "#047857"
-                                  : "#6B7280",
-                              marginBottom: 8,
+                                durationMinutes === val ? "#FFFFFF" : "#374151",
                             }}
                           >
-                            {qr.status === QRStatus.ACTIVE
-                              ? "Còn hạn"
-                              : "Hết hạn"}
+                            {val}m
                           </Text>
-                          <Text
-                            style={{
-                              fontSize: 11,
-                              color: "#6B7280",
-                              marginBottom: 4,
-                            }}
-                          >
-                            Tạo: {formatDate(qr.createdAt)}
-                          </Text>
-                          <Text
-                            style={{
-                              fontSize: 11,
-                              color: "#6B7280",
-                            }}
-                          >
-                            Hết hạn: {formatDate(qr.expiresAt)}
-                          </Text>
-                        </View>
+                        </TouchableOpacity>
                       ))}
                     </View>
-                  </ScrollView>
+                  </View>
+
+                  {/* Custom start time */}
+                  <View style={{ marginBottom: 18 }}>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: "#64748B",
+                        marginBottom: 8,
+                        fontWeight: "500",
+                      }}
+                    >
+                      Thời điểm bắt đầu điểm danh
+                    </Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        gap: 10,
+                        alignItems: "flex-end",
+                        opacity: inputsLocked ? 0.45 : 1,
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: "#94A3B8",
+                            marginBottom: 4,
+                          }}
+                        >
+                          Giờ (0–23)
+                        </Text>
+                        <TextInput
+                          value={customHour}
+                          onChangeText={setCustomHour}
+                          editable={!inputsLocked}
+                          keyboardType="numeric"
+                          placeholder="HH"
+                          maxLength={2}
+                          placeholderTextColor="#94A3B8"
+                          style={{
+                            backgroundColor: "#F1F5F9",
+                            borderColor: "#CBD5E1",
+                            borderWidth: 1,
+                            borderRadius: 8,
+                            color: inputsLocked ? "#94A3B8" : "#0F172A",
+                            paddingHorizontal: 12,
+                            paddingVertical: 10,
+                            textAlign: "center",
+                            fontSize: 15,
+                          }}
+                        />
+                      </View>
+                      <Text
+                        style={{
+                          fontSize: 18,
+                          fontWeight: "700",
+                          color: "#94A3B8",
+                          paddingBottom: 10,
+                        }}
+                      >
+                        :
+                      </Text>
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: "#94A3B8",
+                            marginBottom: 4,
+                          }}
+                        >
+                          Phút (0–59)
+                        </Text>
+                        <TextInput
+                          value={customMinute}
+                          onChangeText={setCustomMinute}
+                          editable={!inputsLocked}
+                          keyboardType="numeric"
+                          placeholder="MM"
+                          maxLength={2}
+                          placeholderTextColor="#94A3B8"
+                          style={{
+                            backgroundColor: "#F1F5F9",
+                            borderColor: "#CBD5E1",
+                            borderWidth: 1,
+                            borderRadius: 8,
+                            color: inputsLocked ? "#94A3B8" : "#0F172A",
+                            paddingHorizontal: 12,
+                            paddingVertical: 10,
+                            textAlign: "center",
+                            fontSize: 15,
+                          }}
+                        />
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* QR Interval */}
+                  <View style={{ marginBottom: 20 }}>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: "#64748B",
+                        marginBottom: 8,
+                        fontWeight: "500",
+                      }}
+                    >
+                      Chu kỳ biến đổi QR (giây) — tối thiểu 5s
+                    </Text>
+                    <View style={{ opacity: inputsLocked ? 0.45 : 1 }}>
+                      <TextInput
+                        value={qrInterval}
+                        onChangeText={setQrInterval}
+                        editable={!inputsLocked}
+                        keyboardType="numeric"
+                        placeholderTextColor="#94A3B8"
+                        style={{
+                          backgroundColor: "#F1F5F9",
+                          borderColor: "#CBD5E1",
+                          borderWidth: 1,
+                          borderRadius: 8,
+                          color: inputsLocked ? "#94A3B8" : "#0F172A",
+                          paddingHorizontal: 14,
+                          paddingVertical: 10,
+                          fontSize: 14,
+                        }}
+                        placeholder="Mặc định: 10"
+                      />
+                    </View>
+                    <Text
+                      style={{ fontSize: 11, color: "#94A3B8", marginTop: 5 }}
+                    >
+                      Mã QR tự động thay đổi sau mỗi {qrInterval || "10"} giây.
+                    </Text>
+                  </View>
+
+                  {/* Buttons */}
+                  {!isActive ? (
+                    <PrimaryButton
+                      title="Bật cổng điểm danh QR"
+                      onPress={handleStartQR}
+                      loading={loadingQR}
+                      disabled={startDisabled}
+                    />
+                  ) : (
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: "#EF4444",
+                        paddingVertical: 14,
+                        borderRadius: 10,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      onPress={handleStopQR}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <ActivityIndicator color="#FFFFFF" />
+                      ) : (
+                        <Text
+                          style={{
+                            fontSize: 15,
+                            fontWeight: "700",
+                            color: "#FFFFFF",
+                          }}
+                        >
+                          Kết thúc phiên điểm danh
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
                 </View>
-              )}
-            </>
+              </View>
+
+              {/* RIGHT COLUMN — QR Display */}
+              <View
+                style={{
+                  flex: isDesktop ? 1 : undefined,
+                  width: isDesktop ? undefined : "100%",
+                  gap: 16,
+                }}
+              >
+                {/* QR Viewer Card */}
+                <View
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 16,
+                    padding: 32,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 1,
+                    borderColor: "#E2E8F0",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.04,
+                    shadowRadius: 8,
+                    elevation: 2,
+                    minHeight: 460,
+                  }}
+                >
+                  {isActive && currentQR ? (
+                    <View style={{ alignItems: "center", width: "100%" }}>
+                      {/* Session badge */}
+                      <View
+                        style={{
+                          backgroundColor: "#EFF6FF",
+                          borderRadius: 20,
+                          paddingHorizontal: 14,
+                          paddingVertical: 6,
+                          marginBottom: 20,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 7,
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: 4,
+                            backgroundColor: "#22C55E",
+                          }}
+                        />
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontWeight: "600",
+                            color: "#1D4ED8",
+                          }}
+                        >
+                          {selectedSession?.subjectName || "Đang điểm danh"}
+                        </Text>
+                      </View>
+
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "600",
+                          color: "#94A3B8",
+                          marginBottom: 18,
+                          textTransform: "uppercase",
+                          letterSpacing: 1,
+                        }}
+                      >
+                        Quét mã QR để điểm danh
+                      </Text>
+
+                      {/* QR Code */}
+                      <View
+                        style={{
+                          backgroundColor: "#FFFFFF",
+                          padding: 14,
+                          borderRadius: 16,
+                          marginBottom: 22,
+                          borderWidth: 1,
+                          borderColor: "#BAE6FD",
+                        }}
+                      >
+                        <QRViewer
+                          value={currentQR.token}
+                          size={isDesktop ? 240 : 200}
+                        />
+                      </View>
+
+                      {/* Countdown */}
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          color: "#94A3B8",
+                          marginBottom: 6,
+                        }}
+                      >
+                        Tự động làm mới sau
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 34,
+                          fontWeight: "800",
+                          marginBottom: 14,
+                          color:
+                            countdown < 5
+                              ? "#EF4444"
+                              : countdown < 10
+                                ? "#F59E0B"
+                                : "#16A34A",
+                        }}
+                      >
+                        {countdown}s
+                      </Text>
+
+                      {/* Progress bar */}
+                      <View
+                        style={{
+                          width: "70%",
+                          height: 5,
+                          backgroundColor: "#F1F5F9",
+                          borderRadius: 3,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: `${progressPercent}%`,
+                            height: "100%",
+                            borderRadius: 3,
+                            backgroundColor:
+                              countdown < 5
+                                ? "#EF4444"
+                                : countdown < 10
+                                  ? "#F59E0B"
+                                  : "#3B82F6",
+                          }}
+                        />
+                      </View>
+                    </View>
+                  ) : (
+                    <View
+                      style={{ alignItems: "center", paddingHorizontal: 20 }}
+                    >
+                      <View
+                        style={{
+                          width: 88,
+                          height: 88,
+                          backgroundColor: "#F1F5F9",
+                          borderRadius: 44,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginBottom: 20,
+                          borderWidth: 1,
+                          borderColor: "#E2E8F0",
+                        }}
+                      >
+                        <QrCodeIconFilled size={40} color="#94A3B8" />
+                      </View>
+                      <Text
+                        style={{
+                          fontSize: 18,
+                          fontWeight: "700",
+                          color: "#1E293B",
+                          marginBottom: 8,
+                        }}
+                      >
+                        Chưa bật cổng QR
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          color: "#94A3B8",
+                          textAlign: "center",
+                          lineHeight: 22,
+                        }}
+                      >
+                        {hasSchedules
+                          ? 'Chọn lịch dạy đang diễn ra ở bên trái và nhấn "Bật cổng điểm danh QR" để bắt đầu.'
+                          : "Không có lịch dạy hôm nay. Bạn chưa thể tạo phiên điểm danh."}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Live stats — only when session active */}
+                {isActive && selectedSession && (
+                  <View
+                    style={{
+                      backgroundColor: "#FFFFFF",
+                      borderRadius: 16,
+                      padding: 20,
+                      borderWidth: 1,
+                      borderColor: "#E2E8F0",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.04,
+                      shadowRadius: 8,
+                      elevation: 2,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#64748B",
+                        textTransform: "uppercase",
+                        letterSpacing: 0.5,
+                        marginBottom: 14,
+                      }}
+                    >
+                      Thống kê điểm danh — Thời gian thực
+                    </Text>
+                    <View style={{ flexDirection: "row", gap: 10 }}>
+                      <View
+                        style={{
+                          flex: 1,
+                          backgroundColor: "#EFF6FF",
+                          borderRadius: 10,
+                          padding: 14,
+                          alignItems: "center",
+                          borderWidth: 1,
+                          borderColor: "#BFDBFE",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 22,
+                            fontWeight: "800",
+                            color: "#1D4ED8",
+                          }}
+                        >
+                          {selectedSession.total ?? 0}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: "#64748B",
+                            marginTop: 4,
+                            fontWeight: "500",
+                          }}
+                        >
+                          Sĩ số
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          flex: 1,
+                          backgroundColor: "#F0FDF4",
+                          borderRadius: 10,
+                          padding: 14,
+                          alignItems: "center",
+                          borderWidth: 1,
+                          borderColor: "#BBF7D0",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 22,
+                            fontWeight: "800",
+                            color: "#15803D",
+                          }}
+                        >
+                          {selectedSession.present ?? 0}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: "#64748B",
+                            marginTop: 4,
+                            fontWeight: "500",
+                          }}
+                        >
+                          Có mặt
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          flex: 1,
+                          backgroundColor: "#FFFBEB",
+                          borderRadius: 10,
+                          padding: 14,
+                          alignItems: "center",
+                          borderWidth: 1,
+                          borderColor: "#FDE68A",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 22,
+                            fontWeight: "800",
+                            color: "#D97706",
+                          }}
+                        >
+                          {selectedSession.late ?? 0}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: "#64748B",
+                            marginTop: 4,
+                            fontWeight: "500",
+                          }}
+                        >
+                          Đi muộn
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+              </View>
+            </View>
           )}
+
+          <BottomNavigationSpacer />
         </View>
       </ScrollView>
-
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
     </SafeAreaView>
   );
 }
