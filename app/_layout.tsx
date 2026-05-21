@@ -5,7 +5,11 @@ import { useEffect, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { SocketProvider } from "@/apis/socket/SocketProvider";
 import { ToastProvider } from "@/components/ToastProvider";
-import * as Font from 'expo-font';
+import * as Font from "expo-font";
+import {
+  ensureIoniconsFontWeb,
+  IONICONS_FONT_URL,
+} from "@/utils/ensureIoniconsFontWeb";
 
 // Temporarily disabled to fix web text node errors
 // import '../global.css';
@@ -20,12 +24,10 @@ export default function RootLayout() {
     async function prepare() {
       try {
         if (Platform.OS === "web") {
-          // Backup: +html.tsx đã inject @font-face "ionicons" trước khi React chạy
-          const ioniconsUrl =
-            "https://cdn.jsdelivr.net/npm/react-native-vector-icons@10.0.0/Fonts/Ionicons.ttf";
+          ensureIoniconsFontWeb();
           if (!Font.isLoaded("ionicons")) {
             await Font.loadAsync({
-              ionicons: { uri: ioniconsUrl },
+              ionicons: { uri: IONICONS_FONT_URL },
             });
           }
         }

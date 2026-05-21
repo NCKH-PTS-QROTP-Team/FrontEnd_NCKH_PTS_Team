@@ -9,6 +9,8 @@ module.exports = function(api) {
           root: ['./'],
           alias: {
             '@': './',
+            // Web: bypass Font.isLoaded gate; native vẫn dùng @expo/vector-icons gốc
+            '^@expo/vector-icons$': './components/expo-vector-icons.ts',
           },
         },
       ],

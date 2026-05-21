@@ -24,6 +24,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@expo/vector-icons": [
+        "./components/expo-vector-icons.ts"
       ]
     }
   },
