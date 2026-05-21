@@ -26,7 +26,9 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 
 const CHAT_SERVICE_URL =
+  Platform.OS === "web" &&
   typeof window !== "undefined" &&
+  window.location &&
   (window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1")
     ? "http://localhost:8091"

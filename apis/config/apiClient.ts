@@ -7,14 +7,14 @@ import Constants from 'expo-constants';
 // - Bắt buộc sử dụng cấu hình từ file .env (EXPO_PUBLIC_API_URL) để đồng nhất.
 // - Web: fallback về hostname hiện tại nếu không có .env.
 const getApiBaseUrl = () => {
-  const envApiUrl = typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_API_URL?.trim() : undefined;
-  const envWebApiUrl = typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_API_URL_WEB?.trim() : undefined;
+  const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
+  const envWebApiUrl = process.env.EXPO_PUBLIC_API_URL_WEB;
 
   if (Platform.OS === 'web') {
     if (envWebApiUrl) return envWebApiUrl;
     if (envApiUrl) return envApiUrl;
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && window.location) {
       const host = window.location.hostname;
       // Kiểm tra nếu là localhost hoặc môi trường phát triển local/LAN
       const isLocalhost = host === 'localhost' || 
@@ -56,7 +56,7 @@ console.log('🌐 API Configuration Loaded');
 console.log('   API Base URL:', API_BASE_URL);
 console.log('   Platform:', Platform.OS);
 console.log('   Dev Mode:', __DEV__);
-if (typeof window !== 'undefined') {
+if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location) {
   console.log('   Current hostname:', window.location.hostname);
 }
 console.log('═══════════════════════════════════════');
