@@ -14,7 +14,7 @@ const getApiBaseUrl = () => {
     if (envWebApiUrl) return envWebApiUrl;
     if (envApiUrl) return envApiUrl;
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && window.location) {
       const host = window.location.hostname;
       // Kiểm tra nếu là localhost hoặc môi trường phát triển local/LAN
       const isLocalhost = host === 'localhost' || 
@@ -56,7 +56,7 @@ console.log('🌐 API Configuration Loaded');
 console.log('   API Base URL:', API_BASE_URL);
 console.log('   Platform:', Platform.OS);
 console.log('   Dev Mode:', __DEV__);
-if (typeof window !== 'undefined') {
+if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location) {
   console.log('   Current hostname:', window.location.hostname);
 }
 console.log('═══════════════════════════════════════');
