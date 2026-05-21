@@ -15,10 +15,15 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.nckh.otpattendance",
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       },
-      "usesCleartextTraffic": true
+      "usesCleartextTraffic": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro"
@@ -33,9 +38,12 @@
       ]
     ],
     "scheme": "otp-attendance",
-    "newArchEnabled": true
+    "newArchEnabled": true,
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7abc605e-cdbb-473d-a010-1f9bd3ba60ab"
+      }
+    }
   }
 }
-
-
-
