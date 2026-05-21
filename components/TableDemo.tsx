@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import Table from './Table';
 import Badge from './Badge';
-import { Colors } from '../constants/colors';
+import { Colors } from '@/constants/colors';
 import { EmptyUsersIcon, EmptySearchIcon, EmptyDocumentIcon } from './EmptyStateIllustration';
 
 export default function TableDemo() {

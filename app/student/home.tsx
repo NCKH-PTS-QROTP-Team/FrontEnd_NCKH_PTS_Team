@@ -10,7 +10,7 @@ import {
   ImageBackground,
   ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
@@ -25,6 +25,7 @@ import { Colors } from "@/constants/colors";
 import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 import WebFooter from "@/components/WebFooter";
 import WeeklySchedule from "@/components/WeeklySchedule";
+import { BottomNavigationSpacer } from "@/components/BottomNavigation";
 import type { Schedule } from "@/apis/services/schedule.service";
 
 interface TodaySchedule {
@@ -43,6 +44,7 @@ export default function StudentHomeScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const isWeb = Platform.OS === "web";
   const { showToast } = useToast();
+  const insets = useSafeAreaInsets();
 
   // State
   const [loading, setLoading] = useState(true);
@@ -71,16 +73,24 @@ export default function StudentHomeScreen() {
       const studentId = await getStudentIdFromToken();
       console.log("📝 StudentId:", studentId);
 
-      // Lấy thông tin user hiện tại để lấy tên và classId
-      const currentUser = await authService.getCurrentUser();
-      if (currentUser?.name) {
-        setUserName(currentUser.name);
+      // Bỏ Promise.all vì free Localtunnel không chịu được request song song (gây lỗi 502)
+      // Chuyển lại thành tuần tự (nhưng bỏ delay ảo trong layout nên vẫn cực nhanh)
+      let currentUser: any = null;
+      let allRecords: any[] = [];
+      
+      try {
+        currentUser = await authService.getCurrentUser();
+        if (currentUser?.name) {
+          setUserName(currentUser.name);
+        }
+      } catch (error) {
+        console.error("❌ Error loading user:", error);
       }
 
       const today = new Date();
       const dateOnly = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-      // Load schedules theo lớp của sinh viên để dashboard chỉ hiển thị môn của lớp đó
+      // Load schedules theo lớp của sinh viên
       let allSchedules: Schedule[] = [];
       try {
         console.log("📅 Loading schedules for today:", dateOnly);
@@ -103,7 +113,7 @@ export default function StudentHomeScreen() {
           });
         }
 
-        // Lọc trùng ID (Backend có thể trả về trùng)
+        // Lọc trùng ID
         const seenIds = new Set<string>();
         allSchedules = allSchedules.filter((s) => {
           if (seenIds.has(s.id)) return false;
@@ -117,8 +127,7 @@ export default function StudentHomeScreen() {
         showToast("Không thể tải lịch học", "error");
       }
 
-      // Load attendance records (cần studentId)
-      let allRecords: any[] = [];
+      // Load attendance records (cần studentId) - tuần tự để tránh lỗi 502
       if (studentId) {
         try {
           console.log("📊 Loading attendance records for student:", studentId);
@@ -126,7 +135,6 @@ export default function StudentHomeScreen() {
           console.log("✅ Loaded records:", allRecords.length);
         } catch (error: any) {
           console.error("❌ Error loading records:", error);
-          // Không hiển thị toast vì có thể không có records
         }
       } else {
         console.warn("⚠️ No studentId, skipping attendance records");
@@ -295,7 +303,7 @@ export default function StudentHomeScreen() {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{
-            paddingTop: isDesktop ? 60 : (isMobile ? 48 : 80),
+            paddingTop: isDesktop ? 60 : (isMobile ? Math.max(insets.top + 16, 48) : 80),
             paddingBottom: isDesktop ? 60 : (isMobile ? 40 : 80),
             paddingHorizontal: padding,
             minHeight: isDesktop ? 360 : 'auto',
@@ -315,7 +323,7 @@ export default function StudentHomeScreen() {
           >
             {/* ── Left Column: Welcome Text ── */}
             <View style={{ flex: isDesktop ? 1 : undefined, paddingRight: isDesktop ? 40 : 16, width: "100%" }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
                 <View style={{ flex: 1 }}>
                   <Text
                     style={{
@@ -327,77 +335,102 @@ export default function StudentHomeScreen() {
                     Chào mừng trở lại!
                   </Text>
                   <Text
-                    style={{ fontSize: isDesktop ? 28 : 24, fontWeight: "800", color: "#ffffff", marginBottom: isDesktop ? 16 : 0 }}
-                    numberOfLines={1}
+                    style={{ fontSize: isDesktop ? 28 : (isMobile ? 20 : 24), fontWeight: "800", color: "#ffffff", marginBottom: isDesktop ? 16 : 0 }}
+                    numberOfLines={2}
                   >
                     Xin chào, {userName ? userName : "Sinh viên"}
                   </Text>
-                </View>
-
-                {/* Mobile Right Actions (Bell & Calendar) */}
-                {!isDesktop && (
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                    {isMobile && (
-                      <TouchableOpacity
-                        onPress={() => {
-                          setUnreadNotifs(0);
-                          router.push("/student/notifications" as any);
-                        }}
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          backgroundColor: "rgba(255,255,255,0.2)",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          borderWidth: 1,
-                          borderColor: "rgba(255,255,255,0.3)",
-                          position: "relative",
-                          ...getWebCursor(),
-                        }}
-                      >
-                        <Ionicons name="notifications-outline" size={20} color="#fff" />
-                        {unreadNotifs > 0 && (
-                          <View
-                            style={{
-                              position: "absolute",
-                              top: -2,
-                              right: -2,
-                              minWidth: 16,
-                              height: 16,
-                              borderRadius: 8,
-                              backgroundColor: "#ef4444",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              borderWidth: 1.5,
-                              borderColor: "#3b82f6",
-                            }}
-                          >
-                            <Text style={{ fontSize: 9, fontWeight: "800", color: "#fff" }}>
-                              {unreadNotifs > 9 ? "9+" : unreadNotifs}
-                            </Text>
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    )}
+                  
+                  {/* Mobile-only "Xem lịch" placed below the name for better spacing */}
+                  {isMobile && (
                     <TouchableOpacity
                       onPress={() => router.push("/student/schedule")}
                       style={{
                         backgroundColor: "rgba(255,255,255,0.2)",
                         paddingHorizontal: 16,
-                        paddingVertical: 10,
+                        paddingVertical: 8,
                         borderRadius: 20,
                         borderWidth: 1,
                         borderColor: "rgba(255,255,255,0.3)",
                         flexDirection: "row",
                         alignItems: "center",
+                        alignSelf: "flex-start",
                         gap: 8,
+                        marginTop: 12,
                         ...getWebCursor(),
                       }}
                     >
-                      <Ionicons name="calendar" size={18} color="#fff" />
+                      <Ionicons name="calendar" size={16} color="#fff" />
                       <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>Xem lịch</Text>
                     </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Right Actions (Bell & Tablet/Desktop Calendar) */}
+                {!isDesktop && (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setUnreadNotifs(0);
+                        router.push("/student/notifications" as any);
+                      }}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        backgroundColor: "rgba(255,255,255,0.2)",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderWidth: 1,
+                        borderColor: "rgba(255,255,255,0.3)",
+                        position: "relative",
+                        ...getWebCursor(),
+                      }}
+                    >
+                      <Ionicons name="notifications-outline" size={20} color="#fff" />
+                      {unreadNotifs > 0 && (
+                        <View
+                          style={{
+                            position: "absolute",
+                            top: -2,
+                            right: -2,
+                            minWidth: 16,
+                            height: 16,
+                            borderRadius: 8,
+                            backgroundColor: "#ef4444",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderWidth: 1.5,
+                            borderColor: "#3b82f6",
+                          }}
+                        >
+                          <Text style={{ fontSize: 9, fontWeight: "800", color: "#fff" }}>
+                            {unreadNotifs > 9 ? "9+" : unreadNotifs}
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                    
+                    {!isMobile && (
+                      <TouchableOpacity
+                        onPress={() => router.push("/student/schedule")}
+                        style={{
+                          backgroundColor: "rgba(255,255,255,0.2)",
+                          paddingHorizontal: 16,
+                          paddingVertical: 10,
+                          borderRadius: 20,
+                          borderWidth: 1,
+                          borderColor: "rgba(255,255,255,0.3)",
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 8,
+                          ...getWebCursor(),
+                        }}
+                      >
+                        <Ionicons name="calendar" size={18} color="#fff" />
+                        <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>Xem lịch</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
               </View>
@@ -530,7 +563,7 @@ export default function StudentHomeScreen() {
         </LinearGradient>
 
         {/* ── Main Content Area ── */}
-        <View style={{ paddingHorizontal: padding, paddingTop: 24, paddingBottom: isMobile ? 100 : 48 }}>
+        <View style={{ paddingHorizontal: padding, paddingTop: 24, paddingBottom: isDesktop ? 48 : 24 }}>
           <View style={{
             maxWidth: contentMaxWidth,
             width: "100%",
@@ -558,10 +591,11 @@ export default function StudentHomeScreen() {
                       flex: 1,
                       backgroundColor: "#fff",
                       borderRadius: 16,
-                      padding: 16,
-                      flexDirection: "row",
+                      padding: isMobile ? 12 : 16,
+                      flexDirection: isMobile ? "column" : "row",
                       alignItems: "center",
-                      gap: 10,
+                      justifyContent: isMobile ? "center" : "flex-start",
+                      gap: isMobile ? 8 : 10,
                       borderWidth: 1,
                       borderColor: "#f1f5f9",
                       ...getWebShadow("sm"),
@@ -571,9 +605,9 @@ export default function StudentHomeScreen() {
                     <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: stat.bg, alignItems: "center", justifyContent: "center" }}>
                       <Ionicons name={stat.icon as any} size={20} color={stat.color} />
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: isMobile ? 20 : 22, fontWeight: "800", color: "#111827" }}>{stat.value}</Text>
-                      <Text style={{ fontSize: 11, color: "#6b7280", fontWeight: "500", marginTop: 1 }}>{stat.label}</Text>
+                    <View style={{ flex: isMobile ? undefined : 1, alignItems: isMobile ? "center" : "flex-start" }}>
+                      <Text style={{ fontSize: isMobile ? 20 : 22, fontWeight: "800", color: "#111827", textAlign: "center" }}>{stat.value}</Text>
+                      <Text style={{ fontSize: 11, color: "#6b7280", fontWeight: "500", marginTop: 1, textAlign: "center" }}>{stat.label}</Text>
                     </View>
                   </TouchableOpacity>
                 ))}
@@ -925,14 +959,15 @@ export default function StudentHomeScreen() {
 
               {/* ── 6. TIP CARD ── */}
               <View style={{
-                backgroundColor: "#1e3a8a",
+                backgroundColor: "#3b82f6", // Vibrant system blue
                 borderRadius: 20,
                 padding: 20,
                 gap: 12,
                 overflow: "hidden",
+                ...getWebShadow("sm"),
               }}>
                 <LinearGradient
-                  colors={["rgba(59,130,246,0.3)", "rgba(30,58,138,0)"]}
+                  colors={["rgba(255,255,255,0.2)", "rgba(255,255,255,0)"]}
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                   style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
                 />
@@ -969,6 +1004,8 @@ export default function StudentHomeScreen() {
         {/* Footer for Web only */}
         <WebFooter />
 
+        {/* Dynamic spacer for mobile bottom navigation */}
+        {!isDesktop && <BottomNavigationSpacer />}
       </ScrollView>
     </View>
   );

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
-import { Colors } from '../constants/colors';
-import { ResponsiveSpacing } from '../utils/responsive';
+import { Colors } from '@/constants/colors';
+import { ResponsiveSpacing } from '@/utils/responsive';
 
 interface QuickAction {
   key: string;

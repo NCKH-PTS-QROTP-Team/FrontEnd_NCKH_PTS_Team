@@ -24,42 +24,42 @@ export default function AdminLayout() {
 
   const menuItems = [
     {
-      icon: <HomeIcon size={20} color="#3FA9F5" />,
+      icon: <HomeIcon size={20} color={Colors.primary} />,
       label: "Dashboard",
       route: "/admin/dashboard",
     },
     {
-      icon: <UsersIcon size={20} color="#3FA9F5" />,
+      icon: <UsersIcon size={20} color={Colors.primary} />,
       label: "Người dùng",
       route: "/admin/users",
     },
     {
-      icon: <SchoolIcon size={20} color="#3FA9F5" />,
+      icon: <SchoolIcon size={20} color={Colors.primary} />,
       label: "Lớp học",
       route: "/admin/classes",
     },
     {
-      icon: <BookIcon size={20} color="#3FA9F5" />,
+      icon: <BookIcon size={20} color={Colors.primary} />,
       label: "Môn học",
       route: "/admin/subjects",
     },
     {
-      icon: <CalendarIcon size={20} color="#3FA9F5" />,
+      icon: <CalendarIcon size={20} color={Colors.primary} />,
       label: "Lịch học",
       route: "/admin/schedules",
     },
     {
-      icon: <EyeIcon size={20} color="#3FA9F5" />,
+      icon: <EyeIcon size={20} color={Colors.primary} />,
       label: "Giám sát",
       route: "/admin/sessions",
     },
     {
-      icon: <ChartIcon size={20} color="#3FA9F5" />,
+      icon: <ChartIcon size={20} color={Colors.primary} />,
       label: "Báo cáo",
       route: "/admin/reports",
     },
     {
-      icon: <SettingsIcon size={20} color="#3FA9F5" />,
+      icon: <SettingsIcon size={20} color={Colors.primary} />,
       label: "Cài đặt",
       route: "/admin/settings",
     },
@@ -89,27 +89,27 @@ export default function AdminLayout() {
       {
         key: "/admin/dashboard",
         label: "Dashboard",
-        icon: <HomeIcon size={24} color="#3FA9F5" />,
+        icon: <HomeIcon size={24} color={Colors.primary} />,
       },
       {
         key: "/admin/users",
         label: "Người dùng",
-        icon: <UsersIcon size={24} color="#3FA9F5" />,
+        icon: <UsersIcon size={24} color={Colors.primary} />,
       },
       {
         key: "/admin/classes",
         label: "Lớp học",
-        icon: <SchoolIcon size={24} color="#3FA9F5" />,
+        icon: <SchoolIcon size={24} color={Colors.primary} />,
       },
       {
         key: "/admin/schedules",
         label: "Lịch học",
-        icon: <CalendarIcon size={24} color="#3FA9F5" />,
+        icon: <CalendarIcon size={24} color={Colors.primary} />,
       },
       {
         key: "/admin/settings",
         label: "Cài đặt",
-        icon: <SettingsIcon size={24} color="#3FA9F5" />,
+        icon: <SettingsIcon size={24} color={Colors.primary} />,
       },
     ];
 

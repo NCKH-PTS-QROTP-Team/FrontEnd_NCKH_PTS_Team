@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,33 +10,60 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
-import { mockClasses } from "@/constants/mockData";
-import { AppHeader } from "@/components/AppHeader";
 import Card from "@/components/Card";
-import { PrimaryButton } from "@/components/PrimaryButton";
+import PrimaryButton from "@/components/PrimaryButton";
 import {
   EmptySearchIcon,
   EmptyListIcon,
 } from "@/components/EmptyStateIllustration";
 import DataTable from "@/components/DataTable";
+import { SkeletonCard } from "@/components/Skeleton";
+import { ErrorState } from "@/components/ErrorState";
+import { useToast } from "@/components/ToastProvider";
+import { classService, Class } from "@/apis/services/class.service";
 
 export default function ClassManagement() {
+  const [classes, setClasses] = useState<Class[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
-  const showTable = isDesktop; // Chỉ desktop mới hiển thị table
-
+  const showTable = isDesktop;
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const paddingVertical = isMobile ? 16 : 24;
 
-  const filteredClasses = mockClasses.filter(
+  useEffect(() => {
+    loadClasses();
+  }, []);
+
+  const loadClasses = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await classService.getAllClasses();
+      setClasses(data);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Lỗi tải danh sách lớp học";
+      setError(message);
+      showToast(message, "error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const filteredClasses = classes.filter(
     (cls) =>
       cls.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       cls.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cls.teacher.toLowerCase().includes(searchQuery.toLowerCase())
+      (cls.teacherName || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -63,10 +90,23 @@ export default function ClassManagement() {
             Quản lý lớp học
           </Text>
 
-          <View style={{ marginBottom: isMobile ? 12 : 16 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              marginBottom: isMobile ? 12 : 16,
+              gap: 8,
+            }}
+          >
             <PrimaryButton
               title="+ Tạo lớp học mới"
               onPress={() => router.push("/admin/classes/create" as any)}
+              style={{ flex: 1 }}
+            />
+            <PrimaryButton
+              title="↻ Tải lại"
+              variant="outline"
+              onPress={loadClasses}
+              style={{ flex: 1 }}
             />
           </View>
 
@@ -91,7 +131,26 @@ export default function ClassManagement() {
             onChangeText={setSearchQuery}
           />
 
-          {filteredClasses.length > 0 ? (
+          {/* Loading State */}
+          {loading && (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          )}
+
+          {/* Error State */}
+          {!loading && error && (
+            <ErrorState
+              title="Không thể tải dữ liệu lớp học"
+              message={error}
+              onRetry={loadClasses}
+            />
+          )}
+
+          {/* Data */}
+          {!loading && !error && filteredClasses.length > 0 ? (
             <>
               <Text
                 style={{
@@ -103,7 +162,6 @@ export default function ClassManagement() {
                 {filteredClasses.length} lớp học
               </Text>
 
-              {/* Desktop: Table View */}
               {showTable ? (
                 <DataTable
                   columns={[
@@ -111,7 +169,7 @@ export default function ClassManagement() {
                       key: "code",
                       label: "Mã lớp",
                       width: 120,
-                      render: (cls) => (
+                      render: (cls: Class) => (
                         <Text
                           style={{
                             fontWeight: "600",
@@ -127,33 +185,33 @@ export default function ClassManagement() {
                       key: "name",
                       label: "Tên lớp",
                       width: 250,
-                      render: (cls) => (
+                      render: (cls: Class) => (
                         <Text style={{ fontSize: 14, color: Colors.text }}>
                           {cls.name}
                         </Text>
                       ),
                     },
                     {
-                      key: "subject",
+                      key: "subjectName",
                       label: "Môn học",
                       width: 200,
-                      render: (cls) => (
+                      render: (cls: Class) => (
                         <Text
                           style={{ fontSize: 14, color: Colors.textSecondary }}
                         >
-                          {cls.subject}
+                          {cls.subjectName || "-"}
                         </Text>
                       ),
                     },
                     {
-                      key: "teacher",
+                      key: "teacherName",
                       label: "Giảng viên",
                       width: 180,
-                      render: (cls) => (
+                      render: (cls: Class) => (
                         <Text
                           style={{ fontSize: 14, color: Colors.textSecondary }}
                         >
-                          {cls.teacher}
+                          {cls.teacherName || "-"}
                         </Text>
                       ),
                     },
@@ -161,11 +219,11 @@ export default function ClassManagement() {
                       key: "semester",
                       label: "Học kỳ",
                       width: 120,
-                      render: (cls) => (
+                      render: (cls: Class) => (
                         <Text
                           style={{ fontSize: 14, color: Colors.textSecondary }}
                         >
-                          {cls.semester}
+                          {cls.semester || "-"}
                         </Text>
                       ),
                     },
@@ -174,36 +232,28 @@ export default function ClassManagement() {
                       label: "Số SV",
                       width: 100,
                       align: "center",
-                      render: (cls) => (
-                        <View
+                      render: (cls: Class) => (
+                        <Text
                           style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "center",
+                            fontSize: 14,
+                            fontWeight: "500",
+                            color: Colors.primary,
+                            textAlign: "center",
                           }}
                         >
-                          <Text
-                            style={{
-                              fontSize: 14,
-                              fontWeight: "500",
-                              color: Colors.primary,
-                            }}
-                          >
-                            {cls.studentCount}
-                          </Text>
-                        </View>
+                          {cls.studentCount ?? 0}
+                        </Text>
                       ),
                     },
                   ]}
                   data={filteredClasses}
-                  onRowPress={(cls) =>
+                  onRowPress={(cls: Class) =>
                     router.push(`/admin/classes/${cls.id}` as any)
                   }
                   zebraStriping={true}
                   stickyHeader={true}
                 />
               ) : (
-                /* Mobile: Card View */
                 <>
                   {filteredClasses.map((cls) => (
                     <Card
@@ -281,7 +331,7 @@ export default function ClassManagement() {
                                   color: Colors.primary,
                                 }}
                               >
-                                {cls.studentCount}
+                                {cls.studentCount ?? 0}
                               </Text>
                             </View>
                           </View>
@@ -307,7 +357,6 @@ export default function ClassManagement() {
                               style={{
                                 flexDirection: "row",
                                 alignItems: "center",
-                                marginBottom: 4,
                               }}
                             >
                               <Text
@@ -325,14 +374,13 @@ export default function ClassManagement() {
                                   color: Colors.textSecondary,
                                 }}
                               >
-                                {cls.subject}
+                                {cls.subjectName || "-"}
                               </Text>
                             </View>
                             <View
                               style={{
                                 flexDirection: "row",
                                 alignItems: "center",
-                                marginBottom: 4,
                               }}
                             >
                               <Text
@@ -350,14 +398,13 @@ export default function ClassManagement() {
                                   color: Colors.textSecondary,
                                 }}
                               >
-                                {cls.teacher}
+                                {cls.teacherName || "-"}
                               </Text>
                             </View>
                             <View
                               style={{
                                 flexDirection: "row",
                                 alignItems: "center",
-                                marginBottom: 4,
                               }}
                             >
                               <Text
@@ -375,7 +422,7 @@ export default function ClassManagement() {
                                   color: Colors.textSecondary,
                                 }}
                               >
-                                {cls.semester}
+                                {cls.semester || "-"}
                               </Text>
                             </View>
                           </View>
@@ -386,7 +433,7 @@ export default function ClassManagement() {
                 </>
               )}
             </>
-          ) : (
+          ) : !loading && !error ? (
             <View
               style={{
                 backgroundColor: "#FFFFFF",
@@ -458,12 +505,14 @@ export default function ClassManagement() {
                   </Text>
                   <PrimaryButton
                     title="+ Tạo lớp học mới"
-                    onPress={() => router.push("/admin/classes/create" as any)}
+                    onPress={() =>
+                      router.push("/admin/classes/create" as any)
+                    }
                   />
                 </>
               )}
             </View>
-          )}
+          ) : null}
         </View>
       </ScrollView>
     </View>

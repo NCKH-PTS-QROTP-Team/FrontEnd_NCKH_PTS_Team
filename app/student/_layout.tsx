@@ -24,37 +24,37 @@ export default function StudentLayout() {
 
   const menuItems = [
     {
-      icon: <HomeIcon size={20} color="#3FA9F5" />,
+      icon: <HomeIcon size={20} color={Colors.primary} />,
       label: "Trang chủ",
       route: "/student/home",
     },
     {
-      icon: <CalendarIcon size={20} color="#3FA9F5" />,
+      icon: <CalendarIcon size={20} color={Colors.primary} />,
       label: "Lịch học",
       route: "/student/schedule",
     },
     {
-      icon: <QrCodeIcon size={20} color="#3FA9F5" />,
+      icon: <QrCodeIcon size={20} color={Colors.primary} />,
       label: "Điểm danh QR",
       route: "/student/qr-attendance",
     },
     {
-      icon: <HashIcon size={20} color="#3FA9F5" />,
+      icon: <HashIcon size={20} color={Colors.primary} />,
       label: "Điểm danh OTP",
       route: "/student/otp-attendance",
     },
     {
-      icon: <UserIcon size={20} color="#3FA9F5" />,
+      icon: <UserIcon size={20} color={Colors.primary} />,
       label: "Điểm danh Face",
       route: "/student/face-demo",
     },
     {
-      icon: <ScrollIcon size={20} color="#3FA9F5" />,
+      icon: <ScrollIcon size={20} color={Colors.primary} />,
       label: "Lịch sử",
       route: "/student/history",
     },
     {
-      icon: <BellIcon size={20} color="#3FA9F5" />,
+      icon: <BellIcon size={20} color={Colors.primary} />,
       label: "Thông báo",
       route: "/student/notifications",
     },

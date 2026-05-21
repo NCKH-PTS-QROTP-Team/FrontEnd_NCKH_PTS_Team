@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import Input from './Input';
-import { Colors } from '../constants/colors';
+import { Colors } from '@/constants/colors';
 
 export default function InputDemo() {
   const [normalValue, setNormalValue] = useState('');

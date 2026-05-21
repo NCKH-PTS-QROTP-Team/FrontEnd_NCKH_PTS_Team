@@ -47,14 +47,9 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   if (!isMobile) return null;
 
   // Tính toán height và padding dựa trên safe area insets
-  // Base height: 65px, thêm bottom inset để tránh home indicator
+  // Dùng insets.bottom cho cả Android và iOS, cộng thêm khoảng đệm an toàn
   const baseHeight = 65;
-  // Giảm bottomPadding: chỉ dùng một phần nhỏ của insets.bottom để tránh khoảng trống lớn
-  // iOS: dùng khoảng 30% của insets.bottom, tối thiểu 2px để vẫn tránh home indicator
-  // Android: padding nhỏ 2px
-  const bottomPadding = Platform.OS === "ios" 
-    ? Math.max(insets.bottom * 0.3, 2) 
-    : 2;
+  const bottomPadding = Math.max(insets.bottom, 12);
   const totalHeight = baseHeight + bottomPadding;
 
   return (
@@ -75,13 +70,14 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
       <View
         style={{
           position: "absolute",
-          bottom: bottomPadding,
+          bottom: 0,
           left: 0,
           right: 0,
           backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
           borderTopColor: "#F3F4F6",
-          height: baseHeight,
+          height: baseHeight + bottomPadding,
+          paddingBottom: bottomPadding,
           flexDirection: "row",
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -2 },
@@ -119,7 +115,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                 {typeof item.icon === "object" &&
                 React.isValidElement(item.icon)
                   ? React.cloneElement(item.icon as React.ReactElement<any>, {
-                      color: isActive ? "#3FA9F5" : "#9CA3AF",
+                      color: isActive ? Colors.primary : "#9CA3AF",
                       size: 22,
                     })
                   : item.icon}
@@ -128,7 +124,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                 style={{
                   fontSize: 11,
                   fontWeight: isActive ? "600" : "400",
-                  color: isActive ? "#3FA9F5" : "#6B7280",
+                  color: isActive ? Colors.primary : "#6B7280",
                   textAlign: "center",
                 }}
                 numberOfLines={1}
@@ -155,10 +151,10 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             width: 64,
             height: 64,
             borderRadius: 32,
-            backgroundColor: "#3FA9F5",
+            backgroundColor: Colors.primary,
             alignItems: "center",
             justifyContent: "center",
-            shadowColor: "#3FA9F5",
+            shadowColor: Colors.primary,
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.3,
             shadowRadius: 8,
@@ -193,9 +189,7 @@ export const BottomNavigationSpacer: React.FC<BottomNavigationSpacerProps> = ({
 
   // Tính toán height bao gồm cả safe area insets
   const baseHeight = height;
-  const bottomPadding = Platform.OS === "ios" 
-    ? Math.max(insets.bottom * 0.3, 2) 
-    : 2;
+  const bottomPadding = Math.max(insets.bottom, 12);
   const totalHeight = baseHeight + bottomPadding;
 
   return <View style={{ height: totalHeight }} />;

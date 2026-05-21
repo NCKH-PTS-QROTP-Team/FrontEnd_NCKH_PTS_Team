@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
-import { Colors } from '../constants/colors';
+import { Colors } from '@/constants/colors';
 import { PrimaryButton } from './PrimaryButton';
 import Input from './Input';
 import { AccessibleCard, CardHeader, CardContent, CardFooter } from './AccessibleCard';

@@ -33,6 +33,7 @@ import {
   subjectService,
   reportService,
 } from "@/apis";
+import { attendanceService } from "@/apis/services/attendance.service";
 import { useToast } from "@/components/ToastProvider";
 
 export default function AdminDashboard() {
@@ -50,6 +51,12 @@ export default function AdminDashboard() {
     totalSubjects: 0,
     totalSessions: 0,
   });
+  const [todayPresent, setTodayPresent] = useState(0);
+  const [todayLate, setTodayLate] = useState(0);
+  const [todayAbsent, setTodayAbsent] = useState(0);
+  const [recentActivities, setRecentActivities] = useState<
+    { text: string; time: string }[]
+  >([]);
 
   useEffect(() => {
     loadDashboardData();
@@ -58,11 +65,12 @@ export default function AdminDashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [users, classes, subjects, summary] = await Promise.all([
+      const [users, classes, subjects, summary, sessions] = await Promise.all([
         userService.getUsers().catch(() => []),
         classService.getAllClasses().catch(() => []),
         subjectService.getSubjects().catch(() => []),
         reportService.getAttendanceSummary().catch(() => null),
+        attendanceService.getSessions().catch(() => []),
       ]);
 
       setStats({
@@ -71,12 +79,54 @@ export default function AdminDashboard() {
         totalSubjects: subjects.length,
         totalSessions: summary?.totalSessions || 0,
       });
+
+      // Today's attendance from summary
+      if (summary) {
+        setTodayPresent(summary.totalPresent || 0);
+        setTodayLate(summary.totalLate || 0);
+        setTodayAbsent(summary.totalAbsent || 0);
+      }
+
+      // Recent activities from latest sessions
+      if (sessions.length > 0) {
+        const recent = sessions
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )
+          .slice(0, 5)
+          .map((s) => {
+            const ago = getTimeAgo(s.createdAt);
+            return {
+              text: `${s.status === "ACTIVE" ? "Đang điểm danh" : "Đã hoàn thành"} - ${s.subjectName || s.className || "Phên điểm danh"}`,
+              time: ago,
+            };
+          });
+        setRecentActivities(recent);
+      } else {
+        setRecentActivities([
+          { text: "Chưa có hoạt động nào", time: "" },
+        ]);
+      }
     } catch (error: any) {
       console.error("Error loading dashboard:", error);
       showToast("Không thể tải dữ liệu", "error");
     } finally {
       setLoading(false);
     }
+  };
+
+  const getTimeAgo = (dateStr: string): string => {
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return "Vừa xong";
+    if (diffMins < 60) return `${diffMins} phút trước`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} ngày trước`;
   };
 
   const contentMaxWidth = isDesktop ? 1400 : "100%";
@@ -88,48 +138,6 @@ export default function AdminDashboard() {
   const statsWidth = isDesktop ? "w-1/4" : "w-1/2";
   const actionWidth = isDesktop ? "w-1/3" : isTablet ? "w-1/2" : "w-full";
 
-  const menuItems = [
-    {
-      icon: <HomeIcon size={20} color={Colors.primary} />,
-      label: "Dashboard",
-      route: "/admin/dashboard",
-    },
-    {
-      icon: <UsersIcon size={20} color={Colors.primary} />,
-      label: "Người dùng",
-      route: "/admin/users",
-    },
-    {
-      icon: <SchoolIcon size={20} color={Colors.primary} />,
-      label: "Lớp học",
-      route: "/admin/classes",
-    },
-    {
-      icon: <BookIcon size={20} color={Colors.primary} />,
-      label: "Môn học",
-      route: "/admin/subjects",
-    },
-    {
-      icon: <CalendarIcon size={20} color={Colors.primary} />,
-      label: "Lịch học",
-      route: "/admin/schedules",
-    },
-    {
-      icon: <EyeIcon size={20} color={Colors.primary} />,
-      label: "Giám sát",
-      route: "/admin/sessions",
-    },
-    {
-      icon: <ChartIcon size={20} color={Colors.primary} />,
-      label: "Báo cáo",
-      route: "/admin/reports",
-    },
-    {
-      icon: <SettingsIcon size={20} color={Colors.primary} />,
-      label: "Cài đặt",
-      route: "/admin/settings",
-    },
-  ];
   const statsData = [
     {
       label: "Tổng người dùng",
@@ -157,11 +165,11 @@ export default function AdminDashboard() {
     },
   ];
 
-  // Today stats sẽ được load từ reportService sau
+  // Today stats from API
   const todayStats = [
-    { label: "Có mặt", value: "0", color: Colors.success },
-    { label: "Muộn", value: "0", color: Colors.warning },
-    { label: "Vắng", value: "0", color: Colors.error },
+    { label: "Có mặt", value: todayPresent.toString(), color: Colors.success },
+    { label: "Muộn", value: todayLate.toString(), color: Colors.warning },
+    { label: "Vắng", value: todayAbsent.toString(), color: Colors.error },
   ];
 
   const quickActions = [
@@ -490,22 +498,12 @@ export default function AdminDashboard() {
               Hoạt động gần đây
             </Text>
             <Card>
-              {[
-                {
-                  text: "Thêm mới 15 sinh viên vào lớp CNTT01",
-                  time: "5 phút trước",
-                },
-                { text: "Tạo lịch học tuần 2 HK1-2026", time: "1 giờ trước" },
-                {
-                  text: "Cập nhật thông tin giảng viên GV001",
-                  time: "2 giờ trước",
-                },
-              ].map((activity, index) => (
+              {recentActivities.map((activity, index) => (
                 <View
                   key={index}
                   style={{
                     paddingVertical: isMobile ? 12 : 16,
-                    borderBottomWidth: index === 2 ? 0 : 1,
+                    borderBottomWidth: index === recentActivities.length - 1 ? 0 : 1,
                     borderBottomColor: Colors.border,
                   }}
                 >
@@ -518,14 +516,16 @@ export default function AdminDashboard() {
                   >
                     {activity.text}
                   </Text>
-                  <Text
-                    style={{
-                      fontSize: isMobile ? 12 : 13,
-                      color: Colors.textSecondary,
-                    }}
-                  >
-                    {activity.time}
-                  </Text>
+                  {activity.time ? (
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 12 : 13,
+                        color: Colors.textSecondary,
+                      }}
+                    >
+                      {activity.time}
+                    </Text>
+                  ) : null}
                 </View>
               ))}
             </Card>
@@ -535,11 +535,7 @@ export default function AdminDashboard() {
     </View>
   );
 
-  return (
-    <AppLayout menuItems={menuItems} userRole="admin" userName="Admin Hệ thống">
-      {content}
-    </AppLayout>
-  );
+  return content;
 }
 
 // Updated: 2026-01-02 13:16:05

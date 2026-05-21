@@ -11,6 +11,7 @@ import {
   Platform,
   Modal,
   ScrollView,
+  useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { attendanceService } from "@/apis/services/attendance.service";
@@ -35,6 +36,7 @@ function formatTime(isoString: string) {
 }
 
 export default function AttendanceMonitoringScreen() {
+  const { width } = useWindowDimensions();
   const [sessions, setSessions] = useState<AttendanceSessionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -326,8 +328,8 @@ export default function AttendanceMonitoringScreen() {
           contentContainerStyle={styles.listContent}
           refreshing={refreshing}
           onRefresh={() => fetchSessions(true)}
-          numColumns={Platform.OS === "web" && window.innerWidth >= 768 ? 2 : 1}
-          key={Platform.OS === "web" && window.innerWidth >= 768 ? "2" : "1"}
+          numColumns={Platform.OS === "web" && width >= 768 ? 2 : 1}
+          key={Platform.OS === "web" && width >= 768 ? "2" : "1"}
         />
       )}
 

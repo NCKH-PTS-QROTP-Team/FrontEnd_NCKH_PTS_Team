@@ -17,6 +17,7 @@ import { useToast } from "@/components/ToastProvider";
 import ConfirmDialog, { useConfirmDialog } from "@/components/ConfirmDialog";
 import { Ionicons } from "@expo/vector-icons";
 import { classService } from "@/apis/services/class.service";
+import { semesterService, Semester } from "@/apis/services/semester.service";
 import {
   ClassResponse,
   ClassStudentResponse,
@@ -660,6 +661,7 @@ function ClassFormModal({
   loading,
   onClose,
   onSubmit,
+  semesterList,
 }: {
   mode: "add" | "edit";
   form: any;
@@ -668,6 +670,7 @@ function ClassFormModal({
   loading: boolean;
   onClose: () => void;
   onSubmit: () => void;
+  semesterList: Semester[];
 }) {
   const isAdd = mode === "add";
   const fields = [
@@ -681,7 +684,11 @@ function ClassFormModal({
       key: "name",
       placeholder: "Công nghệ thông tin K18 - Lớp 1",
     },
-    { label: "Học kỳ", key: "semester", placeholder: "VD: 2024-1" },
+    {
+      label: "Học kỳ",
+      key: "semesterId",
+      dropdown: true,
+    },
     {
       label: "Sĩ số",
       key: "studentCount",
@@ -722,30 +729,50 @@ function ClassFormModal({
           <ScrollView showsVerticalScrollIndicator={false}>
             {fields.map((f) => (
               <View key={f.key}>
-                <Text style={s.label}>{f.label}</Text>
-                <TextInput
-                  style={s.input}
-                  placeholder={f.placeholder}
-                  placeholderTextColor="#94a3b8"
-                  keyboardType={(f as any).keyboard ?? "default"}
-                  value={
-                    (f as any).numeric
-                      ? form[f.key] != null
-                        ? String(form[f.key])
-                        : ""
-                      : (form[f.key] ?? "")
-                  }
-                  onChangeText={(v) =>
-                    setForm((prev: any) => ({
-                      ...prev,
-                      [f.key]: (f as any).numeric
-                        ? v
-                          ? parseInt(v, 10)
-                          : undefined
-                        : v,
-                    }))
-                  }
-                />
+                {f.dropdown ? (
+                  <View style={{ marginBottom: 12 }}>
+                    <DropdownPicker
+                      label={f.label}
+                      options={semesterList.map((d) => ({ label: d.name, value: d.id }))}
+                      selectedValue={form[f.key] || null}
+                      onValueChange={(val) =>
+                        setForm((prev: any) => ({
+                          ...prev,
+                          [f.key]: val || undefined,
+                        }))
+                      }
+                      placeholder="Chọn học kỳ"
+                      themeColor={PINK}
+                    />
+                  </View>
+                ) : (
+                  <>
+                    <Text style={s.label}>{f.label}</Text>
+                    <TextInput
+                      style={s.input}
+                      placeholder={f.placeholder}
+                      placeholderTextColor="#94a3b8"
+                      keyboardType={(f as any).keyboard ?? "default"}
+                      value={
+                        (f as any).numeric
+                          ? form[f.key] != null
+                            ? String(form[f.key])
+                            : ""
+                          : (form[f.key] ?? "")
+                      }
+                      onChangeText={(v) =>
+                        setForm((prev: any) => ({
+                          ...prev,
+                          [f.key]: (f as any).numeric
+                            ? v
+                              ? parseInt(v, 10)
+                              : undefined
+                            : v,
+                        }))
+                      }
+                    />
+                  </>
+                )}
               </View>
             ))}
             <TouchableOpacity
@@ -782,6 +809,7 @@ export default function ClassesManagement() {
   const [selectedSemester, setSelectedSemester] = useState<string | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [classes, setClasses] = useState<ClassResponse[]>([]);
+  const [semesterList, setSemesterList] = useState<Semester[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -815,8 +843,14 @@ export default function ClassesManagement() {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
       setError(null);
-      const data = await classService.getAllClasses();
-      setClasses(data);
+      
+      const [classData, semData] = await Promise.all([
+        classService.getAllClasses(),
+        semesterService.getAllSemesters().catch(() => [] as Semester[]),
+      ]);
+      
+      setClasses(classData);
+      setSemesterList(semData);
     } catch (err: any) {
       if (err?.status === 403)
         setError(
@@ -881,7 +915,7 @@ export default function ClassesManagement() {
     setEditForm({
       code: cls.code,
       name: cls.name,
-      semester: cls.semester ?? "",
+      semesterId: cls.semesterId ?? "",
       studentCount: cls.studentCount ?? undefined,
       subjectId: cls.subjectId ?? "",
       teacherId: cls.teacherId ?? "",
@@ -1103,6 +1137,7 @@ export default function ClassesManagement() {
         loading={submitting}
         onClose={() => setAddVisible(false)}
         onSubmit={handleAdd}
+        semesterList={semesterList}
       />
       {/* Edit */}
       <ClassFormModal
@@ -1113,6 +1148,7 @@ export default function ClassesManagement() {
         loading={saving}
         onClose={() => setEditVisible(false)}
         onSubmit={handleSaveEdit}
+        semesterList={semesterList}
       />
       {/* Detail */}
       <ClassDetailModal

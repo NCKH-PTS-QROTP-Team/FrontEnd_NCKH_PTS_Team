@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
-import { Colors } from '../constants/colors';
+import { Colors } from '@/constants/colors';
 import { StatsCard } from './StatsCard';
 import { QuickActions } from './QuickActions';
 import { ActivityTimeline } from './ActivityTimeline';
@@ -17,7 +17,7 @@ import {
   HashIcon,
   BellIcon,
 } from './Icons';
-import { ResponsiveText, ResponsiveSpacing } from '../utils/responsive';
+import { ResponsiveText, ResponsiveSpacing } from '@/utils/responsive';
 
 /**
  * Beautiful Dashboard Demo with:
