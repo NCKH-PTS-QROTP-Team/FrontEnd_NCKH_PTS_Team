@@ -12,6 +12,7 @@ import {
   Keyboard,
   ActivityIndicator,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -67,6 +68,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
   const { width } = useWindowDimensions();
   const isWeb = Platform.OS === "web";
   const isMobile = width < 768;
+  const insets = useSafeAreaInsets();
 
   // Load role, userId, display name sau khi user đã login
   useEffect(() => {
@@ -241,11 +243,24 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
       const groqMessages = [
         {
           role: "system",
-          content: `Bạn là trợ lý ảo thông minh của hệ thống giáo dục trường Đại học. Bạn CẦN TUÂN THỦ NGHIÊM NGẶT các quy tắc sau:
-1. Bạn đang hỗ trợ người dùng có vai trò: ${currentRole ?? "Chưa rõ"}. Tên của họ là: ${currentName ?? "Bạn"}.
-2. Nếu là Sinh viên: Xưng hô là "bạn" và "mình/trợ lý". CHỈ cung cấp/tư vấn thông tin về lịch học, lịch thi, điểm danh, và quy chế học vụ của cá nhân họ. Tuyệt đối KHÔNG tiết lộ thông tin của sinh viên khác hay quyền hạn của Giảng viên/Admin.
-3. Nếu là Giảng viên: Xưng hô là "thầy/cô" và "trợ lý". Hỗ trợ các vấn đề về lịch giảng dạy, xem danh sách lớp, và điểm danh.
-4. NẾU người dùng hỏi các vấn đề không liên quan đến giáo dục, học vụ, hệ thống đại học, HOẶC hỏi vượt quá thẩm quyền của vai trò ${currentRole ?? "Sinh viên"}, hãy từ chối trả lời một cách lịch sự.`,
+          content: `Bạn là trợ lý ảo ĐỘC QUYỀN của hệ thống quản lý học vụ trường Đại học. Bạn CẦN TUÂN THỦ NGHIÊM NGẶT CÁC QUY TẮC SAU:
+
+1. VAI TRÒ VÀ NGƯỜI DÙNG: Bạn đang hỗ trợ người dùng có vai trò: ${currentRole ?? "Chưa rõ"}. Tên của họ là: ${currentName ?? "Bạn"}.
+2. PHẠM VI TRẢ LỜI: BẠN CHỈ ĐƯỢC PHÉP trả lời các câu hỏi liên quan ĐẾN VIỆC SỬ DỤNG HỆ THỐNG này (lịch học, điểm danh, lịch thi, danh sách lớp, quy chế học vụ).
+3. TỪ CHỐI TUYỆT ĐỐI: 
+   - KHÔNG trả lời bất kỳ câu hỏi nào về lập trình, logic code, công nghệ phần mềm, thuật toán.
+   - KHÔNG trả lời các kiến thức chung ngoài xã hội, giải trí, toán học, văn học, v.v.
+   - KHÔNG viết code, KHÔNG dịch thuật, KHÔNG làm thơ.
+   -> Nếu người dùng hỏi những thứ này, HÃY TỪ CHỐI NGAY LẬP TỨC: "Xin lỗi, tôi là trợ lý học vụ. Tôi chỉ hỗ trợ các vấn đề liên quan đến lịch học, điểm danh và chức năng của hệ thống."
+4. HƯỚNG DẪN CHỨC NĂNG HỆ THỐNG:
+   - Nếu là Sinh viên (STUDENT): Xưng hô "bạn - trợ lý". CHỈ hướng dẫn xem lịch học, lịch thi, lịch sử điểm danh của bản thân.
+     + Cách quét mặt điểm danh: Hướng dẫn bạn sinh viên vào màn hình Điểm danh, cấp quyền camera, đưa khuôn mặt vào khung hình tròn, giữ thẳng và chờ hệ thống nhận diện.
+     + KHÔNG CUNG CẤP thông tin hay quyền hạn của Giảng viên/Admin.
+   - Nếu là Giảng viên (TEACHER): Xưng hô "thầy/cô - trợ lý".
+     + Cách bật điểm danh: Hướng dẫn thầy/cô vào Lịch giảng dạy -> Chọn buổi học -> Nhấn nút "Bắt đầu điểm danh" -> Hệ thống sẽ tạo phiên và tự động phát mã QR hoặc bắt đầu nhận diện khuôn mặt sinh viên.
+     + Hướng dẫn xem danh sách lớp, xuất báo cáo điểm danh.
+   - Nếu là Giáo vụ (ACADEMIC_STAFF): Hướng dẫn các chức năng quản lý lớp học, xếp lịch.
+   - Nếu là Admin (ADMIN): Hướng dẫn quản trị hệ thống, cấp quyền.`,
         },
         ...messages
           .filter(m => m.id !== "1") // Bỏ qua câu chào mặc định ban đầu để tiết kiệm token
@@ -263,10 +278,10 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer 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",
+          Authorization: `Bearer ${process.env.EXPO_PUBLIC_GROQ_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "llama3-70b-8192", // Sử dụng LLaMA 3 70B cho tiếng Việt tốt
+          model: "llama-3.1-8b-instant", // Free tier, nhanh, hỗ trợ tiếng Việt tốt
           messages: groqMessages,
           temperature: 0.7,
           max_tokens: 1024,
@@ -336,11 +351,11 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
         onPress={toggleChat}
         style={{
           position: isWeb ? ("fixed" as any) : "absolute",
-          bottom: isWeb ? 24 : 100,
+          bottom: isWeb ? 24 : 110,
           right: isWeb ? 24 : 16,
-          width: isMobile ? 56 : 64,
-          height: isMobile ? 56 : 64,
-          borderRadius: isMobile ? 28 : 32,
+          width: isMobile ? 52 : 64,
+          height: isMobile ? 52 : 64,
+          borderRadius: isMobile ? 26 : 32,
           backgroundColor: Colors.primary,
           alignItems: "center",
           justifyContent: "center",
@@ -495,12 +510,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
 
       {/* Messages - Only show when not minimized */}
       {!isMinimized && (
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "padding"}
-          style={{ flex: 1 }}
-          keyboardVerticalOffset={0}
-          enabled={!isWeb}
-        >
+        <View style={{ flex: 1, paddingBottom: keyboardHeight }}>
           <ScrollView
             ref={scrollViewRef}
             style={{
@@ -632,7 +642,8 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
               flexDirection: "row",
               alignItems: "center",
               paddingHorizontal: 16,
-              paddingVertical: 12,
+              paddingTop: 12,
+              paddingBottom: Math.max(insets.bottom, 12),
               backgroundColor: Colors.white,
               borderTopWidth: 1,
               borderTopColor: "#F3F4F6",
@@ -660,6 +671,12 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
               maxLength={500}
               onSubmitEditing={handleSend}
               returnKeyType="send"
+              onKeyPress={(e: any) => {
+                if (Platform.OS === "web" && e.nativeEvent.key === "Enter" && !e.nativeEvent.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
             />
             <TouchableOpacity
               onPress={handleSend}
@@ -689,7 +706,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ onClose }) => {
               />
             </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       )}
     </Animated.View>
   );

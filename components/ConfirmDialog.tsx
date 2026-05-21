@@ -20,6 +20,10 @@ export interface ConfirmDialogProps {
   onCancel: () => void;
   /** 'danger' = nút xác nhận đỏ, 'default' = nút xác nhận xanh */
   variant?: 'danger' | 'default';
+  /** Show loading spinner on confirm button */
+  loading?: boolean;
+  /** Disable confirm button */
+  disabled?: boolean;
 }
 
 export default function ConfirmDialog({
@@ -31,6 +35,8 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
   variant = 'default',
+  loading = false,
+  disabled = false,
 }: ConfirmDialogProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
@@ -142,6 +148,7 @@ export default function ConfirmDialog({
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TouchableOpacity
               onPress={onCancel}
+              disabled={loading}
               style={{
                 flex: 1,
                 paddingVertical: 12,
@@ -150,6 +157,7 @@ export default function ConfirmDialog({
                 borderColor: '#e5e7eb',
                 backgroundColor: '#f9fafb',
                 alignItems: 'center',
+                opacity: loading ? 0.5 : 1,
                 ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
               }}
             >
@@ -160,17 +168,19 @@ export default function ConfirmDialog({
 
             <TouchableOpacity
               onPress={onConfirm}
+              disabled={loading || disabled}
               style={{
                 flex: 1,
                 paddingVertical: 12,
                 borderRadius: 10,
                 backgroundColor: confirmBg,
                 alignItems: 'center',
+                opacity: (loading || disabled) ? 0.6 : 1,
                 ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
               }}
             >
               <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600' }}>
-                {confirmText}
+                {loading ? 'Đang xử lý...' : confirmText}
               </Text>
             </TouchableOpacity>
           </View>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { Colors } from '../constants/colors';
+import { Colors } from '@/constants/colors';
 import { BottomNavigation, BottomNavigationSpacer } from './BottomNavigation';
 import { ResponsiveGrid, ResponsiveContainer, ResponsiveStack, useScreenSize } from './ResponsiveLayout';
 import { ScrollableTabs, PillTabs } from './ScrollableTabs';
@@ -8,7 +8,7 @@ import Modal from './Modal';
 import { PrimaryButton } from './PrimaryButton';
 import { AccessibleCard, CardHeader, CardContent } from './AccessibleCard';
 import { HomeIcon, UsersIcon, SchoolIcon, SettingsIcon, CalendarIcon } from './Icons';
-import { ResponsiveText, ResponsiveSpacing, isMobileDevice } from '../utils/responsive';
+import { ResponsiveText, ResponsiveSpacing, isMobileDevice } from '@/utils/responsive';
 
 /**
  * Comprehensive demo of responsive mobile optimizations:

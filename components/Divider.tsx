@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ViewStyle } from 'react-native';
-import { Colors } from '../constants/colors';
+import { Colors } from '@/constants/colors';
 
 export interface DividerProps {
   /**

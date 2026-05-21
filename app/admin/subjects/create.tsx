@@ -1,48 +1,89 @@
 import React, { useState } from "react";
 import { View, Text, ScrollView } from "react-native";
 import { router } from "expo-router";
-import { Colors } from "../../../constants/colors";
-import AppHeader from "../../../components/AppHeader";
-import Input from "../../../components/Input";
-import PrimaryButton from "../../../components/PrimaryButton";
-import Card from "../../../components/Card";
+import { Colors } from "@/constants/colors";
+import Input from "@/components/Input";
+import PrimaryButton from "@/components/PrimaryButton";
+import Card from "@/components/Card";
+import { useToast } from "@/components/ToastProvider";
+import {
+  subjectService,
+  CreateSubjectRequest,
+} from "@/apis/services/subject.service";
 
 export default function CreateSubject() {
+  const { showToast } = useToast();
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     code: "",
     name: "",
     credits: "3",
-    teacherId: "",
+    teacherLTId: "",
+    teacherTHId: "",
   });
 
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = () => {
-    const newErrors: any = {};
-    if (!formData.code) newErrors.code = "Vui lòng nhập mã môn học";
-    if (!formData.name) newErrors.name = "Vui lòng nhập tên môn học";
-    if (!formData.credits) newErrors.credits = "Vui lòng nhập số tín chỉ";
+  const handleSubmit = async () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.code.trim()) newErrors.code = "Vui lòng nhập mã môn học";
+    if (!formData.name.trim()) newErrors.name = "Vui lòng nhập tên môn học";
+    if (!formData.credits.trim()) newErrors.credits = "Vui lòng nhập số tín chỉ";
+
+    const credits = parseInt(formData.credits, 10);
+    if (formData.credits && isNaN(credits)) {
+      newErrors.credits = "Số tín chỉ phải là số";
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    alert("Tạo môn học thành công!");
-    router.back();
+    try {
+      setSubmitting(true);
+      setErrors({});
+      const request: CreateSubjectRequest = {
+        code: formData.code.trim(),
+        name: formData.name.trim(),
+        credits: credits,
+      };
+      if (formData.teacherLTId.trim()) request.teacherLTId = formData.teacherLTId.trim();
+      if (formData.teacherTHId.trim()) request.teacherTHId = formData.teacherTHId.trim();
+
+      await subjectService.createSubject(request);
+      showToast("Tạo môn học thành công!", "success");
+      router.back();
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Không thể tạo môn học";
+      showToast(message, "error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <ScrollView className="flex-1">
+    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      <ScrollView style={{ flex: 1 }}>
         <View
-          className="p-4"
-          style={{ maxWidth: 600, width: "100%", alignSelf: "center" }}
+          style={{
+            padding: 16,
+            maxWidth: 600,
+            width: "100%",
+            alignSelf: "center",
+          }}
         >
-          <Card className="mb-4">
+          <Card style={{ marginBottom: 16 }}>
             <Text
-              className="text-lg font-semibold mb-4"
-              style={{ color: Colors.text }}
+              style={{
+                fontSize: 18,
+                fontWeight: "600",
+                marginBottom: 16,
+                color: Colors.text,
+              }}
             >
               Thông tin môn học
             </Text>
@@ -75,19 +116,31 @@ export default function CreateSubject() {
             />
 
             <Input
-              label="Mã giảng viên (tùy chọn)"
-              placeholder="GV001"
-              value={formData.teacherId}
+              label="ID GV Lý thuyết (tuỳ chọn)"
+              placeholder="UUID giảng viên LT"
+              value={formData.teacherLTId}
               onChangeText={(text) =>
-                setFormData({ ...formData, teacherId: text })
+                setFormData({ ...formData, teacherLTId: text })
+              }
+            />
+
+            <Input
+              label="ID GV Thực hành (tuỳ chọn)"
+              placeholder="UUID giảng viên TH"
+              value={formData.teacherTHId}
+              onChangeText={(text) =>
+                setFormData({ ...formData, teacherTHId: text })
               }
             />
 
             <Text
-              className="text-xs mt-2"
-              style={{ color: Colors.textSecondary }}
+              style={{
+                fontSize: 12,
+                marginTop: 8,
+                color: Colors.textSecondary,
+              }}
             >
-              Có thể phân công giảng viên sau
+              Có thể phân công giảng viên sau từ trang quản lý môn học
             </Text>
           </Card>
 
@@ -99,8 +152,12 @@ export default function CreateSubject() {
                 onPress={() => router.back()}
               />
             </View>
-            <View className="flex-1 px-2">
-              <PrimaryButton title="Tạo môn học" onPress={handleSubmit} />
+            <View style={{ flex: 1, paddingHorizontal: 8 }}>
+              <PrimaryButton
+                title={submitting ? "Đang tạo..." : "Tạo môn học"}
+                onPress={handleSubmit}
+                disabled={submitting}
+              />
             </View>
           </View>
         </View>

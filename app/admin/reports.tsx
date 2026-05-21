@@ -1,17 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   useWindowDimensions,
+  Platform,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/colors";
-import { AppHeader } from "@/components/AppHeader";
 import Card from "@/components/Card";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import Tabs from "@/components/Tabs";
+import Badge from "@/components/Badge";
+import { SkeletonCard } from "@/components/Skeleton";
+import { ErrorState } from "@/components/ErrorState";
+import { useToast } from "@/components/ToastProvider";
+import {
+  reportService,
+  AttendanceSummary,
+  ClassAttendanceReport,
+  StudentAttendanceReport,
+} from "@/apis/services/report.service";
 
 export default function Reports() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -20,10 +30,81 @@ export default function Reports() {
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
 
-  const contentMaxWidth = isDesktop ? 1200 : "100%";
-  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
-  const paddingVertical = isMobile ? 16 : 24;
-  const showTable = isDesktop;
+  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState<AttendanceSummary | null>(null);
+  const [classReports, setClassReports] = useState<ClassAttendanceReport[]>([]);
+  const [studentReports, setStudentReports] = useState<StudentAttendanceReport[]>([]);
+  const [exporting, setExporting] = useState(false);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    loadOverview();
+  }, []);
+
+  const loadOverview = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await reportService.getAttendanceSummary();
+      setSummary(data);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || "Lỗi tải báo cáo";
+      showToast(message, "error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadClassReports = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await reportService.getClassReports();
+      setClassReports(data);
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || err?.message || "Lỗi tải báo cáo lớp", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadStudentReports = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await reportService.getStudentReports();
+      setStudentReports(data);
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || err?.message || "Lỗi tải báo cáo SV", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (tab === "class" && classReports.length === 0) loadClassReports();
+    if (tab === "student" && studentReports.length === 0) loadStudentReports();
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      setExporting(true);
+      if (Platform.OS === "web") {
+        const blob = await reportService.exportExcel();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `bao-cao-diem-danh-${new Date().toISOString().split("T")[0]}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast("Đã tải file Excel", "success");
+      } else {
+        showToast("Chức năng export chỉ hỗ trợ trên web", "info");
+      }
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || err?.message || "Lỗi xuất báo cáo", "error");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
@@ -32,242 +113,226 @@ export default function Reports() {
         tabs={[
           { key: "overview", label: "Tổng quan" },
           { key: "class", label: "Theo lớp" },
-          { key: "teacher", label: "Theo GV" },
           { key: "student", label: "Theo SV" },
         ]}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
       />
 
-      <ScrollView className="flex-1">
+      <ScrollView style={{ flex: 1 }}>
         <View
-          className="p-4"
-          style={{ maxWidth: 1200, width: "100%", alignSelf: "center" }}
+          style={{
+            padding: 16,
+            maxWidth: 1200,
+            width: "100%",
+            alignSelf: "center",
+          }}
         >
           {activeTab === "overview" && (
             <>
               {/* Summary Stats */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  marginBottom: isMobile ? 16 : 24,
-                  marginHorizontal: -8,
-                }}
-              >
-                {[
-                  {
-                    label: "Tổng buổi học",
-                    value: "1,234",
-                    color: Colors.primary,
-                  },
-                  {
-                    label: "Tổng sinh viên",
-                    value: "5,678",
-                    color: Colors.success,
-                  },
-                  {
-                    label: "Tỷ lệ điểm danh TB",
-                    value: "87%",
-                    color: Colors.warning,
-                  },
-                  {
-                    label: "Số lớp hoạt động",
-                    value: "45",
-                    color: Colors.info,
-                  },
-                ].map((stat, index) => (
-                  <View key={index} className="w-1/2 px-2 mb-3">
-                    <Card>
-                      <Text
-                        className="text-3xl font-bold mb-1"
-                        style={{ color: stat.color }}
-                      >
-                        {stat.value}
-                      </Text>
-                      <Text
-                        className="text-xs"
-                        style={{ color: Colors.textSecondary }}
-                      >
-                        {stat.label}
-                      </Text>
-                    </Card>
-                  </View>
-                ))}
-              </View>
-
-              {/* Chart Placeholder */}
-              <Card className="mb-4">
-                <Text
-                  className="font-semibold text-base mb-3"
-                  style={{ color: Colors.text }}
-                >
-                  Biểu đồ điểm danh theo thời gian
-                </Text>
+              {loading ? (
+                <View style={{ flexDirection: "row", flexWrap: "wrap", marginHorizontal: -8, marginBottom: 16 }}>
+                  {[1, 2, 3, 4].map((i) => (
+                    <View key={i} style={{ width: "50%", paddingHorizontal: 8, marginBottom: 12 }}>
+                      <SkeletonCard lines={2} />
+                    </View>
+                  ))}
+                </View>
+              ) : (
                 <View
                   style={{
-                    borderRadius: 12,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: isMobile ? 250 : 300,
-                    backgroundColor: Colors.gray50,
-                    borderWidth: 1,
-                    borderColor: Colors.gray200,
-                    borderStyle: "dashed",
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    marginBottom: isMobile ? 16 : 24,
+                    marginHorizontal: -8,
                   }}
                 >
-                  <Text style={{ color: Colors.textSecondary }}>
-                    📊 Chart Placeholder
-                  </Text>
+                  {[
+                    {
+                      label: "Tổng buổi học",
+                      value: summary?.totalSessions?.toLocaleString() || "0",
+                      color: Colors.primary,
+                    },
+                    {
+                      label: "Tổng sinh viên",
+                      value: summary?.totalStudents?.toLocaleString() || "0",
+                      color: Colors.success,
+                    },
+                    {
+                      label: "Tỷ lệ điểm danh TB",
+                      value: `${summary?.averageAttendanceRate || 0}%`,
+                      color: Colors.warning,
+                    },
+                    {
+                      label: "Tổng có mặt",
+                      value: summary?.totalPresent?.toLocaleString() || "0",
+                      color: Colors.info,
+                    },
+                  ].map((stat, index) => (
+                    <View key={index} style={{ width: "50%", paddingHorizontal: 8, marginBottom: 12 }}>
+                      <Card>
+                        <Text
+                          style={{
+                            fontSize: 28,
+                            fontWeight: "700",
+                            marginBottom: 4,
+                            color: stat.color,
+                          }}
+                        >
+                          {stat.value}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: Colors.textSecondary,
+                          }}
+                        >
+                          {stat.label}
+                        </Text>
+                      </Card>
+                    </View>
+                  ))}
                 </View>
-              </Card>
+              )}
 
-              {/* Faculty-wide Stats */}
-              <Card className="mb-4">
-                <Text
-                  className="font-semibold text-base mb-3"
-                  style={{ color: Colors.text }}
-                >
-                  Thống kê toàn trường
-                </Text>
-                {[
-                  {
-                    label: "Khoa CNTT",
-                    present: 456,
-                    late: 34,
-                    absent: 23,
-                    total: 513,
-                  },
-                  {
-                    label: "Khoa Kinh tế",
-                    present: 389,
-                    late: 28,
-                    absent: 31,
-                    total: 448,
-                  },
-                  {
-                    label: "Khoa Ngoại ngữ",
-                    present: 234,
-                    late: 19,
-                    absent: 12,
-                    total: 265,
-                  },
-                ].map((faculty, index) => (
-                  <View
-                    key={index}
-                    className="py-3 border-b"
+              {/* Attendance Breakdown */}
+              {summary && (
+                <Card style={{ marginBottom: 16 }}>
+                  <Text
                     style={{
-                      borderBottomColor:
-                        index === 2 ? "transparent" : Colors.border,
+                      fontWeight: "600",
+                      fontSize: 16,
+                      marginBottom: 12,
+                      color: Colors.text,
                     }}
                   >
-                    <View className="flex-row justify-between items-center mb-2">
-                      <Text
-                        className="font-medium"
-                        style={{ color: Colors.text }}
-                      >
-                        {faculty.label}
+                    Chi tiết điểm danh
+                  </Text>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <View style={{ alignItems: "center", flex: 1 }}>
+                      <Text style={{ fontSize: 24, fontWeight: "700", color: Colors.success }}>
+                        {summary.totalPresent}
                       </Text>
-                      <Text
-                        className="text-sm"
-                        style={{ color: Colors.primary }}
-                      >
-                        {Math.round((faculty.present / faculty.total) * 100)}%
-                      </Text>
+                      <Text style={{ fontSize: 12, color: Colors.textSecondary }}>Có mặt</Text>
                     </View>
-                    <View className="flex-row justify-between">
-                      <Text
-                        className="text-xs"
-                        style={{ color: Colors.success }}
-                      >
-                        ✓ {faculty.present}
+                    <View style={{ alignItems: "center", flex: 1 }}>
+                      <Text style={{ fontSize: 24, fontWeight: "700", color: Colors.warning }}>
+                        {summary.totalLate}
                       </Text>
-                      <Text
-                        className="text-xs"
-                        style={{ color: Colors.warning }}
-                      >
-                        ⏱ {faculty.late}
+                      <Text style={{ fontSize: 12, color: Colors.textSecondary }}>Muộn</Text>
+                    </View>
+                    <View style={{ alignItems: "center", flex: 1 }}>
+                      <Text style={{ fontSize: 24, fontWeight: "700", color: Colors.error }}>
+                        {summary.totalAbsent}
                       </Text>
-                      <Text className="text-xs" style={{ color: Colors.error }}>
-                        ✕ {faculty.absent}
-                      </Text>
-                      <Text
-                        className="text-xs"
-                        style={{ color: Colors.textSecondary }}
-                      >
-                        Σ {faculty.total}
-                      </Text>
+                      <Text style={{ fontSize: 12, color: Colors.textSecondary }}>Vắng</Text>
                     </View>
                   </View>
-                ))}
-              </Card>
+                </Card>
+              )}
             </>
           )}
 
           {activeTab === "class" && (
-            <Card>
+            <>
               <Text
-                className="font-semibold mb-3"
-                style={{ color: Colors.text }}
+                style={{
+                  fontSize: 14,
+                  marginBottom: 12,
+                  color: Colors.textSecondary,
+                }}
               >
-                Báo cáo theo lớp học
+                {classReports.length} lớp học
               </Text>
-              <Text
-                className="text-sm mb-4"
-                style={{ color: Colors.textSecondary }}
-              >
-                Chọn lớp và khoảng thời gian để xem báo cáo chi tiết
-              </Text>
-              <PrimaryButton
-                title="Chọn lớp học"
-                variant="outline"
-                onPress={() => alert("Chọn lớp")}
-              />
-            </Card>
-          )}
-
-          {activeTab === "teacher" && (
-            <Card>
-              <Text
-                className="font-semibold mb-3"
-                style={{ color: Colors.text }}
-              >
-                Báo cáo theo giảng viên
-              </Text>
-              <Text
-                className="text-sm mb-4"
-                style={{ color: Colors.textSecondary }}
-              >
-                Xem thống kê điểm danh của từng giảng viên
-              </Text>
-              <PrimaryButton
-                title="Chọn giảng viên"
-                variant="outline"
-                onPress={() => alert("Chọn GV")}
-              />
-            </Card>
+              {loading ? (
+                [1, 2, 3].map((i) => <SkeletonCard key={i} lines={3} />)
+              ) : classReports.length === 0 ? (
+                <Card style={{ padding: 24, alignItems: "center" }}>
+                  <Text style={{ color: Colors.textSecondary }}>
+                    Chưa có dữ liệu báo cáo lớp học
+                  </Text>
+                </Card>
+              ) : (
+                classReports.map((cr) => (
+                  <Card key={cr.classId} style={{ marginBottom: 12 }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+                      <View>
+                        <Text style={{ fontWeight: "600", fontSize: 15, color: Colors.text }}>
+                          {cr.classCode}
+                        </Text>
+                        <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
+                          {cr.className}
+                        </Text>
+                      </View>
+                      <Badge variant="primary" size="small">
+                        {cr.attendanceRate}%
+                      </Badge>
+                    </View>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <Text style={{ fontSize: 12, color: Colors.success }}>✓ {cr.totalPresent}</Text>
+                      <Text style={{ fontSize: 12, color: Colors.warning }}>⏱ {cr.totalLate}</Text>
+                      <Text style={{ fontSize: 12, color: Colors.error }}>✕ {cr.totalAbsent}</Text>
+                      <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
+                        SV: {cr.totalStudents} | Buổi: {cr.totalSessions}
+                      </Text>
+                    </View>
+                  </Card>
+                ))
+              )}
+            </>
           )}
 
           {activeTab === "student" && (
-            <Card>
+            <>
               <Text
-                className="font-semibold mb-3"
-                style={{ color: Colors.text }}
+                style={{
+                  fontSize: 14,
+                  marginBottom: 12,
+                  color: Colors.textSecondary,
+                }}
               >
-                Báo cáo theo sinh viên
+                {studentReports.length} sinh viên
               </Text>
-              <Text
-                className="text-sm mb-4"
-                style={{ color: Colors.textSecondary }}
-              >
-                Xem lịch sử điểm danh chi tiết của sinh viên
-              </Text>
-              <PrimaryButton
-                title="Chọn sinh viên"
-                variant="outline"
-                onPress={() => alert("Chọn SV")}
-              />
-            </Card>
+              {loading ? (
+                [1, 2, 3].map((i) => <SkeletonCard key={i} lines={3} />)
+              ) : studentReports.length === 0 ? (
+                <Card style={{ padding: 24, alignItems: "center" }}>
+                  <Text style={{ color: Colors.textSecondary }}>
+                    Chưa có dữ liệu báo cáo sinh viên
+                  </Text>
+                </Card>
+              ) : (
+                studentReports.map((sr) => (
+                  <Card key={`${sr.studentId}-${sr.classId}`} style={{ marginBottom: 12 }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+                      <View>
+                        <Text style={{ fontWeight: "600", fontSize: 15, color: Colors.text }}>
+                          {sr.studentName}
+                        </Text>
+                        <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
+                          {sr.className}
+                        </Text>
+                      </View>
+                      <Badge
+                        variant={sr.attendanceRate >= 80 ? "success" : sr.attendanceRate >= 50 ? "warning" : "error"}
+                        size="small"
+                      >
+                        {sr.attendanceRate}%
+                      </Badge>
+                    </View>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <Text style={{ fontSize: 12, color: Colors.success }}>✓ {sr.presentCount}</Text>
+                      <Text style={{ fontSize: 12, color: Colors.warning }}>⏱ {sr.lateCount}</Text>
+                      <Text style={{ fontSize: 12, color: Colors.error }}>✕ {sr.absentCount}</Text>
+                      <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
+                        Tổng: {sr.totalSessions}
+                      </Text>
+                    </View>
+                  </Card>
+                ))
+              )}
+            </>
           )}
 
           {/* Export Section */}
@@ -298,35 +363,37 @@ export default function Reports() {
                 style={{
                   flex: isMobile ? undefined : 1,
                   paddingHorizontal: 8,
-                  marginBottom: isMobile ? 0 : 0,
                 }}
               >
                 <PrimaryButton
-                  title="Excel"
+                  title={exporting ? "Đang xuất..." : "Excel"}
                   variant="outline"
-                  onPress={() => alert("Export Excel")}
+                  onPress={handleExportExcel}
+                  disabled={exporting}
                 />
               </View>
               <View
                 style={{
                   flex: isMobile ? undefined : 1,
                   paddingHorizontal: 8,
-                  marginBottom: isMobile ? 0 : 0,
                 }}
               >
                 <PrimaryButton
                   title="PDF"
                   variant="outline"
-                  onPress={() => alert("Export PDF")}
+                  onPress={() => showToast("Chức năng PDF sẽ sớm được hỗ trợ", "info")}
                 />
               </View>
               <View
-                style={{ flex: isMobile ? undefined : 1, paddingHorizontal: 8 }}
+                style={{
+                  flex: isMobile ? undefined : 1,
+                  paddingHorizontal: 8,
+                }}
               >
                 <PrimaryButton
                   title="CSV"
                   variant="outline"
-                  onPress={() => alert("Export CSV")}
+                  onPress={() => showToast("Chức năng CSV sẽ sớm được hỗ trợ", "info")}
                 />
               </View>
             </View>

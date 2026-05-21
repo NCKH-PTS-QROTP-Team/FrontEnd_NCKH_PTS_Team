@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,13 +10,19 @@ import {
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/colors";
-import { mockSchedules } from "@/constants/mockData";
-import { AppHeader } from "@/components/AppHeader";
 import Card from "@/components/Card";
 import Badge from "@/components/Badge";
 import { PrimaryButton } from "@/components/PrimaryButton";
+import { SkeletonCard } from "@/components/Skeleton";
+import { ErrorState } from "@/components/ErrorState";
+import { useToast } from "@/components/ToastProvider";
+import { scheduleService, Schedule } from "@/apis/services/schedule.service";
 
 export default function ScheduleManagement() {
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
   const [selectedView, setSelectedView] = useState<"week" | "month">("week");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -29,11 +35,30 @@ export default function ScheduleManagement() {
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
-  const showTable = isDesktop; // Chỉ desktop mới hiển thị table
+  const showTable = isDesktop;
 
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const paddingVertical = isMobile ? 16 : 24;
+
+  useEffect(() => {
+    loadSchedules();
+  }, []);
+
+  const loadSchedules = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await scheduleService.getAllSchedules();
+      setSchedules(data);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || 'Lỗi tải lịch học';
+      setError(message);
+      showToast(message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const addDays = (date: Date, days: number) => {
     const copy = new Date(date);
@@ -73,25 +98,20 @@ export default function ScheduleManagement() {
     });
   }, [currentDate]);
 
-  // Gắn ngày thật cho mockSchedules (nếu chưa có)
+  // Map schedules to display format
   const schedulesWithDate = useMemo(() => {
-    const baseDate = currentDate;
-    const withDate = mockSchedules.map((s, idx) => {
-      if ((s as any).date) return s as any;
-      const date = addDays(baseDate, idx);
-      const iso = date.toISOString().split("T")[0];
-      return { ...s, date: iso };
-    });
-
-    // Sort theo ngày + giờ bắt đầu (nếu có)
-    return withDate.slice().sort((a: any, b: any) => {
-      const [aStart] = String(a.time || "").split(" - ");
-      const [bStart] = String(b.time || "").split(" - ");
-      const aDateTime = new Date(`${a.date}T${aStart || "00:00"}`);
-      const bDateTime = new Date(`${b.date}T${bStart || "00:00"}`);
+    return schedules.map((s) => ({
+      ...s,
+      time: `${s.startTime} - ${s.endTime}`,
+      teacher: s.teacherName,
+      courseCode: s.subjectCode || s.classCode,
+      courseName: s.subjectName || s.className,
+    })).sort((a, b) => {
+      const aDateTime = new Date(`${a.date || '2026-01-01'}T${a.startTime || '00:00'}`);
+      const bDateTime = new Date(`${b.date || '2026-01-01'}T${b.startTime || '00:00'}`);
       return aDateTime.getTime() - bDateTime.getTime();
     });
-  }, [currentDate]);
+  }, [schedules]);
 
   // Sort function
   const handleSort = (columnKey: string) => {
@@ -181,18 +201,18 @@ export default function ScheduleManagement() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusMap = {
-      upcoming: { label: "Sắp diễn ra", variant: "primary" as const },
-      "in-progress": { label: "Đang diễn ra", variant: "success" as const },
-      completed: { label: "Đã kết thúc", variant: "neutral" as const },
-    };
-    return (
-      statusMap[status as keyof typeof statusMap] || {
-        label: status,
-        variant: "neutral" as const,
-      }
-    );
+  const getStatusBadge = (schedule: any) => {
+    // Derive status from date/time since API doesn't have a status field
+    const now = new Date();
+    const scheduleDate = schedule.date ? new Date(schedule.date) : null;
+    if (!scheduleDate) return { label: 'Chưa xác định', variant: 'neutral' as const };
+    const endTime = schedule.endTime || '23:59';
+    const startTime = schedule.startTime || '00:00';
+    const scheduleEnd = new Date(`${schedule.date}T${endTime}`);
+    const scheduleStart = new Date(`${schedule.date}T${startTime}`);
+    if (now > scheduleEnd) return { label: 'Đã kết thúc', variant: 'neutral' as const };
+    if (now >= scheduleStart && now <= scheduleEnd) return { label: 'Đang diễn ra', variant: 'success' as const };
+    return { label: 'Sắp diễn ra', variant: 'primary' as const };
   };
 
   return (
@@ -378,10 +398,10 @@ export default function ScheduleManagement() {
                       {schedule.courseCode}
                     </Text>
                     <Badge
-                      variant={getStatusBadge(schedule.status).variant}
+                      variant={getStatusBadge(schedule).variant}
                       size="small"
                     >
-                      {getStatusBadge(schedule.status).label}
+                      {getStatusBadge(schedule).label}
                     </Badge>
                   </View>
 

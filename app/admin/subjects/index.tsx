@@ -1,19 +1,52 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '@/constants/colors';
-import { mockSubjects } from '@/constants/mockData';
-import { AppHeader } from '@/components/AppHeader';
-import  Card  from '@/components/Card';
+import Card from '@/components/Card';
 import { Badge } from '@/components/Badge';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { EmptySearchIcon, EmptyDocumentIcon } from '@/components/EmptyStateIllustration';
+import DataTable from '@/components/DataTable';
+import Modal from '@/components/Modal';
+import { SkeletonCard } from '@/components/Skeleton';
+import { ErrorState } from '@/components/ErrorState';
+import { useToast } from '@/components/ToastProvider';
+import { subjectService, Subject } from '@/apis/services/subject.service';
+import { userService, User } from '@/apis/services/user.service';
+import { UserRole } from '@/apis/types/auth.types';
 
 type TeacherType = 'LT' | 'TH';
 
 export default function SubjectManagement() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [subjects, setSubjects] = useState<Subject[]>(mockSubjects);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [teachers, setTeachers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [subjectData, teacherData] = await Promise.all([
+        subjectService.getSubjects(),
+        userService.getUsers(UserRole.TEACHER),
+      ]);
+      setSubjects(subjectData);
+      setTeachers(teacherData);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || 'Lỗi tải dữ liệu';
+      setError(message);
+      showToast(message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [selectedTeacherType, setSelectedTeacherType] = useState<TeacherType>('LT');
@@ -35,12 +68,11 @@ export default function SubjectManagement() {
 
   const teacherOptions = useMemo(
     () =>
-      mockUsers
-        .filter((u) => u.role === 'teacher')
+      teachers
         .filter((u) =>
           `${u.teacherId || ''} ${u.name}`.toLowerCase().includes(teacherSearch.toLowerCase())
         ),
-    [teacherSearch]
+    [teacherSearch, teachers]
   );
 
   const openAssignModal = (subject: Subject, teacherType: TeacherType = 'LT') => {
@@ -50,19 +82,28 @@ export default function SubjectManagement() {
     setModalVisible(true);
   };
 
-  const handleAssign = (teacherId?: string, teacherName?: string) => {
+  const handleAssign = async (teacherId?: string, teacherName?: string) => {
     if (!selectedSubject) return;
-    setSubjects((prev) =>
-      prev.map((s) => {
-        if (s.id !== selectedSubject.id) return s;
-        
-        if (selectedTeacherType === 'LT') {
-          return { ...s, teacherLTId: teacherId, teacherLT: teacherName };
-        } else {
-          return { ...s, teacherTHId: teacherId, teacherTH: teacherName };
-        }
-      })
-    );
+    try {
+      const updateData = selectedTeacherType === 'LT'
+        ? { teacherLTId: teacherId }
+        : { teacherTHId: teacherId };
+      await subjectService.updateSubject(selectedSubject.id, updateData);
+      setSubjects((prev) =>
+        prev.map((s) => {
+          if (s.id !== selectedSubject.id) return s;
+          if (selectedTeacherType === 'LT') {
+            return { ...s, teacherLTId: teacherId, teacherLTName: teacherName };
+          } else {
+            return { ...s, teacherTHId: teacherId, teacherTHName: teacherName };
+          }
+        })
+      );
+      showToast('Phân công giảng viên thành công', 'success');
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || 'Lỗi phân công giảng viên';
+      showToast(message, 'error');
+    }
     setModalVisible(false);
   };
 
@@ -151,10 +192,10 @@ export default function SubjectManagement() {
                       width: 200,
                       render: (subject) => (
                         <View style={{ gap: 6 }}>
-                          {subject.teacherLT ? (
+                          {subject.teacherLTName ? (
                             <View>
                               <Text style={{ fontSize: 13, fontWeight: '500', color: Colors.text, marginBottom: 2 }}>
-                                {subject.teacherLT}
+                                {subject.teacherLTName}
                               </Text>
                               <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
                                 {subject.teacherLTId}
@@ -174,10 +215,10 @@ export default function SubjectManagement() {
                       width: 200,
                       render: (subject) => (
                         <View style={{ gap: 6 }}>
-                          {subject.teacherTH ? (
+                          {subject.teacherTHName ? (
                             <View>
                               <Text style={{ fontSize: 13, fontWeight: '500', color: Colors.text, marginBottom: 2 }}>
-                                {subject.teacherTH}
+                                {subject.teacherTHName}
                               </Text>
                               <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
                                 {subject.teacherTHId}
@@ -199,13 +240,13 @@ export default function SubjectManagement() {
                       render: (subject) => (
                         <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
                           <PrimaryButton
-                            title={subject.teacherLT ? 'Đổi LT' : 'GV LT'}
+                            title={subject.teacherLTName ? 'Đổi LT' : 'GV LT'}
                             variant="outline"
                             onPress={() => openAssignModal(subject, 'LT')}
                             style={{ paddingVertical: 6, paddingHorizontal: 10, minHeight: 32 }}
                           />
                           <PrimaryButton
-                            title={subject.teacherTH ? 'Đổi TH' : 'GV TH'}
+                            title={subject.teacherTHName ? 'Đổi TH' : 'GV TH'}
                             variant="outline"
                             onPress={() => openAssignModal(subject, 'TH')}
                             style={{ paddingVertical: 6, paddingHorizontal: 10, minHeight: 32 }}
@@ -261,9 +302,9 @@ export default function SubjectManagement() {
                             <Text style={{ fontSize: 12, fontWeight: '600', color: Colors.text, marginRight: 6 }}>
                               LT:
                             </Text>
-                            {subject.teacherLT ? (
+                            {subject.teacherLTName ? (
                               <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
-                                {subject.teacherLT} {subject.teacherLTId ? `(${subject.teacherLTId})` : ''}
+                                {subject.teacherLTName} {subject.teacherLTId ? `(${subject.teacherLTId})` : ''}
                               </Text>
                             ) : (
                               <Badge variant="warning" size="small">
@@ -272,7 +313,7 @@ export default function SubjectManagement() {
                             )}
                           </View>
                           <PrimaryButton
-                            title={subject.teacherLT ? 'Đổi GV LT' : 'Phân công GV LT'}
+                            title={subject.teacherLTName ? 'Đổi GV LT' : 'Phân công GV LT'}
                             variant="outline"
                             onPress={() => openAssignModal(subject, 'LT')}
                             style={{ paddingVertical: 6, paddingHorizontal: 12 }}
@@ -285,9 +326,9 @@ export default function SubjectManagement() {
                             <Text style={{ fontSize: 12, fontWeight: '600', color: Colors.text, marginRight: 6 }}>
                               TH:
                             </Text>
-                            {subject.teacherTH ? (
+                            {subject.teacherTHName ? (
                               <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
-                                {subject.teacherTH} {subject.teacherTHId ? `(${subject.teacherTHId})` : ''}
+                                {subject.teacherTHName} {subject.teacherTHId ? `(${subject.teacherTHId})` : ''}
                               </Text>
                             ) : (
                               <Badge variant="warning" size="small">
@@ -296,7 +337,7 @@ export default function SubjectManagement() {
                             )}
                           </View>
                           <PrimaryButton
-                            title={subject.teacherTH ? 'Đổi GV TH' : 'Phân công GV TH'}
+                            title={subject.teacherTHName ? 'Đổi GV TH' : 'Phân công GV TH'}
                             variant="outline"
                             onPress={() => openAssignModal(subject, 'TH')}
                             style={{ paddingVertical: 6, paddingHorizontal: 12 }}
@@ -427,9 +468,9 @@ export default function SubjectManagement() {
                   </View>
                 </View>
               </View>
-              {(selectedTeacherType === 'LT' ? selectedSubject.teacherLT : selectedSubject.teacherTH) && (
+              {(selectedTeacherType === 'LT' ? selectedSubject.teacherLTName : selectedSubject.teacherTHName) && (
                 <Text style={{ fontSize: 13, color: Colors.textSecondary, marginTop: 8 }}>
-                  Đang phân công: {selectedTeacherType === 'LT' ? selectedSubject.teacherLT : selectedSubject.teacherTH}
+                  Đang phân công: {selectedTeacherType === 'LT' ? selectedSubject.teacherLTName : selectedSubject.teacherTHName}
                 </Text>
               )}
             </View>

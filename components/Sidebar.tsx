@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useRouter, usePathname } from "expo-router";
 import { Colors } from "@/constants/colors";
+import { authService } from "@/apis";
 import { LogoutIcon, ChevronLeftIcon, ChevronRightIcon } from "./Icons";
 
 interface MenuItem {
@@ -34,6 +35,17 @@ export default function Sidebar({
 }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      router.replace("/auth/login");
+    }
+  };
+
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [tooltip, setTooltip] = useState<{
@@ -356,7 +368,7 @@ export default function Sidebar({
         }}
       >
         <TouchableOpacity
-          onPress={() => router.replace("/auth/login")}
+          onPress={handleLogout}
           style={[
             {
               flexDirection: "row",

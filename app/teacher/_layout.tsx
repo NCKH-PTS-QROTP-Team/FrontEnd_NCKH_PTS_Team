@@ -26,42 +26,42 @@ export default function TeacherLayout() {
 
   const menuItems = [
     {
-      icon: <HomeIcon size={20} color="#3FA9F5" />,
+      icon: <HomeIcon size={20} color={Colors.primary} />,
       label: "Dashboard",
       route: "/teacher/dashboard",
     },
     {
-      icon: <CalendarIcon size={20} color="#3FA9F5" />,
+      icon: <CalendarIcon size={20} color={Colors.primary} />,
       label: "Lịch dạy",
       route: "/teacher/schedule",
     },
     {
-      icon: <ClipboardIcon size={20} color="#3FA9F5" />,
+      icon: <ClipboardIcon size={20} color={Colors.primary} />,
       label: "Danh sách lớp",
       route: "/teacher/class-list",
     },
     {
-      icon: <HashIcon size={20} color="#3FA9F5" />,
+      icon: <HashIcon size={20} color={Colors.primary} />,
       label: "Tạo OTP",
       route: "/teacher/generate-otp",
     },
     {
-      icon: <QrCodeIcon size={20} color="#3FA9F5" />,
+      icon: <QrCodeIcon size={20} color={Colors.primary} />,
       label: "Tạo QR",
       route: "/teacher/generate-qr",
     },
     {
-      icon: <GraduationIcon size={20} color="#3FA9F5" />,
+      icon: <GraduationIcon size={20} color={Colors.primary} />,
       label: "Lớp chủ nhiệm",
       route: "/teacher/advisee-class",
     },
     {
-      icon: <ChartIcon size={20} color="#3FA9F5" />,
+      icon: <ChartIcon size={20} color={Colors.primary} />,
       label: "Báo cáo",
       route: "/teacher/reports",
     },
     {
-      icon: <BellIcon size={20} color="#3FA9F5" />,
+      icon: <BellIcon size={20} color={Colors.primary} />,
       label: "Thông báo",
       route: "/teacher/notifications",
     },

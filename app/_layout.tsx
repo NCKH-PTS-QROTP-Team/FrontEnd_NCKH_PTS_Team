@@ -17,8 +17,8 @@ export default function RootLayout() {
   useEffect(() => {
     async function prepare() {
       try {
-        // Simulate loading time or add actual initialization
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // App initialization logic here if needed
+        // Removed artificial 1000ms delay to speed up boot time
       } catch (e) {
         console.warn(e);
       } finally {

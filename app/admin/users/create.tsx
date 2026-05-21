@@ -1,35 +1,55 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Switch } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Switch,
+  ActivityIndicator,
+} from "react-native";
 import { router } from "expo-router";
-import { Colors } from "../../../constants/colors";
-import Input from "../../../components/Input";
-import PrimaryButton from "../../../components/PrimaryButton";
-import Card from "../../../components/Card";
-import AppHeader from "../../../components/AppHeader";
+import { Colors } from "@/constants/colors";
+import Input from "@/components/Input";
+import PrimaryButton from "@/components/PrimaryButton";
+import Card from "@/components/Card";
+import { useToast } from "@/components/ToastProvider";
+import { userService, CreateUserRequest } from "@/apis/services/user.service";
+import { UserRole } from "@/apis/types/auth.types";
+
 export default function CreateUser() {
+  const { showToast } = useToast();
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    role: "student",
+    role: "STUDENT" as string,
     studentId: "",
     teacherId: "",
     password: "",
     isActive: true,
   });
 
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validation
-    const newErrors: any = {};
-    if (!formData.name) newErrors.name = "Vui lòng nhập họ tên";
-    if (!formData.email) newErrors.email = "Vui lòng nhập email";
-    if (!formData.password) newErrors.password = "Vui lòng nhập mật khẩu";
+    const newErrors: Record<string, string> = {};
+    if (!formData.name.trim()) newErrors.name = "Vui lòng nhập họ tên";
+    if (!formData.email.trim()) newErrors.email = "Vui lòng nhập email";
+    if (!formData.password.trim()) newErrors.password = "Vui lòng nhập mật khẩu";
+    if (formData.password && formData.password.length < 6) {
+      newErrors.password = "Mật khẩu tối thiểu 6 ký tự";
+    }
 
-    if (formData.role === "student" && !formData.studentId) {
+    // Email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && !emailRegex.test(formData.email)) {
+      newErrors.email = "Email không hợp lệ";
+    }
+
+    if (formData.role === "STUDENT" && !formData.studentId.trim()) {
       newErrors.studentId = "Vui lòng nhập mã sinh viên";
     }
-    if (formData.role === "teacher" && !formData.teacherId) {
+    if (formData.role === "TEACHER" && !formData.teacherId.trim()) {
       newErrors.teacherId = "Vui lòng nhập mã giảng viên";
     }
 
@@ -38,22 +58,56 @@ export default function CreateUser() {
       return;
     }
 
-    // Success
-    alert("Tạo người dùng thành công!");
-    router.back();
+    try {
+      setSubmitting(true);
+      setErrors({});
+      const request: CreateUserRequest = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        role: formData.role as UserRole,
+        isActive: formData.isActive,
+      };
+      if (formData.role === "STUDENT" && formData.studentId.trim()) {
+        request.studentId = formData.studentId.trim();
+      }
+      if (formData.role === "TEACHER" && formData.teacherId.trim()) {
+        request.teacherId = formData.teacherId.trim();
+      }
+
+      await userService.createUser(request);
+      showToast("Tạo người dùng thành công!", "success");
+      router.back();
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Không thể tạo người dùng";
+      showToast(message, "error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <ScrollView className="flex-1">
+    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      <ScrollView style={{ flex: 1 }}>
         <View
-          className="p-4"
-          style={{ maxWidth: 600, width: "100%", alignSelf: "center" }}
+          style={{
+            padding: 16,
+            maxWidth: 600,
+            width: "100%",
+            alignSelf: "center",
+          }}
         >
-          <Card className="mb-4">
+          <Card style={{ marginBottom: 16 }}>
             <Text
-              className="text-lg font-semibold mb-4"
-              style={{ color: Colors.text }}
+              style={{
+                fontSize: 18,
+                fontWeight: "600",
+                marginBottom: 16,
+                color: Colors.text,
+              }}
             >
               Thông tin cơ bản
             </Text>
@@ -78,7 +132,7 @@ export default function CreateUser() {
 
             <Input
               label="Mật khẩu *"
-              placeholder="Nhập mật khẩu"
+              placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
               value={formData.password}
               onChangeText={(text) =>
                 setFormData({ ...formData, password: text })
@@ -87,20 +141,24 @@ export default function CreateUser() {
               error={errors.password}
             />
 
-            <View className="mb-4">
+            <View style={{ marginBottom: 16 }}>
               <Text
-                className="text-sm font-medium mb-2"
-                style={{ color: Colors.gray700 }}
+                style={{
+                  fontSize: 14,
+                  fontWeight: "500",
+                  marginBottom: 8,
+                  color: Colors.gray700,
+                }}
               >
                 Vai trò *
               </Text>
-              <View className="flex-row -mx-1">
+              <View style={{ flexDirection: "row", marginHorizontal: -4 }}>
                 {[
-                  { key: "admin", label: "Admin" },
-                  { key: "teacher", label: "Giảng viên" },
-                  { key: "student", label: "Sinh viên" },
+                  { key: "ADMIN", label: "Admin" },
+                  { key: "TEACHER", label: "Giảng viên" },
+                  { key: "STUDENT", label: "Sinh viên" },
                 ].map((role) => (
-                  <View key={role.key} className="flex-1 px-1">
+                  <View key={role.key} style={{ flex: 1, paddingHorizontal: 4 }}>
                     <PrimaryButton
                       title={role.label}
                       variant={
@@ -115,7 +173,7 @@ export default function CreateUser() {
               </View>
             </View>
 
-            {formData.role === "student" && (
+            {formData.role === "STUDENT" && (
               <Input
                 label="Mã sinh viên *"
                 placeholder="SV001"
@@ -127,7 +185,7 @@ export default function CreateUser() {
               />
             )}
 
-            {formData.role === "teacher" && (
+            {formData.role === "TEACHER" && (
               <Input
                 label="Mã giảng viên *"
                 placeholder="GV001"
@@ -140,10 +198,16 @@ export default function CreateUser() {
             )}
 
             <View
-              className="flex-row justify-between items-center py-3 border-t"
-              style={{ borderTopColor: Colors.border }}
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingVertical: 12,
+                borderTopWidth: 1,
+                borderTopColor: Colors.border,
+              }}
             >
-              <Text className="font-medium" style={{ color: Colors.text }}>
+              <Text style={{ fontWeight: "500", color: Colors.text }}>
                 Kích hoạt tài khoản
               </Text>
               <Switch
@@ -157,16 +221,20 @@ export default function CreateUser() {
             </View>
           </Card>
 
-          <View className="flex-row -mx-2">
-            <View className="flex-1 px-2">
+          <View style={{ flexDirection: "row", marginHorizontal: -8 }}>
+            <View style={{ flex: 1, paddingHorizontal: 8 }}>
               <PrimaryButton
                 title="Hủy"
                 variant="outline"
                 onPress={() => router.back()}
               />
             </View>
-            <View className="flex-1 px-2">
-              <PrimaryButton title="Tạo người dùng" onPress={handleSubmit} />
+            <View style={{ flex: 1, paddingHorizontal: 8 }}>
+              <PrimaryButton
+                title={submitting ? "Đang tạo..." : "Tạo người dùng"}
+                onPress={handleSubmit}
+                disabled={submitting}
+              />
             </View>
           </View>
         </View>
@@ -174,4 +242,3 @@ export default function CreateUser() {
     </View>
   );
 }
-// Updated: 2026-01-02 13:16:07

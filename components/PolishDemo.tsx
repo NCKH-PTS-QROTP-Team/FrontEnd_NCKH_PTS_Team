@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { Colors } from '../constants/colors';
+import { Colors } from '@/constants/colors';
 import { Divider, DividerWithContent } from './Divider';
 import { Badge, DotBadge, NumericBadge } from './Badge';
 import { Avatar, AvatarGroup } from './Avatar';
@@ -9,7 +9,7 @@ import { ConfirmationDialog, useConfirmation } from './ConfirmationDialog';
 import { ResponsiveContainer, ResponsiveGrid } from './ResponsiveLayout';
 import { PageTransition } from './PageTransition';
 import Toast, { useToast } from './Toast';
-import { ResponsiveText, ResponsiveSpacing } from '../utils/responsive';
+import { ResponsiveText, ResponsiveSpacing } from '@/utils/responsive';
 import { PrimaryButton } from './PrimaryButton';
 import {
   UsersIcon,

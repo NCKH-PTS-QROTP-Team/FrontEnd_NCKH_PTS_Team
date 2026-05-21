@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { Colors } from '../constants/colors';
+import { Colors } from '@/constants/colors';
 import { PrimaryButton } from './PrimaryButton';
 import { PageTransition } from './PageTransition';
 import Modal from './Modal';

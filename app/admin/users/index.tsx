@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,6 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
-import { mockUsers, User } from "@/constants/mockData";
 import Card from "@/components/Card";
 import Badge from "@/components/Badge";
 import PrimaryButton from "@/components/PrimaryButton";
@@ -23,15 +22,17 @@ import {
 import { SkeletonCard } from "@/components/Skeleton";
 import { ErrorState } from "@/components/ErrorState";
 import { useToast } from "@/components/ToastProvider";
-import AppHeader from "@/components/AppHeader";
+import { userService, User } from "@/apis/services/user.service";
+import { UserRole } from "@/apis/types/auth.types";
+
+type RoleFilterKey = "all" | UserRole;
 
 export default function UserManagement() {
+  const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRole, setSelectedRole] = useState<
-    "all" | "admin" | "teacher" | "student"
-  >("all");
+  const [selectedRole, setSelectedRole] = useState<RoleFilterKey>("all");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { showToast } = useToast();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
@@ -41,28 +42,30 @@ export default function UserManagement() {
   const contentMaxWidth = isDesktop ? 1200 : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const paddingVertical = isMobile ? 16 : 24;
-  // Simulate data fetching
+
   useEffect(() => {
     loadUsers();
   }, []);
 
-  const loadUsers = () => {
-    setLoading(true);
-    setError(false);
+  const loadUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await userService.getUsers();
+      setUsers(data);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Lỗi tải danh sách người dùng";
+      setError(message);
+      showToast(message, "error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    // Simulate API call
-    setTimeout(() => {
-      // Randomly simulate error (10% chance)
-      if (Math.random() < 0.1) {
-        setError(true);
-        setLoading(false);
-      } else {
-        setLoading(false);
-      }
-    }, 1000);
-  };
-
-  const filteredUsers = mockUsers.filter((user) => {
+  const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -72,9 +75,10 @@ export default function UserManagement() {
 
   const getRoleBadge = (role: string) => {
     const roleMap = {
-      admin: { label: "Admin", variant: "error" as const },
-      teacher: { label: "Giảng viên", variant: "primary" as const },
-      student: { label: "Sinh viên", variant: "success" as const },
+      ADMIN: { label: "Admin", variant: "error" as const },
+      TEACHER: { label: "Giảng viên", variant: "primary" as const },
+      STUDENT: { label: "Sinh viên", variant: "success" as const },
+      ACADEMIC_STAFF: { label: "Giáo vụ", variant: "warning" as const },
     };
     return (
       roleMap[role as keyof typeof roleMap] || {
@@ -83,6 +87,14 @@ export default function UserManagement() {
       }
     );
   };
+
+  const roleFilters: { key: RoleFilterKey; label: string }[] = [
+    { key: "all", label: "Tất cả" },
+    { key: UserRole.ADMIN, label: "Admin" },
+    { key: UserRole.TEACHER, label: "Giảng viên" },
+    { key: UserRole.STUDENT, label: "Sinh viên" },
+    { key: UserRole.ACADEMIC_STAFF, label: "Giáo vụ" },
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
@@ -110,27 +122,29 @@ export default function UserManagement() {
           </Text>
 
           {/* Actions */}
-          <View className="flex-row mb-4">
+          <View style={{ flexDirection: "row", marginBottom: 16 }}>
             <PrimaryButton
               title="+ Thêm người dùng"
               onPress={() => router.push("/admin/users/create" as any)}
               style={{ flex: 1, marginRight: 8 }}
             />
             <PrimaryButton
-              title="↑ Upload CSV"
+              title="↻ Tải lại"
               variant="outline"
-              onPress={() => alert("Upload CSV")}
+              onPress={loadUsers}
               style={{ flex: 1 }}
             />
           </View>
 
           {/* Search */}
           <TextInput
-            className="border-2 rounded-lg px-4 mb-4"
             style={{
               height: 48,
               borderWidth: 2,
               borderColor: Colors.gray200,
+              borderRadius: 8,
+              paddingHorizontal: 16,
+              marginBottom: 16,
               color: Colors.text,
               lineHeight: 24,
               ...Platform.select({
@@ -147,29 +161,28 @@ export default function UserManagement() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            className="mb-4"
+            style={{ marginBottom: 16 }}
           >
-            <View className="flex-row">
-              {[
-                { key: "all", label: "Tất cả" },
-                { key: "admin", label: "Admin" },
-                { key: "teacher", label: "Giảng viên" },
-                { key: "student", label: "Sinh viên" },
-              ].map((role) => (
+            <View style={{ flexDirection: "row" }}>
+              {roleFilters.map((role) => (
                 <TouchableOpacity
                   key={role.key}
-                  className="px-4 py-2 rounded-full mr-2"
                   style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    marginRight: 8,
                     backgroundColor:
                       selectedRole === role.key
                         ? Colors.primary
                         : Colors.gray100,
                   }}
-                  onPress={() => setSelectedRole(role.key as any)}
+                  onPress={() => setSelectedRole(role.key)}
                 >
                   <Text
-                    className="font-medium text-sm"
                     style={{
+                      fontWeight: "500",
+                      fontSize: 14,
                       color:
                         selectedRole === role.key
                           ? Colors.white
@@ -197,7 +210,7 @@ export default function UserManagement() {
           {!loading && error && (
             <ErrorState
               title="Không thể tải dữ liệu người dùng"
-              message="Đã có lỗi xảy ra khi tải danh sách người dùng. Vui lòng thử lại."
+              message={error}
               onRetry={loadUsers}
             />
           )}
@@ -206,8 +219,11 @@ export default function UserManagement() {
           {!loading && !error && filteredUsers.length > 0 && (
             <>
               <Text
-                className="text-sm mb-3"
-                style={{ color: Colors.textSecondary }}
+                style={{
+                  fontSize: 14,
+                  marginBottom: 12,
+                  color: Colors.textSecondary,
+                }}
               >
                 {filteredUsers.length} người dùng
               </Text>
@@ -221,7 +237,7 @@ export default function UserManagement() {
                       label: "",
                       width: 60,
                       align: "center",
-                      render: (user) => (
+                      render: (user: User) => (
                         <View
                           style={{
                             width: 36,
@@ -249,32 +265,23 @@ export default function UserManagement() {
                       key: "name",
                       label: "Họ và tên",
                       width: 200,
-                      render: (user) => (
-                        <View
+                      render: (user: User) => (
+                        <Text
                           style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            flexWrap: "wrap",
-                            gap: 6,
+                            fontWeight: "600",
+                            color: Colors.text,
+                            fontSize: 14,
                           }}
                         >
-                          <Text
-                            style={{
-                              fontWeight: "600",
-                              color: Colors.text,
-                              fontSize: 14,
-                            }}
-                          >
-                            {user.name}
-                          </Text>
-                        </View>
+                          {user.name}
+                        </Text>
                       ),
                     },
                     {
                       key: "email",
                       label: "Email",
                       width: 250,
-                      render: (user) => (
+                      render: (user: User) => (
                         <Text
                           style={{ fontSize: 14, color: Colors.textSecondary }}
                         >
@@ -286,7 +293,7 @@ export default function UserManagement() {
                       key: "role",
                       label: "Vai trò",
                       width: 140,
-                      render: (user) => {
+                      render: (user: User) => {
                         const badgeData = getRoleBadge(user.role);
                         return (
                           <Badge variant={badgeData.variant} size="small">
@@ -299,7 +306,7 @@ export default function UserManagement() {
                       key: "id",
                       label: "Mã",
                       width: 120,
-                      render: (user) => (
+                      render: (user: User) => (
                         <Text
                           style={{ fontSize: 14, color: Colors.textSecondary }}
                         >
@@ -312,7 +319,7 @@ export default function UserManagement() {
                       label: "Trạng thái",
                       width: 120,
                       align: "center",
-                      render: (user) => (
+                      render: (user: User) => (
                         <View style={{ alignItems: "center" }}>
                           {!user.isActive && (
                             <Badge variant="neutral" size="small">
@@ -334,7 +341,7 @@ export default function UserManagement() {
                     },
                   ]}
                   data={filteredUsers}
-                  onRowPress={(user) =>
+                  onRowPress={(user: User) =>
                     router.push(`/admin/users/${user.id}` as any)
                   }
                   zebraStriping={true}
@@ -428,11 +435,11 @@ export default function UserManagement() {
           {/* Empty State */}
           {!loading && !error && filteredUsers.length === 0 && (
             <View
-              className="bg-white border rounded-lg"
               style={{
                 backgroundColor: "#FFFFFF",
                 borderWidth: 1,
                 borderColor: Colors.gray200,
+                borderRadius: 8,
                 padding: 48,
                 alignItems: "center",
                 justifyContent: "center",
@@ -443,8 +450,11 @@ export default function UserManagement() {
                 <>
                   <EmptySearchIcon size={80} color={Colors.gray300} />
                   <Text
-                    className="text-xl font-semibold mb-2 mt-4"
                     style={{
+                      fontSize: 20,
+                      fontWeight: "600",
+                      marginBottom: 8,
+                      marginTop: 16,
                       color: Colors.text,
                       lineHeight: 32,
                       textAlign: "center",
@@ -453,8 +463,8 @@ export default function UserManagement() {
                     Không tìm thấy kết quả
                   </Text>
                   <Text
-                    className="text-base"
                     style={{
+                      fontSize: 16,
                       color: Colors.textSecondary,
                       lineHeight: 24,
                       textAlign: "center",
@@ -469,8 +479,11 @@ export default function UserManagement() {
                 <>
                   <EmptyUsersIcon size={80} color={Colors.gray300} />
                   <Text
-                    className="text-xl font-semibold mb-2 mt-4"
                     style={{
+                      fontSize: 20,
+                      fontWeight: "600",
+                      marginBottom: 8,
+                      marginTop: 16,
                       color: Colors.text,
                       lineHeight: 32,
                       textAlign: "center",
@@ -479,8 +492,9 @@ export default function UserManagement() {
                     Chưa có người dùng
                   </Text>
                   <Text
-                    className="text-base mb-4"
                     style={{
+                      fontSize: 16,
+                      marginBottom: 16,
                       color: Colors.textSecondary,
                       lineHeight: 24,
                       textAlign: "center",
@@ -491,7 +505,9 @@ export default function UserManagement() {
                   </Text>
                   <PrimaryButton
                     title="+ Thêm người dùng"
-                    onPress={() => router.push("/admin/users/create" as any)}
+                    onPress={() =>
+                      router.push("/admin/users/create" as any)
+                    }
                   />
                 </>
               )}
@@ -499,8 +515,6 @@ export default function UserManagement() {
           )}
         </View>
       </ScrollView>
-
-      {/* Toast Notification */}
     </View>
   );
 }

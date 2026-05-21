@@ -257,14 +257,31 @@ export default function FaceDemoScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }} edges={["top"]}>
-      <StatusBar style="light" />
-      <View style={{ flex: 1 }}>
-        <CameraView
-          ref={cameraRef}
-          style={[ { flex: 1 }, isWeb && { pointerEvents: "none" as any } ]}
-          facing="front"
+    <SafeAreaView style={{ flex: 1, backgroundColor: isWeb ? Colors.surface : "#000" }} edges={["top"]}>
+      <StatusBar style={isWeb ? "dark" : "light"} />
+      
+      {/* Wrapper to center and contain the UI on Web */}
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: isWeb ? 24 : 0 }}>
+        
+        {/* Main Camera Container */}
+        <View 
+          style={[
+            { flex: 1, width: "100%", position: "relative" },
+            isWeb && { 
+              maxWidth: 480, 
+              maxHeight: 750, 
+              backgroundColor: "#000", 
+              borderRadius: 24, 
+              overflow: "hidden", 
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+            }
+          ]}
         >
+          <CameraView
+            ref={cameraRef}
+            style={[ { flex: 1 }, isWeb && { pointerEvents: "none" as any } ]}
+            facing="front"
+          >
           <View
             style={[
               {
@@ -397,7 +414,8 @@ export default function FaceDemoScreen() {
               />
             </View>
           )}
-        </CameraView>
+          </CameraView>
+        </View>
       </View>
     </SafeAreaView>
   );

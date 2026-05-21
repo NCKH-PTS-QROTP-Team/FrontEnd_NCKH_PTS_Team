@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Platform, ViewStyle, TextStyle } from 'react-native';
-import { Colors } from '../constants/colors';
+import { Colors } from '@/constants/colors';
 
 export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
 

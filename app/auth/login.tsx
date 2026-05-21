@@ -45,7 +45,7 @@ const CaptchaImage = ({ text, onRefresh }: { text: string; onRefresh: () => void
       <View
         style={{
           flex: 1,
-          height: Platform.OS === 'web' && window.innerWidth < 768 ? 40 : 50,
+          height: Platform.OS === 'web' && (typeof window !== 'undefined' ? window.innerWidth : 375) < 768 ? 40 : 50,
           backgroundColor: "#f8fafc",
           borderRadius: 10,
           overflow: "hidden",
@@ -125,8 +125,8 @@ const CaptchaImage = ({ text, onRefresh }: { text: string; onRefresh: () => void
       <TouchableOpacity
         onPress={onRefresh}
         style={{
-          width: Platform.OS === 'web' && window.innerWidth < 768 ? 36 : 40,
-          height: Platform.OS === 'web' && window.innerWidth < 768 ? 36 : 40,
+          width: Platform.OS === 'web' && (typeof window !== 'undefined' ? window.innerWidth : 375) < 768 ? 36 : 40,
+          height: Platform.OS === 'web' && (typeof window !== 'undefined' ? window.innerWidth : 375) < 768 ? 36 : 40,
           borderRadius: 8,
           backgroundColor: "#f1f5f9",
           alignItems: "center",
@@ -539,7 +539,7 @@ export default function LoginScreen() {
                 <CaptchaImage text={captchaText} onRefresh={refreshCaptcha} />
               </View>
 
-              {/* ── Nút Đăng nhập (Orange Gradient) ── */}
+              {/* ── Nút Đăng nhập ── */}
               <TouchableOpacity
                 onPress={handleLogin}
                 disabled={loading || !isFormValid}
@@ -549,20 +549,20 @@ export default function LoginScreen() {
                   height: isMobile ? 42 : 48,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: isFormValid ? "#204195" : "#d1d5db",
+                  backgroundColor: isFormValid ? "#2563eb" : "#d1d5db",
                   marginBottom: isMobile ? 16 : 24,
                   ...(Platform.OS === "web"
                     ? ({
                       cursor: loading || !isFormValid ? "not-allowed" : "pointer",
                       transition: "all 0.25s ease",
                       background: isFormValid
-                        ? "linear-gradient(135deg, #f97316 0%, #ea580c 50%, #dc2626 100%)"
+                        ? "linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1e3a8a 100%)"
                         : "#d1d5db",
                     } as any)
                     : {}),
                   ...(isFormValid && Platform.OS !== "web"
                     ? {
-                      shadowColor: "#ea580c",
+                      shadowColor: "#2563eb",
                       shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: 0.3,
                       shadowRadius: 8,

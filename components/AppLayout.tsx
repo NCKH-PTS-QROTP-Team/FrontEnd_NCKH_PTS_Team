@@ -97,8 +97,8 @@ export default function AppLayout({
     };
   }, [userName, userEmail]);
 
-  // On mobile or non-web: no sidebar, just content (bottom nav handled in _layout)
-  if (!isWeb || !showSidebar || isMobile) {
+  // On native mobile app: no sidebar, just content (bottom nav handled in _layout)
+  if (!isWeb || !showSidebar) {
     return <>{children}</>;
   }
 
@@ -124,7 +124,14 @@ export default function AppLayout({
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
-          {!isMobile && (
+          {/* Mobile Hamburger Button */}
+          {(isMobile || isTablet) && (
+            <TouchableOpacity onPress={() => setShowNavMenu(!showNavMenu)} style={{ marginRight: 12 }}>
+              <Ionicons name="menu" size={28} color="#1e3a8a" />
+            </TouchableOpacity>
+          )}
+
+          {!(isMobile || isTablet) && (
             <Image
               source={logoNameImage}
               style={{
@@ -137,22 +144,26 @@ export default function AppLayout({
             />
           )}
 
-          {!isMobile && (
+          {!(isMobile || isTablet) && (
             <View style={{ height: 36, width: 2, backgroundColor: "#e2e8f0", marginHorizontal: 12 }} />
           )}
 
           <View style={{ flexDirection: "column", justifyContent: "center", marginRight: isMobile ? 8 : 24, ...(isMobile ? { maxWidth: "50%" } : {}) }}>
-            <Text style={{ fontSize: 13, fontWeight: "700", color: "#1e3a8a", textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Đại học Công nghiệp TP. Hồ Chí Minh
-            </Text>
-            <View style={{ height: 1.5, backgroundColor: "#1e3a8a", marginVertical: 3, width: "100%" }} />
-            <Text style={{ fontSize: 14, fontWeight: "800", color: "#1e3a8a", textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Hệ thống điểm danh
+            {!isMobile && (
+              <>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#1e3a8a", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Đại học Công nghiệp TP. Hồ Chí Minh
+                </Text>
+                <View style={{ height: 1.5, backgroundColor: "#1e3a8a", marginVertical: 3, width: "100%" }} />
+              </>
+            )}
+            <Text style={{ fontSize: isMobile ? 12 : 14, fontWeight: "800", color: "#1e3a8a", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              {isMobile ? "HT Điểm danh" : "Hệ thống điểm danh"}
             </Text>
           </View>
 
           {/* Top Navigation Inline (Web/Desktop Only) */}
-          {!isMobile && (
+          {!(isMobile || isTablet) && (
             <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 24, gap: 12 }}>
               {/* Standalone Items */}
               {menuItems.filter(item => ["Trang chủ", "Lịch học", "Lịch dạy", "Dashboard", "Danh sách lớp"].includes(item.label)).map((item, index) => {
@@ -398,6 +409,54 @@ export default function AppLayout({
           />
         </View>
       </View>
+
+      {/* Mobile/Tablet Navigation Menu Overlay */}
+      {showNavMenu && (isMobile || isTablet) && (
+        <View
+          style={{
+            position: "absolute" as any,
+            top: headerHeight,
+            left: 0,
+            right: 0,
+            backgroundColor: "#fff",
+            zIndex: 999,
+            padding: 16,
+            borderBottomWidth: 1,
+            borderBottomColor: "#E5E7EB",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          }}
+        >
+          {menuItems.map((item, index) => {
+            const isActive = pathname === item.route;
+            return (
+              <TouchableOpacity
+                key={index}
+                onPress={() => {
+                  setShowNavMenu(false);
+                  router.push(item.route as any);
+                }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  backgroundColor: isActive ? "#eff6ff" : "transparent",
+                  borderRadius: 8,
+                  marginBottom: 4,
+                  ...(Platform.OS === "web" ? { cursor: "pointer" } : {})
+                }}
+              >
+                <View style={{ width: 24, alignItems: "center" }}>
+                  {item.icon}
+                </View>
+                <Text style={{ marginLeft: 12, fontSize: 15, fontWeight: isActive ? "700" : "500", color: isActive ? "#1e3a8a" : "#4b5563" }}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
 
       {/* Main Container with Content Only (Sidebar removed) */}
       <View

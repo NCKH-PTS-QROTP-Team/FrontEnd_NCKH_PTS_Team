@@ -23,6 +23,7 @@ import {
 } from "@/apis/types/teacher.types";
 import { UserCard } from "@/components/UserCard";
 import { DropdownPicker } from "@/components/DropdownPicker";
+import Pagination from "@/components/Pagination";
 
 // ─── Filter Tab Config ────────────────────────────────────────────────────────
 
@@ -786,89 +787,7 @@ export default function TeachersManagement() {
           )}
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 16,
-                marginTop: 12,
-                marginBottom: 16,
-              }}
-            >
-              <TouchableOpacity
-                style={[
-                  {
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: "#fff",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 2,
-                  },
-                  page === 1 && { backgroundColor: "#f8fafc", elevation: 0 },
-                ]}
-                disabled={page === 1}
-                onPress={() => setPage((p) => p - 1)}
-              >
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "bold",
-                    color: page === 1 ? "#cbd5e1" : "#8b5cf6",
-                  }}
-                >
-                  {"<"}
-                </Text>
-              </TouchableOpacity>
-
-              <Text
-                style={{ fontSize: 13, fontWeight: "700", color: "#64748b" }}
-              >
-                Trang {page} / {totalPages}
-              </Text>
-
-              <TouchableOpacity
-                style={[
-                  {
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: "#fff",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 2,
-                  },
-                  page === totalPages && {
-                    backgroundColor: "#f8fafc",
-                    elevation: 0,
-                  },
-                ]}
-                disabled={page === totalPages}
-                onPress={() => setPage((p) => p + 1)}
-              >
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "bold",
-                    color: page === totalPages ? "#cbd5e1" : "#8b5cf6",
-                  }}
-                >
-                  {">"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
           <View style={{ height: 24 }} />
         </ScrollView>

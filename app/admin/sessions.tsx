@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,15 @@ import {
   Platform,
 } from "react-native";
 import { router } from "expo-router";
-import { Colors } from "../../constants/colors";
-import { mockAttendanceSessions } from "../../constants/mockData";
-import AppHeader from "../../components/AppHeader";
-import Card from "../../components/Card";
-import Badge from "../../components/Badge";
-import DataTable from "../../components/DataTable";
+import { Colors } from "@/constants/colors";
+import Card from "@/components/Card";
+import Badge from "@/components/Badge";
+import DataTable from "@/components/DataTable";
+import { SkeletonCard } from "@/components/Skeleton";
+import { ErrorState } from "@/components/ErrorState";
+import { useToast } from "@/components/ToastProvider";
+import { attendanceService } from "@/apis/services/attendance.service";
+import { AttendanceSessionResponse } from "@/apis/types/attendance.types";
 
 export default function AttendanceSessions() {
   const { width } = useWindowDimensions();
@@ -21,9 +24,32 @@ export default function AttendanceSessions() {
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
   const showTable = isDesktop || isTablet;
-  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const [filter, setFilter] = useState<"all" | "ACTIVE" | "COMPLETED">("all");
+  const [sessions, setSessions] = useState<AttendanceSessionResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
-  const filteredSessions = mockAttendanceSessions.filter((session) => {
+  useEffect(() => {
+    loadSessions();
+  }, []);
+
+  const loadSessions = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await attendanceService.getSessions();
+      setSessions(data);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || 'Lỗi tải dữ liệu';
+      setError(message);
+      showToast(message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const filteredSessions = sessions.filter((session) => {
     if (filter === "all") return true;
     return session.status === filter;
   });
@@ -57,7 +83,7 @@ export default function AttendanceSessions() {
                   style={{ color: Colors.primary }}
                 >
                   {
-                    mockAttendanceSessions.filter((s) => s.status === "active")
+                    sessions.filter((s) => s.status === "ACTIVE")
                       .length
                   }
                 </Text>
@@ -81,8 +107,8 @@ export default function AttendanceSessions() {
                   className="text-3xl font-bold mb-1"
                   style={{ color: Colors.success }}
                 >
-                  {mockAttendanceSessions.reduce(
-                    (sum, s) => sum + s.present,
+                  {sessions.reduce(
+                    (sum, s) => sum + (s.present || 0),
                     0,
                   )}
                 </Text>
@@ -102,7 +128,7 @@ export default function AttendanceSessions() {
                   className="text-3xl font-bold mb-1"
                   style={{ color: Colors.error }}
                 >
-                  {mockAttendanceSessions.reduce((sum, s) => sum + s.absent, 0)}
+                  {sessions.reduce((sum, s) => sum + (s.absent || 0), 0)}
                 </Text>
                 <Text
                   className="text-xs"
@@ -123,8 +149,8 @@ export default function AttendanceSessions() {
             <View className="flex-row">
               {[
                 { key: "all", label: "Tất cả" },
-                { key: "active", label: "Đang diễn ra" },
-                { key: "completed", label: "Đã kết thúc" },
+                { key: "ACTIVE", label: "Đang diễn ra" },
+                { key: "COMPLETED", label: "Đã kết thúc" },
               ].map((item) => (
                 <TouchableOpacity
                   key={item.key}
@@ -201,9 +227,9 @@ export default function AttendanceSessions() {
                   key: "subject",
                   label: "Môn học",
                   width: 200,
-                  render: (session) => (
+                  render: (session: AttendanceSessionResponse) => (
                     <Text style={{ fontSize: 14, color: Colors.text }}>
-                      {session.subject}
+                      {session.subjectName}
                     </Text>
                   ),
                 },
@@ -211,9 +237,9 @@ export default function AttendanceSessions() {
                   key: "teacher",
                   label: "Giảng viên",
                   width: 150,
-                  render: (session) => (
+                  render: (session: AttendanceSessionResponse) => (
                     <Text style={{ fontSize: 14, color: Colors.textSecondary }}>
-                      {session.teacher}
+                      {session.teacherName || '-'}
                     </Text>
                   ),
                 },
@@ -232,14 +258,14 @@ export default function AttendanceSessions() {
                   label: "Trạng thái",
                   width: 140,
                   align: "center",
-                  render: (session) => (
+                  render: (session: AttendanceSessionResponse) => (
                     <Badge
                       variant={
-                        session.status === "active" ? "success" : "neutral"
+                        session.status === "ACTIVE" ? "success" : "neutral"
                       }
                       size="small"
                     >
-                      {session.status === "active"
+                      {session.status === "ACTIVE"
                         ? "Đang diễn ra"
                         : "Đã kết thúc"}
                     </Badge>
@@ -250,9 +276,9 @@ export default function AttendanceSessions() {
                   label: "Phương thức",
                   width: 120,
                   align: "center",
-                  render: (session) => (
+                  render: (session: AttendanceSessionResponse) => (
                     <Badge variant="primary" size="small">
-                      {session.method.toUpperCase()}
+                      {(session.method || 'OTP').toUpperCase()}
                     </Badge>
                   ),
                 },
@@ -261,7 +287,7 @@ export default function AttendanceSessions() {
                   label: "Có mặt",
                   width: 100,
                   align: "center",
-                  render: (session) => (
+                  render: (session: AttendanceSessionResponse) => (
                     <Text
                       style={{
                         fontSize: 14,
@@ -269,7 +295,7 @@ export default function AttendanceSessions() {
                         color: Colors.success,
                       }}
                     >
-                      {session.present}
+                      {session.present || 0}
                     </Text>
                   ),
                 },
@@ -278,7 +304,7 @@ export default function AttendanceSessions() {
                   label: "Muộn",
                   width: 100,
                   align: "center",
-                  render: (session) => (
+                  render: (session: AttendanceSessionResponse) => (
                     <Text
                       style={{
                         fontSize: 14,
@@ -286,7 +312,7 @@ export default function AttendanceSessions() {
                         color: Colors.warning,
                       }}
                     >
-                      {session.late}
+                      {session.late || 0}
                     </Text>
                   ),
                 },
@@ -295,7 +321,7 @@ export default function AttendanceSessions() {
                   label: "Vắng",
                   width: 100,
                   align: "center",
-                  render: (session) => (
+                  render: (session: AttendanceSessionResponse) => (
                     <Text
                       style={{
                         fontSize: 14,
@@ -303,7 +329,7 @@ export default function AttendanceSessions() {
                         color: Colors.error,
                       }}
                     >
-                      {session.absent}
+                      {session.absent || 0}
                     </Text>
                   ),
                 },
@@ -312,7 +338,7 @@ export default function AttendanceSessions() {
                   label: "Tổng",
                   width: 100,
                   align: "center",
-                  render: (session) => (
+                  render: (session: AttendanceSessionResponse) => (
                     <Text
                       style={{
                         fontSize: 14,
@@ -320,7 +346,7 @@ export default function AttendanceSessions() {
                         color: Colors.text,
                       }}
                     >
-                      {session.total}
+                      {session.total || 0}
                     </Text>
                   ),
                 },
@@ -329,7 +355,7 @@ export default function AttendanceSessions() {
                   label: "Tỷ lệ",
                   width: 100,
                   align: "center",
-                  render: (session) => (
+                  render: (session: AttendanceSessionResponse) => (
                     <Text
                       style={{
                         fontSize: 14,
@@ -337,7 +363,7 @@ export default function AttendanceSessions() {
                         color: Colors.primary,
                       }}
                     >
-                      {Math.round((session.present / session.total) * 100)}%
+                      {session.total ? Math.round(((session.present || 0) / session.total) * 100) : 0}%
                     </Text>
                   ),
                 },
@@ -385,16 +411,16 @@ export default function AttendanceSessions() {
                         </Text>
                         <Badge
                           variant={
-                            session.status === "active" ? "success" : "neutral"
+                            session.status === "ACTIVE" ? "success" : "neutral"
                           }
                           size="small"
                         >
-                          {session.status === "active"
+                          {session.status === "ACTIVE"
                             ? "Đang diễn ra"
                             : "Đã kết thúc"}
                         </Badge>
                         <Badge variant="primary" size="small">
-                          {session.method.toUpperCase()}
+                          {(session.method || 'OTP').toUpperCase()}
                         </Badge>
                       </View>
 
@@ -405,7 +431,7 @@ export default function AttendanceSessions() {
                           color: Colors.text,
                         }}
                       >
-                        {session.subject}
+                        {session.subjectName}
                       </Text>
 
                       <View
@@ -435,7 +461,7 @@ export default function AttendanceSessions() {
                               color: Colors.textSecondary,
                             }}
                           >
-                            {session.teacher}
+                            {session.teacherName || '-'}
                           </Text>
                         </View>
                         <View
@@ -473,7 +499,7 @@ export default function AttendanceSessions() {
                         className="text-2xl font-bold mb-1"
                         style={{ color: Colors.success }}
                       >
-                        {session.present}
+                        {session.present || 0}
                       </Text>
                       <Text
                         className="text-xs"
@@ -490,7 +516,7 @@ export default function AttendanceSessions() {
                         className="text-2xl font-bold mb-1"
                         style={{ color: Colors.warning }}
                       >
-                        {session.late}
+                        {session.late || 0}
                       </Text>
                       <Text
                         className="text-xs"
@@ -504,7 +530,7 @@ export default function AttendanceSessions() {
                         className="text-2xl font-bold mb-1"
                         style={{ color: Colors.error }}
                       >
-                        {session.absent}
+                        {session.absent || 0}
                       </Text>
                       <Text
                         className="text-xs"
@@ -521,7 +547,7 @@ export default function AttendanceSessions() {
                         className="text-2xl font-bold mb-1"
                         style={{ color: Colors.text }}
                       >
-                        {session.total}
+                        {session.total || 0}
                       </Text>
                       <Text
                         className="text-xs"
@@ -541,7 +567,7 @@ export default function AttendanceSessions() {
                       <View
                         className="h-full rounded-full"
                         style={{
-                          width: `${(session.present / session.total) * 100}%`,
+                          width: `${session.total ? ((session.present || 0) / session.total) * 100 : 0}%`,
                           backgroundColor: Colors.success,
                         }}
                       />
@@ -550,7 +576,7 @@ export default function AttendanceSessions() {
                       className="text-xs text-right mt-1"
                       style={{ color: Colors.textSecondary }}
                     >
-                      {Math.round((session.present / session.total) * 100)}%
+                      {session.total ? Math.round(((session.present || 0) / session.total) * 100) : 0}%
                       điểm danh
                     </Text>
                   </View>

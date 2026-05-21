@@ -21,6 +21,8 @@ import {
   UpdateStudentRequest,
 } from "@/apis/types/student.types";
 import { UserCard } from "@/components/UserCard";
+import Pagination from "@/components/Pagination";
+import { DropdownPicker } from "@/components/DropdownPicker";
 
 // ─── Filter Tab Config ────────────────────────────────────────────────────────
 const FILTER_TABS = [
@@ -311,97 +313,6 @@ function EditStudentModal({
         </View>
       </View>
     </Modal>
-  );
-}
-
-// ─── Dropdown Component ─────────────────────────────────────────────────────────
-function DropdownPicker({
-  label,
-  options,
-  selectedValue,
-  onValueChange,
-  placeholder,
-}: {
-  label: string;
-  options: { label: string; value: string | null }[];
-  selectedValue: string | null;
-  onValueChange: (val: string | null) => void;
-  placeholder: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const selectedOption = options.find((o) => o.value === selectedValue);
-
-  return (
-    <View style={styles.dropdownWrapper}>
-      <Text style={styles.dropdownLabel}>{label}</Text>
-      <TouchableOpacity
-        style={styles.dropdownButton}
-        activeOpacity={0.7}
-        onPress={() => setOpen(true)}
-      >
-        <Text
-          style={[
-            styles.dropdownButtonText,
-            !selectedValue && { color: "#94a3b8" },
-          ]}
-          numberOfLines={1}
-        >
-          {selectedOption ? selectedOption.label : placeholder}
-        </Text>
-        <Ionicons name="chevron-down" size={16} color="#64748b" />
-      </TouchableOpacity>
-
-      <Modal
-        visible={open}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
-      >
-        <TouchableOpacity
-          style={styles.dropdownOverlay}
-          activeOpacity={1}
-          onPress={() => setOpen(false)}
-        >
-          <View style={styles.dropdownMenu}>
-            <ScrollView
-              style={{ maxHeight: 300 }}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ padding: 8 }}
-            >
-              {options.map((opt, idx) => {
-                const isSelected = selectedValue === opt.value;
-                return (
-                  <TouchableOpacity
-                    key={idx}
-                    style={[
-                      styles.dropdownItem,
-                      isSelected && styles.dropdownItemActive,
-                    ]}
-                    onPress={() => {
-                      onValueChange(opt.value);
-                      setOpen(false);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.dropdownItemText,
-                        isSelected && styles.dropdownItemTextActive,
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {opt.label}
-                    </Text>
-                    {isSelected && (
-                      <Ionicons name="checkmark" size={18} color="#3b82f6" />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </View>
   );
 }
 
@@ -852,89 +763,7 @@ export default function StudentsManagement() {
           )}
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 16,
-                marginTop: 12,
-                marginBottom: 16,
-              }}
-            >
-              <TouchableOpacity
-                style={[
-                  {
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: "#fff",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 2,
-                  },
-                  page === 1 && { backgroundColor: "#f8fafc", elevation: 0 },
-                ]}
-                disabled={page === 1}
-                onPress={() => setPage((p) => p - 1)}
-              >
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "bold",
-                    color: page === 1 ? "#cbd5e1" : "#3b82f6",
-                  }}
-                >
-                  {"<"}
-                </Text>
-              </TouchableOpacity>
-
-              <Text
-                style={{ fontSize: 13, fontWeight: "700", color: "#64748b" }}
-              >
-                Trang {page} / {totalPages}
-              </Text>
-
-              <TouchableOpacity
-                style={[
-                  {
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: "#fff",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 2,
-                  },
-                  page === totalPages && {
-                    backgroundColor: "#f8fafc",
-                    elevation: 0,
-                  },
-                ]}
-                disabled={page === totalPages}
-                onPress={() => setPage((p) => p + 1)}
-              >
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: "bold",
-                    color: page === totalPages ? "#cbd5e1" : "#3b82f6",
-                  }}
-                >
-                  {">"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
           <View style={{ height: 24 }} />
         </ScrollView>

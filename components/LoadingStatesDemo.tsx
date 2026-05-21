@@ -5,7 +5,7 @@ import { Spinner, LoadingOverlay } from './Spinner';
 import { ErrorState, ErrorBanner } from './ErrorState';
 import Toast, { useToast } from './Toast';
 import PrimaryButton from './PrimaryButton';
-import { Colors } from '../constants/colors';
+import { Colors } from '@/constants/colors';
 
 export default function LoadingStatesDemo() {
   const [showOverlay, setShowOverlay] = useState(false);
