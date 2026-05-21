@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { PrimaryButton } from "@/components/PrimaryButton";
-import { otpService, attendanceService, scheduleService, apiClient, reportService } from "@/apis";
+import { otpService, attendanceService, scheduleService, apiClient, reportService, getAuthToken } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import { AttendanceMethod } from "@/apis/types/attendance.types";
 import { useToast } from "@/components/ToastProvider";
@@ -98,14 +98,13 @@ export default function GenerateOTPScreen() {
   const inputsLocked = isActive || !hasSchedules;
   const startDisabled = !hasSchedules || !hasActiveSchedule || isActive;
 
-  useEffect(() => {
-    const now = new Date();
-    setCustomHour(String(now.getHours()).padStart(2, "0"));
-    setCustomMinute(String(now.getMinutes()).padStart(2, "0"));
-  }, []);
+
 
   useEffect(() => {
     loadData();
+    const now = new Date();
+    setCustomHour(String(now.getHours()).padStart(2, "0"));
+    setCustomMinute(String(now.getMinutes()).padStart(2, "0"));
   }, []);
 
   const loadData = async () => {
@@ -414,7 +413,7 @@ export default function GenerateOTPScreen() {
 
       setSessionInfo({
         id: newSession.id,
-        classId: selectedSchedule.classId,
+        classId: newSession.courseId || selectedSchedule.classId,
         classCode: selectedSchedule.classCode,
         className: selectedSchedule.className,
         subjectId: selectedSchedule.subjectId,
@@ -470,7 +469,7 @@ export default function GenerateOTPScreen() {
         }
       }
 
-      const activeEnrollments = enrollments.filter((e: any) => e.status === 'ACTIVE' || !e.status);
+      const activeEnrollments = enrollments.filter((e: any) => e.status === 'ENROLLED' || e.status === 'ACTIVE' || !e.status);
 
       // 2. Fetch attendance records
       const records = await attendanceService.getRecords({ sessionId });
@@ -507,20 +506,29 @@ export default function GenerateOTPScreen() {
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!modalSessionInfo?.id) return;
-    const url = reportService.getExportExcelUrl(
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      modalSessionInfo.id
-    );
-    Linking.openURL(url).catch((err) => {
-      console.error("Lỗi mở link tải Excel:", err);
-      showToast("Không thể tải file báo cáo Excel.", "error");
-    });
+    try {
+      const token = await getAuthToken();
+      let url = reportService.getExportExcelUrl(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        modalSessionInfo.id
+      );
+      if (token) {
+        url += (url.includes("?") ? "&" : "?") + "token=" + encodeURIComponent(token);
+      }
+      Linking.openURL(url).catch((err) => {
+        console.error("Lỗi mở link tải Excel:", err);
+        showToast("Không thể tải file báo cáo Excel.", "error");
+      });
+    } catch (err) {
+      console.error("Lỗi lấy token xác thực:", err);
+      showToast("Không thể xác thực để tải file.", "error");
+    }
   };
 
   const handleStopAttendance = async () => {
@@ -533,11 +541,13 @@ export default function GenerateOTPScreen() {
       setIsActive(false); // ← stop countdown immediately
       setOtp("");
       setCountdown(Number(totpInterval) || 10);
+
+      const finalCourseId = completedSession.courseId || courseId;
       
       // Store session info for modal before clearing active state
       setModalSessionInfo({
         id: completedSession.id,
-        courseId: courseId,
+        courseId: finalCourseId,
         subjectName: completedSession.subjectName || sessionInfo.subjectName,
         className: completedSession.className || sessionInfo.className,
         method: 'OTP',
@@ -553,7 +563,7 @@ export default function GenerateOTPScreen() {
       
       // Fetch roster & show modal
       setShowSummaryModal(true);
-      await loadModalData(sessionId, courseId);
+      await loadModalData(sessionId, finalCourseId);
       showToast("Đã kết thúc phiên điểm danh.", "success");
     } catch (_) {
       showToast("Không thể kết thúc phiên điểm danh.", "error");

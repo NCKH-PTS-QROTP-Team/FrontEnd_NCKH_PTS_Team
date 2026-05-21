@@ -554,7 +554,7 @@ export default function RegisterFaceScreen() {
 
       // Capture photo - quality vừa đủ để nhận diện tốt nhưng không quá nặng
       const photo = await cameraRef.current.takePictureAsync({
-        quality: Platform.OS === 'web' ? 0.9 : 0.7, // Mobile: 0.7 đủ tốt, giảm payload qua mạng
+        quality: Platform.OS === 'web' ? 0.8 : 0.45, // Optimized to prevent 502/localtunnel drops while keeping templates relatively clear
         skipProcessing: false, // False cho ảnh cuối cùng để đảm bảo orientation đúng
         exif: false,
         base64: true,

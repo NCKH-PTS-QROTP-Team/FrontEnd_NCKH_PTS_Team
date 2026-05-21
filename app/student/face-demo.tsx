@@ -222,7 +222,7 @@ export default function FaceDemoScreen() {
     try {
       setVerifying(true);
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 1.0,
+        quality: Platform.OS === 'web' ? 0.6 : 0.35,
         base64: true,
         skipProcessing: false,
         exif: false,

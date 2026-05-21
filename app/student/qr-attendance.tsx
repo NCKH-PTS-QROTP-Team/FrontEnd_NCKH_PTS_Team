@@ -352,7 +352,7 @@ export default function QRAttendanceScreen() {
     try {
       setFaceVerifying(true);
       const photo = await cameraRef.current.takePictureAsync({
-        quality: Platform.OS === "web" ? 0.9 : 0.7,
+        quality: Platform.OS === "web" ? 0.6 : 0.35,
         base64: true,
         skipProcessing: false,
         shutterSound: false,
