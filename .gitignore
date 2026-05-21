@@ -1,6 +1,5 @@
 # Expo
 .expo/
-dist/
 web-build/
 
 # Node
@@ -16,7 +15,6 @@ yarn-error.log
 *.tsbuildinfo
 
 # Environment
-.env
 .env.local
 
 # IDE
