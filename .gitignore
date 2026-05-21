@@ -25,3 +25,5 @@ yarn-error.log
 *.swo
 *~
 
+# Build output
+dist/
