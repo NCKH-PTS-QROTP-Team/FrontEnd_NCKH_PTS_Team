@@ -635,12 +635,17 @@ export default function SchedulesManagement() {
   // Form
   const todayISO = new Date().toISOString().slice(0, 10);
   const blank: ScheduleFormData = {
+    courseId: "",
+    courseName: "",
     classId: "",
     className: "",
     subjectId: "",
     subjectName: "",
     teacherId: "",
     teacherName: "",
+    buildingId: "",
+    buildingName: "",
+    roomId: "",
     scheduleType: "CLASS",
     pattern: "RECURRING_WEEKLY",
     dayOfWeek: 2,
@@ -767,6 +772,8 @@ export default function SchedulesManagement() {
     const sp = findPeriod(sc.startTime, 1);
     const ep = findPeriod(sc.endTime, sp);
     setInitialForm({
+      courseId: sc.courseId ?? "",
+      courseName: sc.courseName ?? "",
       classId: sc.classId ?? "",
       className: sc.className ?? "",
       subjectId: sc.subjectId ?? "",
@@ -788,9 +795,14 @@ export default function SchedulesManagement() {
   };
 
   const handleSubmit = async (data: ScheduleFormData) => {
+    const selectedCourseId = data.courseId;
+    const selectedLegacyClassId =
+      data.classId && data.classId !== data.courseId ? data.classId : undefined;
     const payload = {
-      classId: data.classId,
+      classId: selectedLegacyClassId ?? "",
+      courseId: selectedCourseId || undefined,
       subjectId: data.subjectId || undefined,
+      lecturerId: data.teacherId || undefined,
       teacherId: data.teacherId || undefined,
       scheduleType: data.scheduleType,
       pattern: data.pattern,

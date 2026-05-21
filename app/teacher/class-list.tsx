@@ -19,6 +19,7 @@ import Table from "@/components/Table";
 import { DropdownPicker } from "@/components/DropdownPicker";
 import { CalendarIcon, CloseIcon } from "@/components/Icons";
 import { Ionicons } from "@expo/vector-icons";
+import MobileGradientHeader from "@/components/MobileGradientHeader";
 import {
   courseService,
   reportService,
@@ -34,6 +35,7 @@ import type {
   StudentAttendanceReport,
 } from "@/apis/services/report.service";
 import type { Schedule } from "@/apis/services/schedule.service";
+import type { AttendanceRecordResponse } from "@/apis/types/attendance.types";
 
 interface TeacherClassCard {
   id: string;
@@ -84,7 +86,9 @@ export default function ClassListScreen() {
   const [selectedStudent, setSelectedStudent] =
     useState<StudentAttendanceReport | null>(null);
   const [studentHistoryVisible, setStudentHistoryVisible] = useState(false);
-  const [studentRecords, setStudentRecords] = useState<any[]>([]);
+  const [studentRecords, setStudentRecords] = useState<
+    AttendanceRecordResponse[]
+  >([]);
   const [studentRecordsLoading, setStudentRecordsLoading] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
@@ -92,6 +96,9 @@ export default function ClassListScreen() {
   const [semesters, setSemesters] = useState<SemesterItem[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
+  const [modalTab, setModalTab] = useState<"overview" | "students">("overview");
+  const [studentSearch, setStudentSearch] = useState("");
+  const [studentRateFilter, setStudentRateFilter] = useState<"all" | "good" | "warning" | "bad">("all");
 
   const contentMaxWidth = "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
@@ -285,16 +292,29 @@ export default function ClassListScreen() {
   };
 
   const handleStudentPress = async (student: StudentAttendanceReport) => {
+    if (!selectedClass?.id) {
+      showToast("Không xác định được lớp học hiện tại", "error");
+      return;
+    }
+
     setSelectedStudent(student);
     setStudentHistoryVisible(true);
     setStudentRecordsLoading(true);
     try {
       const { attendanceService } = await import("@/apis");
+
       const records = await attendanceService.getRecords({
-        courseId: selectedClass?.id,
+        courseId: selectedClass.id,
         studentId: student.studentId,
       });
-      setStudentRecords(records || []);
+
+      const sorted = [...(records || [])].sort((a, b) => {
+        const ta = new Date(a.attendedAt || a.createdAt || 0).getTime();
+        const tb = new Date(b.attendedAt || b.createdAt || 0).getTime();
+        return tb - ta;
+      });
+
+      setStudentRecords(sorted);
     } catch (error) {
       console.error("Error loading student history:", error);
       showToast("Lỗi khi tải lịch sử điểm danh", "error");
@@ -483,18 +503,36 @@ export default function ClassListScreen() {
         ),
       },
       {
-        key: "action",
-        label: "",
+        key: "attendanceRate",
+        label: "Tỉ lệ ĐD",
         flex: 0.8,
         align: "center" as const,
+        render: (item: TeacherClassCard) => {
+          const rate = item.attendanceRate || 0;
+          const color = rate >= 80 ? "#10b981" : rate >= 60 ? "#f59e0b" : "#ef4444";
+          const bg = rate >= 80 ? "#ecfdf5" : rate >= 60 ? "#fffbeb" : "#fef2f2";
+          return (
+            <View style={{ backgroundColor: bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
+              <Text style={{ fontSize: 12, fontWeight: "700", color }}>{rate}%</Text>
+            </View>
+          );
+        },
+      },
+      {
+        key: "action",
+        label: "",
+        flex: 0.7,
+        align: "center" as const,
         render: () => (
-          <Text style={{ fontSize: 12, fontWeight: "700", color: "#2563eb" }}>
-            Xem chi tiết
-          </Text>
+          <Text style={{ fontSize: 12, fontWeight: "700", color: "#2563eb" }}>Chi tiết</Text>
         ),
       },
     ];
   }, [isMobile]);
+
+  // Stats derived from filtered data
+  const activeClasses = classes.filter((c) => c.attendanceRate > 0).length;
+  const highRateClasses = classes.filter((c) => c.attendanceRate >= 80).length;
 
   return (
     <SafeAreaView
@@ -522,270 +560,136 @@ export default function ClassListScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View
-          style={{
-            maxWidth: contentMaxWidth,
-            width: "100%",
-            alignSelf: "center",
-          }}
-        >
-          {isMobile ? (
+        <View style={{ maxWidth: contentMaxWidth, width: "100%", alignSelf: "center" }}>
+
+          {/* Mobile header */}
+          {isMobile && (
             <MobileGradientHeader
               title="Danh sách lớp học"
               subtitle={`${summary.totalClasses} lớp • ${summary.totalStudents} sinh viên`}
               icon="school"
               iconSize={24}
               actions={[
-                {
-                  icon: "notifications",
-                  onPress: () => router.push("/teacher/notifications"),
-                  accessibilityLabel: "Mở thông báo",
-                },
-                {
-                  icon: "person",
-                  onPress: () => router.push("/teacher/profile"),
-                  accessibilityLabel: "Mở hồ sơ",
-                },
+                { icon: "notifications", onPress: () => router.push("/teacher/notifications"), accessibilityLabel: "Thông báo" },
+                { icon: "person", onPress: () => router.push("/teacher/profile"), accessibilityLabel: "Hồ sơ" },
               ]}
-              style={{
-                marginHorizontal: 0,
-                marginTop: 0,
-                marginBottom: 14,
-                borderColor: "#BFDBFE",
-              }}
+              style={{ marginHorizontal: 0, marginTop: 0, marginBottom: 14 }}
             />
-          ) : null}
+          )}
 
-          <View
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: "#E5ECF6",
-              padding: 14,
-              marginBottom: 14,
-            }}
-          >
-            <View
-              style={{
-                borderWidth: 1,
-                borderColor: "#D7E3F7",
-                borderRadius: 12,
-                backgroundColor: "#F8FAFF",
-                flexDirection: "row",
-                alignItems: "center",
-                paddingHorizontal: 12,
-                marginBottom: 12,
-                minHeight: 44,
-              }}
-            >
-              <Ionicons name="search" size={18} color="#1E40AF" />
-              <TextInput
-                placeholder="Tìm theo tên lớp, mã lớp, môn học, học kỳ..."
-                value={searchKeyword}
-                onChangeText={setSearchKeyword}
-                placeholderTextColor="#94A3B8"
-                style={{
-                  flex: 1,
-                  fontSize: 14,
-                  color: "#0F172A",
-                  marginLeft: 8,
-                  paddingVertical: 10,
-                }}
-              />
-              {searchKeyword.trim().length > 0 && (
-                <TouchableOpacity
-                  onPress={() => setSearchKeyword("")}
-                  style={{ paddingHorizontal: 4 }}
-                >
-                  <Ionicons name="close-circle" size={18} color="#94A3B8" />
+          {/* ── Stats Cards ── */}
+          {!isMobile && (
+            <View style={{ flexDirection: "row", gap: 14, marginBottom: 18 }}>
+              {[
+                { icon: "school-outline", label: "Tổng lớp học", value: summary.totalClasses, color: "#3b82f6", bg: "#eff6ff" },
+                { icon: "people-outline", label: "Tổng sinh viên", value: summary.totalStudents, color: "#8b5cf6", bg: "#f5f3ff" },
+                { icon: "checkmark-circle-outline", label: "Lớp có điểm danh", value: activeClasses, color: "#10b981", bg: "#ecfdf5" },
+                { icon: "trending-up-outline", label: "Tỉ lệ TB", value: `${summary.averageRate}%`, color: summary.averageRate >= 80 ? "#10b981" : summary.averageRate >= 60 ? "#f59e0b" : "#ef4444", bg: summary.averageRate >= 80 ? "#ecfdf5" : summary.averageRate >= 60 ? "#fffbeb" : "#fef2f2" },
+              ].map((stat, i) => (
+                <View key={i} style={{ flex: 1, backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", padding: 16, flexDirection: "row", alignItems: "center", gap: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}>
+                  <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: stat.bg, alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name={stat.icon as any} size={22} color={stat.color} />
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: 11, color: "#64748b", fontWeight: "600", marginBottom: 2 }}>{stat.label}</Text>
+                    <Text style={{ fontSize: 24, fontWeight: "800", color: "#1e293b" }}>{loading ? "-" : stat.value}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* ── Search & Filter Bar ── */}
+          <View style={{ backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", marginBottom: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}>
+            {/* Title row */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Text style={{ fontSize: 16, fontWeight: "800", color: "#1e293b" }}>Danh sách lớp học</Text>
+                <View style={{ backgroundColor: "#eff6ff", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: "#3b82f6" }}>{filteredClasses.length}</Text>
+                </View>
+              </View>
+              {hasActiveFilters && (
+                <TouchableOpacity onPress={resetFilters} style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#fef2f2", borderWidth: 1, borderColor: "#fecaca" }}>
+                  <Ionicons name="close" size={14} color="#ef4444" />
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: "#ef4444" }}>Xóa bộ lọc</Text>
                 </TouchableOpacity>
               )}
             </View>
 
-            <View
-              style={{
-                flexDirection: isMobile ? "column" : "row",
-                gap: 10,
-              }}
-            >
-              <DropdownPicker
-                label="Môn học"
-                options={subjectOptions}
-                selectedValue={selectedSubject}
-                onValueChange={setSelectedSubject}
-                placeholder="Tất cả môn học"
-                themeColor="#1E40AF"
-              />
-              <DropdownPicker
-                label="Học kỳ"
-                options={semesterOptions}
-                selectedValue={selectedSemester}
-                onValueChange={setSelectedSemester}
-                placeholder="Tất cả học kỳ"
-                themeColor="#1E40AF"
-              />
-            </View>
+            {/* Controls row */}
+            <View style={{ padding: 12, gap: 10 }}>
+              {/* Search */}
+              <View style={{ borderWidth: 1, borderColor: "#D7E3F7", borderRadius: 10, backgroundColor: "#F8FAFF", flexDirection: "row", alignItems: "center", paddingHorizontal: 12, minHeight: 42 }}>
+                <Ionicons name="search" size={16} color="#1E40AF" />
+                <TextInput
+                  placeholder="Tìm theo tên lớp, mã lớp, môn học..."
+                  value={searchKeyword}
+                  onChangeText={setSearchKeyword}
+                  placeholderTextColor="#94A3B8"
+                  style={{ flex: 1, fontSize: 13, color: "#0F172A", marginLeft: 8, paddingVertical: 8 }}
+                />
+                {searchKeyword.trim().length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchKeyword("")}>
+                    <Ionicons name="close-circle" size={16} color="#94A3B8" />
+                  </TouchableOpacity>
+                )}
+              </View>
 
-            <View
-              style={{
-                marginTop: 12,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: 8,
-              }}
-            >
-              <Text
-                style={{ fontSize: 12, color: "#475569", fontWeight: "600" }}
-              >
-                Hiển thị{" "}
-                {filteredClasses.length === 0
-                  ? 0
-                  : (currentPage - 1) * pageSize + 1}
-                -{Math.min(currentPage * pageSize, filteredClasses.length)}/
-                {filteredClasses.length} lớp
-              </Text>
-              {hasActiveFilters ? (
-                <TouchableOpacity onPress={resetFilters}>
-                  <Text
-                    style={{
-                      color: "#1D4ED8",
-                      fontSize: 12,
-                      fontWeight: "700",
-                    }}
-                  >
-                    Xóa bộ lọc
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
+              {/* Filters */}
+              <View style={{ flexDirection: isMobile ? "column" : "row", gap: 10 }}>
+                <DropdownPicker label="Môn học" options={subjectOptions} selectedValue={selectedSubject} onValueChange={setSelectedSubject} placeholder="Tất cả môn học" themeColor="#1E40AF" />
+                <DropdownPicker label="Học kỳ" options={semesterOptions} selectedValue={selectedSemester} onValueChange={setSelectedSemester} placeholder="Tất cả học kỳ" themeColor="#1E40AF" />
+              </View>
             </View>
           </View>
 
+          {/* ── Table ── */}
           {loading ? (
-            <View
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: "#E5ECF6",
-                paddingVertical: 40,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+            <View style={{ backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", paddingVertical: 48, alignItems: "center" }}>
               <ActivityIndicator size="large" color="#3b82f6" />
-              <Text style={{ color: Colors.textSecondary, marginTop: 12 }}>
-                Đang tải dữ liệu...
-              </Text>
+              <Text style={{ color: Colors.textSecondary, marginTop: 12 }}>Đang tải dữ liệu...</Text>
             </View>
           ) : (
-            <View>
+            <View style={{ backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb", overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}>
               <Table
                 columns={tableColumns}
                 data={paginatedClasses}
-                onRowPress={(item) =>
-                  handleClassPress(item as TeacherClassCard)
-                }
+                onRowPress={(item) => handleClassPress(item as TeacherClassCard)}
                 stickyHeader={false}
                 headerBackgroundColor="#1E3A8A"
                 headerTextColor="#FFFFFF"
                 headerBorderColor="#1D4ED8"
                 emptyState={{
-                  title: hasActiveFilters
-                    ? "Không có kết quả phù hợp"
-                    : "Chưa có lớp học",
-                  description: hasActiveFilters
-                    ? "Hãy thử đổi từ khóa tìm kiếm hoặc điều chỉnh bộ lọc."
-                    : "Hiện chưa có lớp học nào được gán cho giảng viên.",
+                  title: hasActiveFilters ? "Không có kết quả phù hợp" : "Chưa có lớp học",
+                  description: hasActiveFilters ? "Hãy thử đổi từ khóa hoặc điều chỉnh bộ lọc." : "Hiện chưa có lớp học nào được gán.",
                   icon: <CalendarIcon size={48} color={Colors.gray300} />,
                 }}
               />
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: "#64748b",
-                  marginTop: 10,
-                  marginLeft: 2,
-                }}
-              >
-                Nhấn vào một dòng để xem chi tiết lớp và danh sách sinh viên.
-              </Text>
 
+              {/* Pagination footer */}
               {filteredClasses.length > 0 && (
-                <View
-                  style={{
-                    marginTop: 12,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    backgroundColor: "#FFFFFF",
-                    borderWidth: 1,
-                    borderColor: "#E5ECF6",
-                    borderRadius: 12,
-                    paddingVertical: 10,
-                    paddingHorizontal: 12,
-                    gap: 10,
-                  }}
-                >
-                  <TouchableOpacity
-                    disabled={currentPage <= 1}
-                    onPress={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 8,
-                      backgroundColor: currentPage <= 1 ? "#E2E8F0" : "#DBEAFE",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "700",
-                        color: currentPage <= 1 ? "#94A3B8" : "#1D4ED8",
-                      }}
-                    >
-                      Trước
-                    </Text>
-                  </TouchableOpacity>
-
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: "#334155",
-                      fontWeight: "700",
-                    }}
-                  >
-                    Trang {currentPage}/{totalPages}
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: "#f1f5f9", paddingVertical: 12, paddingHorizontal: 16 }}>
+                  <Text style={{ fontSize: 13, color: "#64748b" }}>
+                    {filteredClasses.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredClasses.length)} / {filteredClasses.length} lớp
                   </Text>
-
-                  <TouchableOpacity
-                    disabled={currentPage >= totalPages}
-                    onPress={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 8,
-                      backgroundColor:
-                        currentPage >= totalPages ? "#E2E8F0" : "#DBEAFE",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "700",
-                        color:
-                          currentPage >= totalPages ? "#94A3B8" : "#1D4ED8",
-                      }}
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <TouchableOpacity
+                      disabled={currentPage <= 1}
+                      onPress={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      style={{ padding: 6, opacity: currentPage <= 1 ? 0.35 : 1 }}
                     >
-                      Sau
-                    </Text>
-                  </TouchableOpacity>
+                      <Ionicons name="chevron-back" size={18} color="#1E40AF" />
+                    </TouchableOpacity>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#334155", minWidth: 70, textAlign: "center" }}>Trang {currentPage}/{totalPages}</Text>
+                    <TouchableOpacity
+                      disabled={currentPage >= totalPages}
+                      onPress={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      style={{ padding: 6, opacity: currentPage >= totalPages ? 0.35 : 1 }}
+                    >
+                      <Ionicons name="chevron-forward" size={18} color="#1E40AF" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
             </View>
@@ -793,272 +697,327 @@ export default function ClassListScreen() {
         </View>
       </ScrollView>
 
-      {/* Detail Modal */}
+      {/* ─── Detail Modal (Redesigned) ─── */}
       <Modal
         visible={modalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={handleCloseModal}
       >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: isMobile ? 16 : 24,
-          }}
-        >
+        <View style={{ flex: 1, backgroundColor: "rgba(15,23,42,0.6)", justifyContent: "center", alignItems: "center", padding: isMobile ? 0 : 24 }}>
           <View
             style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: 16,
+              backgroundColor: "#fff",
+              borderRadius: isMobile ? 0 : 20,
               width: "100%",
-              maxWidth: isDesktop ? 800 : 600,
-              maxHeight: "90%",
+              maxWidth: isDesktop ? 1060 : isTablet ? 680 : "100%",
+              maxHeight: isMobile ? "100%" : "92%",
+              flex: isMobile ? 1 : undefined,
               flexShrink: 1,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 16,
-              elevation: 8,
               overflow: "hidden",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.25,
+              shadowRadius: 24,
+              elevation: 12,
             }}
           >
-            {/* Modal Header */}
-            <View
-              style={{
-                padding: isMobile ? 16 : 24,
-                borderBottomWidth: 1,
-                borderBottomColor: Colors.border,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontSize: isMobile ? 18 : 20,
-                    fontWeight: "600",
-                    color: Colors.text,
-                    marginBottom: 4,
-                  }}
-                >
-                  {selectedClass?.code} - {selectedClass?.name}
-                </Text>
-                <Text style={{ fontSize: 14, color: Colors.textSecondary }}>
-                  {selectedClass?.scheduleText} • Phòng {selectedClass?.room}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={handleCloseModal}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
-                  backgroundColor: Colors.gray100,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginLeft: 12,
-                }}
-              >
-                <CloseIcon size={18} color={Colors.gray700} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Modal Content */}
-            <ScrollView
-              style={{ flexShrink: 1 }}
-              contentContainerStyle={{ padding: isMobile ? 16 : 24 }}
-            >
-              <View
-                style={{
-                  backgroundColor: "#EFF6FF",
-                  borderWidth: 1,
-                  borderColor: "#BFDBFE",
-                  borderRadius: 12,
-                  padding: 12,
-                  marginBottom: 16,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: "#1E3A8A",
-                    fontWeight: "700",
-                    marginBottom: 6,
-                  }}
-                >
-                  Tổng quan lớp học
-                </Text>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <Text style={{ fontSize: 13, color: "#334155" }}>
-                    Môn học: {selectedClass?.subject || "-"}
+            {/* ── Gradient Header ── */}
+            <View style={{ backgroundColor: "#1e3a8a", padding: isMobile ? 16 : 24, paddingBottom: 20 }}>
+              <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                    <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="school" size={18} color="#fff" />
+                    </View>
+                    <View style={{ backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.9)", letterSpacing: 0.5 }}>{selectedClass?.code}</Text>
+                    </View>
+                    {selectedClass?.semester && (
+                      <View style={{ backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                        <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.8)" }}>{selectedClass.semester}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={{ fontSize: isMobile ? 18 : 22, fontWeight: "800", color: "#fff", marginBottom: 4 }} numberOfLines={2}>
+                    {selectedClass?.name}
                   </Text>
-                  <Text style={{ fontSize: 13, color: "#334155" }}>
-                    Sĩ số: {selectedClass?.totalStudents || 0} sinh viên
+                  <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.75)" }} numberOfLines={1}>
+                    {selectedClass?.subject || ""}
                   </Text>
                 </View>
+                <TouchableOpacity
+                  onPress={handleCloseModal}
+                  style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" }}
+                >
+                  <Ionicons name="close" size={20} color="#fff" />
+                </TouchableOpacity>
               </View>
 
-              {/* Student List */}
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "700",
-                  color: "#1E3A8A",
-                  marginBottom: 10,
-                }}
-              >
-                Danh sách sinh viên{" "}
-                {studentsLoading
-                  ? "(đang tải...)"
-                  : `(${students.length} sinh viên)`}
-              </Text>
-              {!studentsLoading &&
-                students.map((student) => {
-                  const rate = Math.round(student.attendanceRate || 0);
-                  let rateColor = "#2563EB";
-                  let rateBg = "#DBEAFE";
-                  if (rate >= 90) {
-                    rateColor = "#1D4ED8";
-                    rateBg = "#DBEAFE";
-                  } else if (rate >= 75) {
-                    rateColor = "#1E40AF";
-                    rateBg = "#E0E7FF";
-                  }
-                  const initial = (student.studentName || "?")
-                    .trim()
-                    .charAt(0)
-                    .toUpperCase();
+              {/* Quick stats row */}
+              <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
+                {[
+                  { icon: "people", label: "Sinh viên", value: selectedClass?.totalStudents ?? 0, color: "#bfdbfe" },
+                  { icon: "checkmark-circle", label: "Có mặt", value: selectedClass?.presentCount ?? 0, color: "#6ee7b7" },
+                  { icon: "time", label: "Muộn", value: selectedClass?.lateCount ?? 0, color: "#fde68a" },
+                  { icon: "close-circle", label: "Vắng", value: selectedClass?.absentCount ?? 0, color: "#fca5a5" },
+                  { icon: "trending-up", label: "Tỉ lệ ĐD", value: `${selectedClass?.attendanceRate ?? 0}%`, color: "#c4b5fd" },
+                ].map((s, i) => (
+                  <View key={i} style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 10, padding: isMobile ? 8 : 10, alignItems: "center" }}>
+                    <Ionicons name={s.icon as any} size={16} color={s.color} />
+                    <Text style={{ fontSize: isMobile ? 14 : 18, fontWeight: "800", color: "#fff", marginTop: 4 }}>{s.value}</Text>
+                    <Text style={{ fontSize: 10, color: "rgba(255,255,255,0.65)", marginTop: 1, textAlign: "center" }}>{s.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
 
-                  return (
-                    <TouchableOpacity
-                      key={student.studentId}
-                      onPress={() => handleStudentPress(student)}
-                      activeOpacity={0.75}
-                      style={{
-                        backgroundColor: "#FFFFFF",
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: "#DBEAFE",
-                        marginBottom: 8,
-                        paddingVertical: 12,
-                        paddingHorizontal: 12,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 10,
-                      }}
-                    >
-                      {/* Avatar */}
-                      <View
-                        style={{
-                          width: 38,
-                          height: 38,
-                          borderRadius: 19,
-                          backgroundColor: "#DBEAFE",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 15,
-                            fontWeight: "800",
-                            color: "#1E40AF",
-                          }}
-                        >
-                          {initial}
-                        </Text>
+            {/* ── Tabs ── */}
+            <View style={{ flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#f1f5f9", backgroundColor: "#fff" }}>
+              {(["overview", "students"] as const).map((tab) => (
+                <TouchableOpacity
+                  key={tab}
+                  onPress={() => setModalTab(tab)}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 14,
+                    alignItems: "center",
+                    borderBottomWidth: 3,
+                    borderBottomColor: modalTab === tab ? "#1e3a8a" : "transparent",
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Ionicons
+                      name={tab === "overview" ? "information-circle-outline" : "people-outline"}
+                      size={16}
+                      color={modalTab === tab ? "#1e3a8a" : "#94a3b8"}
+                    />
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: modalTab === tab ? "#1e3a8a" : "#94a3b8" }}>
+                      {tab === "overview" ? "Tổng quan" : `Sinh viên (${students.length})`}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* ── Content ── */}
+            <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ padding: isMobile ? 16 : 24 }}>
+              {modalTab === "overview" ? (
+                /* ── Overview tab ── */
+                <View style={{ gap: 16 }}>
+                  {/* Info cards grid */}
+                  <View style={{ flexDirection: isDesktop || isTablet ? "row" : "column", gap: 12 }}>
+                    {[
+                      { icon: "book-outline", label: "Môn học", value: selectedClass?.subject || "-", color: "#3b82f6", bg: "#eff6ff" },
+                      { icon: "calendar-outline", label: "Lịch dạy", value: selectedClass?.scheduleText || "Chưa có lịch", color: "#8b5cf6", bg: "#f5f3ff" },
+                      { icon: "location-outline", label: "Phòng học", value: selectedClass?.room || "Chưa có", color: "#10b981", bg: "#ecfdf5" },
+                      { icon: "layers-outline", label: "Học kỳ", value: selectedClass?.semester || "-", color: "#f59e0b", bg: "#fffbeb" },
+                    ].map((card, i) => (
+                      <View key={i} style={{ flex: 1, backgroundColor: card.bg, borderRadius: 12, padding: 14, flexDirection: "row", alignItems: "center", gap: 12 }}>
+                        <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: card.color + "20", alignItems: "center", justifyContent: "center" }}>
+                          <Ionicons name={card.icon as any} size={18} color={card.color} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 11, color: card.color, fontWeight: "600", marginBottom: 3, opacity: 0.8 }}>{card.label.toUpperCase()}</Text>
+                          <Text style={{ fontSize: 14, fontWeight: "700", color: "#1e293b" }} numberOfLines={2}>{card.value}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Attendance breakdown */}
+                  <View style={{ backgroundColor: "#f8fafc", borderRadius: 12, padding: 16, borderWidth: 1, borderColor: "#e5e7eb" }}>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1e293b", marginBottom: 14 }}>Phân bố điểm danh</Text>
+                    {[
+                      { label: "Có mặt", count: selectedClass?.presentCount ?? 0, color: "#10b981", bg: "#ecfdf5" },
+                      { label: "Muộn", count: selectedClass?.lateCount ?? 0, color: "#f59e0b", bg: "#fffbeb" },
+                      { label: "Vắng mặt", count: selectedClass?.absentCount ?? 0, color: "#ef4444", bg: "#fef2f2" },
+                    ].map((row, i) => {
+                      const total = (selectedClass?.presentCount ?? 0) + (selectedClass?.lateCount ?? 0) + (selectedClass?.absentCount ?? 0);
+                      const pct = total > 0 ? Math.round((row.count / total) * 100) : 0;
+                      return (
+                        <View key={i} style={{ marginBottom: i < 2 ? 12 : 0 }}>
+                          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                            <Text style={{ fontSize: 13, color: "#475569", fontWeight: "600" }}>{row.label}</Text>
+                            <Text style={{ fontSize: 13, fontWeight: "700", color: row.color }}>{row.count} lượt ({pct}%)</Text>
+                          </View>
+                          <View style={{ height: 8, backgroundColor: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
+                            <View style={{ height: 8, width: `${pct}%`, backgroundColor: row.color, borderRadius: 4 }} />
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+
+                  {/* Overall rate */}
+                  <View style={{ backgroundColor: "#1e3a8a", borderRadius: 12, padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                    <View>
+                      <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginBottom: 4 }}>Tỉ lệ điểm danh tổng thể</Text>
+                      <Text style={{ fontSize: 32, fontWeight: "900", color: "#fff" }}>{selectedClass?.attendanceRate ?? 0}%</Text>
+                    </View>
+                    <View style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 4, borderColor: "rgba(255,255,255,0.3)", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons
+                        name={(selectedClass?.attendanceRate ?? 0) >= 80 ? "checkmark-circle" : "alert-circle"}
+                        size={32}
+                        color={(selectedClass?.attendanceRate ?? 0) >= 80 ? "#34d399" : "#fbbf24"}
+                      />
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                /* ── Students tab ── */
+                <View>
+                  {studentsLoading ? (
+                    <View style={{ alignItems: "center", paddingVertical: 48 }}>
+                      <ActivityIndicator size="large" color="#3b82f6" />
+                      <Text style={{ color: "#64748b", marginTop: 12 }}>Đang tải danh sách sinh viên...</Text>
+                    </View>
+                  ) : (
+                    <View style={{ gap: 12 }}>
+                      {/* Search bar */}
+                      <View style={{ borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 10, backgroundColor: "#f8fafc", flexDirection: "row", alignItems: "center", paddingHorizontal: 12, minHeight: 42 }}>
+                        <Ionicons name="search" size={16} color="#94a3b8" />
+                        <TextInput
+                          placeholder="Tìm theo tên hoặc MSSV..."
+                          value={studentSearch}
+                          onChangeText={setStudentSearch}
+                          placeholderTextColor="#94a3b8"
+                          style={{ flex: 1, fontSize: 13, color: "#0f172a", marginLeft: 8, paddingVertical: 8 }}
+                        />
+                        {studentSearch.length > 0 && (
+                          <TouchableOpacity onPress={() => setStudentSearch("")}>
+                            <Ionicons name="close-circle" size={16} color="#94a3b8" />
+                          </TouchableOpacity>
+                        )}
                       </View>
 
-                      {/* Info */}
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            fontWeight: "600",
-                            color: "#1e293b",
-                            marginBottom: 2,
-                          }}
-                          numberOfLines={1}
-                        >
-                          {student.studentName}
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            color: "#64748b",
-                            marginBottom: 4,
-                          }}
-                        >
-                          MSSV: {student.studentId}
-                        </Text>
-                        <Text style={{ fontSize: 11, color: "#64748b" }}>
-                          Có mặt: {student.presentCount || 0} • Vắng:{" "}
-                          {student.absentCount || 0} • Muộn:{" "}
-                          {student.lateCount || 0}
-                        </Text>
+                      {/* Filter chips */}
+                      <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+                        {([
+                          { key: "all", label: "Tất cả", color: "#1e3a8a", bg: "#eff6ff" },
+                          { key: "good", label: "≥ 80%", color: "#10b981", bg: "#ecfdf5" },
+                          { key: "warning", label: "60–79%", color: "#f59e0b", bg: "#fffbeb" },
+                          { key: "bad", label: "< 60%", color: "#ef4444", bg: "#fef2f2" },
+                        ] as const).map((chip) => (
+                          <TouchableOpacity
+                            key={chip.key}
+                            onPress={() => setStudentRateFilter(chip.key)}
+                            style={{
+                              paddingHorizontal: 12,
+                              paddingVertical: 6,
+                              borderRadius: 20,
+                              borderWidth: 1.5,
+                              borderColor: studentRateFilter === chip.key ? chip.color : "#e5e7eb",
+                              backgroundColor: studentRateFilter === chip.key ? chip.bg : "#fff",
+                            }}
+                          >
+                            <Text style={{ fontSize: 12, fontWeight: "700", color: studentRateFilter === chip.key ? chip.color : "#94a3b8" }}>
+                              {chip.label}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+
+                        {/* Result count */}
+                        <View style={{ marginLeft: "auto" as any, justifyContent: "center" }}>
+                          <Text style={{ fontSize: 12, color: "#64748b" }}>
+                            {(() => {
+                              const kw = studentSearch.trim().toLowerCase();
+                              return students.filter((s) => {
+                                const rate = Math.round(s.attendanceRate || 0);
+                                const matchKw = kw.length === 0 || (s.studentName || "").toLowerCase().includes(kw) || (s.studentId || "").toLowerCase().includes(kw);
+                                const matchRate = studentRateFilter === "all" || (studentRateFilter === "good" && rate >= 80) || (studentRateFilter === "warning" && rate >= 60 && rate < 80) || (studentRateFilter === "bad" && rate < 60);
+                                return matchKw && matchRate;
+                              }).length;
+                            })()} / {students.length} sinh viên
+                          </Text>
+                        </View>
                       </View>
 
-                      {/* Rate badge */}
-                      <View
-                        style={{
-                          backgroundColor: rateBg,
-                          paddingHorizontal: 10,
-                          paddingVertical: 6,
-                          borderRadius: 8,
-                          alignItems: "center",
-                          minWidth: 62,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            fontWeight: "700",
-                            color: rateColor,
-                          }}
-                        >
-                          {rate}%
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: 10,
-                            color: rateColor,
-                            opacity: 0.8,
-                          }}
-                        >
-                          Tỷ lệ
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
+                      {/* Student cards */}
+                      {(() => {
+                        const kw = studentSearch.trim().toLowerCase();
+                        const filtered = students.filter((s) => {
+                          const rate = Math.round(s.attendanceRate || 0);
+                          const matchKw = kw.length === 0 || (s.studentName || "").toLowerCase().includes(kw) || (s.studentId || "").toLowerCase().includes(kw);
+                          const matchRate = studentRateFilter === "all" || (studentRateFilter === "good" && rate >= 80) || (studentRateFilter === "warning" && rate >= 60 && rate < 80) || (studentRateFilter === "bad" && rate < 60);
+                          return matchKw && matchRate;
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <View style={{ alignItems: "center", paddingVertical: 32 }}>
+                              <Ionicons name="search-outline" size={40} color="#cbd5e1" />
+                              <Text style={{ color: "#94a3b8", marginTop: 10, fontSize: 14 }}>Không tìm thấy sinh viên nào</Text>
+                            </View>
+                          );
+                        }
+
+                        return (
+                          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+                            {filtered.map((student) => {
+                              const rate = Math.round(student.attendanceRate || 0);
+                              const rateColor = rate >= 80 ? "#10b981" : rate >= 60 ? "#f59e0b" : "#ef4444";
+                              const rateBg = rate >= 80 ? "#ecfdf5" : rate >= 60 ? "#fffbeb" : "#fef2f2";
+                              const initial = (student.studentName || "?").trim().charAt(0).toUpperCase();
+                              const cardWidth = isDesktop ? "calc(50% - 5px)" : "100%";
+                              return (
+                                <TouchableOpacity
+                                  key={student.studentId}
+                                  onPress={() => handleStudentPress(student)}
+                                  activeOpacity={0.75}
+                                  style={{
+                                    width: cardWidth as any,
+                                    backgroundColor: "#fff",
+                                    borderRadius: 12,
+                                    borderWidth: 1,
+                                    borderColor: "#e5e7eb",
+                                    padding: 14,
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    gap: 12,
+                                    shadowColor: "#000",
+                                    shadowOffset: { width: 0, height: 1 },
+                                    shadowOpacity: 0.03,
+                                    shadowRadius: 4,
+                                    elevation: 1,
+                                  }}
+                                >
+                                  <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: "#eff6ff", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                    <Text style={{ fontSize: 16, fontWeight: "800", color: "#1e40af" }}>{initial}</Text>
+                                  </View>
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={{ fontSize: 14, fontWeight: "700", color: "#1e293b", marginBottom: 2 }} numberOfLines={1}>{student.studentName}</Text>
+                                    <Text style={{ fontSize: 12, color: "#64748b", marginBottom: 2 }}>MSSV: {student.studentId}</Text>
+                                    <Text style={{ fontSize: 11, color: "#94a3b8" }}>
+                                      ✓ {student.presentCount || 0} • ⏰ {student.lateCount || 0} • ✗ {student.absentCount || 0}
+                                    </Text>
+                                  </View>
+                                  <View style={{ alignItems: "center", gap: 4 }}>
+                                    <View style={{ backgroundColor: rateBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
+                                      <Text style={{ fontSize: 14, fontWeight: "800", color: rateColor }}>{rate}%</Text>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={14} color="#cbd5e1" />
+                                  </View>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                        );
+                      })()}
+                    </View>
+                  )}
+                </View>
+              )}
             </ScrollView>
 
-            {/* Modal Footer */}
-            <View
-              style={{
-                padding: isMobile ? 16 : 24,
-                borderTopWidth: 1,
-                borderTopColor: Colors.border,
-              }}
-            >
-              <PrimaryButton
-                title="Đóng"
+            {/* Footer */}
+            <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: "#f1f5f9", flexDirection: "row", justifyContent: "flex-end" }}>
+              <TouchableOpacity
                 onPress={handleCloseModal}
-                variant="outline"
-              />
+                style={{ paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10, backgroundColor: "#f1f5f9", borderWidth: 1, borderColor: "#e5e7eb" }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#475569" }}>Đóng</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>

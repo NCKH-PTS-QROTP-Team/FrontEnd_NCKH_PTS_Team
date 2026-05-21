@@ -6,17 +6,16 @@ import {
   useWindowDimensions,
   TouchableOpacity,
   ActivityIndicator,
-  Animated,
   Modal,
+  Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import { getWebShadow, getWebCursor } from "@/constants/webStyles";
 import WeeklyCalendar from "@/components/WeeklyCalendar";
+import WeeklySchedule from "@/components/WeeklySchedule";
 import { MonthCalendar, todayISO, isoToDate } from "@/components/MonthCalendar";
-import { CalendarIcon } from "@/components/Icons";
 import { useRouter } from "expo-router";
 import { scheduleService, authService } from "@/apis";
 import { removeAuthToken } from "@/apis/config/apiClient";
@@ -50,48 +49,14 @@ export default function ScheduleScreen() {
   const [selectedSchedule, setSelectedSchedule] = useState<DayScheduleItem | null>(null);
   const PAGE_SIZE = 15;
 
-  const scrollY = React.useRef(new Animated.Value(0)).current;
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
 
-  const contentMaxWidth = isDesktop ? (timeFilter === "day" ? 1000 : 1200) : "100%";
   const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 16;
   const cardPadding = isDesktop ? 24 : 16;
-
   const BLUE = "#3b82f6";
-
-  const HEADER_MAX_HEIGHT = isDesktop ? 140 : isMobile ? 220 : 210;
-  const HEADER_MIN_HEIGHT = isMobile ? 120 : HEADER_MAX_HEIGHT;
-  const HEADER_SCROLL_DISTANCE = Math.max(
-    1,
-    HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT,
-  );
-
-  const headerHeight = isMobile
-    ? scrollY.interpolate({
-        inputRange: [0, HEADER_SCROLL_DISTANCE],
-        outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
-        extrapolate: "clamp",
-      })
-    : HEADER_MAX_HEIGHT;
-
-  const contentOpacity = isMobile
-    ? scrollY.interpolate({
-        inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
-        outputRange: [1, 0.2, 0],
-        extrapolate: "clamp",
-      })
-    : 1;
-
-  const contentTranslateY = isMobile
-    ? scrollY.interpolate({
-        inputRange: [0, HEADER_SCROLL_DISTANCE],
-        outputRange: [0, -10],
-        extrapolate: "clamp",
-      })
-    : 0;
 
   // Get selected date info
   const weekdays = [
@@ -213,8 +178,9 @@ export default function ScheduleScreen() {
 
         setDaySchedules(dedupedMapped);
 
-        // ── 2. Fetch month range chỉ cho MonthCalendar dots ─────────────────
-        if (timeFilter === "month") {
+        // ── 2. Fetch month range cho MonthCalendar dots ──────────────────────
+        // Luôn fetch ở desktop (sidebar MonthCalendar cần dots), hoặc khi timeFilter=month
+        if (isDesktop || timeFilter === "month") {
           const monthStart = new Date(
             selectedDate.getFullYear(),
             selectedDate.getMonth(),
@@ -232,9 +198,10 @@ export default function ScheduleScreen() {
           });
           setRawSchedules(monthSchedules);
         } else {
-          // week/day: WeeklyCalendar không dùng schedule data (chỉ là date picker)
+          // week/day trên mobile: dùng uniqueList đã fetch
           setRawSchedules(uniqueList);
         }
+
       } catch (error: any) {
         console.error("Error loading schedules for date:", error);
         // JWT hết hạn hoặc user không tồn tại trong DB → đăng xuất
@@ -252,603 +219,484 @@ export default function ScheduleScreen() {
     loadSchedulesForDate();
   }, [selectedDate, selectedView, timeFilter]);
 
+  // ── Render schedule list (shared between mobile & desktop) ──────────────
+  const renderScheduleList = () => {
+
+    if (loading) {
+      return (
+        <View style={{ backgroundColor: Colors.white, borderRadius: 16, padding: cardPadding, borderWidth: 1, borderColor: Colors.border, alignItems: "center", justifyContent: "center", paddingVertical: 40, flexDirection: "row", gap: 10 }}>
+          <ActivityIndicator size="small" color={Colors.primary} />
+          <Text style={{ fontSize: 15, color: Colors.textSecondary }}>Đang tải lịch học...</Text>
+        </View>
+      );
+    }
+    if (daySchedules.length === 0) {
+      return (
+        <View style={{ backgroundColor: Colors.white, borderRadius: 24, padding: isDesktop ? 60 : 40, borderWidth: 1, borderColor: Colors.borderLight, alignItems: "center", justifyContent: "center", ...getWebShadow("lg") }}>
+          <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: Colors.infoLight, alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+            <Ionicons name="sparkles" size={48} color={Colors.primary} />
+          </View>
+          <Text style={{ fontSize: isDesktop ? 22 : 18, fontWeight: "800", color: Colors.textHeading, marginBottom: 10, textAlign: "center" }}>
+            {isToday ? "Hôm nay bạn được nghỉ!" : "Ngày này không có lịch học"}
+          </Text>
+          <Text style={{ fontSize: 14, color: Colors.textSecondary, textAlign: "center", maxWidth: 360, lineHeight: 22 }}>
+            {isToday ? "Tận hưởng thời gian rảnh để nạp lại năng lượng nhé!" : "Không có lịch học hoặc lịch thi vào ngày này."}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setTimeFilter("week")}
+            style={{ marginTop: 24, backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, flexDirection: "row", alignItems: "center", gap: 8, ...getWebShadow("md"), ...getWebCursor() }}
+          >
+            <Ionicons name="calendar-outline" size={18} color="#fff" />
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>Xem lịch tuần</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return (
+      <>
+        {paginatedSchedules.map((schedule) => (
+          <TouchableOpacity
+            key={schedule.id}
+            activeOpacity={0.8}
+            onPress={() => { setSelectedSchedule(schedule); setModalVisible(true); }}
+            style={{
+              backgroundColor: Colors.white,
+              borderRadius: 20,
+              padding: cardPadding,
+              marginBottom: 14,
+              borderWidth: 1,
+              borderColor: Colors.border,
+              borderLeftWidth: 4,
+              borderLeftColor: schedule.scheduleType === "EXAM" ? Colors.error : Colors.primary,
+              ...getWebShadow("md"),
+              ...getWebCursor(),
+            }}
+          >
+            {/* Top row: course name + type badge + day */}
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+              <Text style={{ fontSize: isMobile ? 15 : 17, fontWeight: "700", color: Colors.textHeading, flex: 1, marginRight: 8 }} numberOfLines={2}>
+                {schedule.courseName}
+              </Text>
+              <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+                {schedule.scheduleType === "EXAM" && (
+                  <View style={{ backgroundColor: "#FEE2E2", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: Colors.error }}>THI</Text>
+                  </View>
+                )}
+                {timeFilter !== "day" && schedule.dayOfWeekStr && (
+                  <View style={{ backgroundColor: Colors.infoLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: Colors.primary }}>{schedule.dayOfWeekStr}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Teacher row */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.infoLight, alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="person" size={14} color={Colors.primary} />
+              </View>
+              <Text style={{ fontSize: 13, color: Colors.textHeading, fontWeight: "500" }}>{schedule.teacher.replace("GV: ", "")}</Text>
+            </View>
+
+            {/* Time & Room */}
+            <View style={{ backgroundColor: Colors.surface, borderRadius: 10, padding: 10, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Ionicons name="time-outline" size={16} color={Colors.primary} />
+                <Text style={{ fontSize: 13, fontWeight: "700", color: Colors.textHeading }}>{schedule.time}</Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Ionicons name="business-outline" size={16} color={Colors.success} />
+                <Text style={{ fontSize: 13, fontWeight: "600", color: Colors.textHeading }}>{schedule.room.replace("Phòng: ", "")}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        ))}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 24 }}>
+            <TouchableOpacity
+              disabled={page === 1}
+              onPress={() => setPage((p) => p - 1)}
+              style={[{ width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.white, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: Colors.border, ...getWebShadow("sm"), ...getWebCursor() }, page === 1 && { opacity: 0.4, backgroundColor: Colors.gray100 }]}
+            >
+              <Ionicons name="chevron-back" size={20} color={page === 1 ? Colors.textSecondary : Colors.primary} />
+            </TouchableOpacity>
+            <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: Colors.white, borderRadius: 20, borderWidth: 1, borderColor: Colors.border }}>
+              <Text style={{ fontSize: 14, fontWeight: "700", color: Colors.textSecondary }}>Trang {page} / {totalPages}</Text>
+            </View>
+            <TouchableOpacity
+              disabled={page === totalPages}
+              onPress={() => setPage((p) => p + 1)}
+              style={[{ width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.white, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: Colors.border, ...getWebShadow("sm"), ...getWebCursor() }, page === totalPages && { opacity: 0.4, backgroundColor: Colors.gray100 }]}
+            >
+              <Ionicons name="chevron-forward" size={20} color={page === totalPages ? Colors.textSecondary : Colors.primary} />
+
+            </TouchableOpacity>
+          </View>
+        )}
+      </>
+    );
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: Colors.surface }}>
       <StatusBar style="light" />
 
-      {/* ── Parallax Animated Hero Header ── */}
-      <Animated.View
-        style={{
-          paddingTop: isMobile ? 48 : 64,
-          paddingHorizontal: paddingHorizontal,
-          borderBottomLeftRadius: 24,
-          borderBottomRightRadius: 24,
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: headerHeight,
-          zIndex: 10,
-          overflow: "hidden",
-          shadowColor: "#3B82F6",
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.3,
-          shadowRadius: 16,
-          elevation: 6,
-        }}
-      >
-        <LinearGradient
-          colors={["#1E3A8A", "#3B82F6"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
-        />
-        <View
-          style={{
-            maxWidth: contentMaxWidth,
-            width: "100%",
-            alignSelf: "center",
-            flex: 1,
-            flexDirection: isDesktop ? "row" : "column",
-            justifyContent: isDesktop ? "space-between" : "flex-start",
-            alignItems: isDesktop ? "center" : "stretch",
-          }}
-        >
+      {/* ─── Desktop: Calendar App Layout ─── */}
+      {isDesktop ? (
+        <View style={{ flex: 1, flexDirection: "row", backgroundColor: "#F8FAFC" }}>
+
+          {/* ── LEFT PANEL: MonthCalendar (sticky) ── */}
           <View
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 14,
-              marginBottom: isDesktop ? 0 : 12,
+              width: 300,
+              flexShrink: 0,
+              backgroundColor: Colors.white,
+              borderRightWidth: 1,
+              borderRightColor: Colors.border,
+              ...(Platform.OS === "web"
+                ? { position: "sticky" as any, top: 0, height: "100vh" as any, overflowY: "auto" as any }
+                : { alignSelf: "flex-start" }
+              ),
             }}
           >
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 14,
-                backgroundColor: "rgba(255,255,255,0.2)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+            {/* Panel header */}
+            <LinearGradient
+              colors={["#1E3A8A", "#3B82F6"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ paddingHorizontal: 20, paddingTop: 24, paddingBottom: 20 }}
             >
-              <Ionicons name="calendar" size={24} color="#fff" />
-            </View>
-            <View style={{ flex: isDesktop ? undefined : 1 }}>
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: "rgba(255,255,255,0.85)",
-                  marginBottom: 2,
-                  fontWeight: "500",
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name="calendar" size={18} color="#fff" />
+                </View>
+                <View>
+                  <Text style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontWeight: "500", textTransform: "uppercase", letterSpacing: 0.5 }}>Thời khóa biểu</Text>
+                  <Text style={{ fontSize: 17, fontWeight: "800", color: "#fff" }}>Lịch học của tôi</Text>
+                </View>
+              </View>
+            </LinearGradient>
+
+            {/* Month calendar — always show, dùng rawSchedules để hiển thị dots */}
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <MonthCalendar
+                schedules={rawSchedules as any}
+                selectedISO={toIsoDate(selectedDate)}
+                onSelectDay={(iso) => {
+                  setSelectedDate(isoToDate(iso));
                 }}
-              >
-                {isToday ? "Hôm nay" : "Ngày đang chọn"}
-              </Text>
-              <Text
-                style={{ fontSize: 20, fontWeight: "800", color: "#fff" }}
-                numberOfLines={1}
-              >
-                {dateStr}
-              </Text>
-            </View>
+                themeColor={BLUE}
+              />
+
+              {/* Divider + quick stats */}
+              <View style={{ paddingHorizontal: 16, paddingBottom: 24, paddingTop: 8 }}>
+                <View style={{ height: 1, backgroundColor: Colors.border, marginBottom: 16 }} />
+                <Text style={{ fontSize: 12, fontWeight: "700", color: Colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>Ngày đang chọn</Text>
+                <View style={{ backgroundColor: Colors.infoLight, borderRadius: 12, padding: 12 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: Colors.primary }}>{dateStr}</Text>
+                  {isToday && (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.primary }} />
+                      <Text style={{ fontSize: 12, color: Colors.primary, fontWeight: "600" }}>Hôm nay</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Jump to today */}
+                {!isToday && (
+                  <TouchableOpacity
+                    onPress={() => setSelectedDate(new Date())}
+                    style={{ marginTop: 10, alignItems: "center", paddingVertical: 8, backgroundColor: Colors.infoLight, borderRadius: 10, ...getWebCursor() }}
+                  >
+                    <Text style={{ fontSize: 13, color: Colors.primary, fontWeight: "600" }}>↩ Về hôm nay</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </ScrollView>
           </View>
 
-          <Animated.View
+          {/* ── RIGHT PANEL: Weekly timetable ── */}
+          <View style={{ flex: 1, overflow: "hidden" }}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ padding: 24, paddingBottom: 40 }}
+            >
+              {/* WeeklySchedule tự fetch + có sẵn filter Tất cả/Lịch học/Lịch thi + nav tuần */}
+              {/* targetDate: khi MonthCalendar chọn ngày → WeeklySchedule tự navigate đến tuần chứa ngày đó */}
+              <WeeklySchedule targetDate={selectedDate} />
+
+            </ScrollView>
+          </View>
+        </View>
+      ) : (
+        /* ─── Mobile / Tablet layout ─── */
+        <View style={{ flex: 1 }}>
+
+          {/* ── Fixed Header (gradient) ── */}
+          <LinearGradient
+            colors={["#1E3A8A", "#3B82F6"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={{
-              opacity: contentOpacity,
-              transform: [{ translateY: contentTranslateY }],
-              width: isDesktop ? 360 : "100%",
+              paddingTop: isMobile ? 52 : 36,
+              paddingHorizontal: paddingHorizontal,
+              paddingBottom: 16,
+              shadowColor: "#1E3A8A",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 12,
+              elevation: 8,
             }}
           >
-            {/* Filter Tabs in Header */}
-            <View
-              style={{
-                flexDirection: "row",
-                backgroundColor: "rgba(255,255,255,0.15)",
-                borderRadius: 12,
-                padding: 4,
-                marginTop: isDesktop ? 0 : 8,
-              }}
-            >
+            {/* Title row */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="calendar" size={20} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontWeight: "500" }}>Thời khóa biểu</Text>
+                <Text style={{ fontSize: 18, fontWeight: "800", color: "#fff" }} numberOfLines={1}>{dateStr}</Text>
+              </View>
+              {isToday && (
+                <View style={{ backgroundColor: "rgba(255,255,255,0.2)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 }}>
+                  <Text style={{ fontSize: 12, color: "#fff", fontWeight: "700" }}>Hôm nay</Text>
+                </View>
+              )}
+            </View>
+
+            {/* ── Time filter: Ngày / Tuần / Tháng ── */}
+            <View style={{ flexDirection: "row", backgroundColor: "rgba(0,0,0,0.2)", borderRadius: 14, padding: 4, gap: 4 }}>
               {[
-                { id: "all", label: "Tất cả" },
-                { id: "class", label: "Lịch học" },
-                { id: "exam", label: "Lịch thi" },
-              ].map((tab) => {
-                const isActive = selectedView === tab.id;
+                { id: "day", label: "Ngày", icon: "today-outline" },
+                { id: "week", label: "Tuần", icon: "calendar-outline" },
+                { id: "month", label: "Tháng", icon: "calendar-number-outline" },
+              ].map((f) => {
+                const isActive = timeFilter === f.id;
                 return (
                   <TouchableOpacity
-                    key={tab.id}
-                    onPress={() => setSelectedView(tab.id as any)}
+                    key={f.id}
+                    onPress={() => setTimeFilter(f.id as any)}
                     style={{
                       flex: 1,
-                      paddingVertical: 10,
+                      flexDirection: "row",
                       alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      paddingVertical: 10,
                       borderRadius: 10,
-                      backgroundColor: isActive ? Colors.white : "transparent",
-                      ... (isActive ? getWebShadow("sm") : {}),
+                      backgroundColor: isActive ? "#fff" : "transparent",
                       ...getWebCursor(),
                     }}
                     activeOpacity={0.7}
                   >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: isActive ? "800" : "600",
-                        color: isActive ? Colors.primary : "rgba(255,255,255,0.7)",
-                      }}
-                    >
-                      {tab.label}
+                    <Ionicons
+                      name={f.icon as any}
+                      size={15}
+                      color={isActive ? Colors.primary : "rgba(255,255,255,0.85)"}
+                    />
+                    <Text style={{
+                      fontSize: 13,
+                      fontWeight: isActive ? "800" : "600",
+                      color: isActive ? Colors.primary : "rgba(255,255,255,0.85)",
+                    }}>
+                      {f.label}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
-          </Animated.View>
-        </View>
-      </Animated.View>
+          </LinearGradient>
 
-      <Animated.ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          paddingHorizontal,
-          paddingTop: HEADER_MAX_HEIGHT + 24,
-          paddingBottom: isDesktop ? 32 : 24,
-        }}
-        showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false },
-        )}
-        scrollEventThrottle={16}
-      >
-        <View
-          style={{
-            maxWidth: contentMaxWidth,
-            width: "100%",
-            alignSelf: "center",
-          }}
-        >
-          {/* Calendar Views */}
-          {timeFilter !== "day" && (
-            <View style={{ marginBottom: isDesktop ? 24 : 20 }}>
-              {timeFilter === "month" ? (
-                <MonthCalendar
-                  schedules={rawSchedules as any}
-                  selectedISO={toIsoDate(selectedDate)}
-                  onSelectDay={(iso) => setSelectedDate(isoToDate(iso))}
-                  themeColor={BLUE}
-                />
-              ) : (
-                <WeeklyCalendar
-                  selectedDate={selectedDate}
-                  onDateSelect={setSelectedDate}
-                  onPrevWeek={() => {
-                    const d = new Date(selectedDate);
-                    d.setDate(d.getDate() - 7);
-                    setSelectedDate(d);
-                  }}
-                  onNextWeek={() => {
-                    const d = new Date(selectedDate);
-                    d.setDate(d.getDate() + 7);
-                    setSelectedDate(d);
-                  }}
-                />
-              )}
-            </View>
-          )}
-
-          {/* Schedule List Header with Time Filters */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: isDesktop ? 16 : 12,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: isMobile ? 16 : 18,
-                lineHeight: isMobile ? 24 : 28,
-                fontWeight: "700",
-                color: Colors.textHeading,
-              }}
-            >
-              Danh sách lịch học
-            </Text>
-
-            <View 
-              style={{ 
-                flexDirection: "row", 
-                backgroundColor: Colors.gray100, 
-                padding: 4, 
-                borderRadius: 20,
-              }}
-            >
-              {["day", "week", "month"].map((f) => (
+          {/* ── Type filter bar (below header, sticky) ── */}
+          <View style={{
+            flexDirection: "row",
+            backgroundColor: Colors.white,
+            paddingHorizontal: paddingHorizontal,
+            paddingVertical: 10,
+            gap: 8,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 4,
+            elevation: 2,
+          }}>
+            {[
+              { id: "all", label: "Tất cả", icon: "apps-outline" },
+              { id: "class", label: "Lịch học", icon: "book-outline" },
+              { id: "exam", label: "Lịch thi", icon: "document-text-outline" },
+            ].map((tab) => {
+              const isActive = selectedView === tab.id;
+              return (
                 <TouchableOpacity
-                  key={f}
-                  onPress={() => setTimeFilter(f as "day" | "week" | "month")}
+                  key={tab.id}
+                  onPress={() => setSelectedView(tab.id as any)}
                   style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 6,
-                    borderRadius: 16,
-                    backgroundColor: timeFilter === f ? Colors.white : "transparent",
-                    ... (timeFilter === f ? getWebShadow("sm") : {}),
-                    ...getWebCursor(),
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: timeFilter === f ? Colors.primary : Colors.textSecondary,
-                      fontWeight: "700",
-                      fontSize: 12,
-                    }}
-                  >
-                    {f === "day" ? "Ngày" : f === "week" ? "Tuần" : "Tháng"}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <View>
-            {loading ? (
-              <View
-                style={{
-                  backgroundColor: Colors.white,
-                  borderRadius: 12,
-                  padding: cardPadding,
-                  borderWidth: 1,
-                  borderColor: Colors.border,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingVertical: 32,
-                  flexDirection: "row",
-                  gap: 8,
-                }}
-              >
-                <ActivityIndicator size="small" color={Colors.primary} />
-                <Text
-                  style={{
-                    fontSize: isMobile ? 14 : 16,
-                    color: Colors.textSecondary,
-                  }}
-                >
-                  Đang tải lịch học...
-                </Text>
-              </View>
-            ) : daySchedules.length === 0 ? (
-              <View
-                style={{
-                  backgroundColor: Colors.white,
-                  borderRadius: 24,
-                  padding: isDesktop ? 60 : 40,
-                  borderWidth: 1,
-                  borderColor: Colors.borderLight,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  ...getWebShadow("lg"),
-                }}
-              >
-                <View 
-                  style={{ 
-                    width: 120, 
-                    height: 120, 
-                    borderRadius: 60, 
-                    backgroundColor: Colors.infoLight, 
-                    alignItems: "center", 
-                    justifyContent: "center",
-                    marginBottom: 24,
-                  }}
-                >
-                  <Ionicons name="sparkles" size={60} color={Colors.primary} />
-                </View>
-                <Text
-                  style={{
-                    fontSize: isDesktop ? 24 : 20,
-                    fontWeight: "800",
-                    color: Colors.textHeading,
-                    marginBottom: 12,
-                    textAlign: "center",
-                  }}
-                >
-                  {isToday ? "Hôm nay bạn được nghỉ!" : "Ngày này không có lịch học"}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: isDesktop ? 16 : 14,
-                    color: Colors.textSecondary,
-                    textAlign: "center",
-                    maxWidth: 400,
-                    lineHeight: 24,
-                  }}
-                >
-                  {isToday 
-                    ? "Tận hưởng thời gian rảnh rỗi để nạp lại năng lượng hoặc ôn tập kiến thức nhé. Chúc bạn một ngày tốt lành!" 
-                    : "Hiện tại hệ thống không tìm thấy lịch học hay lịch thi nào vào ngày này."}
-                </Text>
-                
-                <TouchableOpacity
-                  onPress={() => setTimeFilter("week")}
-                  style={{
-                    marginTop: 32,
-                    backgroundColor: Colors.primary,
-                    paddingHorizontal: 24,
-                    paddingVertical: 12,
-                    borderRadius: 12,
+                    flex: 1,
                     flexDirection: "row",
                     alignItems: "center",
-                    gap: 8,
-                    ...getWebShadow("md"),
+                    justifyContent: "center",
+                    gap: 5,
+                    paddingVertical: 8,
+                    borderRadius: 10,
+                    backgroundColor: isActive ? Colors.infoLight : Colors.surface,
+                    borderWidth: 1,
+                    borderColor: isActive ? Colors.primary : Colors.border,
                     ...getWebCursor(),
                   }}
+                  activeOpacity={0.7}
                 >
-                  <Ionicons name="calendar-outline" size={20} color="#fff" />
-                  <Text style={{ color: "#fff", fontWeight: "700" }}>Xem lịch tuần</Text>
+                  <Ionicons
+                    name={tab.icon as any}
+                    size={14}
+                    color={isActive ? Colors.primary : Colors.textSecondary}
+                  />
+                  <Text style={{
+                    fontSize: 12,
+                    fontWeight: isActive ? "700" : "500",
+                    color: isActive ? Colors.primary : Colors.textSecondary,
+                  }}>
+                    {tab.label}
+                  </Text>
                 </TouchableOpacity>
-              </View>
-            ) : (
-              <>
-                {paginatedSchedules.map((schedule, index) => (
-                  <TouchableOpacity
-                    key={schedule.id}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      setSelectedSchedule(schedule);
-                      setModalVisible(true);
-                    }}
-                    style={{
-                      backgroundColor: Colors.white,
-                      borderRadius: 20,
-                      padding: cardPadding,
-                      marginBottom: 16,
-                      borderWidth: 1,
-                      borderColor: Colors.border,
-                      ...getWebShadow("md"),
-                      ...getWebCursor(),
-                    }}
-                  >
-                    {/* Course Name & Day of Week */}
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        marginBottom: isMobile ? 6 : 8,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: isMobile ? 16 : 18,
-                          lineHeight: isMobile ? 24 : 28,
-                          fontWeight: "600",
-                          color: Colors.textHeading,
-                          flex: 1,
-                        }}
-                      >
-                        {schedule.courseName}
-                      </Text>
-                      {timeFilter !== "day" && schedule.dayOfWeekStr && (
-                        <View
-                          style={{
-                            backgroundColor: Colors.infoLight,
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
-                            borderRadius: 12,
-                            marginLeft: 12,
-                          }}
-                        >
-                          <Text
-                            style={{
-                              color: Colors.primary,
-                              fontSize: 12,
-                              fontWeight: "700",
-                            }}
-                          >
-                            {schedule.dayOfWeekStr}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Teacher & Details */}
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.infoLight, alignItems: "center", justifyContent: "center" }}>
-                          <Ionicons name="person" size={16} color={Colors.primary} />
-                        </View>
-                        <Text style={{ fontSize: 14, color: Colors.textHeading, fontWeight: "600" }}>{schedule.teacher.replace("GV: ", "")}</Text>
-                      </View>
-                    </View>
-
-                    {/* Time & Room Section */}
-                    <View style={{ backgroundColor: Colors.surface, borderRadius: 12, padding: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.white, alignItems: "center", justifyContent: "center", ...getWebShadow("sm") }}>
-                          <Ionicons name="time" size={20} color={Colors.primary} />
-                        </View>
-                        <View>
-                           <Text style={{ fontSize: 14, fontWeight: "700", color: Colors.textHeading }}>{schedule.time}</Text>
-                           <Text style={{ fontSize: 12, color: Colors.textSecondary }}>Thời gian</Text>
-                        </View>
-                      </View>
-
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.white, alignItems: "center", justifyContent: "center", ...getWebShadow("sm") }}>
-                          <Ionicons name="business" size={20} color={Colors.success} />
-                        </View>
-                        <View>
-                           <Text style={{ fontSize: 14, fontWeight: "700", color: Colors.textHeading }}>{schedule.room.replace("Phòng: ", "")}</Text>
-                           <Text style={{ fontSize: 12, color: Colors.textSecondary }}>Phòng học</Text>
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 16,
-                      marginTop: 32,
-                      paddingBottom: 20,
-                    }}
-                  >
-                    <TouchableOpacity
-                      style={[
-                        {
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          backgroundColor: Colors.white,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          borderWidth: 1,
-                          borderColor: Colors.border,
-                          ...getWebShadow("sm"),
-                          ...getWebCursor(),
-                        },
-                        page === 1 && {
-                          opacity: 0.5,
-                          backgroundColor: Colors.gray100,
-                        },
-                      ]}
-                      disabled={page === 1}
-                      onPress={() => setPage((p) => p - 1)}
-                    >
-                      <Ionicons name="chevron-back" size={20} color={page === 1 ? Colors.textDisabled : Colors.primary} />
-                    </TouchableOpacity>
-
-                    <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: Colors.white, borderRadius: 20, borderWidth: 1, borderColor: Colors.border }}>
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontWeight: "700",
-                          color: Colors.textSecondary,
-                        }}
-                      >
-                        Trang {page} / {totalPages}
-                      </Text>
-                    </View>
-
-                    <TouchableOpacity
-                      style={[
-                        {
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          backgroundColor: Colors.white,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          borderWidth: 1,
-                          borderColor: Colors.border,
-                          ...getWebShadow("sm"),
-                          ...getWebCursor(),
-                        },
-                        page === totalPages && {
-                          opacity: 0.5,
-                          backgroundColor: Colors.gray100,
-                        },
-                      ]}
-                      disabled={page === totalPages}
-                      onPress={() => setPage((p) => p + 1)}
-                    >
-                      <Ionicons name="chevron-forward" size={20} color={page === totalPages ? Colors.textDisabled : Colors.primary} />
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </>
-            )}
+              );
+            })}
           </View>
+
+          {/* ── Scrollable content ── */}
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingHorizontal, paddingTop: 16, paddingBottom: 100 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Calendar component for week/month */}
+            {timeFilter !== "day" && (
+              <View style={{ marginBottom: 16 }}>
+                {timeFilter === "month" ? (
+                  <MonthCalendar
+                    schedules={rawSchedules as any}
+                    selectedISO={toIsoDate(selectedDate)}
+                    onSelectDay={(iso) => setSelectedDate(isoToDate(iso))}
+                    themeColor={BLUE}
+                  />
+                ) : (
+                  <WeeklyCalendar
+                    selectedDate={selectedDate}
+                    onDateSelect={setSelectedDate}
+                    onPrevWeek={() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 7); setSelectedDate(d); }}
+                    onNextWeek={() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 7); setSelectedDate(d); }}
+                  />
+                )}
+              </View>
+            )}
+
+            {/* Day mode: prev/next nav + jump to today */}
+            {timeFilter === "day" && (
+              <View style={{ marginBottom: 16 }}>
+                {/* Date navigator */}
+                <View style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: Colors.white,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  overflow: "hidden",
+                  ...getWebShadow("sm"),
+                }}>
+                  <TouchableOpacity
+                    onPress={() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d); }}
+                    style={{ padding: 14, alignItems: "center", justifyContent: "center", ...getWebCursor() }}
+                  >
+                    <Ionicons name="chevron-back" size={20} color={Colors.primary} />
+                  </TouchableOpacity>
+
+                  <View style={{ flex: 1, alignItems: "center", paddingVertical: 12 }}>
+                    <Text style={{ fontSize: 15, fontWeight: "800", color: Colors.textHeading }}>{dateStr}</Text>
+                    {isToday ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3 }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.primary }} />
+                        <Text style={{ fontSize: 11, color: Colors.primary, fontWeight: "600" }}>Hôm nay</Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={() => setSelectedDate(new Date())}
+                        style={{ marginTop: 3, ...getWebCursor() }}
+                      >
+                        <Text style={{ fontSize: 11, color: Colors.primary, fontWeight: "600" }}>↩ Về hôm nay</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d); }}
+                    style={{ padding: 14, alignItems: "center", justifyContent: "center", ...getWebCursor() }}
+                  >
+                    <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* List header */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <Text style={{ fontSize: 15, fontWeight: "700", color: Colors.textHeading }}>
+                {timeFilter === "day" ? "Lịch trong ngày" : timeFilter === "week" ? "Lịch trong tuần" : "Lịch trong tháng"}
+              </Text>
+              {!loading && (
+                <View style={{ backgroundColor: Colors.infoLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: Colors.primary }}>{daySchedules.length} lịch</Text>
+                </View>
+              )}
+            </View>
+
+            {renderScheduleList()}
+          </ScrollView>
         </View>
-      </Animated.ScrollView>
+
+      )}
 
       {/* Schedule Detail Modal */}
-      <Modal
-        visible={modalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <TouchableOpacity
-          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 16 }}
-          activeOpacity={1}
-          onPress={() => setModalVisible(false)}
-        >
-          <TouchableOpacity
-            activeOpacity={1}
-            style={{
-              width: "100%",
-              maxWidth: 380,
-              backgroundColor: Colors.white,
-              borderRadius: 16,
-              padding: 24,
-              ...getWebShadow("sm"),
-            }}
-          >
+      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
+
+        <TouchableOpacity style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 16 }} activeOpacity={1} onPress={() => setModalVisible(false)}>
+          <TouchableOpacity activeOpacity={1} style={{ width: "100%", maxWidth: 380, backgroundColor: Colors.white, borderRadius: 20, padding: 24, ...getWebShadow("lg") }}>
             {selectedSchedule && (
               <>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
                   <View style={{ flex: 1, paddingRight: 16 }}>
-                    <Text style={{ fontSize: 20, fontWeight: "700", color: Colors.textHeading, lineHeight: 28, marginBottom: 4 }}>
-                      {selectedSchedule.courseName}
-                    </Text>
+                    <Text style={{ fontSize: 20, fontWeight: "700", color: Colors.textHeading, lineHeight: 28, marginBottom: 4 }}>{selectedSchedule.courseName}</Text>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <Text style={{ fontSize: 13, fontWeight: "600", color: selectedSchedule.scheduleType === "EXAM" ? Colors.error : Colors.primary }}>
-                        {selectedSchedule.scheduleType === "EXAM" ? "LỊCH THI" : "LỊCH HỌC"}
-                      </Text>
-                      {selectedSchedule.dayOfWeekStr && (
-                        <>
-                          <Text style={{ fontSize: 13, color: Colors.textLight || "#9CA3AF" }}>•</Text>
-                          <Text style={{ fontSize: 13, color: Colors.textSecondary, fontWeight: "500" }}>
-                            {selectedSchedule.dayOfWeekStr}
-                          </Text>
-                        </>
-                      )}
+                      <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: selectedSchedule.scheduleType === "EXAM" ? "#FEE2E2" : Colors.infoLight }}>
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: selectedSchedule.scheduleType === "EXAM" ? Colors.error : Colors.primary }}>
+                          {selectedSchedule.scheduleType === "EXAM" ? "LỊCH THI" : "LỊCH HỌC"}
+                        </Text>
+                      </View>
+                      {selectedSchedule.dayOfWeekStr && <Text style={{ fontSize: 13, color: Colors.textSecondary }}>{selectedSchedule.dayOfWeekStr}</Text>}
                     </View>
                   </View>
-                  <TouchableOpacity onPress={() => setModalVisible(false)} style={{ padding: 4, marginTop: -4 }}>
-                    <Ionicons name="close" size={24} color={Colors.textLight || "#9CA3AF"} />
+                  <TouchableOpacity onPress={() => setModalVisible(false)} style={{ padding: 4 }}>
+                    <Ionicons name="close" size={24} color={Colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
-
                 <View style={{ gap: 16 }}>
-                  <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
-                    <Ionicons name="person-outline" size={20} color={Colors.textSecondary} style={{ marginTop: 2 }} />
-                    <View>
-                      <Text style={{ fontSize: 13, color: Colors.textSecondary, marginBottom: 2 }}>Giảng viên</Text>
-                      <Text style={{ fontSize: 15, fontWeight: "500", color: Colors.textHeading }}>
-                        {selectedSchedule.teacher.replace("GV: ", "")}
-                      </Text>
+                  {[
+                    { icon: "person-outline", label: "Giảng viên", value: selectedSchedule.teacher.replace("GV: ", "") },
+                    { icon: "business-outline", label: "Phòng học", value: selectedSchedule.room.replace("Phòng: ", "") },
+                    { icon: "time-outline", label: "Thời gian", value: selectedSchedule.time },
+                  ].map((row) => (
+                    <View key={row.label} style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
+                      <Ionicons name={row.icon as any} size={20} color={Colors.textSecondary} style={{ marginTop: 2 }} />
+                      <View>
+                        <Text style={{ fontSize: 13, color: Colors.textSecondary, marginBottom: 2 }}>{row.label}</Text>
+                        <Text style={{ fontSize: 15, fontWeight: "500", color: Colors.textHeading }}>{row.value}</Text>
+                      </View>
                     </View>
-                  </View>
-
-                  <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
-                    <Ionicons name="business-outline" size={20} color={Colors.textSecondary} style={{ marginTop: 2 }} />
-                    <View>
-                      <Text style={{ fontSize: 13, color: Colors.textSecondary, marginBottom: 2 }}>Phòng học</Text>
-                      <Text style={{ fontSize: 15, fontWeight: "500", color: Colors.textHeading }}>
-                        {selectedSchedule.room.replace("Phòng: ", "")}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
-                    <Ionicons name="time-outline" size={20} color={Colors.textSecondary} style={{ marginTop: 2 }} />
-                    <View>
-                      <Text style={{ fontSize: 13, color: Colors.textSecondary, marginBottom: 2 }}>Thời gian</Text>
-                      <Text style={{ fontSize: 15, fontWeight: "500", color: Colors.textHeading }}>
-                        {selectedSchedule.time}
-                      </Text>
-                    </View>
-                  </View>
+                  ))}
                 </View>
               </>
             )}
@@ -858,3 +706,4 @@ export default function ScheduleScreen() {
     </View>
   );
 }
+

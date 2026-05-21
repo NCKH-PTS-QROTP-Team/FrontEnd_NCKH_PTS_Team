@@ -13,7 +13,7 @@ const getApiBaseUrl = () => {
   if (Platform.OS === 'web') {
     if (envWebApiUrl) return envWebApiUrl;
     if (envApiUrl) return envApiUrl;
-    
+
     if (typeof window !== 'undefined') {
       const host = window.location.hostname;
       const normalizedHost = host === '0.0.0.0' ? 'localhost' : host;
@@ -265,7 +265,7 @@ apiClient.interceptors.response.use(
       console.error('   Code:', error.code);
       console.error('   API URL:', API_BASE_URL);
       console.error('   Platform:', Platform.OS);
-      
+
       // Provide specific debugging hints
       if (error.code === 'ECONNREFUSED') {
         console.warn('   🔴 Connection refused - Backend không chạy trên port 8080');
@@ -274,7 +274,7 @@ apiClient.interceptors.response.use(
       } else if (error.code === 'ETIMEDOUT') {
         console.warn('   🔴 Connection timeout - Firewall chặn hoặc network down');
       }
-      
+
       return Promise.reject({
         message: 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.',
         isNetworkError: true,

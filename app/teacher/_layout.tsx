@@ -32,7 +32,7 @@ export default function TeacherLayout() {
     },
     {
       icon: <CalendarIcon size={20} color="#3FA9F5" />,
-      label: "Lịch theo tuần",
+      label: "Lịch dạy",
       route: "/teacher/schedule",
     },
     {

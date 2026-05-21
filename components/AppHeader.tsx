@@ -172,7 +172,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {/* Right Section: Notifications + User Profile + Logout */}
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             {/* Notifications */}
-            {showNotifications && <NotificationDropdown />}
+            {showNotifications && <NotificationDropdown role={userRole} />}
 
             {/* User Profile */}
             {showUserProfile && (

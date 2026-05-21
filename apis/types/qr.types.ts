@@ -13,6 +13,7 @@ export interface GenerateQRRequest {
   sessionId: string;
   teacherId?: string;
   expiryMinutes?: number; // Thời hạn QR code (phút), mặc định 5 phút
+  expirySeconds?: number; // Thời hạn QR code (giây), ưu tiên hơn expiryMinutes
 }
 
 /**

@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
   ActivityIndicator,
   Animated,
+  Modal,
 } from "react-native";
 import { Colors } from "@/constants/colors";
 import { getWebShadow, getWebCursor } from "@/constants/webStyles";
@@ -36,17 +37,49 @@ interface DaySchedule {
   };
 }
 
-export default function WeeklySchedule() {
-  const [selectedView, setSelectedView] = useState<"all" | "class" | "exam">(
-    "all",
-  );
+interface WeeklyScheduleProps {
+  targetDate?: Date;
+}
+
+export default function WeeklySchedule({ targetDate }: WeeklyScheduleProps = {}) {
+  const [selectedView, setSelectedView] = useState<"all" | "class" | "exam">("all");
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [isChangingWeek, setIsChangingWeek] = useState(false);
   const [allSchedules, setAllSchedules] = useState<Schedule[]>([]);
   const [weeklySchedule, setWeeklySchedule] = useState<DaySchedule>({});
+  const [modalItem, setModalItem] = useState<ScheduleItem | null>(null);
   const fadeAnim = React.useRef(new Animated.Value(1)).current;
   const { width: windowWidth } = useWindowDimensions();
+
+  // Helper: get Monday of the week containing a given date
+  const getWeekStart = (d: Date): Date => {
+    const copy = new Date(d);
+    const day = copy.getDay();
+    const diff = copy.getDate() - day + (day === 0 ? -6 : 1);
+    copy.setDate(diff);
+    copy.setHours(0, 0, 0, 0);
+    return copy;
+  };
+
+  // When parent selects a day from MonthCalendar, navigate to that week (skip if already in current week)
+  useEffect(() => {
+    if (!targetDate) return;
+    const targetWeekStart = getWeekStart(targetDate);
+    const currentWeekStart = getWeekStart(currentWeek);
+    // Same week → no-op, avoids unnecessary refetch
+    if (targetWeekStart.getTime() === currentWeekStart.getTime()) return;
+    // Different week → fade + navigate
+    setIsChangingWeek(true);
+    Animated.timing(fadeAnim, {
+      toValue: 0.3,
+      duration: 150,
+      useNativeDriver: true,
+    }).start(() => {
+      setCurrentWeek(new Date(targetDate));
+    });
+  }, [targetDate]);
+
 
   // Responsive breakpoints
   const isMobile = windowWidth < 768;
@@ -54,6 +87,7 @@ export default function WeeklySchedule() {
 
   // Responsive values
   const columnMinWidth = isMobile ? 180 : 240;
+
   const headerPadding = isMobile ? 10 : 14;
   const headerFontSize = isMobile ? 13 : 15;
   const dayFontSize = isMobile ? 12 : 14;
@@ -315,7 +349,8 @@ export default function WeeklySchedule() {
     period: "morning" | "afternoon" | "evening",
   ) => {
     const schedules = weeklySchedule[day]?.[period] || [];
-    const isToday = day === ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
+    const todayDayName = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
+    const isToday = day === todayDayName;
 
     return (
       <View
@@ -324,56 +359,72 @@ export default function WeeklySchedule() {
           flex: 1,
           minWidth: columnMinWidth,
           minHeight: 120,
-          padding: 10,
+          padding: 8,
           borderRightWidth: 1,
           borderRightColor: Colors.border,
           borderBottomWidth: 1,
           borderBottomColor: Colors.border,
-          backgroundColor: isToday ? "rgba(59, 130, 246, 0.02)" : (schedules.length > 0 ? Colors.white : Colors.surface),
+          backgroundColor: isToday ? "rgba(59,130,246,0.02)" : (schedules.length > 0 ? Colors.white : Colors.surface),
         }}
       >
         {schedules.length === 0 ? (
-          <View style={{ flex: 1, opacity: 0.3, alignItems: "center", justifyContent: "center" }}>
-             {/* Subtle indicator for empty cell */}
+          <View style={{ flex: 1, opacity: 0.15, alignItems: "center", justifyContent: "center" }}>
+            <View style={{ width: 20, height: 2, backgroundColor: Colors.border, borderRadius: 1 }} />
           </View>
         ) : (
           schedules.map((item, idx) => (
             <TouchableOpacity
               key={item.id}
               activeOpacity={0.8}
+              onPress={() => setModalItem(item)}
               style={{
-                backgroundColor: getTypeBgColor(item.type),
+                backgroundColor: Colors.white,
                 borderLeftWidth: 4,
                 borderLeftColor: getTypeColor(item.type),
+                borderWidth: 1,
+                borderColor: Colors.border,
                 padding: 10,
-                borderRadius: 10,
-                marginBottom: idx < schedules.length - 1 ? 10 : 0,
+                borderRadius: 12,
+                marginBottom: idx < schedules.length - 1 ? 8 : 0,
                 ...getWebShadow("sm"),
                 ...getWebCursor(),
               }}
             >
+              {/* Type badge */}
+              {item.type === "exam" && (
+                <View style={{ backgroundColor: "#FEE2E2", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, alignSelf: "flex-start", marginBottom: 4 }}>
+                  <Text style={{ fontSize: 10, fontWeight: "700", color: Colors.error }}>THI</Text>
+                </View>
+              )}
+
+              {/* Subject name */}
               <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: "700",
-                  color: Colors.textHeading,
-                  marginBottom: 4,
-                }}
+                style={{ fontSize: 12, fontWeight: "700", color: Colors.textHeading, marginBottom: 6, lineHeight: 16 }}
                 numberOfLines={2}
               >
                 {item.subject}
               </Text>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4 }}>
-                 <Ionicons name="location-outline" size={12} color={Colors.textSecondary} />
-                 <Text style={{ fontSize: 11, color: Colors.textSecondary, fontWeight: "500" }}>
-                   {item.room.replace("Phòng: ", "")}
-                 </Text>
+
+              {/* Teacher */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 6 }}>
+                <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: Colors.infoLight, alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name="person" size={11} color={Colors.primary} />
+                </View>
+                <Text style={{ fontSize: 11, color: Colors.textHeading, fontWeight: "500", flex: 1 }} numberOfLines={1}>
+                  {item.teacher.replace("GV: ", "")}
+                </Text>
               </View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                 <Ionicons name="time-outline" size={12} color={Colors.textSecondary} />
-                 <Text style={{ fontSize: 11, color: Colors.textSecondary, fontWeight: "500" }}>
-                   {item.sessions}
-                 </Text>
+
+              {/* Time + Room */}
+              <View style={{ backgroundColor: Colors.surface, borderRadius: 7, padding: 6, gap: 4 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                  <Ionicons name="time-outline" size={11} color={Colors.primary} />
+                  <Text style={{ fontSize: 11, fontWeight: "600", color: Colors.textHeading }}>{item.sessions}</Text>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                  <Ionicons name="business-outline" size={11} color={Colors.success} />
+                  <Text style={{ fontSize: 11, fontWeight: "500", color: Colors.textHeading }}>{item.room.replace("Phòng: ", "")}</Text>
+                </View>
               </View>
             </TouchableOpacity>
           ))
@@ -835,6 +886,84 @@ export default function WeeklySchedule() {
           <Text style={{ fontSize: 12, color: "#6B7280" }}>Lịch tạm ngưng</Text>
         </View>
       </View>
+
+      {/* ── Detail Modal ── */}
+      <Modal
+        visible={!!modalItem}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalItem(null)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 16 }}
+          activeOpacity={1}
+          onPress={() => setModalItem(null)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{ width: "100%", maxWidth: 400, backgroundColor: Colors.white, borderRadius: 20, padding: 24, ...getWebShadow("lg") }}
+          >
+            {modalItem && (
+              <>
+                {/* Header */}
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+                  <View style={{ flex: 1, paddingRight: 12 }}>
+                    <View style={{ flexDirection: "row", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+                      <View style={{
+                        paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
+                        backgroundColor: modalItem.type === "exam" ? "#FEE2E2" : Colors.infoLight,
+                      }}>
+                        <Text style={{ fontSize: 11, fontWeight: "700", color: modalItem.type === "exam" ? Colors.error : Colors.primary }}>
+                          {modalItem.type === "exam" ? "LỊCH THI" : "LỊCH HỌC"}
+                        </Text>
+                      </View>
+                      <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: Colors.gray100 }}>
+                        <Text style={{ fontSize: 11, fontWeight: "600", color: Colors.textSecondary }}>{modalItem.code}</Text>
+                      </View>
+                    </View>
+                    <Text style={{ fontSize: 18, fontWeight: "700", color: Colors.textHeading, lineHeight: 26 }}>
+                      {modalItem.subject}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setModalItem(null)} style={{ padding: 4 }}>
+                    <Ionicons name="close" size={24} color={Colors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Divider */}
+                <View style={{ height: 1, backgroundColor: Colors.border, marginBottom: 20 }} />
+
+                {/* Details */}
+                <View style={{ gap: 16 }}>
+                  {[
+                    { icon: "person-outline" as const, label: "Giảng viên", value: modalItem.teacher.replace("GV: ", "") },
+                    { icon: "business-outline" as const, label: "Phòng học", value: modalItem.room.replace("Phòng: ", "") },
+                    { icon: "time-outline" as const, label: "Thời gian", value: modalItem.sessions },
+                  ].map((row) => (
+                    <View key={row.label} style={{ flexDirection: "row", alignItems: "flex-start", gap: 14 }}>
+                      <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.infoLight, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Ionicons name={row.icon} size={18} color={Colors.primary} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 12, color: Colors.textSecondary, marginBottom: 2 }}>{row.label}</Text>
+                        <Text style={{ fontSize: 15, fontWeight: "600", color: Colors.textHeading }}>{row.value}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Close button */}
+                <TouchableOpacity
+                  onPress={() => setModalItem(null)}
+                  style={{ marginTop: 24, backgroundColor: Colors.primary, paddingVertical: 12, borderRadius: 12, alignItems: "center", ...getWebCursor() }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>Đóng</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }

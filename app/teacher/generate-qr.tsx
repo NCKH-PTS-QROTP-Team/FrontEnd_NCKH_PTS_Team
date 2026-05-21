@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   useWindowDimensions,
-  Platform,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
@@ -12,37 +11,109 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { useRouter } from "expo-router";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { QRViewer } from "@/components/QRViewer";
 import { qrService, attendanceService, scheduleService } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import { useToast } from "@/components/ToastProvider";
 import { QRStatus } from "@/apis/types/qr.types";
-import type { AttendanceSessionResponse } from "@/apis/types/attendance.types";
+import {
+  AttendanceMethod,
+  type AttendanceSessionResponse,
+} from "@/apis/types/attendance.types";
 import { Colors } from "@/constants/colors";
 import type { Schedule } from "@/apis/services/schedule.service";
 import { CalendarIcon, LocationIcon } from "@/components/Icons";
+import MobileGradientHeader from "@/components/MobileGradientHeader";
 
 export default function GenerateQRScreen() {
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const isMobile = width < 768;
-  const { showToast } = useToast();
+  const { showToast, toast, hideToast } = useToast();
 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [sessions, setSessions] = useState<AttendanceSessionResponse[]>([]);
-  const [selectedSession, setSelectedSession] = useState<AttendanceSessionResponse | null>(null);
+  const [selectedSession, setSelectedSession] =
+    useState<AttendanceSessionResponse | null>(null);
   const [currentQR, setCurrentQR] = useState<any>(null);
   const [qrHistory, setQrHistory] = useState<any[]>([]);
-  const [expiryMinutes, setExpiryMinutes] = useState<string>("5");
+  const [expirySeconds, setExpirySeconds] = useState<string>("10");
   const [loadingQR, setLoadingQR] = useState(false);
   const [todaySchedules, setTodaySchedules] = useState<Schedule[]>([]);
   const [timeLeft, setTimeLeft] = useState<string | null>(null);
 
-  const contentMaxWidth = isDesktop ? 1200 : "100%";
-  const paddingHorizontal = isDesktop ? 32 : isTablet ? 24 : 16;
+  const contentMaxWidth = isDesktop ? 1280 : "100%";
+  const paddingHorizontal = isDesktop ? 24 : isTablet ? 20 : 12;
+
+  const getMinutesFromHHmm = (time?: string) => {
+    if (!time || !time.includes(":")) return null;
+    const [h, m] = time.split(":");
+    const hour = Number(h);
+    const minute = Number(m);
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+    return hour * 60 + minute;
+  };
+
+  const getScheduleAvailability = (schedule: Schedule) => {
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const startMinutes = getMinutesFromHHmm(schedule.startTime);
+    const endMinutes = getMinutesFromHHmm(schedule.endTime);
+
+    if (startMinutes === null || endMinutes === null) {
+      return {
+        canCreate: false,
+        statusText: "Không đủ dữ liệu thời gian",
+        statusColor: "#92400E",
+        statusBg: "#FEF3C7",
+      };
+    }
+
+    if (nowMinutes < startMinutes) {
+      return {
+        canCreate: false,
+        statusText: "Chưa đến giờ học - chưa thể tạo phiên",
+        statusColor: "#92400E",
+        statusBg: "#FEF3C7",
+      };
+    }
+
+    if (nowMinutes > endMinutes) {
+      return {
+        canCreate: false,
+        statusText: "Đã qua giờ học - không thể tạo phiên",
+        statusColor: "#7F1D1D",
+        statusBg: "#FEE2E2",
+      };
+    }
+
+    return {
+      canCreate: true,
+      statusText: "Đang trong giờ học - có thể tạo phiên",
+      statusColor: "#166534",
+      statusBg: "#DCFCE7",
+    };
+  };
+
+  const isSelectedSessionValid = (() => {
+    if (!selectedSession) return false;
+
+    return todaySchedules.some((schedule) => {
+      const availability = getScheduleAvailability(schedule);
+      if (!availability.canCreate) return false;
+
+      const sameClass =
+        !!selectedSession.classId &&
+        selectedSession.classId === schedule.classId;
+      const sameSubject = selectedSession.subjectId === schedule.subjectId;
+      return sameClass || sameSubject;
+    });
+  })();
 
   useEffect(() => {
     loadSessions();
@@ -89,15 +160,12 @@ export default function GenerateQRScreen() {
       setLoading(true);
       const teacherId = await getTeacherIdFromToken();
       const allSessions = await attendanceService.getSessions({
-        teacherId,
+        teacherId: teacherId ?? undefined,
         active: true,
       });
       // Filter sessions by teacher & phương thức QR (nếu cần)
       const mySessions = allSessions.filter((s) => s.status === "ACTIVE");
       setSessions(mySessions);
-      if (mySessions.length > 0 && !selectedSession) {
-        setSelectedSession(mySessions[0]);
-      }
     } catch (error: any) {
       console.error("Error loading sessions:", error);
       showToast("Không thể tải danh sách phiên điểm danh", "error");
@@ -158,9 +226,9 @@ export default function GenerateQRScreen() {
       return;
     }
 
-    const minutes = parseInt(expiryMinutes);
-    if (isNaN(minutes) || minutes <= 0 || minutes > 60) {
-      showToast("Thời hạn phải từ 1 đến 60 phút", "error");
+    const seconds = parseInt(expirySeconds);
+    if (isNaN(seconds) || seconds < 10 || seconds > 300) {
+      showToast("Thời hạn phải từ 10 giây đến 5 phút", "error");
       return;
     }
 
@@ -169,8 +237,8 @@ export default function GenerateQRScreen() {
       const teacherId = await getTeacherIdFromToken();
       const qr = await qrService.generateQR({
         sessionId: selectedSession.id,
-        teacherId,
-        expiryMinutes: minutes,
+        teacherId: teacherId ?? undefined,
+        expirySeconds: seconds,
       });
       setCurrentQR(qr);
       await loadQRHistory();
@@ -179,7 +247,7 @@ export default function GenerateQRScreen() {
       console.error("Error generating QR:", error);
       showToast(
         error.response?.data?.message || "Không thể tạo QR code",
-        "error"
+        "error",
       );
     } finally {
       setLoadingQR(false);
@@ -187,6 +255,12 @@ export default function GenerateQRScreen() {
   };
 
   const handleCreateSessionFromSchedule = async (schedule: Schedule) => {
+    const availability = getScheduleAvailability(schedule);
+    if (!availability.canCreate) {
+      showToast(availability.statusText, "warning");
+      return;
+    }
+
     try {
       const teacherId = await getTeacherIdFromToken();
       if (!teacherId) {
@@ -219,7 +293,7 @@ export default function GenerateQRScreen() {
           classId: schedule.classId,
           subjectId: schedule.subjectId,
           teacherId,
-          method: "QR",
+          method: AttendanceMethod.QR,
           // Không gửi scheduledStartTime để tránh lỗi parse thời gian
         });
       }
@@ -265,31 +339,68 @@ export default function GenerateQRScreen() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#F9FAFB" }}
+      style={{ flex: 1, backgroundColor: "#F1F5F9" }}
       edges={["top"]}
     >
-      <StatusBar style="dark" />
+      <StatusBar style={isMobile ? "light" : "dark"} />
 
+      {isMobile ? (
+        <MobileGradientHeader
+          title="Tạo mã QR"
+          subtitle={`${sessions.length} phiên đang hoạt động`}
+          icon="qr-code"
+          actions={[
+            {
+              icon: "arrow-back",
+              onPress: () => {
+                if ((router as any).canGoBack?.()) {
+                  router.back();
+                  return;
+                }
+                router.push("/teacher/dashboard");
+              },
+              accessibilityLabel: "Quay lại trang trước",
+            },
+            {
+              icon: "notifications",
+              onPress: () => router.push("/teacher/notifications"),
+              accessibilityLabel: "Mở thông báo",
+            },
+            {
+              icon: "person",
+              onPress: () => router.push("/teacher/profile"),
+              accessibilityLabel: "Mở hồ sơ",
+            },
+          ]}
+          style={{ marginHorizontal: 0, marginTop: 0, marginBottom: 12 }}
+        />
+      ) : null}
 
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal,
-          paddingVertical: isDesktop ? 32 : 24,
+          paddingTop: isMobile ? 0 : 14,
+          paddingBottom: isMobile ? 110 : 28,
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={async () => {
-              setRefreshing(true);
-              await loadSessions();
-              if (selectedSession) {
-                await loadCurrentQR();
-                await loadQRHistory();
-              }
-              setRefreshing(false);
-            }}
-          />
+          isMobile ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={async () => {
+                setRefreshing(true);
+                await loadSessions();
+                await loadTodaySchedules();
+                if (selectedSession) {
+                  await loadCurrentQR();
+                  await loadQRHistory();
+                }
+                setRefreshing(false);
+              }}
+              colors={["#1E3A8A"]}
+              tintColor="#1E3A8A"
+            />
+          ) : undefined
         }
       >
         <View
@@ -299,181 +410,175 @@ export default function GenerateQRScreen() {
             alignSelf: "center",
           }}
         >
-          {/* Gợi ý từ lịch dạy hôm nay */}
-          {todaySchedules.length > 0 && (
-            <View
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 12,
-                padding: 20,
-                marginBottom: 24,
-                borderWidth: 1,
-                borderColor: Colors.border,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "600",
-                  color: Colors.textHeading,
-                  marginBottom: 12,
-                }}
-              >
-                Lịch dạy hôm nay
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={{ flexDirection: "row", gap: 12 }}>
-                  {todaySchedules.map((item) => (
-                    <TouchableOpacity
-                      key={item.id}
-                      onPress={() => handleCreateSessionFromSchedule(item)}
-                      style={{
-                        padding: 12,
-                        borderRadius: 10,
-                        borderWidth: 1,
-                        borderColor: Colors.border,
-                        backgroundColor: Colors.gray50,
-                        minWidth: 220,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontWeight: "600",
-                          color: Colors.textHeading,
-                          marginBottom: 4,
-                        }}
-                      >
-                        {item.subjectName}
-                      </Text>
-                      <Text
-                        style={{ fontSize: 12, color: Colors.textSecondary }}
-                      >
-                        {item.className}
-                      </Text>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          marginTop: 8,
-                        }}
-                      >
-                        <CalendarIcon size={14} color={Colors.textSecondary} />
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            color: Colors.textSecondary,
-                            marginLeft: 6,
-                          }}
-                        >
-                          {item.startTime} - {item.endTime}
-                        </Text>
-                      </View>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          marginTop: 4,
-                        }}
-                      >
-                        <LocationIcon size={14} color={Colors.textSecondary} />
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            color: Colors.textSecondary,
-                            marginLeft: 6,
-                          }}
-                        >
-                          Phòng {item.room}
-                        </Text>
-                      </View>
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color: Colors.primary,
-                          fontWeight: "600",
-                          marginTop: 8,
-                        }}
-                      >
-                        Chọn để tạo phiên QR
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-          )}
-
-          {/* Session Selection */}
+          {/* Lịch dạy hôm nay */}
           <View
             style={{
               backgroundColor: "#FFFFFF",
-              borderRadius: 12,
-              padding: 24,
-              marginBottom: 24,
+              borderRadius: 16,
+              padding: 16,
+              marginBottom: 14,
+              borderWidth: 1,
+              borderColor: "#E5ECF6",
             }}
           >
             <Text
               style={{
-                fontSize: 13,
-                fontWeight: "500",
-                color: "#6B7280",
-                marginBottom: 12,
-                textTransform: "uppercase",
+                fontSize: 16,
+                fontWeight: "800",
+                color: "#0F172A",
+                marginBottom: 4,
               }}
             >
-              Chọn phiên điểm danh
+              Lịch dạy hôm nay
             </Text>
-            {loading ? (
-              <ActivityIndicator size="small" color={Colors.primary} />
-            ) : sessions.length === 0 ? (
-              <Text style={{ fontSize: 14, color: "#6B7280" }}>
-                Không có phiên điểm danh đang hoạt động
-              </Text>
+            <Text style={{ fontSize: 12, color: "#64748B", marginBottom: 12 }}>
+              Chỉ có thể tạo phiên điểm danh khi đang trong khung giờ của lịch
+              học.
+            </Text>
+
+            {todaySchedules.length === 0 ? (
+              <View
+                style={{
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: "#DBEAFE",
+                  backgroundColor: "#F8FAFF",
+                  padding: 12,
+                }}
+              >
+                <Text style={{ fontSize: 13, color: "#475569" }}>
+                  Hôm nay không có lịch dạy để khởi tạo phiên điểm danh.
+                </Text>
+              </View>
             ) : (
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={{ flexDirection: "row", gap: 12 }}>
-                  {sessions.map((session) => (
-                    <TouchableOpacity
-                      key={session.id}
-                      onPress={() => setSelectedSession(session)}
-                      style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 12,
-                        borderRadius: 8,
-                        backgroundColor:
-                          selectedSession?.id === session.id
-                            ? Colors.primary
-                            : "#F3F4F6",
-                        minWidth: 200,
-                      }}
-                    >
-                      <Text
+                  {todaySchedules.map((item) => {
+                    const availability = getScheduleAvailability(item);
+                    const isSelected =
+                      selectedSession?.classId === item.classId ||
+                      selectedSession?.subjectId === item.subjectId;
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        disabled={!availability.canCreate}
+                        onPress={() => handleCreateSessionFromSchedule(item)}
                         style={{
-                          fontSize: 14,
-                          fontWeight: "600",
-                          color:
-                            selectedSession?.id === session.id
-                              ? "#FFFFFF"
-                              : "#111827",
+                          padding: 12,
+                          borderRadius: 12,
+                          borderWidth: 1,
+                          borderColor: isSelected
+                            ? "#1E3A8A"
+                            : availability.canCreate
+                              ? "#DCE7FB"
+                              : "#E5E7EB",
+                          backgroundColor: availability.canCreate
+                            ? isSelected
+                              ? "#DBEAFE"
+                              : "#F8FAFF"
+                            : "#F8FAFC",
+                          minWidth: 240,
+                          opacity: availability.canCreate ? 1 : 0.92,
                         }}
                       >
-                        {session.subjectName}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color:
-                            selectedSession?.id === session.id
-                              ? "#FFFFFF"
-                              : "#6B7280",
-                          marginTop: 4,
-                        }}
-                      >
-                        {session.className}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: "600",
+                            color: Colors.textHeading,
+                            marginBottom: 4,
+                          }}
+                        >
+                          {item.subjectName}
+                        </Text>
+                        <Text
+                          style={{ fontSize: 12, color: Colors.textSecondary }}
+                        >
+                          {item.className}
+                        </Text>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            marginTop: 8,
+                          }}
+                        >
+                          <CalendarIcon
+                            size={14}
+                            color={Colors.textSecondary}
+                          />
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              color: Colors.textSecondary,
+                              marginLeft: 6,
+                            }}
+                          >
+                            {item.startTime} - {item.endTime}
+                          </Text>
+                        </View>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            marginTop: 4,
+                          }}
+                        >
+                          <LocationIcon
+                            size={14}
+                            color={Colors.textSecondary}
+                          />
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              color: Colors.textSecondary,
+                              marginLeft: 6,
+                            }}
+                          >
+                            Phòng {item.room}
+                          </Text>
+                        </View>
+
+                        <View
+                          style={{
+                            marginTop: 10,
+                            alignSelf: "flex-start",
+                            backgroundColor: availability.statusBg,
+                            borderRadius: 8,
+                            paddingHorizontal: 10,
+                            paddingVertical: 5,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              color: availability.statusColor,
+                              fontWeight: "700",
+                            }}
+                          >
+                            {availability.statusText}
+                          </Text>
+                        </View>
+
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: availability.canCreate
+                              ? Colors.primary
+                              : "#94A3B8",
+                            fontWeight: "600",
+                            marginTop: 8,
+                          }}
+                        >
+                          {availability.canCreate
+                            ? isSelected
+                              ? "Đã chọn phiên điểm danh"
+                              : "Chọn để tạo phiên QR"
+                            : "Không thể tạo điểm danh"}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </ScrollView>
             )}
@@ -481,12 +586,37 @@ export default function GenerateQRScreen() {
 
           {selectedSession && (
             <>
+              {!isSelectedSessionValid ? (
+                <View
+                  style={{
+                    backgroundColor: "#FFF7ED",
+                    borderColor: "#FDBA74",
+                    borderWidth: 1,
+                    borderRadius: 12,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    marginBottom: 12,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#9A3412",
+                      fontSize: 12,
+                      fontWeight: "700",
+                    }}
+                  >
+                    Phiên hiện tại chưa hợp lệ để thao tác. Vui lòng chọn lịch
+                    dạy đang trong giờ để bật các nút tạo/kết thúc điểm danh.
+                  </Text>
+                </View>
+              ) : null}
+
               {/* Course Info */}
               <View
                 style={{
                   flexDirection: isDesktop ? "row" : "column",
                   gap: isDesktop ? 24 : 0,
-                  marginBottom: 24,
+                  marginBottom: 14,
                 }}
               >
                 <View
@@ -498,8 +628,10 @@ export default function GenerateQRScreen() {
                   <View
                     style={{
                       backgroundColor: "#FFFFFF",
-                      borderRadius: 12,
-                      padding: 24,
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: "#E5ECF6",
+                      padding: 16,
                       height: isDesktop ? "100%" : "auto",
                     }}
                   >
@@ -516,16 +648,18 @@ export default function GenerateQRScreen() {
                     </Text>
                     <Text
                       style={{
-                        fontSize: 24,
-                        fontWeight: "700",
-                        color: "#111827",
-                        marginBottom: 16,
+                        fontSize: 22,
+                        fontWeight: "800",
+                        color: "#0F172A",
+                        marginBottom: 14,
                       }}
                     >
                       {selectedSession.subjectName}
                     </Text>
                     <View style={{ gap: 8 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <View
+                        style={{ flexDirection: "row", alignItems: "center" }}
+                      >
                         <View
                           style={{
                             width: 4,
@@ -539,7 +673,9 @@ export default function GenerateQRScreen() {
                           {selectedSession.className}
                         </Text>
                       </View>
-                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <View
+                        style={{ flexDirection: "row", alignItems: "center" }}
+                      >
                         <View
                           style={{
                             width: 4,
@@ -565,22 +701,22 @@ export default function GenerateQRScreen() {
                           marginBottom: 8,
                         }}
                       >
-                        Thời hạn QR code (phút)
+                        Thời hạn QR code (giây)
                       </Text>
                       <TextInput
-                        value={expiryMinutes}
-                        onChangeText={setExpiryMinutes}
+                        value={expirySeconds}
+                        onChangeText={setExpirySeconds}
                         keyboardType="numeric"
                         style={{
                           borderWidth: 1,
-                          borderColor: "#E5E7EB",
-                          borderRadius: 8,
+                          borderColor: "#D7E3F7",
+                          borderRadius: 10,
                           paddingHorizontal: 12,
                           paddingVertical: 10,
                           fontSize: 14,
-                          backgroundColor: "#FFFFFF",
+                          backgroundColor: "#F8FAFF",
                         }}
-                        placeholder="5"
+                        placeholder="10"
                       />
                       <Text
                         style={{
@@ -589,7 +725,7 @@ export default function GenerateQRScreen() {
                           marginTop: 4,
                         }}
                       >
-                        Từ 1 đến 60 phút (mặc định: 5 phút)
+                        Từ 10 giây đến 5 phút (mặc định: 10 giây)
                       </Text>
                     </View>
                   </View>
@@ -601,7 +737,9 @@ export default function GenerateQRScreen() {
                     <View
                       style={{
                         backgroundColor: "#FFFFFF",
-                        borderRadius: 12,
+                        borderRadius: 16,
+                        borderWidth: 1,
+                        borderColor: "#E5ECF6",
                         padding: 40,
                         alignItems: "center",
                         justifyContent: "center",
@@ -614,7 +752,9 @@ export default function GenerateQRScreen() {
                     <View
                       style={{
                         backgroundColor: "#FFFFFF",
-                        borderRadius: 12,
+                        borderRadius: 16,
+                        borderWidth: 1,
+                        borderColor: "#E5ECF6",
                         padding: isDesktop ? 40 : 32,
                         height: isDesktop ? "100%" : "auto",
                         alignItems: "center",
@@ -648,7 +788,8 @@ export default function GenerateQRScreen() {
                           marginBottom: 16,
                         }}
                       >
-                        Sinh viên quét mã này để điểm danh
+                        Sinh viên quét mã này để điểm danh. Mã có hiệu lực theo
+                        thời hạn bạn đã cài đặt (10 giây - 5 phút).
                       </Text>
 
                       <View
@@ -693,7 +834,9 @@ export default function GenerateQRScreen() {
                     <View
                       style={{
                         backgroundColor: "#FFFFFF",
-                        borderRadius: 12,
+                        borderRadius: 16,
+                        borderWidth: 1,
+                        borderColor: "#E5ECF6",
                         padding: isDesktop ? 40 : 32,
                         height: isDesktop ? "100%" : "auto",
                         alignItems: "center",
@@ -711,7 +854,9 @@ export default function GenerateQRScreen() {
                           marginBottom: 20,
                         }}
                       >
-                        <Text style={{ fontSize: 40, color: "#9CA3AF" }}>□</Text>
+                        <Text style={{ fontSize: 40, color: "#9CA3AF" }}>
+                          □
+                        </Text>
                       </View>
                       <Text
                         style={{
@@ -743,7 +888,7 @@ export default function GenerateQRScreen() {
                   maxWidth: isDesktop ? 480 : "100%",
                   alignSelf: "center",
                   width: "100%",
-                  marginBottom: 24,
+                  marginBottom: 14,
                   flexDirection: isDesktop ? "row" : "column",
                   gap: 12,
                 }}
@@ -753,6 +898,7 @@ export default function GenerateQRScreen() {
                     title={currentQR ? "Tạo mã mới" : "Tạo QR Code"}
                     onPress={handleGenerateQR}
                     loading={loadingQR}
+                    disabled={!isSelectedSessionValid}
                   />
                 </View>
 
@@ -761,13 +907,17 @@ export default function GenerateQRScreen() {
                     style={{
                       paddingVertical: 12,
                       paddingHorizontal: 16,
-                      borderRadius: 8,
+                      borderRadius: 10,
                       borderWidth: 1,
-                      borderColor: Colors.border,
+                      borderColor: "#E2E8F0",
                       alignItems: "center",
                       justifyContent: "center",
-                      backgroundColor: Colors.white,
+                      backgroundColor: isSelectedSessionValid
+                        ? Colors.white
+                        : "#F8FAFC",
+                      opacity: isSelectedSessionValid ? 1 : 0.6,
                     }}
+                    disabled={!isSelectedSessionValid}
                     onPress={async () => {
                       try {
                         await attendanceService.completeSession(
@@ -782,7 +932,7 @@ export default function GenerateQRScreen() {
                         console.error("Error completing session:", error);
                         showToast(
                           error?.response?.data?.message ||
-                            "Không thể kết thúc phiên điểm danh.",
+                          "Không thể kết thúc phiên điểm danh.",
                           "error",
                         );
                       }
@@ -806,8 +956,10 @@ export default function GenerateQRScreen() {
                 <View
                   style={{
                     backgroundColor: "#FFFFFF",
-                    borderRadius: 12,
-                    padding: 24,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: "#E5ECF6",
+                    padding: 16,
                   }}
                 >
                   <Text
@@ -886,6 +1038,13 @@ export default function GenerateQRScreen() {
           )}
         </View>
       </ScrollView>
+
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={hideToast}
+      />
     </SafeAreaView>
   );
 }

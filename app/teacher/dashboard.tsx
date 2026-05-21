@@ -337,6 +337,34 @@ export default function TeacherDashboardScreen() {
     );
   }
 
+  const quickActions = [
+    {
+      label: "Lịch theo tuần",
+      icon: "calendar" as const,
+      route: "/teacher/schedule",
+    },
+    {
+      label: "Quản lý lớp chủ nhiệm",
+      icon: "school" as const,
+      route: "/teacher/advisee-class",
+    },
+    {
+      label: "Danh sách lớp học",
+      icon: "list" as const,
+      route: "/teacher/class-list",
+    },
+    {
+      label: "Báo cáo & thống kê",
+      icon: "bar-chart" as const,
+      route: "/teacher/reports",
+    },
+    {
+      label: "Thông báo",
+      icon: "notifications" as const,
+      route: "/teacher/notifications",
+    },
+  ];
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: "#F1F5F9" }}
@@ -477,7 +505,7 @@ export default function TeacherDashboardScreen() {
 
                 <View
                   style={{
-                    flexDirection: isMobile ? "column" : "row",
+                    flexDirection: "row",
                     gap: 12,
                   }}
                 >
@@ -682,11 +710,49 @@ export default function TeacherDashboardScreen() {
                   </View>
                 </View>
 
-                <Text
-                  style={{ fontSize: 13, color: "#64748B", marginBottom: 10 }}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 10,
+                    gap: 8,
+                  }}
                 >
-                  {monthLabel}
-                </Text>
+                  <Text style={{ fontSize: 13, color: "#64748B", flex: 1 }}>
+                    {monthLabel}
+                  </Text>
+
+                  <TouchableOpacity
+                    onPress={() => router.push("/teacher/schedule")}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4,
+                      borderWidth: 1,
+                      borderColor: "#DBEAFE",
+                      backgroundColor: "#EFF6FF",
+                      borderRadius: 999,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                    }}
+                  >
+                    <Ionicons
+                      name="calendar-outline"
+                      size={12}
+                      color="#1F3D8E"
+                    />
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontWeight: "700",
+                        color: "#1F3D8E",
+                      }}
+                    >
+                      Lịch tuần
+                    </Text>
+                  </TouchableOpacity>
+                </View>
 
                 <View style={{ flexDirection: "row", marginBottom: 6 }}>
                   {WEEK_HEADERS.map((h) => (
@@ -907,220 +973,71 @@ export default function TeacherDashboardScreen() {
                   Quick actions
                 </Text>
 
-                <View style={{ gap: 8 }}>
-                  <TouchableOpacity
-                    onPress={() => router.push("/teacher/schedule")}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      borderRadius: 12,
-                      borderWidth: 1,
-                      borderColor: "#E2E8F0",
-                      padding: 11,
-                      backgroundColor: "#FFFFFF",
-                    }}
-                  >
-                    <View
+                <View
+                  style={{
+                    flexDirection: isMobile ? "row" : "column",
+                    flexWrap: isMobile ? "wrap" : "nowrap",
+                    gap: 8,
+                  }}
+                >
+                  {quickActions.map((action) => (
+                    <TouchableOpacity
+                      key={action.route}
+                      onPress={() => router.push(action.route as any)}
                       style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 16,
-                        backgroundColor: "#DBEAFE",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginRight: 10,
+                        flexDirection: isMobile ? "column" : "row",
+                        alignItems: isMobile ? "center" : "center",
+                        justifyContent: isMobile ? "center" : "flex-start",
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: "#E2E8F0",
+                        padding: isMobile ? 8 : 11,
+                        backgroundColor: "#FFFFFF",
+                        width: isMobile ? "31.5%" : "100%",
+                        aspectRatio: isMobile ? 1 : undefined,
+                        minHeight: isMobile ? undefined : 56,
                       }}
                     >
-                      <Ionicons name="calendar" size={16} color="#1F3D8E" />
-                    </View>
-                    <Text
-                      style={{
-                        flex: 1,
-                        fontSize: 13,
-                        fontWeight: "700",
-                        color: "#0F172A",
-                      }}
-                    >
-                      Lịch theo tuần
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={16}
-                      color="#94A3B8"
-                    />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => router.push("/teacher/advisee-class")}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      borderRadius: 12,
-                      borderWidth: 1,
-                      borderColor: "#E2E8F0",
-                      padding: 11,
-                      backgroundColor: "#FFFFFF",
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 16,
-                        backgroundColor: "#DBEAFE",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginRight: 10,
-                      }}
-                    >
-                      <Ionicons name="school" size={16} color="#1F3D8E" />
-                    </View>
-                    <Text
-                      style={{
-                        flex: 1,
-                        fontSize: 13,
-                        fontWeight: "700",
-                        color: "#0F172A",
-                      }}
-                    >
-                      Quản lý lớp chủ nhiệm
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={16}
-                      color="#94A3B8"
-                    />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => router.push("/teacher/class-list")}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      borderRadius: 12,
-                      borderWidth: 1,
-                      borderColor: "#E2E8F0",
-                      padding: 11,
-                      backgroundColor: "#FFFFFF",
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 16,
-                        backgroundColor: "#DBEAFE",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginRight: 10,
-                      }}
-                    >
-                      <Ionicons name="list" size={16} color="#1F3D8E" />
-                    </View>
-                    <Text
-                      style={{
-                        flex: 1,
-                        fontSize: 13,
-                        fontWeight: "700",
-                        color: "#0F172A",
-                      }}
-                    >
-                      Danh sách lớp học
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={16}
-                      color="#94A3B8"
-                    />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => router.push("/teacher/reports")}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      borderRadius: 12,
-                      borderWidth: 1,
-                      borderColor: "#E2E8F0",
-                      padding: 11,
-                      backgroundColor: "#FFFFFF",
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 16,
-                        backgroundColor: "#DBEAFE",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginRight: 10,
-                      }}
-                    >
-                      <Ionicons name="bar-chart" size={16} color="#1F3D8E" />
-                    </View>
-                    <Text
-                      style={{
-                        flex: 1,
-                        fontSize: 13,
-                        fontWeight: "700",
-                        color: "#0F172A",
-                      }}
-                    >
-                      Báo cáo & thống kê
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={16}
-                      color="#94A3B8"
-                    />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => router.push("/teacher/notifications")}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      borderRadius: 12,
-                      borderWidth: 1,
-                      borderColor: "#E2E8F0",
-                      padding: 11,
-                      backgroundColor: "#FFFFFF",
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 16,
-                        backgroundColor: "#DBEAFE",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginRight: 10,
-                      }}
-                    >
-                      <Ionicons
-                        name="notifications"
-                        size={16}
-                        color="#1F3D8E"
-                      />
-                    </View>
-                    <Text
-                      style={{
-                        flex: 1,
-                        fontSize: 13,
-                        fontWeight: "700",
-                        color: "#0F172A",
-                      }}
-                    >
-                      Thông báo
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={16}
-                      color="#94A3B8"
-                    />
-                  </TouchableOpacity>
+                      <View
+                        style={{
+                          width: isMobile ? 40 : 32,
+                          height: isMobile ? 40 : 32,
+                          borderRadius: isMobile ? 20 : 16,
+                          backgroundColor: "#DBEAFE",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginRight: isMobile ? 0 : 10,
+                          marginBottom: isMobile ? 8 : 0,
+                        }}
+                      >
+                        <Ionicons
+                          name={action.icon}
+                          size={isMobile ? 18 : 16}
+                          color="#1F3D8E"
+                        />
+                      </View>
+                      <Text
+                        style={{
+                          flex: isMobile ? 0 : 1,
+                          fontSize: isMobile ? 10 : 13,
+                          fontWeight: "700",
+                          color: "#0F172A",
+                          textAlign: isMobile ? "center" : "left",
+                          lineHeight: isMobile ? 12 : 18,
+                        }}
+                        numberOfLines={isMobile ? 2 : 1}
+                      >
+                        {action.label}
+                      </Text>
+                      {!isMobile ? (
+                        <Ionicons
+                          name="chevron-forward"
+                          size={16}
+                          color="#94A3B8"
+                        />
+                      ) : null}
+                    </TouchableOpacity>
+                  ))}
                 </View>
               </View>
             </View>

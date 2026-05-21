@@ -155,7 +155,7 @@ export default function AppLayout({
           {!isMobile && (
             <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 24, gap: 12 }}>
               {/* Standalone Items */}
-              {menuItems.filter(item => ["Trang chủ", "Lịch học", "Dashboard", "Danh sách lớp"].includes(item.label)).map((item, index) => {
+              {menuItems.filter(item => ["Trang chủ", "Lịch học", "Lịch dạy", "Dashboard", "Danh sách lớp"].includes(item.label)).map((item, index) => {
                 const isActive = pathname === item.route;
                 return (
                   <TouchableOpacity
@@ -234,110 +234,110 @@ export default function AppLayout({
 
               {/* ĐIỂM DANH Dropdown */}
               {menuItems.some(item => ["Điểm danh QR", "Điểm danh OTP", "Điểm danh Face", "Tạo QR", "Tạo OTP", "Giám sát điểm danh"].includes(item.label)) && (
-              <View
-                style={{ position: "relative" }}
-                {...(Platform.OS === "web" ? {
-                  onMouseEnter: () => setActiveDropdown("diemdanh"),
-                  onMouseLeave: () => setActiveDropdown(null)
-                } : {})}
-              >
-                <TouchableOpacity
-                  onPress={() => setActiveDropdown(activeDropdown === "diemdanh" ? null : "diemdanh")}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    backgroundColor: activeDropdown === "diemdanh" ? "#eff6ff" : "transparent",
-                    borderRadius: 8,
-                    gap: 4,
-                    ...(Platform.OS === "web" ? { cursor: "pointer", transition: "background-color 0.2s" } : {})
-                  }}
+                <View
+                  style={{ position: "relative" }}
+                  {...(Platform.OS === "web" ? {
+                    onMouseEnter: () => setActiveDropdown("diemdanh"),
+                    onMouseLeave: () => setActiveDropdown(null)
+                  } : {})}
                 >
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#1e3a8a", textTransform: "uppercase" }}>ĐIỂM DANH</Text>
-                  <Ionicons name="chevron-down" size={14} color="#1e3a8a" />
-                </TouchableOpacity>
-
-                {activeDropdown === "diemdanh" && (
-                  <View style={{
-                    position: "absolute" as any,
-                    top: "100%",
-                    left: 0,
-                    paddingTop: 4, // Invisible hit area bridge
-                    zIndex: 1002,
-                  }}>
-                    <View style={{
-                      minWidth: 180,
-                      backgroundColor: "#ffffff",
+                  <TouchableOpacity
+                    onPress={() => setActiveDropdown(activeDropdown === "diemdanh" ? null : "diemdanh")}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingHorizontal: 16,
+                      paddingVertical: 10,
+                      backgroundColor: activeDropdown === "diemdanh" ? "#eff6ff" : "transparent",
                       borderRadius: 8,
-                      padding: 8,
-                      ...(Platform.OS === "web" ? { boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" } : {})
+                      gap: 4,
+                      ...(Platform.OS === "web" ? { cursor: "pointer", transition: "background-color 0.2s" } : {})
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1e3a8a", textTransform: "uppercase" }}>ĐIỂM DANH</Text>
+                    <Ionicons name="chevron-down" size={14} color="#1e3a8a" />
+                  </TouchableOpacity>
+
+                  {activeDropdown === "diemdanh" && (
+                    <View style={{
+                      position: "absolute" as any,
+                      top: "100%",
+                      left: 0,
+                      paddingTop: 4, // Invisible hit area bridge
+                      zIndex: 1002,
                     }}>
-                      {menuItems.filter(item => ["Điểm danh QR", "Điểm danh OTP", "Điểm danh Face", "Tạo QR", "Tạo OTP", "Giám sát điểm danh"].includes(item.label)).map((item, index) => {
-                        let displayLabel = item.label;
-                        if (item.label === "Điểm danh QR" || item.label === "Tạo QR") displayLabel = "MÃ QR";
-                        if (item.label === "Điểm danh OTP" || item.label === "Tạo OTP") displayLabel = "MÃ OTP";
-                        if (item.label === "Điểm danh Face") displayLabel = "NHẬN DIỆN";
-                        if (item.label === "Giám sát điểm danh") displayLabel = "GIÁM SÁT";
-                        return (
-                          <TouchableOpacity
-                            key={index}
-                            onPress={() => { setActiveDropdown(null); router.push(item.route as any); }}
-                            style={{ padding: 12, borderRadius: 6, ...(Platform.OS === "web" ? { cursor: "pointer", transition: "background-color 0.15s" } : {}) }}
-                            onMouseEnter={(e: any) => { e.target.style.backgroundColor = "#f8fafc"; }}
-                            onMouseLeave={(e: any) => { e.target.style.backgroundColor = "transparent"; }}
-                          >
-                            <Text style={{ fontSize: 13, fontWeight: "700", color: "#1e3a8a", textTransform: "uppercase" }}>{displayLabel}</Text>
-                          </TouchableOpacity>
-                        );
-                      })}
+                      <View style={{
+                        minWidth: 180,
+                        backgroundColor: "#ffffff",
+                        borderRadius: 8,
+                        padding: 8,
+                        ...(Platform.OS === "web" ? { boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" } : {})
+                      }}>
+                        {menuItems.filter(item => ["Điểm danh QR", "Điểm danh OTP", "Điểm danh Face", "Tạo QR", "Tạo OTP", "Giám sát điểm danh"].includes(item.label)).map((item, index) => {
+                          let displayLabel = item.label;
+                          if (item.label === "Điểm danh QR" || item.label === "Tạo QR") displayLabel = "MÃ QR";
+                          if (item.label === "Điểm danh OTP" || item.label === "Tạo OTP") displayLabel = "MÃ OTP";
+                          if (item.label === "Điểm danh Face") displayLabel = "NHẬN DIỆN";
+                          if (item.label === "Giám sát điểm danh") displayLabel = "GIÁM SÁT";
+                          return (
+                            <TouchableOpacity
+                              key={index}
+                              onPress={() => { setActiveDropdown(null); router.push(item.route as any); }}
+                              style={{ padding: 12, borderRadius: 6, ...(Platform.OS === "web" ? { cursor: "pointer", transition: "background-color 0.15s" } : {}) }}
+                              onMouseEnter={(e: any) => { e.target.style.backgroundColor = "#f8fafc"; }}
+                              onMouseLeave={(e: any) => { e.target.style.backgroundColor = "transparent"; }}
+                            >
+                              <Text style={{ fontSize: 13, fontWeight: "700", color: "#1e3a8a", textTransform: "uppercase" }}>{displayLabel}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
                     </View>
-                  </View>
-                )}
-              </View>
+                  )}
+                </View>
               )}
               {/* KHÁC Dropdown */}
               {menuItems.some(item => ["Lịch sử", "Thông báo", "Lớp chủ nhiệm", "Báo cáo", "Báo cáo & Thống kê", "Import dữ liệu"].includes(item.label)) && (
-              <View
-                style={{ position: "relative" }}
-                {...(Platform.OS === "web" ? {
-                  onMouseEnter: () => setActiveDropdown("khac"),
-                  onMouseLeave: () => setActiveDropdown(null)
-                } : {})}
-              >
-                <TouchableOpacity
-                  onPress={() => setActiveDropdown(activeDropdown === "khac" ? null : "khac")}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    backgroundColor: activeDropdown === "khac" ? "#eff6ff" : "transparent",
-                    borderRadius: 8,
-                    gap: 4,
-                    ...(Platform.OS === "web" ? { cursor: "pointer", transition: "background-color 0.2s" } : {})
-                  }}
+                <View
+                  style={{ position: "relative" }}
+                  {...(Platform.OS === "web" ? {
+                    onMouseEnter: () => setActiveDropdown("khac"),
+                    onMouseLeave: () => setActiveDropdown(null)
+                  } : {})}
                 >
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#1e3a8a", textTransform: "uppercase" }}>KHÁC</Text>
-                  <Ionicons name="chevron-down" size={14} color="#1e3a8a" />
-                </TouchableOpacity>
-
-                {activeDropdown === "khac" && (
-                  <View style={{
-                    position: "absolute" as any,
-                    top: "100%",
-                    left: 0,
-                    paddingTop: 4, // Invisible hit area bridge
-                    zIndex: 1002,
-                  }}>
-                    <View style={{
-                      minWidth: 160,
-                      backgroundColor: "#ffffff",
+                  <TouchableOpacity
+                    onPress={() => setActiveDropdown(activeDropdown === "khac" ? null : "khac")}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingHorizontal: 16,
+                      paddingVertical: 10,
+                      backgroundColor: activeDropdown === "khac" ? "#eff6ff" : "transparent",
                       borderRadius: 8,
-                      padding: 8,
-                      ...(Platform.OS === "web" ? { boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" } : {})
+                      gap: 4,
+                      ...(Platform.OS === "web" ? { cursor: "pointer", transition: "background-color 0.2s" } : {})
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1e3a8a", textTransform: "uppercase" }}>KHÁC</Text>
+                    <Ionicons name="chevron-down" size={14} color="#1e3a8a" />
+                  </TouchableOpacity>
+
+                  {activeDropdown === "khac" && (
+                    <View style={{
+                      position: "absolute" as any,
+                      top: "100%",
+                      left: 0,
+                      paddingTop: 4, // Invisible hit area bridge
+                      zIndex: 1002,
                     }}>
-                      {menuItems.filter(item => ["Lịch sử", "Thông báo", "Lớp chủ nhiệm", "Báo cáo", "Báo cáo & Thống kê", "Import dữ liệu"].includes(item.label)).map((item, index) => (
+                      <View style={{
+                        minWidth: 160,
+                        backgroundColor: "#ffffff",
+                        borderRadius: 8,
+                        padding: 8,
+                        ...(Platform.OS === "web" ? { boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" } : {})
+                      }}>
+                        {menuItems.filter(item => ["Lịch sử", "Thông báo", "Lớp chủ nhiệm", "Báo cáo", "Báo cáo & Thống kê", "Import dữ liệu"].includes(item.label)).map((item, index) => (
                           <TouchableOpacity
                             key={index}
                             onPress={() => { setActiveDropdown(null); router.push(item.route as any); }}
@@ -347,11 +347,11 @@ export default function AppLayout({
                           >
                             <Text style={{ fontSize: 13, fontWeight: "700", color: "#1e3a8a", textTransform: "uppercase" }}>{item.label}</Text>
                           </TouchableOpacity>
-                      ))}
+                        ))}
+                      </View>
                     </View>
-                  </View>
-                )}
-              </View>
+                  )}
+                </View>
               )}
             </View>
           )}
@@ -388,7 +388,7 @@ export default function AppLayout({
           )}
 
           <AIChatHeaderButton />
-          <NotificationDropdown />
+          <NotificationDropdown role={userRole} />
 
           <UserProfileDropdown
             userName={currentName || roleLabels[userRole]}

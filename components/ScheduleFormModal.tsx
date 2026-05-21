@@ -1,11 +1,11 @@
 /**
  * ScheduleFormModal — Smart form with searchable pickers for:
- *   - Class selection
  *   - Subject selection
- *   - Teacher auto-populated from selected subject (LT + TH)
+ *   - Course selection by subject
+ *   - Teacher auto-populated from selected course (LT + TH)
  *   - Day-of-week chip selector
  *   - Start/End time pickers
- *   - Room text field
+ *   - Building/Room selection
  */
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
@@ -23,13 +23,8 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { classService } from "@/apis/services/class.service";
-import { scheduleService } from "@/apis/services/schedule.service";
-import { ClassResponse } from "@/apis/types/class.types";
-import {
-  CreateScheduleRequest,
-  UpdateScheduleRequest,
-} from "@/apis/types/schedule.types";
+import { subjectService } from "@/apis/services/subject.service";
+import { courseService, type Course } from "@/apis/services/course.service";
 
 // ── types ──────────────────────────────────────────────────────────────────────
 
@@ -49,13 +44,30 @@ interface TeacherOption {
   role: "LT" | "TH";
 }
 
+interface BuildingOption {
+  id: string;
+  name: string;
+}
+
+interface RoomOption {
+  id: string;
+  name: string;
+  buildingId: string;
+  buildingName?: string;
+}
+
 export interface ScheduleFormData {
+  courseId?: string;
+  courseName?: string;
   classId: string;
   className: string;
   subjectId: string;
   subjectName: string;
   teacherId: string;
   teacherName: string;
+  buildingId?: string;
+  buildingName?: string;
+  roomId?: string;
   scheduleType: "CLASS" | "EXAM";
   pattern: "RECURRING_WEEKLY" | "ONE_TIME";
   /** Derived from startDate by backend */
@@ -784,12 +796,17 @@ export function ScheduleFormModal({
   // ── form state ──
   const today = dateToISO(new Date());
   const blank: ScheduleFormData = {
+    courseId: "",
+    courseName: "",
     classId: "",
     className: "",
     subjectId: "",
     subjectName: "",
     teacherId: "",
     teacherName: "",
+    buildingId: "",
+    buildingName: "",
+    roomId: "",
     dayOfWeek: 2,
     scheduleType: "CLASS",
     pattern: "RECURRING_WEEKLY",
@@ -805,16 +822,22 @@ export function ScheduleFormModal({
   const [submitting, setSubmitting] = useState(false);
 
   // ── data ──
-  const [classes, setClasses] = useState<ClassResponse[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
-  const [loadingCls, setLoadingCls] = useState(false);
+  const [buildings, setBuildings] = useState<BuildingOption[]>([]);
+  const [rooms, setRooms] = useState<RoomOption[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+  const [loadingBuildings, setLoadingBuildings] = useState(false);
+  const [loadingRooms, setLoadingRooms] = useState(false);
   const [loadingSubj, setLoadingSubj] = useState(false);
 
   // ── picker visibility ──
-  const [showClassPicker, setShowClassPicker] = useState(false);
+  const [showCoursePicker, setShowCoursePicker] = useState(false);
   const [showSubjectPicker, setShowSubjectPicker] = useState(false);
   const [showTeacherPicker, setShowTeacherPicker] = useState(false);
+  const [showBuildingPicker, setShowBuildingPicker] = useState(false);
+  const [showRoomPicker, setShowRoomPicker] = useState(false);
 
   // ── init on open ──
   useEffect(() => {
@@ -826,79 +849,187 @@ export function ScheduleFormModal({
     }
   }, [visible]);
 
-  // ── fetch classes on open ──
-  useEffect(() => {
-    if (!visible) return;
-    setLoadingCls(true);
-    classService
-      .getAllClasses()
-      .then(setClasses)
-      .finally(() => setLoadingCls(false));
-  }, [visible]);
-
-  // ── fetch subjects — use scheduleService trick: get all schedules to get subjects list
-  //    Actually we'll use a direct fetch to /api/subjects via apiClient
+  // ── fetch subjects on open ──
   useEffect(() => {
     if (!visible) return;
     setLoadingSubj(true);
-    // Use apiClient directly since we don't have a dedicated subjectService yet
-    import("@/apis/config/apiClient").then(({ default: apiClient }) => {
-      apiClient
-        .get("/subjects")
-        .then((res: any) => {
-          const data: any[] = res.data?.data ?? [];
-          setSubjects(
-            data.map((s) => ({
-              id: s.id,
-              code: s.code ?? "",
-              name: s.name ?? "",
-              teacherLTId: s.teacherLTId ?? null,
-              teacherLTName: s.teacherLTName ?? null,
-              teacherTHId: s.teacherTHId ?? null,
-              teacherTHName: s.teacherTHName ?? null,
-            })),
-          );
-        })
-        .finally(() => setLoadingSubj(false));
-    });
+    subjectService
+      .getSubjects()
+      .then((data) => {
+        setSubjects(
+          data.map((s) => ({
+            id: s.id,
+            code: s.code ?? "",
+            name: s.name ?? "",
+            teacherLTId: s.teacherLTId ?? null,
+            teacherLTName: s.teacherLTName ?? null,
+            teacherTHId: s.teacherTHId ?? null,
+            teacherTHName: s.teacherTHName ?? null,
+          })),
+        );
+      })
+      .finally(() => setLoadingSubj(false));
   }, [visible]);
 
-  // ── when subject changes → populate teachers ──
+  // ── fetch buildings on open ──
+  useEffect(() => {
+    if (!visible) return;
+    setLoadingBuildings(true);
+    import("@/apis/config/apiClient")
+      .then(({ default: apiClient }) => apiClient.get("/buildings"))
+      .then((res: any) => {
+        const data: any[] = res.data?.data ?? [];
+        setBuildings(
+          data.map((b) => ({
+            id: b.id,
+            name: b.name ?? "",
+          })),
+        );
+      })
+      .finally(() => setLoadingBuildings(false));
+  }, [visible]);
+
+  // ── when subject changes → fetch courses by subject ──
   useEffect(() => {
     if (!form.subjectId) {
+      setCourses([]);
+      setForm((p) => ({
+        ...p,
+        courseId: "",
+        courseName: "",
+        classId: "",
+        className: "",
+      }));
+      return;
+    }
+
+    setLoadingCourses(true);
+    courseService
+      .getAllCourses({ subjectId: form.subjectId })
+      .then((data) => {
+        setCourses(data);
+      })
+      .finally(() => setLoadingCourses(false));
+  }, [form.subjectId]);
+
+  // ── when building changes → fetch rooms by building ──
+  useEffect(() => {
+    if (!form.buildingId) {
+      setRooms([]);
+      setForm((p) => ({ ...p, roomId: "", room: "" }));
+      return;
+    }
+
+    setLoadingRooms(true);
+    import("@/apis/config/apiClient")
+      .then(({ default: apiClient }) =>
+        apiClient.get("/rooms", { params: { buildingId: form.buildingId } }),
+      )
+      .then((res: any) => {
+        const data: any[] = res.data?.data ?? [];
+        setRooms(
+          data.map((r) => ({
+            id: r.id,
+            name: r.name ?? "",
+            buildingId: r.buildingId ?? "",
+            buildingName: r.buildingName ?? "",
+          })),
+        );
+      })
+      .finally(() => setLoadingRooms(false));
+  }, [form.buildingId]);
+
+  // ── edit mode helper: infer building/room from existing room name ──
+  useEffect(() => {
+    if (!visible || !form.room || form.roomId || form.buildingId) return;
+
+    import("@/apis/config/apiClient")
+      .then(({ default: apiClient }) => apiClient.get("/rooms"))
+      .then((res: any) => {
+        const data: any[] = res.data?.data ?? [];
+        const matched = data.find(
+          (r) =>
+            String(r.name ?? "")
+              .trim()
+              .toLowerCase() ===
+            String(form.room ?? "")
+              .trim()
+              .toLowerCase(),
+        );
+        if (!matched) return;
+        setForm((p) => ({
+          ...p,
+          buildingId: matched.buildingId ?? "",
+          buildingName: matched.buildingName ?? "",
+          roomId: matched.id ?? "",
+          room: matched.name ?? p.room,
+        }));
+      })
+      .catch(() => undefined);
+  }, [visible, form.room, form.roomId, form.buildingId]);
+
+  // ── when course changes → populate teachers ──
+  useEffect(() => {
+    if (!form.courseId) {
       setTeachers([]);
       return;
     }
-    const subj = subjects.find((s) => s.id === form.subjectId);
-    if (!subj) {
+    const selectedCourse = courses.find((c) => c.id === form.courseId);
+    if (!selectedCourse) {
       setTeachers([]);
       return;
     }
+
     const list: TeacherOption[] = [];
-    if (subj.teacherLTId && subj.teacherLTName) {
+    if (selectedCourse.theoryLectureId && selectedCourse.theoryLectureName) {
       list.push({
-        id: subj.teacherLTId,
-        name: `${subj.teacherLTName} (LT)`,
+        id: selectedCourse.theoryLectureId,
+        name: `${selectedCourse.theoryLectureName} (LT)`,
         role: "LT",
       });
     }
-    if (subj.teacherTHId && subj.teacherTHName) {
+    if (
+      selectedCourse.practiceTeacherId &&
+      selectedCourse.practiceTeacherName
+    ) {
       list.push({
-        id: subj.teacherTHId,
-        name: `${subj.teacherTHName} (TH)`,
+        id: selectedCourse.practiceTeacherId,
+        name: `${selectedCourse.practiceTeacherName} (TH)`,
         role: "TH",
       });
     }
-    setTeachers(list);
-    // reset teacher if subject changed and old teacher not in list
-    if (form.teacherId && !list.find((t) => t.id === form.teacherId)) {
+
+    const uniqueList = list.filter(
+      (teacher, index, arr) =>
+        arr.findIndex((t) => t.id === teacher.id) === index,
+    );
+
+    setTeachers(uniqueList);
+    // reset teacher if course changed and old teacher not in list
+    if (form.teacherId && !uniqueList.find((t) => t.id === form.teacherId)) {
       setForm((p) => ({ ...p, teacherId: "", teacherName: "" }));
     }
-  }, [form.subjectId, subjects]);
+  }, [form.courseId, courses]);
 
   const handleSubmit = async () => {
-    if (!form.classId) {
-      alert("Vui lòng chọn lớp học.");
+    if (!form.subjectId) {
+      alert("Vui lòng chọn môn học.");
+      return;
+    }
+    if (!form.courseId) {
+      alert("Vui lòng chọn học phần (course).");
+      return;
+    }
+    if (!form.teacherId) {
+      alert("Vui lòng chọn giảng viên.");
+      return;
+    }
+    if (!form.buildingId) {
+      alert("Vui lòng chọn tòa nhà.");
+      return;
+    }
+    if (!form.roomId || !form.room) {
+      alert("Vui lòng chọn phòng học.");
       return;
     }
     if (!form.startDate) {
@@ -934,14 +1065,14 @@ export function ScheduleFormModal({
   };
 
   // ── pickers item lists ──
-  const classItems: PickerItem[] = classes.map((c) => ({
+  const courseItems: PickerItem[] = courses.map((c) => ({
     id: c.id,
     primary: c.name,
-    secondary: `${c.semester ?? ""} • ${c.subjectName ?? ""}`
+    secondary: `${c.semesterName ?? ""} • ${c.subjectName ?? ""}`
       .replace(/^ • | • $/g, "")
       .replace(/^•|•$/, "")
       .trim(),
-    badge: c.code,
+    badge: c.subjectName ?? "",
   }));
 
   const subjectItems: PickerItem[] = subjects.map((s) => ({
@@ -956,6 +1087,17 @@ export function ScheduleFormModal({
     primary: t.name,
     secondary:
       t.role === "LT" ? "Giảng viên Lý thuyết" : "Giảng viên Thực hành",
+  }));
+
+  const buildingItems: PickerItem[] = buildings.map((b) => ({
+    id: b.id,
+    primary: b.name,
+  }));
+
+  const roomItems: PickerItem[] = rooms.map((r) => ({
+    id: r.id,
+    primary: r.name,
+    secondary: r.buildingName ?? "",
   }));
 
   return (
@@ -991,27 +1133,34 @@ export function ScheduleFormModal({
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
             >
-              {/* ── Step 1: Class ── */}
-              <SectionHeader step={1} label="Chọn lớp học" />
+              {/* ── Step 1: Subject ── */}
+              <SectionHeader step={1} label="Chọn môn học" />
               <PickerButton
-                label="Lớp học *"
-                value={form.className}
-                placeholder="Nhấn để chọn lớp..."
-                icon="school-outline"
-                onPress={() => setShowClassPicker(true)}
-              />
-              {/* ── Step 2: Subject ── */}
-              <SectionHeader step={2} label="Chọn môn học" />
-              <PickerButton
-                label="Môn học"
+                label="Môn học *"
                 value={form.subjectName}
                 placeholder="Nhấn để chọn môn học..."
                 icon="book-outline"
                 onPress={() => setShowSubjectPicker(true)}
               />
-              {/* ── Step 3: Teacher (auto from subject) ── */}
-              <SectionHeader step={3} label="Chọn giảng viên" />
-              {form.subjectId && teachers.length === 0 && (
+              {/* ── Step 2: Course by subject ── */}
+              <SectionHeader step={2} label="Chọn học phần theo môn học" />
+              <PickerButton
+                label="Học phần (Course) *"
+                value={form.courseName || form.className}
+                placeholder={
+                  form.subjectId
+                    ? loadingCourses
+                      ? "Đang tải học phần..."
+                      : "Nhấn để chọn học phần..."
+                    : "Chọn môn học trước"
+                }
+                icon="school-outline"
+                onPress={() => setShowCoursePicker(true)}
+                disabled={!form.subjectId || loadingCourses}
+              />
+              {/* ── Step 3: Teacher (from subject) ── */}
+              <SectionHeader step={3} label="Chọn giảng viên của môn học" />
+              {form.courseId && teachers.length === 0 && (
                 <View style={fm.infoBox}>
                   <Ionicons
                     name="information-circle-outline"
@@ -1019,27 +1168,58 @@ export function ScheduleFormModal({
                     color="#f59e0b"
                   />
                   <Text style={fm.infoText}>
-                    Môn học này chưa có giảng viên được gán.
+                    Học phần này chưa có giảng viên được gán.
                   </Text>
                 </View>
               )}
               <PickerButton
-                label="Giảng viên"
+                label="Giảng viên *"
                 value={form.teacherName}
                 placeholder={
-                  form.subjectId
+                  form.courseId
                     ? teachers.length
                       ? "Chọn giảng viên..."
                       : "Không có GV nào"
-                    : "Chọn môn học trước"
+                    : "Chọn học phần trước"
                 }
                 icon="person-circle-outline"
                 accent="#8b5cf6"
                 onPress={() => setShowTeacherPicker(true)}
-                disabled={teachers.length === 0}
+                disabled={!form.courseId || teachers.length === 0}
               />
               {/* ── Step 4: Schedule details ── */}
               <SectionHeader step={4} label="Thời gian & địa điểm" />
+              <Text style={[fm.label, { marginTop: 2 }]}>Địa điểm</Text>
+              <PickerButton
+                label="Tòa nhà *"
+                value={form.buildingName ?? ""}
+                placeholder={
+                  loadingBuildings
+                    ? "Đang tải tòa nhà..."
+                    : "Nhấn để chọn tòa nhà..."
+                }
+                icon="business-outline"
+                accent="#0f766e"
+                onPress={() => setShowBuildingPicker(true)}
+                disabled={loadingBuildings || buildings.length === 0}
+              />
+              <PickerButton
+                label="Phòng học *"
+                value={form.room}
+                placeholder={
+                  form.buildingId
+                    ? loadingRooms
+                      ? "Đang tải phòng..."
+                      : "Nhấn để chọn phòng..."
+                    : "Chọn tòa nhà trước"
+                }
+                icon="location-outline"
+                accent="#0369a1"
+                onPress={() => setShowRoomPicker(true)}
+                disabled={
+                  !form.buildingId || loadingRooms || rooms.length === 0
+                }
+              />
               <Text style={[fm.label, { marginTop: 2 }]}>Loại lịch</Text>
               <View style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
                 <TouchableOpacity
@@ -1223,19 +1403,6 @@ export function ScheduleFormModal({
                   }}
                 />
 
-                {/* Room */}
-                <Text style={[fm.label, { marginTop: 14 }]}>Phòng học</Text>
-                <View style={fm.roomInput}>
-                  <Ionicons name="location-outline" size={15} color="#94a3b8" />
-                  <TextInput
-                    style={fm.roomTextInput}
-                    placeholder="VD: A101, B202..."
-                    placeholderTextColor="#94a3b8"
-                    value={form.room}
-                    onChangeText={(v) => setForm((p) => ({ ...p, room: v }))}
-                  />
-                </View>
-
                 {/* Preview */}
                 {(form.className || form.subjectName) && (
                   <PreviewCard form={form} />
@@ -1269,17 +1436,27 @@ export function ScheduleFormModal({
         </View>
       </Modal>
 
-      {/* Class Picker */}
+      {/* Course Picker */}
       <PickerModal
-        visible={showClassPicker}
-        title=" Chọn lớp học"
-        items={classItems}
-        selectedId={form.classId}
-        loading={loadingCls}
-        emptyText="Chưa có lớp học nào"
-        onClose={() => setShowClassPicker(false)}
+        visible={showCoursePicker}
+        title="Chọn học phần"
+        items={courseItems}
+        selectedId={form.courseId ?? ""}
+        loading={loadingCourses}
+        emptyText={
+          form.subjectId
+            ? "Môn học này chưa có học phần"
+            : "Vui lòng chọn môn học trước"
+        }
+        onClose={() => setShowCoursePicker(false)}
         onSelect={(item) =>
-          setForm((p) => ({ ...p, classId: item.id, className: item.primary }))
+          setForm((p) => ({
+            ...p,
+            courseId: item.id,
+            courseName: item.primary,
+            teacherId: "",
+            teacherName: "",
+          }))
         }
       />
 
@@ -1297,7 +1474,9 @@ export function ScheduleFormModal({
             ...p,
             subjectId: item.id,
             subjectName: item.primary,
-            // reset teacher when subject changes
+            // reset dependent selections when subject changes
+            courseId: "",
+            courseName: "",
             teacherId: "",
             teacherName: "",
           }))
@@ -1311,13 +1490,59 @@ export function ScheduleFormModal({
         items={teacherItems}
         selectedId={form.teacherId}
         loading={false}
-        emptyText="Môn học chưa có giảng viên"
+        emptyText={
+          form.courseId
+            ? "Học phần này chưa có giảng viên"
+            : "Vui lòng chọn học phần trước"
+        }
         onClose={() => setShowTeacherPicker(false)}
         onSelect={(item) =>
           setForm((p) => ({
             ...p,
             teacherId: item.id,
             teacherName: item.primary,
+          }))
+        }
+      />
+
+      {/* Building Picker */}
+      <PickerModal
+        visible={showBuildingPicker}
+        title="Chọn tòa nhà"
+        items={buildingItems}
+        selectedId={form.buildingId ?? ""}
+        loading={loadingBuildings}
+        emptyText="Chưa có tòa nhà"
+        onClose={() => setShowBuildingPicker(false)}
+        onSelect={(item) =>
+          setForm((p) => ({
+            ...p,
+            buildingId: item.id,
+            buildingName: item.primary,
+            roomId: "",
+            room: "",
+          }))
+        }
+      />
+
+      {/* Room Picker */}
+      <PickerModal
+        visible={showRoomPicker}
+        title="Chọn phòng học"
+        items={roomItems}
+        selectedId={form.roomId ?? ""}
+        loading={loadingRooms}
+        emptyText={
+          form.buildingId
+            ? "Tòa nhà này chưa có phòng"
+            : "Vui lòng chọn tòa nhà trước"
+        }
+        onClose={() => setShowRoomPicker(false)}
+        onSelect={(item) =>
+          setForm((p) => ({
+            ...p,
+            roomId: item.id,
+            room: item.primary,
           }))
         }
       />
@@ -1380,7 +1605,9 @@ function PreviewCard({ form }: { form: ScheduleFormData }) {
         <Text style={fm.previewText}>
           {DAY_LABELS[form.dayOfWeek] ?? "—"}
           {periodRange ? `  •  ${periodRange}` : ""}
-          {form.room ? `  •  Phòng ${form.room}` : ""}
+          {form.room
+            ? `  •  ${form.buildingName ? `${form.buildingName} - ` : ""}Phòng ${form.room}`
+            : ""}
         </Text>
       </View>
       {dateRange !== "" && (
