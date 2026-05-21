@@ -185,7 +185,8 @@ export const reportService = {
     subjectId?: string,
     startDate?: string,
     endDate?: string,
-    onlyRisk?: boolean
+    onlyRisk?: boolean,
+    sessionId?: string
   ): Promise<Blob> => {
     const params: Record<string, any> = {};
     if (courseId) params.courseId = courseId;
@@ -193,6 +194,7 @@ export const reportService = {
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
     if (onlyRisk !== undefined) params.onlyRisk = onlyRisk;
+    if (sessionId) params.sessionId = sessionId;
     
     const response = await apiClient.get('/reports/export/excel', {
       params: Object.keys(params).length ? params : undefined,
@@ -209,7 +211,8 @@ export const reportService = {
     subjectId?: string,
     startDate?: string,
     endDate?: string,
-    onlyRisk?: boolean
+    onlyRisk?: boolean,
+    sessionId?: string
   ): string => {
     const base = getExportBaseUrl();
     const search = new URLSearchParams();
@@ -218,6 +221,7 @@ export const reportService = {
     if (startDate) search.set('startDate', startDate);
     if (endDate) search.set('endDate', endDate);
     if (onlyRisk !== undefined) search.set('onlyRisk', String(onlyRisk));
+    if (sessionId) search.set('sessionId', sessionId);
     const qs = search.toString();
     return `${base}/reports/export/excel${qs ? `?${qs}` : ''}`;
   },

@@ -8,12 +8,14 @@ import {
   TextInput,
   ActivityIndicator,
   RefreshControl,
+  Modal,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { QRViewer } from "@/components/QRViewer";
-import { qrService, attendanceService, scheduleService } from "@/apis";
+import { qrService, attendanceService, scheduleService, apiClient, reportService } from "@/apis";
 import { getTeacherIdFromToken } from "@/apis/utils/jwt";
 import { useToast } from "@/components/ToastProvider";
 import { AttendanceMethod } from "@/apis/types/attendance.types";
@@ -63,6 +65,13 @@ export default function GenerateQRScreen() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Completion Modal State
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [modalSessionInfo, setModalSessionInfo] = useState<any>(null);
+  const [studentList, setStudentList] = useState<Array<{ studentId: string; studentName: string; status: 'PRESENT' | 'LATE' | 'ABSENT' }>>([]);
+  const [loadingModalData, setLoadingModalData] = useState(false);
+  const [activeTab, setActiveTab] = useState<'PRESENT' | 'LATE' | 'ABSENT'>('PRESENT');
 
   // Custom Settings
   const [durationMinutes, setDurationMinutes] = useState<string>("15");
@@ -442,16 +451,115 @@ export default function GenerateQRScreen() {
     }
   };
 
+  const loadModalData = async (sessionId: string, courseId: string) => {
+    setLoadingModalData(true);
+    try {
+      // 1. Fetch active enrollments (try courseId then fallback to classId)
+      let enrollments = [];
+      try {
+        const enrollmentsResp = await apiClient.get('/enrollments', {
+          params: { courseId }
+        });
+        enrollments = enrollmentsResp.data?.data || [];
+      } catch (err) {
+        console.warn("Lỗi fetch enrollments bằng courseId:", err);
+      }
+
+      if (enrollments.length === 0) {
+        try {
+          const enrollmentsResp = await apiClient.get('/enrollments', {
+            params: { classId: courseId }
+          });
+          enrollments = enrollmentsResp.data?.data || [];
+        } catch (err) {
+          console.warn("Lỗi fetch enrollments bằng classId:", err);
+        }
+      }
+
+      const activeEnrollments = enrollments.filter((e: any) => e.status === 'ACTIVE' || !e.status);
+
+      // 2. Fetch attendance records
+      const records = await attendanceService.getRecords({ sessionId });
+
+      // 3. Map students using bulletproof case-insensitive matching
+      const mapped = activeEnrollments.map((e: any) => {
+        const match = records.find((r: any) => {
+          const rStudentId = String(r.studentId || "").trim().toLowerCase();
+          const rStudentCode = String(r.studentCode || "").trim().toLowerCase();
+          const eStudentUserId = String(e.studentUserId || "").trim().toLowerCase();
+          const eStudentId = String(e.studentId || "").trim().toLowerCase();
+
+          return (
+            (rStudentId && eStudentUserId && rStudentId === eStudentUserId) ||
+            (rStudentId && eStudentId && rStudentId === eStudentId) ||
+            (rStudentCode && eStudentId && rStudentCode === eStudentId) ||
+            (rStudentCode && eStudentUserId && rStudentCode === eStudentUserId)
+          );
+        });
+
+        return {
+          studentId: e.studentId || e.studentUserId || '',
+          studentName: e.studentName || 'Chưa rõ',
+          status: match ? (match.status as 'PRESENT' | 'LATE' | 'ABSENT') : 'ABSENT',
+        };
+      });
+
+      setStudentList(mapped);
+    } catch (err) {
+      console.error("Lỗi khi tải danh sách sinh viên:", err);
+      showToast("Không thể tải danh sách sinh viên lớp học.", "error");
+    } finally {
+      setLoadingModalData(false);
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (!modalSessionInfo?.id) return;
+    const url = reportService.getExportExcelUrl(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      modalSessionInfo.id
+    );
+    Linking.openURL(url).catch((err) => {
+      console.error("Lỗi mở link tải Excel:", err);
+      showToast("Không thể tải file báo cáo Excel.", "error");
+    });
+  };
+
   const handleStopQR = async () => {
     if (!selectedSession) return;
+    const sessionId = selectedSession.id;
+    const courseId = selectedSession.courseId;
     setLoading(true);
     try {
-      await attendanceService.completeSession(selectedSession.id);
+      const completedSession = await attendanceService.completeSession(sessionId);
       setIsActive(false); // ← stop countdown immediately
       if (timerRef.current) clearInterval(timerRef.current);
+      setCountdown(Number(qrInterval) || 10);
+
+      // Store session info for modal before clearing active screen state
+      setModalSessionInfo({
+        id: completedSession.id,
+        courseId: courseId,
+        subjectName: completedSession.subjectName || selectedSession.subjectName,
+        className: completedSession.className || selectedSession.className,
+        method: 'QR',
+        present: completedSession.present || 0,
+        late: completedSession.late || 0,
+        absent: completedSession.absent || 0,
+        total: completedSession.total || 0,
+      });
+
+      // Clear active session from screen
       setSelectedSession(null);
       setCurrentQR(null);
-      setCountdown(Number(qrInterval) || 10);
+
+      // Fetch roster & show modal
+      setShowSummaryModal(true);
+      await loadModalData(sessionId, courseId);
       showToast("Đã kết thúc phiên điểm danh.", "success");
     } catch (_) {
       showToast("Không thể kết thúc phiên điểm danh.", "error");
@@ -1412,6 +1520,308 @@ export default function GenerateQRScreen() {
               </View>
             </View>
           )}
+
+          {/* Modern Details Modal */}
+          <Modal
+            visible={showSummaryModal}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setShowSummaryModal(false)}
+          >
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: "rgba(15, 23, 42, 0.6)",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: isDesktop ? 40 : 16,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 20,
+                  width: "100%",
+                  maxWidth: 640,
+                  maxHeight: "90%",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 10 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 20,
+                  elevation: 10,
+                  overflow: "hidden",
+                }}
+              >
+                {/* Modal Header */}
+                <View
+                  style={{
+                    padding: 24,
+                    backgroundColor: "#0F172A",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 18,
+                        fontWeight: "800",
+                        color: "#FFFFFF",
+                      }}
+                    >
+                      Kết Quả Phiên Điểm Danh
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        color: "#94A3B8",
+                        marginTop: 4,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {modalSessionInfo?.subjectName || "Học phần"} — {modalSessionInfo?.className || "Lớp"}
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      backgroundColor: "#1E293B",
+                      borderRadius: 8,
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "700",
+                        color: "#3B82F6",
+                      }}
+                    >
+                      Cổng {modalSessionInfo?.method || "QR"}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Quick Stats Grid */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    borderBottomWidth: 1,
+                    borderBottomColor: "#E2E8F0",
+                    backgroundColor: "#F8FAFC",
+                    paddingVertical: 16,
+                    paddingHorizontal: 24,
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <View style={{ alignItems: "center", flex: 1 }}>
+                    <Text style={{ fontSize: 12, color: "#64748B", fontWeight: "600" }}>Sĩ Số</Text>
+                    <Text style={{ fontSize: 20, fontWeight: "800", color: "#0F172A", marginTop: 4 }}>
+                      {modalSessionInfo?.total || 0}
+                    </Text>
+                  </View>
+                  <View style={{ width: 1, backgroundColor: "#E2E8F0" }} />
+                  <View style={{ alignItems: "center", flex: 1 }}>
+                    <Text style={{ fontSize: 12, color: "#16A34A", fontWeight: "600" }}>Có Mặt</Text>
+                    <Text style={{ fontSize: 20, fontWeight: "800", color: "#16A34A", marginTop: 4 }}>
+                      {modalSessionInfo?.present || 0}
+                    </Text>
+                  </View>
+                  <View style={{ width: 1, backgroundColor: "#E2E8F0" }} />
+                  <View style={{ alignItems: "center", flex: 1 }}>
+                    <Text style={{ fontSize: 12, color: "#D97706", fontWeight: "600" }}>Trễ/Muộn</Text>
+                    <Text style={{ fontSize: 20, fontWeight: "800", color: "#D97706", marginTop: 4 }}>
+                      {modalSessionInfo?.late || 0}
+                    </Text>
+                  </View>
+                  <View style={{ width: 1, backgroundColor: "#E2E8F0" }} />
+                  <View style={{ alignItems: "center", flex: 1 }}>
+                    <Text style={{ fontSize: 12, color: "#DC2626", fontWeight: "600" }}>Vắng</Text>
+                    <Text style={{ fontSize: 20, fontWeight: "800", color: "#DC2626", marginTop: 4 }}>
+                      {modalSessionInfo?.absent || 0}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Tab Selection */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    borderBottomWidth: 1,
+                    borderBottomColor: "#E2E8F0",
+                    paddingHorizontal: 16,
+                  }}
+                >
+                  {(["PRESENT", "LATE", "ABSENT"] as const).map((tab) => {
+                    const label =
+                      tab === "PRESENT"
+                        ? "Có mặt"
+                        : tab === "LATE"
+                          ? "Trễ/Muộn"
+                          : "Không điểm danh";
+                    const color =
+                      tab === "PRESENT"
+                        ? "#16A34A"
+                        : tab === "LATE"
+                          ? "#D97706"
+                          : "#DC2626";
+                    const isActiveTab = activeTab === tab;
+                    const count = studentList.filter((s) => s.status === tab).length;
+
+                    return (
+                      <TouchableOpacity
+                        key={tab}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 14,
+                          alignItems: "center",
+                          borderBottomWidth: 2,
+                          borderBottomColor: isActiveTab ? color : "transparent",
+                        }}
+                        onPress={() => setActiveTab(tab)}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontWeight: isActiveTab ? "700" : "500",
+                            color: isActiveTab ? color : "#64748B",
+                          }}
+                        >
+                          {label} ({count})
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Student Roster List */}
+                <View style={{ flex: 1, minHeight: 280, paddingHorizontal: 24, paddingVertical: 12 }}>
+                  {loadingModalData ? (
+                    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 40 }}>
+                      <ActivityIndicator size="small" color="#3B82F6" />
+                      <Text style={{ fontSize: 13, color: "#64748B", marginTop: 8 }}>
+                        Đang đối chiếu danh sách sinh viên...
+                      </Text>
+                    </View>
+                  ) : (
+                    <ScrollView showsVerticalScrollIndicator={true} style={{ flex: 1 }}>
+                      {studentList.filter((s) => s.status === activeTab).length === 0 ? (
+                        <View style={{ alignItems: "center", paddingVertical: 60 }}>
+                          <Text style={{ fontSize: 14, color: "#94A3B8" }}>
+                            Không có sinh viên nào trong danh sách này.
+                          </Text>
+                        </View>
+                      ) : (
+                        studentList
+                          .filter((s) => s.status === activeTab)
+                          .map((student, idx) => (
+                            <View
+                              key={student.studentId + "_" + idx}
+                              style={{
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                paddingVertical: 12,
+                                borderBottomWidth: 1,
+                                borderBottomColor: "#F1F5F9",
+                              }}
+                            >
+                              <View>
+                                <Text style={{ fontSize: 14, fontWeight: "600", color: "#0F172A" }}>
+                                  {student.studentName}
+                                </Text>
+                                <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                                  Mã SV: {student.studentId}
+                                </Text>
+                              </View>
+                              <View
+                                style={{
+                                  backgroundColor:
+                                    activeTab === "PRESENT"
+                                      ? "#DCFCE7"
+                                      : activeTab === "LATE"
+                                        ? "#FEF3C7"
+                                        : "#FEE2E2",
+                                  borderRadius: 6,
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 4,
+                                }}
+                              >
+                                <Text
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: "700",
+                                    color:
+                                      activeTab === "PRESENT"
+                                        ? "#15803D"
+                                        : activeTab === "LATE"
+                                          ? "#B45309"
+                                          : "#B91C1C",
+                                  }}
+                                >
+                                  {activeTab === "PRESENT"
+                                    ? "CÓ MẶT"
+                                    : activeTab === "LATE"
+                                      ? "TRỄ"
+                                      : "VẮNG"}
+                                </Text>
+                              </View>
+                            </View>
+                          ))
+                      )}
+                    </ScrollView>
+                  )}
+                </View>
+
+                {/* Modal Actions */}
+                <View
+                  style={{
+                    padding: 24,
+                    borderTopWidth: 1,
+                    borderTopColor: "#E2E8F0",
+                    flexDirection: isDesktop ? "row" : "column-reverse",
+                    gap: 12,
+                    backgroundColor: "#F8FAFC",
+                  }}
+                >
+                  <TouchableOpacity
+                    style={{
+                      flex: isDesktop ? 1 : undefined,
+                      backgroundColor: "#E2E8F0",
+                      paddingVertical: 12,
+                      borderRadius: 10,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                    onPress={() => setShowSummaryModal(false)}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: "700", color: "#475569" }}>
+                      Đóng
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={{
+                      flex: isDesktop ? 1.5 : undefined,
+                      backgroundColor: "#22C55E",
+                      paddingVertical: 12,
+                      borderRadius: 10,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexDirection: "row",
+                      gap: 8,
+                    }}
+                    onPress={handleExportExcel}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: "700", color: "#FFFFFF" }}>
+                      Xuất Báo Cáo Excel (Session)
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
 
           <BottomNavigationSpacer />
         </View>
