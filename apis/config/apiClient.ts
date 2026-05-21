@@ -67,7 +67,7 @@ export const getExportBaseUrl = () => apiClient.defaults.baseURL || API_BASE_URL
 // Tạo axios instance
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },
